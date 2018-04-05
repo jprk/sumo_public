@@ -33,9 +33,7 @@
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <utils/gui/div/GUIIOGlobals.h>
 #include <utils/gui/div/GUIDesigns.h>
-#include <utils/gui/globjects/GUIGlObjectStorage.h>
 #include <utils/gui/images/GUIIconSubSys.h>
-#include <utils/gui/div/GUIGlobalSelection.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
 #include <netedit/GNENet.h>
@@ -797,27 +795,41 @@ GNESelectorFrame::SelectionOperation::onCmdLoad(FXObject*, FXSelector, void*) {
         opendialog.setDirectory(gCurrentFolder);
     }
     if (opendialog.execute()) {
+        std::vector<GNEAttributeCarrier*> loadedACs;
         gCurrentFolder = opendialog.getDirectory();
         std::string file = opendialog.getFilename().text();
-        // @todo maybe rewrite so that mySetOperation also applies to loaded items?
-        std::string errors;
-        std::set<GUIGlID> ids = gSelected.loadIDs(file, errors);
-        std::vector<GNEAttributeCarrier*> ACs;
-        for(auto i : ids) {
-            ACs.push_back(mySelectorFrameParent->getViewNet()->getNet()->retrieveAttributeCarrier(i, false));
+        std::ostringstream msg;
+        std::ifstream strm(file.c_str());
+        // check if file can be opened
+        if (!strm.good()) {
+            WRITE_ERROR("Could not open '" + file + "'.");
+            return 0;
         }
-        mySelectorFrameParent->handleIDs(ACs);
-        if (errors != "") {
-            // write warning if netedit is running in testing mode
-            if (OptionsCont::getOptions().getBool("gui-testing-debug")) {
-                WRITE_WARNING("Opening FXMessageBox 'error loading selection'");
+        while (strm.good()) {
+            std::string line;
+            strm >> line;
+            // check if line isn't empty
+            if (line.length() != 0) {
+                // obtain GLObject
+                GUIGlObject* object = GUIGlObjectStorage::gIDStorage.getObjectBlocking(line);
+                // check if GUIGlObject doesn't exist
+                if(object != nullptr) {
+                    // obtain GNEAttributeCarrier
+                    GNEAttributeCarrier *AC = mySelectorFrameParent->getViewNet()->getNet()->retrieveAttributeCarrier(object->getGlID(), false);
+                    // check if AC exist and if is selectable
+                    if((AC != nullptr) && GNEAttributeCarrier::canBeSelected(AC->getTag())) {
+                        loadedACs.push_back(AC);
+                    }
+                }
             }
-            // open message box error
-            FXMessageBox::error(this, MBOX_OK, "Errors while loading Selection", "%s", errors.c_str());
-            // write warning if netedit is running in testing mode
-            if (OptionsCont::getOptions().getBool("gui-testing-debug")) {
-                WRITE_WARNING("Closed FXMessageBox 'error loading selection' with 'OK'");
+        }
+        // change selected attribute in loaded ACs
+        if (loadedACs.size() > 0) {
+            mySelectorFrameParent->getViewNet()->getUndoList()->p_begin("load selection");
+            for (auto i : loadedACs) {
+                i->setAttribute(GNE_ATTR_SELECTED, "true", mySelectorFrameParent->getViewNet()->getUndoList());
             }
+            mySelectorFrameParent->getViewNet()->getUndoList()->p_end();
         }
     }
     mySelectorFrameParent->getViewNet()->update();
@@ -833,7 +845,14 @@ GNESelectorFrame::SelectionOperation::onCmdSave(FXObject*, FXSelector, void*) {
         return 1;
     }
     try {
-        gSelected.save(file.text());
+        OutputDevice& dev = OutputDevice::getDevice(file.text());
+        for (auto i : mySelectorFrameParent->myViewNet->getNet()->getSelectedAttributeCarriers()) {
+            GUIGlObject* object = dynamic_cast<GUIGlObject*>(i);
+            if(object) {
+                dev << GUIGlObject::TypeNames.getString(object->getType()) << ":" << i->getID() << "\n";
+            }
+        }
+        dev.close();
     } catch (IOError& e) {
         // write warning if netedit is running in testing mode
         if (OptionsCont::getOptions().getBool("gui-testing-debug")) {

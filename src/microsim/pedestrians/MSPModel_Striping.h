@@ -345,6 +345,9 @@ protected:
         /// @brief replace obstacles in the first vector with obstacles from the second if they are closer to me
         void mergeObstacles(Obstacles& into, const Obstacles& obs2);
 
+        /// @brief replace obstacles in the first vector with obstacles from the second if they are closer in the given direction
+        static void mergeObstacles(Obstacles& into, const Obstacles& obs2, int dir, int offset);
+
         /// @brief whether the pedestrian may ignore a red light
         bool ignoreRed(const MSLink* link) const;
     };
@@ -442,6 +445,9 @@ private:
 
     ///@brief add vehicles driving across
     static bool addCrossingVehs(const MSLane* crossing, int stripes, double lateral_offset, int dir, Obstacles& crossingVehs);
+
+    ///@brief retrieve vehicle obstacles on the given lane
+    static Obstacles getVehicleObstacles(const MSLane* lane, int dir, PState* ped = 0); 
 private:
     /// @brief the total number of active pedestrians
     int myNumActivePedestrians;

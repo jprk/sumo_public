@@ -527,7 +527,9 @@ GNEViewNet::finishMoveSelection() {
 
 int
 GNEViewNet::doPaintGL(int mode, const Boundary& bound) {
-    // init view settings
+    // init view settings 
+    // (uncomment the next line to check select mode)
+    // myVisualizationSettings->drawForSelecting = true;
     glRenderMode(mode);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -626,8 +628,8 @@ GNEViewNet::doPaintGL(int mode, const Boundary& bound) {
     int hits2 = myGrid->Search(minB, maxB, *myVisualizationSettings);
 
     glTranslated(0, 0, GLO_ADDITIONAL);
-    for (std::map<const GUIGlObject*, int>::iterator i = myAdditionallyDrawn.begin(); i != myAdditionallyDrawn.end(); ++i) {
-        (i->first)->drawGLAdditional(this, *myVisualizationSettings);
+    for (auto i : myAdditionallyDrawn) {
+        i.first->drawGLAdditional(this, *myVisualizationSettings);
     }
 
     glPopMatrix();
@@ -777,6 +779,13 @@ GNEViewNet::onLeftBtnPress(FXObject*, FXSelector, void* eventData) {
                         }
                     } else if (myViewParent->getDeleteFrame()->getMarkedAttributeCarrier() != nullptr) {
                         myViewParent->getDeleteFrame()->markAttributeCarrier(nullptr);
+                    } else if (GNEAttributeCarrier::canBeSelected(myObjectsUnderCursor.attributeCarrier->getTag()) && (myObjectsUnderCursor.attributeCarrier->getAttribute(GNE_ATTR_SELECTED) == "1")) {
+                        // remove all selected attribute carriers
+                        myUndoList->p_begin("remove selection");
+                        while(myNet->getSelectedAttributeCarriers().size() > 0) {
+                            myViewParent->getDeleteFrame()->removeAttributeCarrier(myNet->getSelectedAttributeCarriers().front());
+                        }
+                        myUndoList->p_end();
                     } else {
                         myViewParent->getDeleteFrame()->removeAttributeCarrier(myObjectsUnderCursor.attributeCarrier);
                     }
@@ -793,14 +802,8 @@ GNEViewNet::onLeftBtnPress(FXObject*, FXSelector, void* eventData) {
                         myObjectsUnderCursor.swapLane2Edge();
                     }
                     // check if clicked AC is selected
-                    if(GNEAttributeCarrier::canBeSelected(myObjectsUnderCursor.attributeCarrier->getTag()) && 
-                       (myObjectsUnderCursor.attributeCarrier->getAttribute(GNE_ATTR_SELECTED) == "1")) {
-                        // if we inspect additional or POI, we need to specify the Tag
-                        if((myObjectsUnderCursor.glType == GLO_ADDITIONAL) || (myObjectsUnderCursor.glType == GLO_POI)) {
-                            myViewParent->getInspectorFrame()->inspectMultisection(myNet->getSelectedAttributeCarriers(myObjectsUnderCursor.glType, myObjectsUnderCursor.attributeCarrier->getTag()));
-                        } else {
-                            myViewParent->getInspectorFrame()->inspectMultisection(myNet->getSelectedAttributeCarriers(myObjectsUnderCursor.glType));
-                        }
+                    if(GNEAttributeCarrier::canBeSelected(myObjectsUnderCursor.attributeCarrier->getTag()) && (myObjectsUnderCursor.attributeCarrier->getAttribute(GNE_ATTR_SELECTED) == "1")) {
+                        myViewParent->getInspectorFrame()->inspectMultisection(myNet->getSelectedAttributeCarriers(myObjectsUnderCursor.attributeCarrier->getTag()));
                     } else {
                         myViewParent->getInspectorFrame()->inspectElement(myObjectsUnderCursor.attributeCarrier);
                     }
@@ -1008,61 +1011,51 @@ long GNEViewNet::onRightBtnRelease(FXObject* obj, FXSelector sel, void* eventDat
 long
 GNEViewNet::onMouseMove(FXObject* obj, FXSelector sel, void* eventData) {
     GUISUMOAbstractView::onMouseMove(obj, sel, eventData);
-    // in delete mode object under cursor must be checked in every mouse movement
-    if (myEditMode == GNE_MODE_DELETE) {
-        setFocus();
-        // show object information in delete frame
-        if (makeCurrent()) {
-            // Update current label of delete frame
-            myViewParent->getDeleteFrame()->updateCurrentLabel(myNet->retrieveAttributeCarrier(getObjectUnderCursor()));
+    // calculate offset of movement depending of showGrid
+    Position offsetMovement;
+    if (myVisualizationSettings->showGrid) {
+        offsetMovement = snapToActiveGrid(getPositionInformation()) - myMoveSingleElementValues.movingOriginalPosition;
+        if (myMenuCheckMoveElevation->getCheck()) {
+            const double dist = int((offsetMovement.y() + offsetMovement.x()) / myVisualizationSettings->gridXSize) * myVisualizationSettings->gridXSize;
+            offsetMovement = Position(0, 0, dist / 10);
         }
     } else {
-        // calculate offset of movement depending of showGrid
-        Position offsetMovement;
-        if (myVisualizationSettings->showGrid) {
-            offsetMovement = snapToActiveGrid(getPositionInformation()) - myMoveSingleElementValues.movingOriginalPosition;
-            if (myMenuCheckMoveElevation->getCheck()) {
-                const double dist = int((offsetMovement.y() + offsetMovement.x()) / myVisualizationSettings->gridXSize) * myVisualizationSettings->gridXSize;
-                offsetMovement = Position(0, 0, dist / 10);
-            }
+        offsetMovement = getPositionInformation() - myMoveSingleElementValues.movingReference;
+        if (myMenuCheckMoveElevation->getCheck()) {
+            offsetMovement = Position(0, 0, (offsetMovement.y() + offsetMovement.x()) / 10);
+        }
+    }
+    // @note  #3521: Add checkBox to allow moving elements... has to behere implemented
+    // check what type of additional is moved
+    if (myMovingSelection) {
+        moveSelection(offsetMovement);
+    } else if (myMovedItems.polyToMove) {
+        // move shape's geometry without commiting changes
+        if (myMovedItems.polyToMove->isShapeBlocked()) {
+            myMovedItems.polyToMove->moveEntireShape(myMoveSingleElementValues.movingOriginalShape, offsetMovement);
         } else {
-            offsetMovement = getPositionInformation() - myMoveSingleElementValues.movingReference;
-            if (myMenuCheckMoveElevation->getCheck()) {
-                offsetMovement = Position(0, 0, (offsetMovement.y() + offsetMovement.x()) / 10);
-            }
+            myMoveSingleElementValues.movingIndexShape = myMovedItems.polyToMove->moveVertexShape(myMoveSingleElementValues.movingIndexShape, myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
         }
-        // @note  #3521: Add checkBox to allow moving elements... has to behere implemented
-        // check what type of additional is moved
-        if (myMovingSelection) {
-            moveSelection(offsetMovement);
-        } else if (myMovedItems.polyToMove) {
-            // move shape's geometry without commiting changes
-            if (myMovedItems.polyToMove->isShapeBlocked()) {
-                myMovedItems.polyToMove->moveEntireShape(myMoveSingleElementValues.movingOriginalShape, offsetMovement);
-            } else {
-                myMoveSingleElementValues.movingIndexShape = myMovedItems.polyToMove->moveVertexShape(myMoveSingleElementValues.movingIndexShape, myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-            }
-        } else if (myMovedItems.poiToMove) {
-            // Move POI's geometry without commiting changes
-            myMovedItems.poiToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-        } else if (myMovedItems.junctionToMove) {
-            // Move Junction's geometry without commiting changes
-            myMovedItems.junctionToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-        } else if (myMovedItems.edgeToMove) {
-            if (myMoveSingleElementValues.movingStartPos) {
-                myMovedItems.edgeToMove->moveShapeStart(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-            } else if (myMoveSingleElementValues.movingEndPos) {
-                myMovedItems.edgeToMove->moveShapeEnd(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-            } else {
-                // move edge's geometry without commiting changes
-                myMoveSingleElementValues.movingIndexShape = myMovedItems.edgeToMove->moveVertexShape(myMoveSingleElementValues.movingIndexShape, myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-            }
-        } else if (myMovedItems.additionalToMove  && (myMovedItems.additionalToMove->isAdditionalBlocked() == false)) {
-            // Move Additional geometry without commiting changes
-            myMovedItems.additionalToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
-        } else if (myAmInRectSelect) {
-            mySelCorner2 = getPositionInformation();
+    } else if (myMovedItems.poiToMove) {
+        // Move POI's geometry without commiting changes
+        myMovedItems.poiToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
+    } else if (myMovedItems.junctionToMove) {
+        // Move Junction's geometry without commiting changes
+        myMovedItems.junctionToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
+    } else if (myMovedItems.edgeToMove) {
+        if (myMoveSingleElementValues.movingStartPos) {
+            myMovedItems.edgeToMove->moveShapeStart(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
+        } else if (myMoveSingleElementValues.movingEndPos) {
+            myMovedItems.edgeToMove->moveShapeEnd(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
+        } else {
+            // move edge's geometry without commiting changes
+            myMoveSingleElementValues.movingIndexShape = myMovedItems.edgeToMove->moveVertexShape(myMoveSingleElementValues.movingIndexShape, myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
         }
+    } else if (myMovedItems.additionalToMove  && (myMovedItems.additionalToMove->isAdditionalBlocked() == false)) {
+        // Move Additional geometry without commiting changes
+        myMovedItems.additionalToMove->moveGeometry(myMoveSingleElementValues.movingOriginalPosition, offsetMovement);
+    } else if (myAmInRectSelect) {
+        mySelCorner2 = getPositionInformation();
     }
     // update view
     update();

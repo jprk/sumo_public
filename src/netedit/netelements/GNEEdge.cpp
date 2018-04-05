@@ -83,8 +83,8 @@ GNEEdge::GNEEdge(NBEdge& nbe, GNENet* net, bool wasSplit, bool loaded):
         myLanes.back()->incRef("GNEEdge::GNEEdge");
     }
     // update Lane geometries
-    for (LaneVector::iterator i = myLanes.begin(); i != myLanes.end(); i++) {
-        (*i)->updateGeometry();
+    for (auto i : myLanes) {
+        i->updateGeometry();
     }
 }
 
@@ -407,21 +407,23 @@ GNEEdge::drawGL(const GUIVisualizationSettings& s) const {
     */
     // obtain resolution for points
     int circleResolution = 0;
-    if (s.scale >= 10) {
-        circleResolution = 32;
-    } else if (s.scale >= 2) {
-        circleResolution = 16;
-    } else if (s.scale >= 1) {
-        circleResolution = 8;
-    } else {
-        circleResolution = 4;
+    if(!s.drawForSelecting) {
+        if (s.scale >= 10) {
+            circleResolution = 32;
+        } else if (s.scale >= 2) {
+            circleResolution = 16;
+        } else if (s.scale >= 1) {
+            circleResolution = 8;
+        } else {
+            circleResolution = 4;
+        }
     }
     // draw the lanes
     for (auto i : myLanes) {
         i->drawGL(s);
     }
-    // draw geometry hints if isn't being drawn for selecting
-    if ((s.scale > 3.0) && !s.selectionScale) { // check whether it is not too small
+    // draw geometry hints if isn't in selecting mode
+    if (!s.drawForSelecting && (s.scale > 3.0)) { // check whether it is not too small
         GLHelper::setColor(s.junctionColorer.getSchemes()[0].getColor(2));
         if (isNetElementSelected() && s.laneColorer.getActive() != 1) {
             // override with special colors (unless the color scheme is based on selection)
@@ -442,7 +444,7 @@ GNEEdge::drawGL(const GUIVisualizationSettings& s) const {
                 GLHelper::drawFilledCircle(SNAP_RADIUS * MIN2((double)1, s.laneWidthExaggeration), circleResolution);
                 glPopMatrix();
             }
-            // draw line geometry and start and end points if shapeStart or shape end are edited
+            // draw line geometry and start and end points if shapeStart or shape end are edited and isn't in selecting mode
             if(myNBEdge.getGeometry().front() != myGNEJunctionSource->getPositionInView()) {
                 glPushMatrix();
                 glTranslated(myNBEdge.getGeometry().front().x(), myNBEdge.getGeometry().front().y(), GLO_JUNCTION - 0.01);
@@ -485,8 +487,8 @@ GNEEdge::drawGL(const GUIVisualizationSettings& s) const {
     }
 
     // (optionally) draw the name and/or the street name if isn't being drawn for selecting
-    const bool drawStreetName = s.streetName.show && myNBEdge.getStreetName() != "";
-    if ((s.edgeName.show || drawStreetName) && !s.selectionScale) {
+    const bool drawStreetName = s.streetName.show && (myNBEdge.getStreetName() != "");
+    if (!s.drawForSelecting && (s.edgeName.show || drawStreetName)) {
         glPushName(getGlID());
         GNELane* lane1 = myLanes[0];
         GNELane* lane2 = myLanes[myLanes.size() - 1];
@@ -632,6 +634,10 @@ void
 GNEEdge::clearGNEConnections() {
     // Drop all existents connections that aren't referenced anymore
     for (auto i : myGNEConnections) {
+        // check if connection is selected
+        if(i->isNetElementSelected()) {
+            myNet->unselectAttributeCarrier(GLO_CONNECTION, i);
+        }
         // Dec reference of connection
         i->decRef("GNEEdge::clearGNEConnections");
         // Delete GNEConnectionToErase if is unreferenced
@@ -1208,6 +1214,10 @@ GNEEdge::addLane(GNELane* lane, const NBEdge::Lane& laneAttrs, bool recomputeCon
         myLanes.push_back(lane);
     }
     lane->incRef("GNEEdge::addLane");
+    // check if lane is selected
+    if(lane->isNetElementSelected()) {
+        myNet->selectAttributeCarrier(GLO_LANE, lane);
+    }
     // we copy all attributes except shape since this is recomputed from edge shape
     myNBEdge.setSpeed(lane->getIndex(), laneAttrs.speed);
     myNBEdge.setPermissions(laneAttrs.permissions, lane->getIndex());
@@ -1244,6 +1254,10 @@ GNEEdge::removeLane(GNELane* lane, bool recomputeConnections) {
     }
     if (lane == 0) {
         lane = myLanes.back();
+    }
+    // check if lane is selected
+    if(lane->isNetElementSelected()) {
+        myNet->unselectAttributeCarrier(GLO_LANE, lane);
     }
     // Delete lane of edge's container
     // unless the connections are fully recomputed, existing indices must be shifted
@@ -1318,6 +1332,10 @@ GNEEdge::removeConnection(NBEdge::Connection nbCon) {
     if (con != nullptr) {
         con->decRef("GNEEdge::removeConnection");
         myGNEConnections.erase(std::find(myGNEConnections.begin(), myGNEConnections.end(), con));
+        // check if connection is selected
+        if(con->isNetElementSelected()) {
+            myNet->unselectAttributeCarrier(GLO_CONNECTION, con);
+        }
         if (con->unreferenced()) {
             // show extra information for tests
             if (OptionsCont::getOptions().getBool("gui-testing-debug")) {
@@ -1325,6 +1343,8 @@ GNEEdge::removeConnection(NBEdge::Connection nbCon) {
             }
             delete con;
             myNet->refreshElement(this); // actually we only do this to force a redraw
+        } else if (con->getShape().size() > 0) {
+            myNet->getVisualisationSpeedUp().removeAdditionalGLObject(con);
         }
     }
 }
