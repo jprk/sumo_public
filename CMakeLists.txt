@@ -159,6 +159,13 @@ if (SUMO_LIBRARIES)
     set(GL2PS_FOUND true)
     set(GL2PS_INCLUDE_DIR "${SUMO_LIBRARIES}/gl2ps-1.4.0${LIB_VERSION}")
     set(GL2PS_LIBRARY "${SUMO_LIBRARIES}/gl2ps-1.4.0${LIB_VERSION}/Release/gl2ps.lib")
+    # set GoogleTest
+    set(GTEST_FOUND true)
+    set(GTEST_INCLUDE_DIR "${SUMO_LIBRARIES}/googletest-1.8.0${LIB_VERSION}/googletest/include")
+    set(GTEST_LIBRARY "${SUMO_LIBRARIES}/googletest-1.8.0${LIB_VERSION}/googlemock/gtest/Release/gtest.lib")
+    set(GTEST_LIBRARY_DEBUG "${SUMO_LIBRARIES}/googletest-1.8.0${LIB_VERSION}/googlemock/gtest/Debug/gtest.lib")
+    set(GTEST_MAIN_LIBRARY "${SUMO_LIBRARIES}/googletest-1.8.0${LIB_VERSION}/googlemock/gtest/Release/gtest_main.lib")
+    set(GTEST_MAIN_LIBRARY_DEBUG "${SUMO_LIBRARIES}/googletest-1.8.0${LIB_VERSION}/googlemock/gtest/Debug/gtest_main.lib")
 endif (SUMO_LIBRARIES)
 
 find_package(XercesC REQUIRED)
