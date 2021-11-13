@@ -83,6 +83,15 @@ public:
 
     SUMOTime trySwitch();
 
+    /// @name Dynamic Information Retrieval
+    /// @{
+
+    /** @brief Returns the definition of the current phase
+     * @return The current phase
+     */
+    const MSPhaseDefinition& getCurrentPhaseDef() const;
+    /// @}
+
     /// @brief called when switching programs
     void activateProgram();
     void deactivateProgram();
@@ -160,7 +169,7 @@ protected:
 
     //decide whether the detector is for left turn lane
     //if it is, use the detector length for left turn lane
-    bool isLeftTurnLane(MSLane* lane);
+    bool isLeftTurnLane(const MSLane* const lane) const;
 
     //convert "1" to int 1
     int string2int(std::string s);
@@ -271,4 +280,7 @@ protected:
     std::string outputStateFilePath;
     std::ofstream outputStateFile;
     bool coordinateMode;
+
+    /// @brief virtual phase that holds the current state
+    MSPhaseDefinition myPhase;
 };
