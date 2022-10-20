@@ -469,10 +469,15 @@
         <xsd:sequence>
             <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
-        <xsd:attribute name="segments" type="xsd:string" use="required"/>
+        <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="lanes" type="xsd:string" use="required"/>
         <xsd:attribute name="substationId" type="xsd:string" use="required"/>
+        <xsd:attribute name="voltageSource" type="xsd:string" use="optional"/>
         <xsd:attribute name="clamps" type="xsd:string" use="optional"/>
         <xsd:attribute name="forbiddenInnerLanes" type="xsd:string" use="optional"/>
+        <xsd:attribute name="startPos" type="xsd:float" use="optional"/>
+        <xsd:attribute name="endPos" type="xsd:float" use="optional"/>
+        <xsd:attribute name="friendlyPos" type="boolType" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="accessType">
