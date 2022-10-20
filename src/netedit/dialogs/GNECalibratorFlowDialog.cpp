@@ -107,7 +107,7 @@ GNECalibratorFlowDialog::GNECalibratorFlowDialog(GNEAdditional* editedCalibrator
     myTextFieldContainerNumber = new FXTextField(columnRightValue, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
     // 15 create textfield for reroute
     new FXLabel(columnRightLabel, toString(SUMO_ATTR_REROUTE).c_str(), nullptr, GUIDesignLabelThick);
-    myRerouteCheckButton = new FXCheckButton(columnRightValue, "false", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
+    myRerouteCheckButton = new FXCheckButton(columnRightValue, TL("false"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
     // 16 create textfield for depart pos lat
     new FXLabel(columnRightLabel, toString(SUMO_ATTR_DEPARTPOS_LAT).c_str(), nullptr, GUIDesignLabelThick);
     myTextFieldDepartPosLat = new FXTextField(columnRightValue, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
@@ -369,10 +369,10 @@ GNECalibratorFlowDialog::onCmdSetVariable(FXObject*, FXSelector, void*) {
     // set reroute
     if (myRerouteCheckButton->getCheck()) {
         myEditedAdditional->setAttribute(SUMO_ATTR_REROUTE, "true", undoList);
-        myRerouteCheckButton->setText("true");
+        myRerouteCheckButton->setText(TL("true"));
     } else {
         myEditedAdditional->setAttribute(SUMO_ATTR_REROUTE, "false", undoList);
-        myRerouteCheckButton->setText("false");
+        myRerouteCheckButton->setText(TL("false"));
     }
     // set color of myTextFieldDepartPosLat, depending if current value is valid or not
     if (myEditedAdditional->isValid(SUMO_ATTR_DEPARTPOS_LAT, myTextFieldDepartPosLat->getText().text())) {

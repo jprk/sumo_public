@@ -51,11 +51,11 @@ FXIMPLEMENT(GNETAZRelDataFrame::ConfirmTAZRelation, MFXGroupBoxModule, ConfirmTA
 // ---------------------------------------------------------------------------
 
 GNETAZRelDataFrame::ConfirmTAZRelation::ConfirmTAZRelation(GNETAZRelDataFrame* TAZRelDataFrame) :
-    MFXGroupBoxModule(TAZRelDataFrame, "Confirm TAZRelation"),
+    MFXGroupBoxModule(TAZRelDataFrame, TL("Confirm TAZRelation")),
     myTAZRelDataFrame(TAZRelDataFrame) {
-    myConfirmTAZButton = new FXButton(getCollapsableFrame(), "Create TAZRelation\t\tClick fromTaz and toTaz (confirm hotkey <ENTER>)", GUIIconSubSys::getIcon(GUIIcon::TAZRELDATA), this, MID_GNE_CREATE, GUIDesignButton);
+    myConfirmTAZButton = new FXButton(getCollapsableFrame(), TL("Create TAZRelation\t\tClick fromTaz and toTaz (confirm hotkey <ENTER>)"), GUIIconSubSys::getIcon(GUIIcon::TAZRELDATA), this, MID_GNE_CREATE, GUIDesignButton);
     myConfirmTAZButton->disable();
-    myClearTAZButton = new FXButton(getCollapsableFrame(), "Clear selection\t\tClear selected TAZs (hotkey <ESC>)", GUIIconSubSys::getIcon(GUIIcon::CLEARMESSAGEWINDOW), this, MID_GNE_ABORT, GUIDesignButton);
+    myClearTAZButton = new FXButton(getCollapsableFrame(), TL("Clear selection\t\tClear selected TAZs (hotkey <ESC>)"), GUIIconSubSys::getIcon(GUIIcon::CLEARMESSAGEWINDOW), this, MID_GNE_ABORT, GUIDesignButton);
     myClearTAZButton->disable();
 }
 
@@ -98,7 +98,7 @@ GNETAZRelDataFrame::ConfirmTAZRelation::onCmdClearSelection(FXObject*, FXSelecto
 // ---------------------------------------------------------------------------
 
 GNETAZRelDataFrame::Legend::Legend(GNETAZRelDataFrame* TAZRelDataFrame) :
-    MFXGroupBoxModule(TAZRelDataFrame, "Information"),
+    MFXGroupBoxModule(TAZRelDataFrame, TL("Information")),
     myFromTAZLabel(nullptr),
     myToTAZLabel(nullptr) {
     // create from TAZ label
@@ -119,13 +119,13 @@ GNETAZRelDataFrame::Legend::setLabels(const GNETAZ* fromTAZ, const GNETAZ* toTAZ
     if (fromTAZ) {
         myFromTAZLabel->setText(("From TAZ: " + fromTAZ->getID()).c_str());
     } else {
-        myFromTAZLabel->setText("From TAZ");
+        myFromTAZLabel->setText(TL("From TAZ"));
     }
     // to TAZ
     if (toTAZ) {
         myToTAZLabel->setText(("To TAZ: " + toTAZ->getID()).c_str());
     } else {
-        myToTAZLabel->setText("To TAZ");
+        myToTAZLabel->setText(TL("To TAZ"));
     }
 }
 

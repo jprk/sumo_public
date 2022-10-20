@@ -139,8 +139,6 @@ GUISUMOAbstractView::GUISUMOAbstractView(FXComposite* p, GUIMainWindow& app, GUI
     myChanger(nullptr),
     myMouseHotspotX(app.getDefaultCursor()->getHotX()),
     myMouseHotspotY(app.getDefaultCursor()->getHotY()),
-    myPopup(nullptr),
-    myPopupPosition(Position(0, 0)),
     myAmInitialised(false),
     myViewportChooser(nullptr),
     myWindowCursorPositionX(getWidth() / 2),
@@ -243,7 +241,7 @@ GUISUMOAbstractView::addDecals(const std::vector<Decal>& decals) {
 
 
 void
-GUISUMOAbstractView::updatePositionInformation() const {
+GUISUMOAbstractView::updatePositionInformationLabel() const {
     Position pos = getPositionInformation();
     // set cartesian position
     myApp->getCartesianLabel()->setText(("x:" + toString(pos.x()) + ", y:" + toString(pos.y())).c_str());
@@ -867,7 +865,7 @@ GUISUMOAbstractView::centerTo(GUIGlID id, bool applyZoom, double zoomDist) {
         } else {
             // called during tracking. update is triggered somewhere else
             myChanger->centerTo(o->getCenteringBoundary().getCenter(), zoomDist, applyZoom);
-            updatePositionInformation();
+            updatePositionInformationLabel();
         }
     }
     GUIGlObjectStorage::gIDStorage.unblockObject(id);
@@ -878,7 +876,7 @@ void
 GUISUMOAbstractView::centerTo(const Position& pos, bool applyZoom, double zoomDist) {
     // called during tracking. update is triggered somewhere else
     myChanger->centerTo(pos, zoomDist, applyZoom);
-    updatePositionInformation();
+    updatePositionInformationLabel();
 }
 
 
@@ -1108,7 +1106,7 @@ GUISUMOAbstractView::onMouseWheel(FXObject*, FXSelector, void* ptr) {
                                          myChanger->getXPos(), myChanger->getYPos(),
                                          myChanger->getRotation());
         }
-        updatePositionInformation();
+        updatePositionInformationLabel();
     }
     return 1;
 }
@@ -1116,9 +1114,16 @@ GUISUMOAbstractView::onMouseWheel(FXObject*, FXSelector, void* ptr) {
 
 long
 GUISUMOAbstractView::onMouseMove(FXObject*, FXSelector, void* ptr) {
-    // if popup exist but isn't shown, destroy it first
-    if (myPopup && (myPopup->shown() == false)) {
-        destroyPopup();
+    // check if popup exist
+    if (myPopup) {
+        // check if handle front element
+         if (myPopupPosition == getPositionInformation()) {
+            myPopupPosition = Position::INVALID;
+            myPopup->handle(this,FXSEL(SEL_COMMAND, MID_CURSORDIALOG_FRONT), nullptr);
+            destroyPopup();
+        } else if (myPopup->shown() == false) {
+            destroyPopup();
+        }
     }
     if (myPopup == nullptr) {
         if (myViewportChooser == nullptr || !myViewportChooser->haveGrabbed()) {
@@ -1129,7 +1134,7 @@ GUISUMOAbstractView::onMouseMove(FXObject*, FXSelector, void* ptr) {
                                          myChanger->getXPos(), myChanger->getYPos(),
                                          myChanger->getRotation());
         }
-        updatePositionInformation();
+        updatePositionInformationLabel();
     }
     return 1;
 }
@@ -1209,11 +1214,24 @@ GUISUMOAbstractView::openObjectDialog(const std::vector<GUIGlObject*> &objects) 
     if (objects.size() > 0) {
         // create cursor popup dialog
         if (objects.size() == 1) {
-            myPopup = objects.front()->getPopUpMenu(*myApp, *this);
+            myCurrentObjectsDialog = objects;
         } else {
-            myPopup = new GUICursorDialog(GUICursorDialog::CursorDialogType::PROPERTIES, this, objects);
+            // declare filtered objects
+            std::vector<GUIGlObject*> filteredGLObjects;
+            // fill filtered objects
+            for (const auto &glObject : objects) {
+                // compare type with first eleement type
+                if (glObject->getType() == objects.front()->getType()) {
+                    filteredGLObjects.push_back(glObject);
+                }
+            }
+            myCurrentObjectsDialog = filteredGLObjects;
         }
-        myCurrentObjectsDialog = objects;
+        if (myCurrentObjectsDialog.size() > 1) {
+            myPopup = new GUICursorDialog(GUIGLObjectPopupMenu::PopupType::PROPERTIES, this, myCurrentObjectsDialog);
+        } else {
+            myPopup = myCurrentObjectsDialog.front()->getPopUpMenu(*myApp, *this);
+        }
         // open popup dialog
         openPopupDialog();
     }

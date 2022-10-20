@@ -72,9 +72,7 @@ GNEVehicleTypeDialog::VTypeAtributes::VClassRow::VClassRow(VTypeAtributes* VType
     myComboBoxVClassLabelImage->setBackColor(FXRGBA(255, 255, 255, 255));
     // fill combo Box with all allowed VClass for the current edited VType
     for (const auto& vClass : myVTypeAtributesParent->myVehicleTypeDialog->getEditedDemandElement()->getTagProperty().getAttributeProperties(SUMO_ATTR_VCLASS).getDiscreteValues()) {
-        if (vClass != SumoVehicleClassStrings.getString(SVC_IGNORING)) {
-            myComboBoxVClass->appendIconItem(vClass.c_str(), GNEAttributeCarrier::getVClassIcon(SumoVehicleClassStrings.get(vClass)));
-        }
+        myComboBoxVClass->appendIconItem(vClass.c_str(), GNEAttributeCarrier::getVClassIcon(SumoVehicleClassStrings.get(vClass)));
     }
     // only show as maximum 10 VClasses
     if (myComboBoxVClass->getNumItems() > 10) {
@@ -141,8 +139,11 @@ GNEVehicleTypeDialog::VTypeAtributes::VClassRow::setVariable() {
                 myVTypeAtributesParent->myLocomotiveLength->updateValue(toString(defaultVTypeParameters.containerCapacity));
             }
             // update GUIShape
-            myVTypeAtributesParent->myVShapeRow->updateValue(SumoVehicleClassStrings.get(myComboBoxVClass->getText().text()));
-
+            if (myComboBoxVClass->getText().empty()) {
+                myVTypeAtributesParent->myVShapeRow->updateValue(SVC_PASSENGER);
+            } else {
+                myVTypeAtributesParent->myVShapeRow->updateValue(SumoVehicleClassStrings.get(myComboBoxVClass->getText().text()));
+            }
         }
     } else {
         myComboBoxVClass->setTextColor(FXRGB(255, 0, 0));
@@ -155,7 +156,14 @@ GNEVehicleTypeDialog::VTypeAtributes::VClassRow::setVariable() {
 
 SUMOVehicleClass
 GNEVehicleTypeDialog::VTypeAtributes::VClassRow::updateValue() {
-    myComboBoxVClass->setText(myVTypeAtributesParent->myVehicleTypeDialog->myEditedDemandElement->getAttribute(SUMO_ATTR_VCLASS).c_str());
+    const auto vClass = myVTypeAtributesParent->myVehicleTypeDialog->myEditedDemandElement->getAttribute(SUMO_ATTR_VCLASS);
+    int index = 0;
+    for (int i = 0; i < myComboBoxVClass->getNumItems(); i++) {
+        if (myComboBoxVClass->getItem(i).text() == vClass) {
+            index = i;
+        }
+    }
+    myComboBoxVClass->setCurrentItem(index);
     setVClassLabelImage();
     return myVTypeAtributesParent->myVehicleTypeDialog->myEditedDemandElement->getVClass();
 }
@@ -221,7 +229,7 @@ GNEVehicleTypeDialog::VTypeAtributes::VClassRow::setVClassLabelImage() {
                 myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_RAIL_ELECTRIC));
                 break;
             case SVC_RAIL_FAST:
-                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_RAIL_ELECTRIC));
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_RAIL_FAST));
                 break;
             case SVC_MOTORCYCLE:
                 myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_MOTORCYCLE));
@@ -432,7 +440,7 @@ GNEVehicleTypeDialog::VTypeAtributes::VTypeAttributeRow::VTypeAttributeRow(VType
     if ((rowAttrType == ROWTYPE_COLOR) || (rowAttrType == ROWTYPE_FILENAME)) {
         myButton = new FXButton(this, filterAttributeName(attr), nullptr, VTypeAtributesParent, MID_GNE_SET_ATTRIBUTE_DIALOG, GUIDesignButtonRectangular150);
     } else if (rowAttrType == ROWTYPE_PARAMETERS) {
-        myButton = new FXButton(this, "Edit parameters", nullptr, VTypeAtributesParent, MID_GNE_OPEN_PARAMETERS_DIALOG, GUIDesignButtonRectangular150);
+        myButton = new FXButton(this, TL("Edit parameters"), nullptr, VTypeAtributesParent, MID_GNE_OPEN_PARAMETERS_DIALOG, GUIDesignButtonRectangular150);
     } else {
         new FXLabel(this, filterAttributeName(attr), nullptr, GUIDesignLabelAttribute150);
     }
@@ -646,7 +654,7 @@ GNEVehicleTypeDialog::VTypeAtributes::VTypeAttributeRow::openColorDialog() {
 void
 GNEVehicleTypeDialog::VTypeAtributes::VTypeAttributeRow::openImageFileDialog() {
     // get the new image file
-    FXFileDialog opendialog(this, "Open Image");
+    FXFileDialog opendialog(this, TL("Open Image"));
     opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::VTYPE));
     opendialog.setSelectMode(SELECTFILE_EXISTING);
     opendialog.setPatternList("All files (*)");
@@ -673,7 +681,7 @@ GNEVehicleTypeDialog::VTypeAtributes::VTypeAttributeRow::openImageFileDialog() {
 void
 GNEVehicleTypeDialog::VTypeAtributes::VTypeAttributeRow::openOSGFileDialog() {
     // get the new file name
-    FXFileDialog opendialog(this, "Open OSG File");
+    FXFileDialog opendialog(this, TL("Open OSG File"));
     opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::VTYPE));
     opendialog.setSelectMode(SELECTFILE_EXISTING);
     opendialog.setPatternList("OSG file (*.obj)");

@@ -34,7 +34,6 @@
 // ===========================================================================
 // static member variables
 // ===========================================================================
-
 MsgHandler::Factory MsgHandler::myFactory = nullptr;
 MsgHandler* MsgHandler::myDebugInstance = nullptr;
 MsgHandler* MsgHandler::myGLDebugInstance = nullptr;
@@ -223,6 +222,34 @@ MsgHandler::removeRetrieverFromAllInstances(OutputDevice* out) {
         myMessageInstance->removeRetriever(out);
     }
 }
+
+
+void
+MsgHandler::setupI18n(const std::string& locale) {
+#ifdef HAVE_INTL
+    if (!setlocale(LC_MESSAGES, locale.data())) {
+        WRITE_WARNING("Could not set locale to '" + locale + "'.");
+    }
+    const char* sumoPath = std::getenv("SUMO_HOME");
+    if (sumoPath == nullptr) {
+        if (!bindtextdomain("sumo", nullptr)) {
+            WRITE_WARNING(TL("Environment variable SUMO_HOME is not set, could not find localized messages."));
+            return;
+        }
+    } else {
+        const std::string path = sumoPath + std::string("/data/locale/");
+        if (!bindtextdomain("sumo", path.data())) {
+            WRITE_WARNING(TL("Could not find localized messages."));
+            return;
+        }
+    }
+    bind_textdomain_codeset("sumo", "UTF-8");
+    textdomain("sumo");
+#else
+    UNUSED_PARAMETER(locale);
+#endif
+}
+
 
 void
 MsgHandler::initOutputOptions() {

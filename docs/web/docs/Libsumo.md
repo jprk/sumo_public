@@ -33,6 +33,8 @@ The following things currently do not work (or work differently than with the Tr
   - TraCI automatically converts every parameter into a string if a string is needed, Libsumo does not
 - using traci.init or traci.connect is not possible (you always need to use traci.start / libsumo.start)
 - with traci every TraCIException will generate a message on stderr, Libsumo does not generate this message
+- libsumo by itself cannot be used to [connect multiple clients to the simulation](TraCI/Interfacing_TraCI_from_Python.md#controlling_the_same_simulation_from_multiple_clients) (though connecting normal TraCI clients to a libsumo instance is possible)
+- running parallel instances of libsumo requires the [multiprocessing module (in python)](https://docs.python.org/3/library/multiprocessing.html)
 
 # Building it
 
@@ -51,6 +53,10 @@ python path you should be able to use them as described below.
     Make sure to add `"/your/path/to/sumo/tools"` to the `PYTHONPATH` environment variable.
 
 # Using libsumo
+
+If you want to use the (experimental) GUI then you need to have `sumo-gui`
+in your start command instead of `sumo` or define the environment variable
+`LIBSUMO_GUI`.
 
 ## Python
 

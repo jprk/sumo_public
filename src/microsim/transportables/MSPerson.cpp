@@ -85,15 +85,15 @@ MSPerson::MSPersonStage_Walking::clone() const {
     if (myRouteID != "" && MSRoute::distDictionary(myRouteID) != nullptr) {
         route = MSRoute::dictionary(myRouteID, MSRouteHandler::getParsingRNG())->getEdges();
         if (departPos > route[0]->getLength()) {
-            WRITE_WARNINGF("Adjusting departPos for cloned walk with routeDistribution '%s'", myRouteID);
+            WRITE_WARNINGF(TL("Adjusting departPos for cloned walk with routeDistribution '%'"), myRouteID);
             departPos = route[0]->getLength();
         }
         if (arrivalPos > route.back()->getLength()) {
-            WRITE_WARNINGF("Adjusting arrivalPos for cloned walk with routeDistribution '%s'", myRouteID);
+            WRITE_WARNINGF(TL("Adjusting arrivalPos for cloned walk with routeDistribution '%'"), myRouteID);
             arrivalPos = route.back()->getLength();
         }
         if (departLane >= route[0]->getNumLanes()) {
-            WRITE_WARNINGF("Adjusting departLane for cloned walk with routeDistribution '%s'", myRouteID);
+            WRITE_WARNINGF(TL("Adjusting departLane for cloned walk with routeDistribution '%'"), myRouteID);
             departLane = route[0]->getNumLanes() - 1;
         }
     }
@@ -206,7 +206,7 @@ MSPerson::MSPersonStage_Walking::walkDistance(bool partial) const {
     const int departBwdArrivalDir = MSPModel::canTraverse(MSPModel::BACKWARD, myRoute);
     const bool mayStartForward = departFwdArrivalDir != MSPModel::UNDEFINED_DIRECTION;
     const bool mayStartBackward = departBwdArrivalDir != MSPModel::UNDEFINED_DIRECTION;
-    double arrivalPos = partial && myArrived < 0 ? getEdgePos(SIMTIME) : myArrivalPos;
+    const double arrivalPos = partial && myArrived < 0 ? getEdgePos(SIMSTEP) : myArrivalPos;
     const double lengthFwd = (length - myDepartPos - (
                                   departFwdArrivalDir == MSPModel::BACKWARD
                                   ? arrivalPos

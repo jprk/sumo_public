@@ -191,11 +191,9 @@ MSRouteHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         }
         SUMORouteHandler::myStartElement(element, attrs);
         switch (element) {
-            case SUMO_TAG_PERSON:
             case SUMO_TAG_PERSONFLOW:
                 addPerson(attrs);
                 break;
-            case SUMO_TAG_CONTAINER:
             case SUMO_TAG_CONTAINERFLOW:
                 addContainer(attrs);
                 break;
@@ -303,7 +301,7 @@ MSRouteHandler::openRoute(const SUMOSAXAttributes& attrs) {
                           // handle obsolete attribute name
                           attrs.getOptSUMOTimeReporting(SUMO_ATTR_PERIOD, myActiveRouteID.c_str(), ok, 0));
     if (attrs.hasAttribute(SUMO_ATTR_PERIOD)) {
-        WRITE_WARNING("Attribute 'period' is deprecated for route. Use 'cycleTime' instead.");
+        WRITE_WARNING(TL("Attribute 'period' is deprecated for route. Use 'cycleTime' instead."));
     }
     if (myActiveRouteRepeat > 0) {
         if (MSGlobals::gCheckRoutes) {
@@ -753,11 +751,15 @@ MSRouteHandler::closeTransportable() {
         if (myActiveType == ObjectTypeEnum::PERSON
                 && type->getVehicleClass() != SVC_PEDESTRIAN
                 && !type->getParameter().wasSet(VTYPEPARS_VEHICLECLASS_SET)) {
-            WRITE_WARNINGF("Person '%' receives type '%' which implicitly uses unsuitable vClass '%'.", myVehicleParameter->id, type->getID(), toString(type->getVehicleClass()));
+            WRITE_WARNINGF(TL("Person '%' receives type '%' which implicitly uses unsuitable vClass '%'."), myVehicleParameter->id, type->getID(), toString(type->getVehicleClass()));
         }
-        addFlowTransportable(myVehicleParameter->depart, type, myVehicleParameter->id, -1);
+        int created = addFlowTransportable(myVehicleParameter->depart, type, myVehicleParameter->id, -1);
         registerLastDepart();
-        resetActivePlanAndVehicleParameter();
+        if (created > 0) {
+            resetActivePlanAndVehicleParameter();
+        } else {
+            deleteActivePlanAndVehicleParameter();
+        }
     } catch (ProcessError&) {
         deleteActivePlanAndVehicleParameter();
         throw;
@@ -840,9 +842,10 @@ MSRouteHandler::closeTransportableFlow() {
 }
 
 
-void
+int
 MSRouteHandler::addFlowTransportable(SUMOTime depart, MSVehicleType* type, const std::string& baseID, int i) {
     try {
+        int numCreated = 0;
         MSNet* const net = MSNet::getInstance();
         MSTransportableControl& tc = myActiveType == ObjectTypeEnum::PERSON ? net->getPersonControl() : net->getContainerControl();
         const MSVehicleControl& vc = MSNet::getInstance()->getVehicleControl();
@@ -874,6 +877,7 @@ MSRouteHandler::addFlowTransportable(SUMOTime depart, MSVehicleType* type, const
             MSTransportable* transportable = myActiveType == ObjectTypeEnum::PERSON ?
                                              tc.buildPerson(myVehicleParameter, type, myActiveTransportablePlan, &myParsingRNG) :
                                              tc.buildContainer(myVehicleParameter, type, myActiveTransportablePlan);
+            numCreated++;
             if (!tc.add(transportable)) {
                 std::string error = "Another " + myActiveTypeName + " with the id '" + myVehicleParameter->id + "' exists.";
                 delete transportable;
@@ -883,9 +887,10 @@ MSRouteHandler::addFlowTransportable(SUMOTime depart, MSVehicleType* type, const
                 }
             } else if ((net->hasPersons() && net->getPersonControl().get(myVehicleParameter->id) != nullptr)
                        && (net->hasContainers() && net->getContainerControl().get(myVehicleParameter->id) != nullptr)) {
-                WRITE_WARNINGF("There exists a person and a container with the same id '%'. Starting with SUMO 1.9.0 this is an error.", myVehicleParameter->id);
+                WRITE_WARNINGF(TL("There exists a person and a container with the same id '%'. Starting with SUMO 1.9.0 this is an error."), myVehicleParameter->id);
             }
         }
+        return numCreated;
     } catch (ProcessError&) {
         deleteActivePlanAndVehicleParameter();
         throw;
@@ -1308,7 +1313,7 @@ MSRouteHandler::parseWalkPositions(const SUMOSAXAttributes& attrs, const std::st
         const std::string description = "person '" + personID + "' walking from edge '" + fromEdge->getID() + "'";
 
         if (attrs.hasAttribute(SUMO_ATTR_DEPARTPOS)) {
-            WRITE_WARNING("The attribute departPos is no longer supported for walks, please use the person attribute, the arrivalPos of the previous step or explicit stops.");
+            WRITE_WARNING(TL("The attribute departPos is no longer supported for walks, please use the person attribute, the arrivalPos of the previous step or explicit stops."));
         }
         departPos = 0.;
         if (lastStage != nullptr) {

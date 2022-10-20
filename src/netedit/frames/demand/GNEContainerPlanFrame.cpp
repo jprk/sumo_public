@@ -22,6 +22,8 @@
 #include <netedit/GNENet.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/elements/demand/GNERouteHandler.h>
+#include <netedit/GNEViewParent.h>
+#include <netedit/GNEApplicationWindow.h>
 
 #include "GNEContainerPlanFrame.h"
 
@@ -94,6 +96,8 @@ GNEContainerPlanFrame::hide() {
     for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
         edge.second->resetCandidateFlags();
     }
+    // enable undo/redo
+    myViewNet->getViewParent()->getGNEAppWindows()->enableUndoRedo();
     // hide frame
     GNEFrame::hide();
 }
@@ -152,8 +156,10 @@ GNEContainerPlanFrame::tagSelected() {
         if (previousEdge) {
             // set path creator mode
             myPathCreator->showPathCreatorModule(containerPlanTag, true, false);
-            // add previous edge
-            myPathCreator->addEdge(previousEdge, false, false);
+            // check if add previous edge
+             if (!myContainerPlanTagSelector->getCurrentTemplateAC()->getTagProperty().isStopContainer()) {
+                myPathCreator->addEdge(previousEdge, false, false);
+            }
         } else {
             // set path creator mode
             myPathCreator->showPathCreatorModule(containerPlanTag, false, false);
@@ -194,7 +200,7 @@ GNEContainerPlanFrame::demandElementSelected() {
 }
 
 
-void
+bool
 GNEContainerPlanFrame::createPath(const bool /*useLastRoute*/) {
     // first check that all attributes are valid
     if (!myContainerPlanAttributes->areValuesValid()) {
@@ -214,8 +220,12 @@ GNEContainerPlanFrame::createPath(const bool /*useLastRoute*/) {
             tagSelected();
             // refresh containerPlan attributes
             myContainerPlanAttributes->refreshAttributesCreator();
+            // enable show all person plans
+            myViewNet->getDemandViewOptions().menuCheckShowAllPersonPlans->setChecked(TRUE);
+            return true;
         }
     }
+    return false;
 }
 
 /****************************************************************************/

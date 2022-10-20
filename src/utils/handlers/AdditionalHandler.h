@@ -572,9 +572,19 @@ public:
                              const Parameterised::Map& parameters) = 0;
     /// @}
 
+    /// @brief get flag for check if a element wasn't created
+    bool isErrorCreatingElement() const;
+
+protected:
+    /// @brief write error and enable error creating element
+    void writeError(const std::string& error);
+
 private:
     /// @brief common XML Structure
     CommonXMLStructure myCommonXMLStructure;
+
+    /// @brief flag for check if a element wasn't created
+    bool myErrorCreatingElement = false;
 
     /// @name parse additional attributes
     /// @{
@@ -686,7 +696,7 @@ private:
     /// @}
 
     /// @brief check parents
-    void checkParent(const SumoXMLTag currentTag, const std::vector<SumoXMLTag>& parentTags, bool& ok) const;
+    void checkParent(const SumoXMLTag currentTag, const std::vector<SumoXMLTag>& parentTags, bool& ok);
 
     /// @brief invalidate copy constructor
     AdditionalHandler(const AdditionalHandler& s) = delete;

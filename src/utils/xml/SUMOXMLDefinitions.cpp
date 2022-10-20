@@ -150,6 +150,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::tags[] = {
     { "insertionPredecessor",           SUMO_TAG_INSERTION_PREDECESSOR },
     { "foeInsertion",                   SUMO_TAG_FOE_INSERTION },
     { "insertionOrder",                 SUMO_TAG_INSERTION_ORDER },
+    { "bidiPredecessor",                SUMO_TAG_BIDI_PREDECESSOR },
     { "railSignalConstraintTracker",    SUMO_TAG_RAILSIGNAL_CONSTRAINT_TRACKER },
     { "link",                           SUMO_TAG_LINK },
     { "approaching",                    SUMO_TAG_APPROACHING },
@@ -574,6 +575,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "collisionAvoidanceGainGap",      SUMO_ATTR_CA_GAIN_GAP_CACC },
     { "collisionAvoidanceGainGapDot",   SUMO_ATTR_CA_GAIN_GAP_DOT_CACC },
     { "tauCACCToACC",                   SUMO_ATTR_HEADWAY_TIME_CACC_TO_ACC },
+    { "speedControlMinGap",             SUMO_ATTR_SC_MIN_GAP },
     { "applyDriverState",               SUMO_ATTR_APPLYDRIVERSTATE },
 
     { "trainType",              SUMO_ATTR_TRAIN_TYPE },
@@ -633,6 +635,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "routes",                 SUMO_ATTR_ROUTES },
     { "vTypes",                 SUMO_ATTR_VTYPES },
     { "nextEdges",              SUMO_ATTR_NEXT_EDGES },
+    { "deterministic",          SUMO_ATTR_DETERMINISTIC },
 
     { "lanes",                  SUMO_ATTR_LANES },
     { "from",                   SUMO_ATTR_FROM },

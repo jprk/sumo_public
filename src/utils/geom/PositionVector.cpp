@@ -571,7 +571,7 @@ PositionVector::splitAt(double where, bool use2D) const {
         throw InvalidArgument("Invalid split position " + toString(where) + " for vector of length " + toString(len));
     }
     if (where <= POSITION_EPS || where >= len - POSITION_EPS) {
-        WRITE_WARNINGF("Splitting vector close to end (pos: %, length: %)", toString(where), toString(len));
+        WRITE_WARNINGF(TL("Splitting vector close to end (pos: %, length: %)"), toString(where), toString(len));
     }
     PositionVector first, second;
     first.push_back((*this)[0]);
@@ -1467,7 +1467,7 @@ PositionVector::operator!=(const PositionVector& v2) const {
 PositionVector
 PositionVector::operator-(const PositionVector& v2) const {
     if (length() != v2.length()) {
-        WRITE_ERROR("Trying to substract PositionVectors of different lengths.");
+        WRITE_ERROR(TL("Trying to substract PositionVectors of different lengths."));
     }
     PositionVector pv;
     auto i1 = begin();
@@ -1481,7 +1481,7 @@ PositionVector::operator-(const PositionVector& v2) const {
 PositionVector
 PositionVector::operator+(const PositionVector& v2) const {
     if (length() != v2.length()) {
-        WRITE_ERROR("Trying to substract PositionVectors of different lengths.");
+        WRITE_ERROR(TL("Trying to substract PositionVectors of different lengths."));
     }
     PositionVector pv;
     auto i1 = begin();

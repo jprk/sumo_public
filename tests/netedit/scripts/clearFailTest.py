@@ -34,10 +34,13 @@ with open("failTests.txt", "w") as fp:
             lineStrip = lineStrip.replace("\t", " ")
             lineStrip = lineStrip.replace("(+)", " ")
             lineStrip = lineStrip.replace("ok", "")
+            lineStrip = lineStrip.replace("N/A", "")
             lineStrip = lineStrip.replace("ts-sim-build-ba", "")
             lineStrip = lineStrip.replace("errors different", "")
             lineStrip = lineStrip.replace("net different", "")
             lineStrip = lineStrip.replace("routes different", "")
+            lineStrip = lineStrip.replace("log different", "")
+            lineStrip = lineStrip.replace("output different", "")
             lineStrip = lineStrip.replace("additionals different", "")
             lineStrip = lineStrip.replace("output new", "")
             while (lineStrip.find('  ') > 0):

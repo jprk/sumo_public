@@ -927,7 +927,7 @@ NIImporter_VISUM::parse_TurnsToSignalGroups() {
     std::string SGid = getNamedString("SGNR", "SIGNALGRUPPENNR");
     if (!myLineParser.know("LsaNr")) {
         /// XXX could be retrieved from context
-        WRITE_WARNING("Ignoring SIGNALGRUPPEZUFSABBIEGER because LsaNr is not known");
+        WRITE_WARNING(TL("Ignoring SIGNALGRUPPEZUFSABBIEGER because LsaNr is not known"));
         return;
     }
     std::string LSAid = getNamedString("LsaNr");
@@ -984,7 +984,7 @@ NIImporter_VISUM::parse_AreaSubPartElement() {
     long long int id = StringUtils::toLong(myLineParser.get(KEYS.getString(VISUM_FACEID)));
     long long int edgeid = StringUtils::toLong(myLineParser.get(KEYS.getString(VISUM_EDGEID)));
     if (myEdges.find(edgeid) == myEdges.end()) {
-        WRITE_ERROR("Unknown edge in TEILFLAECHENELEMENT");
+        WRITE_ERROR(TL("Unknown edge in TEILFLAECHENELEMENT"));
         return;
     }
     std::string dir = myLineParser.get(KEYS.getString(VISUM_DIRECTION));
@@ -1066,7 +1066,7 @@ void NIImporter_VISUM::parse_LanesConnections() {
             return;
         }
         node = fromEdge->getToNode();
-        WRITE_WARNING("Ignoring lane-to-lane connection (not yet implemented for this format version)");
+        WRITE_WARNING(TL("Ignoring lane-to-lane connection (not yet implemented for this format version)"));
         return;
     } else {
         node = getNamedNode("KNOTNR", "KNOT");
@@ -1159,32 +1159,32 @@ void NIImporter_VISUM::parse_stopPoints() {
     NBNode* to = getNamedNodeSecure(KEYS.getString(VISUM_FROMNODENO));
     const std::string edgeID = myLineParser.get(KEYS.getString(VISUM_LINKNO));
     if (edgeID == "") {
-        WRITE_WARNINGF("Ignoring stopping place '%' without edge id", id);
+        WRITE_WARNINGF(TL("Ignoring stopping place '%' without edge id"), id);
     } else if (from == nullptr && to == nullptr) {
-        WRITE_WARNINGF("Ignoring stopping place '%' without node informatio", id);
+        WRITE_WARNINGF(TL("Ignoring stopping place '%' without node informatio"), id);
     } else {
         NBEdge* edge = getNamedEdge(KEYS.getString(VISUM_LINKNO));
         if (from != nullptr) {
             if (edge->getToNode() == from) {
                 NBEdge* edge2 = myNetBuilder.getEdgeCont().retrieve("-" + edge->getID());
                 if (edge2 == nullptr) {
-                    WRITE_WARNINGF("Could not find edge with from-node '%' and base id '%' for stopping place '%'", from->getID(), edge->getID(), id);
+                    WRITE_WARNINGF(TL("Could not find edge with from-node '%' and base id '%' for stopping place '%'"), from->getID(), edge->getID(), id);
                 } else {
                     edge = edge2;
                 }
             } else if (edge->getFromNode() != from) {
-                WRITE_WARNINGF("Unexpected from-node '%' for edge '%' of stopping place '%'", from->getID(), edge->getID(), id);
+                WRITE_WARNINGF(TL("Unexpected from-node '%' for edge '%' of stopping place '%'"), from->getID(), edge->getID(), id);
             }
         } else {
             if (edge->getFromNode() == to) {
                 NBEdge* edge2 = myNetBuilder.getEdgeCont().retrieve("-" + edge->getID());
                 if (edge2 == nullptr) {
-                    WRITE_WARNINGF("Could not find edge with to-node '%' and base id '%' for stopping place '%'", to->getID(), edge->getID(), id);
+                    WRITE_WARNINGF(TL("Could not find edge with to-node '%' and base id '%' for stopping place '%'"), to->getID(), edge->getID(), id);
                 } else {
                     edge = edge2;
                 }
             } else if (edge->getToNode() != to) {
-                WRITE_WARNINGF("Unexpected to-node '%' for edge '%' of stopping place '%'", to->getID(), edge->getID(), id);
+                WRITE_WARNINGF(TL("Unexpected to-node '%' for edge '%' of stopping place '%'"), to->getID(), edge->getID(), id);
             }
         }
         double relPos = StringUtils::toDouble(myLineParser.get(KEYS.getString(VISUM_RELPOS)));
@@ -1526,13 +1526,13 @@ NIImporter_VISUM::buildDistrictNode(const std::string& id, NBNode* dest,
 bool
 NIImporter_VISUM::checkNodes(NBNode* from, NBNode* to)  {
     if (from == nullptr) {
-        WRITE_ERROR(" The from-node was not found within the net");
+        WRITE_ERROR(TL(" The from-node was not found within the net"));
     }
     if (to == nullptr) {
-        WRITE_ERROR(" The to-node was not found within the net");
+        WRITE_ERROR(TL(" The to-node was not found within the net"));
     }
     if (from == to) {
-        WRITE_ERROR(" Both nodes are the same");
+        WRITE_ERROR(TL(" Both nodes are the same"));
     }
     return from != nullptr && to != nullptr && from != to;
 }

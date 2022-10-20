@@ -90,9 +90,19 @@ public:
                                       const std::string& toTAZID, const Parameterised::Map& parameters) = 0;
     /// @}
 
+    /// @brief get flag for check if a element wasn't created
+    bool isErrorCreatingElement() const;
+
+protected:
+    /// @brief write error and enable error creating element
+    void writeError(const std::string& error);
+
 private:
     /// @brief common XML Structure
     CommonXMLStructure myCommonXMLStructure;
+    
+    /// @brief flag for check if a element wasn't created
+    bool myErrorCreatingElement = false;
 
     /// @name inherited from GenericSAXHandler
     /// @{
@@ -135,7 +145,7 @@ private:
     void getAttributes(const SUMOSAXAttributes& attrs, const std::vector<SumoXMLAttr> avoidAttributes) const;
 
     /// @brief check parents
-    void checkParent(const SumoXMLTag currentTag, const SumoXMLTag parentTag, bool& ok) const;
+    void checkParent(const SumoXMLTag currentTag, const SumoXMLTag parentTag, bool& ok);
 
     /// @brief invalidate copy constructor
     DataHandler(const DataHandler& s) = delete;

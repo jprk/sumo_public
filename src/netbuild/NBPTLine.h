@@ -56,7 +56,7 @@ public:
         return myType;
     }
 
-    std::vector<NBPTStop*> getStops();
+    const std::vector<NBPTStop*>& getStops();
     void write(OutputDevice& device);
     void addWayNode(long long int way, long long int node);
 
@@ -70,8 +70,8 @@ public:
     void replaceStops(std::vector<NBPTStop*> stops) {
         myPTStops = stops;
     }
-    /// @brief get stop edges
-    std::vector<NBEdge*> getStopEdges(const NBEdgeCont& ec) const;
+    /// @brief get stop edges and stop ids
+    std::vector<std::pair<NBEdge*, std::string> > getStopEdges(const NBEdgeCont& ec) const;
 
     /// @brief return first valid edge of myRoute (if it doest not lie after the first stop)
     NBEdge* getRouteStart(const NBEdgeCont& ec) const;

@@ -473,6 +473,9 @@ GNEDemandElement::drawPersonPlan() const {
                myNet->getViewNet()->getDemandViewOptions().showAllPersonPlans()) {
         // show all person plans
         return true;
+    } else if (myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand() && isAttributeCarrierSelected()) {
+        // show selected
+        return true;
     } else if (myNet->getViewNet()->isAttributeCarrierInspected(getParentDemandElements().front())) {
         // person parent is inspected
         return true;
@@ -508,6 +511,9 @@ GNEDemandElement::drawContainerPlan() const {
     } else if (myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand() &&
                myNet->getViewNet()->getDemandViewOptions().showAllContainerPlans()) {
         // show all container plans
+        return true;
+    } else if (myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand() && isAttributeCarrierSelected()) {
+        // show selected
         return true;
     } else if (myNet->getViewNet()->isAttributeCarrierInspected(getParentDemandElements().front())) {
         // container parent is inspected
@@ -586,8 +592,6 @@ GNEDemandElement::drawPersonPlanPartial(const bool drawPlan, const GUIVisualizat
         if (!s.drawForRectangleSelection) {
             drawName(getCenteringBoundary().getCenter(), s.scale, s.addName);
         }
-        // Pop name
-        GLHelper::popName();
         // check if this is the last segment
         if (segment->isLastSegment()) {
             // calculate circle width
@@ -642,6 +646,8 @@ GNEDemandElement::drawPersonPlanPartial(const bool drawPlan, const GUIVisualizat
             // pop draw matrix
             GLHelper::popMatrix();
         }
+        // Pop name
+        GLHelper::popName();
         // declare trim geometry to draw
         const auto shape = (segment->isFirstSegment() || segment->isLastSegment()) ? personPlanGeometry.getShape() : lane->getLaneShape();
         // check if mouse is over element
@@ -667,7 +673,7 @@ GNEDemandElement::drawPersonPlanPartial(const bool drawPlan, const GUIVisualizat
         }
     }
     // draw person parent if this is the edge first edge and this is the first plan
-    if ((getFirstPathLane()->getParentEdge() == lane->getParentEdge()) &&
+    if (getParentJunctions().empty() && (getFirstPathLane()->getParentEdge() == lane->getParentEdge()) &&
             (personParent->getChildDemandElements().front() == this)) {
         personParent->drawGL(s);
     }
@@ -776,8 +782,16 @@ GNEDemandElement::isPersonPlanValid() const {
         } else if (getTagProperty().getTag() == GNE_TAG_WALK_ROUTE) {
             firstEdge = getParentDemandElements().at(1)->getParentEdges().front();
         }
-        // compare both edges
-        if (previousEdge != firstEdge) {
+        // check junctions
+        if ((previousChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
+            if (previousChild->getParentJunctions().back() != getParentJunctions().front()) {
+                return Problem::DISCONNECTED_PLAN;
+            } 
+        } else if (previousEdge && (getParentJunctions().size() > 0)) {
+            if (previousEdge->getToJunction() != getParentJunctions().front()) {
+                return Problem::DISCONNECTED_PLAN;
+            } 
+        } else if (previousEdge != firstEdge) {
             return Problem::DISCONNECTED_PLAN;
         }
     }
@@ -808,7 +822,19 @@ GNEDemandElement::isPersonPlanValid() const {
             lastEdge = getParentDemandElements().at(1)->getParentEdges().back();
         }
         // compare both edges
-        if (nextEdge != lastEdge) {
+        if ((nextChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
+            if (nextChild->getParentJunctions().front() != getParentJunctions().back()) {
+                return Problem::DISCONNECTED_PLAN;
+            }
+        } else if (nextEdge && (getParentJunctions().size() > 0)) {
+            if (nextEdge->getFromJunction() != getParentJunctions().back()) {
+                return Problem::DISCONNECTED_PLAN;
+            }
+        } else if (lastEdge && (nextChild->getParentJunctions().size() > 0)) {
+            if (lastEdge->getToJunction() != nextChild->getParentJunctions().front()) {
+                return Problem::DISCONNECTED_PLAN;
+            } 
+        } else if (nextEdge != lastEdge) {
             return Problem::DISCONNECTED_PLAN;
         }
     }
@@ -845,8 +871,13 @@ GNEDemandElement::getPersonPlanProblem() const {
         } else if (getTagProperty().getTag() == GNE_TAG_WALK_ROUTE) {
             firstEdge = getParentDemandElements().at(1)->getParentEdges().front();
         }
-        // compare both edges
-        if (previousEdge && firstEdge && (previousEdge != firstEdge)) {
+        // compare elements
+        if ((previousChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
+            return ("Junction '" + previousChild->getParentJunctions().back()->getID() + 
+                    "' is not consecutive with junction '" + getParentJunctions().front()->getID() + "'");
+        } else if (previousEdge && (getParentJunctions().size() > 0)) {
+            return ("edge '" + previousEdge->getID() + "' is not consecutive with junction '" + getParentJunctions().front()->getID() + "'");
+        } else if (previousEdge && firstEdge && (previousEdge != firstEdge)) {
             return "Edge '" + previousEdge->getID() + "' is not consecutive with edge '" + firstEdge->getID() + "'";
         }
     }
@@ -876,13 +907,40 @@ GNEDemandElement::getPersonPlanProblem() const {
         } else if (getTagProperty().getTag() == GNE_TAG_WALK_ROUTE) {
             lastEdge = getParentDemandElements().at(1)->getParentEdges().back();
         }
-        // compare both edges
-        if (nextEdge && lastEdge && (nextEdge != lastEdge)) {
+        // compare elements
+        if ((nextChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
+            return ("Junction '" + nextChild->getParentJunctions().front()->getID() + 
+                    "' is not consecutive with junction '" + getParentJunctions().back()->getID() + "'");
+        } else if (nextEdge && (getParentJunctions().size() > 0)) {
+            return ("edge '" + nextEdge->getID() + "' is not consecutive with junction '" + getParentJunctions().back()->getID() + "'");
+        } else if (lastEdge && (nextChild->getParentJunctions().size() > 0)) {
+            return ("edge '" + lastEdge->getID() + "' is not consecutive with junction '" + nextChild->getParentJunctions().back()->getID() + "'");
+        } else if (nextEdge && lastEdge && (nextEdge != lastEdge)) {
             return "Edge '" + lastEdge->getID() + "' is not consecutive with edge '" + nextEdge->getID() + "'";
         }
     }
     // undefined problem
     return "undefined problem";
+}
+
+
+void
+GNEDemandElement::drawJunctionLine(const GNEDemandElement* element) const {
+    // get two points
+    const Position posA = element->getParentJunctions().front()->getPositionInView();
+    const Position posB = element->getParentJunctions().back()->getPositionInView();
+    const double rot = ((double)atan2((posB.x() - posA.x()), (posA.y() - posB.y())) * (double) 180.0 / (double)M_PI);
+    const double len = posA.distanceTo2D(posB);
+    // push draw matrix
+    GLHelper::pushMatrix();
+    // Start with the drawing of the area traslating matrix to origin
+    myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, element->getType() + 0.1);
+    // set trip color
+    GLHelper::setColor(RGBColor::RED);
+    // draw line
+    GLHelper::drawBoxLine(posA, rot, len, 0.25);
+    // pop draw matrix
+    GLHelper::popMatrix();
 }
 
 

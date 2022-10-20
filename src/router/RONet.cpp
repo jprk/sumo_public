@@ -203,7 +203,7 @@ RONet::addJunctionTaz(ROAbstractEdgeBuilder& eb) {
     for (auto item : myNodes) {
         const std::string tazID = item.first;
         if (myDistricts.count(tazID) != 0) {
-            WRITE_WARNINGF("A TAZ with id '%' already exists. Not building junction TAZ.", tazID);
+            WRITE_WARNINGF(TL("A TAZ with id '%' already exists. Not building junction TAZ."), tazID);
             continue;
         }
         const std::string sourceID = tazID + "-source";
@@ -458,7 +458,7 @@ RONet::getDeparture(const std::string& vehID) const {
 
 bool
 RONet::addFlow(SUMOVehicleParameter* flow, const bool randomize) {
-    if (randomize) {
+    if (randomize && flow->repetitionOffset >= 0) {
         myDepartures[flow->id].reserve(flow->repetitionNumber);
         for (int i = 0; i < flow->repetitionNumber; ++i) {
             myDepartures[flow->id].push_back(flow->depart + RandHelper::rand(flow->repetitionNumber * flow->repetitionOffset));

@@ -241,9 +241,12 @@ public:
 
     /// @brief recalibrate color scheme according to the current value range
     virtual void buildColorRainbow(const GUIVisualizationSettings& /*s*/, GUIColorScheme& /*scheme*/, int /*active*/, GUIGlObjectType /*objectType*/,
-                                   bool hide = false, double hideThreshold = 0) {
+                                   bool hide = false, double hideThreshold = 0,
+                                   bool hide2 = false, double hideThreshold2 = 0) {
         UNUSED_PARAMETER(hide);
         UNUSED_PARAMETER(hideThreshold);
+        UNUSED_PARAMETER(hide2);
+        UNUSED_PARAMETER(hideThreshold2);
     }
 
     /// @brief return list of loaded edgeData attributes
@@ -411,8 +414,8 @@ protected:
     /// @brief performs the painting of the simulation
     void paintGL();
 
-    /// @brief update position information
-    virtual void updatePositionInformation() const;
+    /// @brief update position information labels
+    virtual void updatePositionInformationLabel() const;
 
     /// @brief paint GL
     virtual int doPaintGL(int /*mode*/, const Boundary& /*boundary*/);
@@ -501,13 +504,16 @@ protected:
     int myMouseHotspotX, myMouseHotspotY;
 
     /// @brief The current popup-menu
-    GUIGLObjectPopupMenu* myPopup;
+    GUIGLObjectPopupMenu* myPopup = nullptr;
+
+    /// @brief clicked poup position
+    Position myClickedPopupPosition = Position::INVALID;
+
+    /// @brief The current popup-menu position
+    Position myPopupPosition = Position(0, 0);
 
     /// @brief vector with current objects dialog 
     std::vector<GUIGlObject*> myCurrentObjectsDialog;
-
-    /// @brief The current popup-menu position
-    Position myPopupPosition;
 
     /// @brief visualization settings
     GUIVisualizationSettings* myVisualizationSettings;

@@ -283,6 +283,7 @@ NLHandler::myStartElement(int element,
             case SUMO_TAG_FOE_INSERTION: // intended fall-through
             case SUMO_TAG_INSERTION_PREDECESSOR: // intended fall-through
             case SUMO_TAG_INSERTION_ORDER:
+            case SUMO_TAG_BIDI_PREDECESSOR:
                 addPredecessorConstraint(element, attrs, myConstrainedSignal);
                 break;
             default:
@@ -858,7 +859,7 @@ NLHandler::addPhase(const SUMOSAXAttributes& attrs) {
     }
 
     if (phase->maxDuration < phase->minDuration) {
-        WRITE_WARNINGF("maxDur % should not be smaller than minDir % in phase of tlLogic %", phase->maxDuration, phase->minDuration, id);
+        WRITE_WARNINGF(TL("maxDur % should not be smaller than minDir % in phase of tlLogic %"), phase->maxDuration, phase->minDuration, id);
         phase->maxDuration = phase->duration;
     }
 
@@ -985,7 +986,7 @@ NLHandler::addInstantE1Detector(const SUMOSAXAttributes& attrs) {
 
 void
 NLHandler::addVTypeProbeDetector(const SUMOSAXAttributes& attrs) {
-    WRITE_WARNING("VTypeProbes are deprecated. Use fcd-output devices (assigned to the vType) instead.");
+    WRITE_WARNING(TL("VTypeProbes are deprecated. Use fcd-output devices (assigned to the vType) instead."));
     bool ok = true;
     std::string id = attrs.get<std::string>(SUMO_ATTR_ID, nullptr, ok);
     SUMOTime period = attrs.getOptPeriod(id.c_str(), ok, SUMOTime_MAX_PERIOD);
@@ -1075,7 +1076,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
     bool laneGiven = lane != "";
     if (!(lanesGiven || laneGiven)) {
         // in absence of any lane-specification assume specification by id
-        WRITE_WARNING("Trying to specify detector's lane by the given id since the argument 'lane' is missing.")
+        WRITE_WARNING(TL("Trying to specify detector's lane by the given id since the argument 'lane' is missing."))
         lane = id;
         laneGiven = true;
     }
@@ -1489,7 +1490,7 @@ NLHandler::parseLinkState(const std::string& state) {
         return SUMOXMLDefinitions::LinkStates.get(state);
     } else {
         if (state == "t") { // legacy networks
-            // WRITE_WARNING("Obsolete link state 't'. Use 'o' instead");
+            // WRITE_WARNING(TL("Obsolete link state 't'. Use 'o' instead"));
             return LINKSTATE_TL_OFF_BLINKING;
         } else {
             throw InvalidArgument("Unrecognised link state '" + state + "'.");
@@ -1502,7 +1503,7 @@ NLHandler::parseLinkState(const std::string& state) {
 void
 NLHandler::setLocation(const SUMOSAXAttributes& attrs) {
     if (myNetIsLoaded) {
-        //WRITE_WARNING("POIs and Polygons should be loaded using option --po-files")
+        //WRITE_WARNING(TL("POIs and Polygons should be loaded using option --po-files"))
         return;
     }
     bool ok = true;
@@ -1514,7 +1515,7 @@ NLHandler::setLocation(const SUMOSAXAttributes& attrs) {
         Position networkOffset = s[0];
         GeoConvHelper::init(proj, networkOffset, origBoundary, convBoundary);
         if (OptionsCont::getOptions().getBool("fcd-output.geo") && !GeoConvHelper::getFinal().usingGeoProjection()) {
-            WRITE_WARNING("no valid geo projection loaded from network. fcd-output.geo will not work");
+            WRITE_WARNING(TL("no valid geo projection loaded from network. fcd-output.geo will not work"));
         }
     }
 }
@@ -1542,7 +1543,7 @@ NLHandler::addDistrict(const SUMOSAXAttributes& attrs) {
                 // overwrite junction taz
                 sink = MSEdge::dictionary(sinkID);
                 sink->resetTAZ(myNet.getJunctionControl().get(myCurrentDistrictID));
-                WRITE_WARNINGF("Replacing junction-taz '%' with loaded TAZ.", myCurrentDistrictID);
+                WRITE_WARNINGF(TL("Replacing junction-taz '%' with loaded TAZ."), myCurrentDistrictID);
             } else {
                 throw InvalidArgument("Another edge with the id '" + sinkID + "' exists.");
             }
@@ -1742,6 +1743,9 @@ NLHandler::addPredecessorConstraint(int element, const SUMOSAXAttributes& attrs,
             break;
         case SUMO_TAG_INSERTION_ORDER:
             type = MSRailSignalConstraint::ConstraintType::INSERTION_ORDER;
+            break;
+        case SUMO_TAG_BIDI_PREDECESSOR:
+            type = MSRailSignalConstraint::ConstraintType::BIDI_PREDECESSOR;
             break;
         default:
             throw InvalidArgument("Unsupported rail signal constraint '" + toString((SumoXMLTag)element) + "'");

@@ -51,18 +51,10 @@
 #include <utils/xml/XMLSubSys.h>
 #include <utils/iodevices/OutputDevice.h>
 
-// ===========================================================================
-// method declaration
-// ===========================================================================
-
-void fillOptions();
-bool checkOptions();
-NGNet* buildNetwork(NBNetBuilder& nb);
 
 // ===========================================================================
 // method definitions
 // ===========================================================================
-
 void
 fillOptions() {
     OptionsCont& oc = OptionsCont::getOptions();
@@ -124,14 +116,14 @@ buildNetwork(NBNetBuilder& nb) {
         // check values
         bool hadError = false;
         if (oc.getInt("spider.arm-number") < 3) {
-            WRITE_ERROR("Spider networks need at least 3 arms.");
+            WRITE_ERROR(TL("Spider networks need at least 3 arms."));
             hadError = true;
         }
         if (oc.getInt("spider.arm-number") > 4 && oc.isDefault("spider.omit-center")) {
-            WRITE_WARNING("Spider networks with many arms should use option ommit-center");
+            WRITE_WARNING(TL("Spider networks with many arms should use option ommit-center"));
         }
         if (oc.getInt("spider.circle-number") < 1) {
-            WRITE_ERROR("Spider networks need at least one circle.");
+            WRITE_ERROR(TL("Spider networks need at least one circle."));
             hadError = true;
         }
         minLength = MAX2(minLength, laneWidth * 2 * MAX2(oc.getInt("spider.arm-number"), 3) / (2 * M_PI));
@@ -180,7 +172,7 @@ buildNetwork(NBNetBuilder& nb) {
         // check values
         bool hadError = false;
         if (xNo < 1 || yNo < 1 || (xAttachLength == 0 && yAttachLength == 0 && (xNo < 2 && yNo < 2))) {
-            WRITE_ERROR("The number of nodes must be positive and at least 2 in one direction if there are no attachments.");
+            WRITE_ERROR(TL("The number of nodes must be positive and at least 2 in one direction if there are no attachments."));
             hadError = true;
         }
         const double minAttachLength = minLength / 2 + POSITION_EPS / 2;
@@ -233,6 +225,7 @@ buildNetwork(NBNetBuilder& nb) {
 
 int
 main(int argc, char** argv) {
+    MsgHandler::setupI18n();
     OptionsCont& oc = OptionsCont::getOptions();
     // give some application descriptions
     oc.setApplicationDescription("Synthetic network generator for the microscopic, multi-modal traffic simulation SUMO.");
@@ -271,7 +264,7 @@ main(int argc, char** argv) {
         net->toNB();
         delete net;
         // report generated structures
-        WRITE_MESSAGE(" Generation done;");
+        WRITE_MESSAGE(TL(" Generation done;"));
         WRITE_MESSAGE("   " + toString<int>(nb.getNodeCont().size()) + " nodes generated.");
         WRITE_MESSAGE("   " + toString<int>(nb.getEdgeCont().size()) + " edges generated.");
         if (oc.getBool("tls.discard-simple")) {

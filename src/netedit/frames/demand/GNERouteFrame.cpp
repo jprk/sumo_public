@@ -49,7 +49,7 @@ FXIMPLEMENT(GNERouteFrame::RouteModeSelector,   MFXGroupBoxModule,     RouteMode
 // ---------------------------------------------------------------------------
 
 GNERouteFrame::RouteModeSelector::RouteModeSelector(GNERouteFrame* routeFrameParent) :
-    MFXGroupBoxModule(routeFrameParent, "Route mode"),
+    MFXGroupBoxModule(routeFrameParent, TL("Route mode")),
     myRouteFrameParent(routeFrameParent) {
     // create route template
     myRouteTemplate = new GNERoute(routeFrameParent->getViewNet()->getNet());
@@ -248,7 +248,7 @@ GNERouteFrame::getPathCreator() const {
 }
 
 
-void
+bool
 GNERouteFrame::createPath(const bool /*useLastRoute*/) {
     // check that route attributes are valid
     if (!myRouteAttributes->areValuesValid()) {
@@ -289,7 +289,9 @@ GNERouteFrame::createPath(const bool /*useLastRoute*/) {
         newRoute->computePathElement();
         // set as last created route
         myViewNet->setLastCreatedRoute(newRoute);
+        return true;
     }
+    return false;
 }
 
 /****************************************************************************/

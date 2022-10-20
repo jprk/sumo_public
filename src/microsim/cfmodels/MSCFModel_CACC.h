@@ -128,7 +128,15 @@ public:
     */
     double interactionGap(const MSVehicle* const, double vL) const;
 
-
+    /** @brief Sets a new value for desired headway [s]
+     * @param[in] headwayTime The new desired headway (in s)
+     */
+    void setHeadwayTime(double headwayTime) {
+        myHeadwayTime = headwayTime;
+        myHeadwayTimeACC = headwayTime;
+        acc_CFM.setHeadwayTime(headwayTime);       
+    }
+    
     /**
      * @brief try to get the given parameter for this carFollowingModel
      *
@@ -168,6 +176,7 @@ public:
 
     virtual MSCFModel::VehicleVariables* createVehicleVariables() const {
         CACCVehicleVariables* ret = new CACCVehicleVariables();
+        ret->ACC_ControlMode = 0;
         ret->CACC_ControlMode = 0;
         ret->CACC_CommunicationsOverrideMode = CACC_NO_OVERRIDE;
         ret->lastUpdateTime = 0;
@@ -198,13 +207,12 @@ private:
     /// @brief Vehicle mode name map
     static std::map<VehicleMode, std::string> VehicleModeNames;
 
-    class CACCVehicleVariables : public MSCFModel::VehicleVariables {
+    class CACCVehicleVariables : public MSCFModel_ACC::ACCVehicleVariables {
     public:
         CACCVehicleVariables() : CACC_ControlMode(0), CACC_CommunicationsOverrideMode(CACC_NO_OVERRIDE) {}
         /// @brief The vehicle's CACC  precious time step gap error
         int    CACC_ControlMode;
         CommunicationsOverrideMode CACC_CommunicationsOverrideMode;
-        SUMOTime lastUpdateTime;
     };
 
 private:
@@ -228,6 +236,7 @@ private:
     double myHeadwayTimeACC;
     double myApplyDriverstate;
     double myEmergencyThreshold;
+    double mySpeedControlMinGap;
 
 private:
     /// @brief Invalidated assignment operator

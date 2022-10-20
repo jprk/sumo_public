@@ -67,9 +67,10 @@ DEFAULT_ATTR_CONVERSIONS = {
     'toLane': int,
 }
 
+
 def supports_comments():
     return sys.version_info[0] >= 3 and sys.version_info[1] >= 8
-    
+
 
 def _prefix_keyword(name, warn=False):
     result = name
@@ -159,8 +160,11 @@ def compound_object(element_name, attrnames, warn=False, sort=True):
                 self._child_dict.setdefault(c.name, []).append(c)
             self._child_list = childs
 
-        def getChildList(self):
-            return self._child_list
+        def getChildList(self, withComments=False):
+            if withComments:
+                return self._child_list
+            else:
+                return [c for c in self._child_list if not c.isComment()]
 
         def getText(self):
             return self._text
@@ -169,7 +173,7 @@ def compound_object(element_name, attrnames, warn=False, sort=True):
             self._text = text
 
         def isComment(self):
-            return "function Comment" in str(self.name) 
+            return "function Comment" in str(self.name)
 
         def getComments(self):
             if not supports_comments:
@@ -213,17 +217,22 @@ def compound_object(element_name, attrnames, warn=False, sort=True):
             nodeText = '' if self._text is None else ",text=%s" % self._text
             return "<%s,child_dict=%s%s>" % (self.getAttributes(), dict(self._child_dict), nodeText)
 
-        def toXML(self, initialIndent="", indent="    "):
+        def toXML(self, initialIndent="", indent="    ", withComments=False):
             fields = ['%s="%s"' % (self._original_fields[i], getattr(self, k))
                       for i, k in enumerate(self._fields) if getattr(self, k) is not None and
                       # see #3454
                       '{' not in self._original_fields[i]]
+            if self.isComment():
+                if withComments:
+                    return initialIndent + "<!-- %s -->\n" % self._text
+                else:
+                    return ""
             if not self._child_dict and self._text is None:
                 return initialIndent + "<%s %s/>\n" % (self.name, " ".join(fields))
             else:
                 s = initialIndent + "<%s %s>\n" % (self.name, " ".join(fields))
                 for c in self._child_list:
-                    s += c.toXML(initialIndent + indent)
+                    s += c.toXML(initialIndent + indent, withComments=withComments)
                 if self._text is not None and self._text.strip():
                     s += self._text.strip(" ")
                 return s + "%s</%s>\n" % (initialIndent, self.name)
@@ -248,6 +257,7 @@ def parselines(xmlline, element_name, element_attrs=None, attr_conversions=None,
         for x in parse(xmlfile, element_name, element_attrs, attr_conversions,
                        heterogeneous, warn):
             yield x
+
 
 def parse(xmlfile, element_names, element_attrs=None, attr_conversions=None,
           heterogeneous=True, warn=False):
@@ -281,7 +291,7 @@ def parse(xmlfile, element_names, element_attrs=None, attr_conversions=None,
     if attr_conversions is None:
         attr_conversions = {}
     element_types = {}
-    kwargs = {'parser' : ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))} if supports_comments() else {}
+    kwargs = {'parser': ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))} if supports_comments() else {}
     for _, parsenode in ET.iterparse(_open(xmlfile, None), **kwargs):
         if parsenode.tag in element_names:
             yield _get_compound_object(parsenode, element_types,

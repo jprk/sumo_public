@@ -73,7 +73,7 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
                 myBreakpoints.push_back(attrs.getSUMOTimeReporting(SUMO_ATTR_TIME, nullptr, ok));
             } else {
                 myBreakpoints.push_back(attrs.getSUMOTimeReporting(SUMO_ATTR_VALUE, nullptr, ok));
-                WRITE_WARNING("The 'value' attribute is deprecated for breakpoints. Please use 'time'.");
+                WRITE_WARNING(TL("The 'value' attribute is deprecated for breakpoints. Please use 'time'."));
             }
             break;
         case SUMO_TAG_VIEWSETTINGS:
@@ -158,6 +158,8 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.edgeData = attrs.getStringSecure("edgeData", mySettings.edgeData);
             mySettings.edgeValueHideCheck = StringUtils::toBool(attrs.getStringSecure("edgeValueHideCheck", toString(mySettings.edgeValueHideCheck)));
             mySettings.edgeValueHideThreshold = StringUtils::toDouble(attrs.getStringSecure("edgeValueHideThreshold", toString(mySettings.edgeValueHideThreshold)));
+            mySettings.edgeValueHideCheck2 = StringUtils::toBool(attrs.getStringSecure("edgeValueHideCheck2", toString(mySettings.edgeValueHideCheck2)));
+            mySettings.edgeValueHideThreshold2 = StringUtils::toDouble(attrs.getStringSecure("edgeValueHideThreshold2", toString(mySettings.edgeValueHideThreshold2)));
             myCurrentColorer = element;
             mySettings.edgeColorer.setActive(laneEdgeMode);
             mySettings.edgeScaler.setActive(laneEdgeScaleMode);
@@ -367,7 +369,7 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
                 d.filename = StringUtils::substituteEnvironment(attrs.get<std::string>(SUMO_ATTR_FILE, nullptr, ok));
             } else {
                 d.filename = attrs.getStringSecure("filename", d.filename);
-                WRITE_WARNING("The 'filename' attribute is deprecated for decals. Please use 'file'.");
+                WRITE_WARNING(TL("The 'filename' attribute is deprecated for decals. Please use 'file'."));
             }
             if (d.filename != "" && !FileHelpers::isAbsolute(d.filename)) {
                 d.filename = FileHelpers::getConfigurationRelative(getFileName(), d.filename);

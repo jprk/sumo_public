@@ -33,6 +33,7 @@ import tempfile
 import shutil
 from zipfile import ZipFile
 import base64
+import ssl
 
 import osmGet
 import osmBuild
@@ -59,6 +60,7 @@ typemaps = {
     "pedestrians": os.path.join(typemapdir, "osmNetconvertPedestrians.typ.xml"),
     "ships": os.path.join(typemapdir, "osmNetconvertShips.typ.xml"),
     "bicycles": os.path.join(typemapdir, "osmNetconvertBicycle.typ.xml"),
+    "aerialway": os.path.join(typemapdir, "osmNetconvertAerialway.typ.xml"),
 }
 
 # common parameters
@@ -232,6 +234,7 @@ class Builder(object):
             self.additionalFiles.append(self.files["stops"])
             self.routenames.append(self.files["ptroutes"])
             netconvertOptions += ",--railway.topology.repair"
+            typefiles.append(typemaps["aerialway"])
         if self.data["leftHand"]:
             netconvertOptions += ",--lefthand"
         if self.data["decal"]:
@@ -498,6 +501,8 @@ class OSMImporterWebSocket(WebSocket):
                 builder.finalize()
 
                 self.sendMessage(u"zip " + data)
+        except ssl.CertVerificationError:
+            self.report("Error with SSL certificate, try 'pip install certifi'.")
         except Exception:
             print(traceback.format_exc())
             # reset 'Generate Scenario' button

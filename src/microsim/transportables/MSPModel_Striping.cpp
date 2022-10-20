@@ -86,6 +86,7 @@ MSPModel_Striping::Pedestrians MSPModel_Striping::noPedestrians;
 double MSPModel_Striping::stripeWidth;
 double MSPModel_Striping::dawdling;
 double MSPModel_Striping::minGapToVehicle;
+int MSPModel_Striping::myWalkingAreaDetail;
 SUMOTime MSPModel_Striping::jamTime;
 SUMOTime MSPModel_Striping::jamTimeCrossing;
 SUMOTime MSPModel_Striping::jamTimeNarrow;
@@ -113,12 +114,13 @@ const double MSPModel_Striping::MIN_STARTUP_DIST(0.4); // meters
 MSPModel_Striping::MSPModel_Striping(const OptionsCont& oc, MSNet* net) :
     myNumActivePedestrians(0),
     myAmActive(false) {
+    myWalkingAreaDetail = oc.getInt("pedestrian.striping.walkingarea-detail");
     initWalkingAreaPaths(net);
     // configurable parameters
     stripeWidth = oc.getFloat("pedestrian.striping.stripe-width");
     MSVehicleType* defaultPedType = MSNet::getInstance()->getVehicleControl().getVType(DEFAULT_PEDTYPE_ID, nullptr, true);
     if (defaultPedType != nullptr && defaultPedType->getWidth() > stripeWidth) {
-        WRITE_WARNINGF("Pedestrian vType '%' width % is larger than pedestrian.striping.stripe-width and this may cause collisions with vehicles.",
+        WRITE_WARNINGF(TL("Pedestrian vType '%' width % is larger than pedestrian.striping.stripe-width and this may cause collisions with vehicles."),
                        DEFAULT_PEDTYPE_ID, defaultPedType->getWidth());
     }
 
@@ -420,6 +422,8 @@ MSPModel_Striping::initWalkingAreaPaths(const MSNet*) {
                             fromShp.extrapolate(1.5 * POSITION_EPS); // noDoublePos requires a difference of POSITION_EPS in at least one coordinate
                             shape.push_back_noDoublePos(fromDir == FORWARD ? fromShp.back() : fromShp.front());
                             assert(shape.size() == 2);
+                        } else if (myWalkingAreaDetail > 4) {
+                            shape = shape.bezier(myWalkingAreaDetail);
                         }
                         if (fromDir == BACKWARD) {
                             // will be walking backward on walkingArea
@@ -2041,9 +2045,8 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
             // squeeze slowly through the crowd ignoring others
             if (!myAmJammed) {
                 MSNet::getInstance()->getPersonControl().registerJammed();
-                WRITE_WARNING("Person '" + myPerson->getID()
-                              + "' is jammed on edge '" + myStage->getEdge()->getID()
-                              + "', time=" + time2string(MSNet::getInstance()->getCurrentTimeStep()) + ".");
+                WRITE_WARNINGF(TL("Person '%' is jammed on edge '%', time=%."),
+                               myPerson->getID(), myStage->getEdge()->getID(), time2string(SIMSTEP));
                 myAmJammed = true;
             }
             xSpeed = vMax / 4;

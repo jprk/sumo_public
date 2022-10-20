@@ -5,9 +5,9 @@ Eclipse SUMO - Simulation of Urban MObility
 [![Windows](https://github.com/eclipse/sumo/actions/workflows/build-windows.yml/badge.svg)](https://github.com/eclipse/sumo/actions/workflows/build-windows.yml)
 [![Linux](https://github.com/eclipse/sumo/actions/workflows/build-linux.yml/badge.svg)](https://github.com/eclipse/sumo/actions/workflows/build-linux.yml)
 [![macOS](https://github.com/eclipse/sumo/actions/workflows/build-macos.yml/badge.svg)](https://github.com/eclipse/sumo/actions/workflows/build-macos.yml)
+[![sonarcloud security](https://sonarcloud.io/api/project_badges/measure?project=org.eclipse.sumo&metric=security_rating)](https://sonarcloud.io/summary/overall?id=org.eclipse.sumo)
+[![Translation status](https://hosted.weblate.org/widgets/eclipse-sumo/-/svg-badge.svg)](https://hosted.weblate.org/engage/eclipse-sumo/)
 ![Repo Size](https://img.shields.io/github/repo-size/eclipse/sumo.svg)
-
-<!-- [![Windows Build status](https://ci.appveyor.com/api/projects/status/github/eclipse/sumo?svg=true)](https://ci.appveyor.com/project/eclipsewebmaster/sumo) -->
 
 What is SUMO
 ------------
@@ -75,8 +75,8 @@ There is also user documentation provided in the docs/ directory and on the
 homepage.
 
 
-Bugs
-----
+Improving SUMO
+--------------
 
 Please use for bugs and requests the [GitHub bug tracking tool](https://github.com/eclipse/sumo/issues)
 or file them to the list sumo-user@eclipse.org. Before
@@ -84,6 +84,9 @@ filing a bug, please consider to check with a current repository checkout
 whether the problem has already been fixed.
 
 We welcome patches, pull requests and other contributions! For details see [our contribution guidelines](CONTRIBUTING.md).
+
+We use [Weblate for translating SUMO](https://hosted.weblate.org/projects/eclipse-sumo/). If you
+want to add translation strings or a language, see [our contribution guidelines](CONTRIBUTING.md#translating).
 
 
 License

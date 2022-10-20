@@ -137,6 +137,7 @@
         <xsd:attribute name="security" type="xsd:float"/>
         <xsd:attribute name="estimation" type="xsd:float"/>
         <xsd:attribute name="speedControlGain" type="xsd:float"/>
+        <xsd:attribute name="speedControlMinGap" type="xsd:float"/>
         <xsd:attribute name="gapClosingControlGainSpeed" type="xsd:float"/>
         <xsd:attribute name="gapClosingControlGainSpace" type="xsd:float"/>
         <xsd:attribute name="gapControlGainSpeed" type="xsd:float"/>
@@ -831,6 +832,7 @@
         </xsd:sequence>
         <xsd:attribute name="id" type="idType" use="required"/>
         <xsd:attribute name="vTypes" type="xsd:string" use="optional"/>
+        <xsd:attribute name="determnistic" type="xsd:int" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="routeDistributionType">

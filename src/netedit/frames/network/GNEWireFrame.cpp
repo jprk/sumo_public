@@ -107,7 +107,7 @@ GNEWireFrame::getConsecutiveLaneSelector() const {
 }
 
 
-void
+bool
 GNEWireFrame::createPath(const bool /* useLastRoute */) {
     // obtain tagproperty (only for improve code legibility)
     const auto& tagProperty = myWireTagSelector->getCurrentTemplateAC()->getTagProperty();
@@ -143,10 +143,12 @@ GNEWireFrame::createPath(const bool /* useLastRoute */) {
                     myConsecutiveLaneSelector->abortPathCreation();
                     // refresh additional attributes
                     myWireAttributes->refreshAttributesCreator();
+                    return true;
                 }
             }
         }
     }
+    return false;
 }
 
 
@@ -227,12 +229,12 @@ GNEWireFrame::buildWireOverView(const GNETagProperties& tagProperties) {
             (tagProperties.getTag() == SUMO_TAG_CLOSING_LANE_REROUTE) ||
             (tagProperties.getTag() == SUMO_TAG_ROUTE_PROB_REROUTE) ||
             (tagProperties.getTag() == SUMO_TAG_PARKING_AREA_REROUTE)) {
-        WRITE_WARNING("Currently unsuported. Create rerouter elements using rerouter dialog");
+        WRITE_WARNING(TL("Currently unsuported. Create rerouter elements using rerouter dialog"));
         return false;
     }
     // disable intervals (temporal)
     if (tagProperties.getTag() == SUMO_TAG_STEP) {
-        WRITE_WARNING("Currently unsuported. Create VSS steps elements using VSS dialog");
+        WRITE_WARNING(TL("Currently unsuported. Create VSS steps elements using VSS dialog"));
         return false;
     }
     // Check if ID has to be generated

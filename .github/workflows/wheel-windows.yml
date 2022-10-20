@@ -31,7 +31,7 @@ jobs:
 
     steps:
     - name: Cloning SUMO
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: sumo
         fetch-depth: 0
@@ -42,19 +42,19 @@ jobs:
         git fetch --tags --force
 
     - name: Cloning SUMO Libraries
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: DLR-TS/SUMOLibraries 
         path: sumolibraries
 
     - name: Configuring Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
         architecture: x64
 
     - name: "Set up compiler cache"
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: C:\Users\runneradmin\AppData\Local\Mozilla\sccache\cache
         key: ${{ matrix.build_type }}-${{ matrix.python }}-${{ github.head_ref }}-${{ github.run_number }}
@@ -95,7 +95,7 @@ jobs:
         # we should rename the sumo wheel here
 
     - name: Uploading artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: Py3-${{ matrix.build_type }}-wheels
         path: sumo/dist
@@ -106,13 +106,13 @@ jobs:
         $env:PATH += ";$pwd\sumo\bin"
         $env:TEXTTEST_TMP = "D:/texttest"
         cd sumo/build_msvc
-        $env:TEXTTEST_CI_APPS = "-a complex.libsumo -ts vehicle/v"
+        $env:TEXTTEST_CI_APPS = "-a complex.libsumo.ci"
         ctest -R texttest --verbose
         copy Testing/Temporary/LastTest.log D:/texttest
 
     - name: Uploading test results
       if: always()
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: texttesttmp-${{ matrix.build_type }}-${{ matrix.python }}
         path: D:/texttest

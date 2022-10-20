@@ -1,4 +1,4 @@
-Eclipse SUMO netgenerate Version v1_14_1+1294-35e14935ffb
+Eclipse SUMO netgenerate Version v1_14_1+1441-4c9df32
  Copyright (C) 2001-2022 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Synthetic network generator for the microscopic, multi-modal traffic simulation
  SUMO.
@@ -189,6 +189,8 @@ Processing Options:
   --opposites.guess.fix-lengths        Ensure that opposite edges have the same
                                         length
   --fringe.guess                       Enable guessing of network fringe nodes
+  --fringe.guess.speed-threshold FLOAT  Guess disconnected edges above the given
+                                        speed as outer fringe
   --lefthand                           Assumes left-hand traffic on the network
   --edges.join                         Merges edges which connect the same
                                         nodes and are close to each other
@@ -354,6 +356,8 @@ Junctions Options:
                                         joining junctions (defaults to 10)
   --junctions.join-same                Joins junctions that have the same
                                         coordinates even if not connected
+  --max-join-ids INT                   Abbreviate junction or TLS id if it
+                                        joins more than INT junctions
   --junctions.corner-detail INT        Generate INT intermediate points to
                                         smooth out intersection corners
   --junctions.internal-link-detail INT  Generate INT intermediate points to

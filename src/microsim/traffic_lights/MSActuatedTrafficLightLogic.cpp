@@ -401,7 +401,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
                 }
             }
             if (loops.size() == 0) {
-                WRITE_WARNINGF("At actuated tlLogic '%', actuated phase % has no controlling detector.", getID(), toString(phaseIndex));
+                WRITE_WARNINGF(TL("At actuated tlLogic '%', actuated phase % has no controlling detector."), getID(), toString(phaseIndex));
             }
         }
 #ifdef DEBUG_DETECTORS
@@ -438,7 +438,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
         if (linkToLoops[i].size() == 0 && myLinks[i].size() > 0
                 && (myLinks[i].front()->getLaneBefore()->getPermissions() & motorized) != 0) {
             if (getParameter(myLinks[i].front()->getLaneBefore()->getID()) != NO_DETECTOR) {
-                WRITE_WARNINGF("At actuated tlLogic '%', linkIndex % has no controlling detector.", getID(), toString(i));
+                WRITE_WARNINGF(TL("At actuated tlLogic '%', linkIndex % has no controlling detector."), getID(), toString(i));
             }
         }
     }
@@ -718,11 +718,13 @@ MSActuatedTrafficLightLogic::trySwitch() {
     }
 
     myTraCISwitch = false;
-    SUMOTime linkMinDur = getLinkMinDuration(getTarget(nextStep));
-    if (linkMinDur > 0) {
-        // for multiTarget, the current phase must be extended but if another
-        // targer is chosen, earlier switching than linkMinDur is possible
-        return multiTarget ? TIME2STEPS(1) : linkMinDur;
+    if (myLinkMinGreenTimes.size() > 0) {
+        SUMOTime linkMinDur = getLinkMinDuration(getTarget(nextStep));
+        if (linkMinDur > 0) {
+            // for multiTarget, the current phase must be extended but if another
+            // targer is chosen, earlier switching than linkMinDur is possible
+            return multiTarget ? TIME2STEPS(1) : linkMinDur;
+        }
     }
     myStep = nextStep;
     assert(myStep <= (int)myPhases.size());
@@ -833,7 +835,7 @@ int
 MSActuatedTrafficLightLogic::decideNextPhase() {
     const auto& cands = myPhases[myStep]->nextPhases;
     // decide by priority
-    // first target is the default when thre is no traffic
+    // first target is the default when there is no traffic
     // @note: to keep the current phase, even when there is no traffic, it must be added to 'next' explicitly
     int result = cands.front();
     int maxPrio = 0;

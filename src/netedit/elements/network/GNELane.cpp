@@ -630,14 +630,15 @@ GNELane::drawGL(const GUIVisualizationSettings& s) const {
             gPostDrawing.markedEdge = myParentEdge;
         }
         // check if mouse is over element
-        bool markParent = (myParentEdge->getLanes().size() == 1);
-        if (myNet->getViewNet()->getNetworkViewOptions().selectEdges() && !myNet->getViewNet()->getMouseButtonKeyPressed().shiftKeyPressed()) {
-            markParent = true;
+        if (myParentEdge->getLanes().size() == 1) {
+            mouseWithinGeometry(getLaneShape(), laneDrawingConstants.halfWidth);
+        } else if (myNet->getViewNet()->getNetworkViewOptions().selectEdges() && !myNet->getViewNet()->getMouseButtonKeyPressed().shiftKeyPressed()) {
+            mouseWithinGeometry(getLaneShape(), laneDrawingConstants.halfWidth, myParentEdge->getGUIGlObject());
+        } else if (!myNet->getViewNet()->getNetworkViewOptions().selectEdges() && myNet->getViewNet()->getMouseButtonKeyPressed().shiftKeyPressed()) {
+            mouseWithinGeometry(getLaneShape(), laneDrawingConstants.halfWidth, myParentEdge->getGUIGlObject());
+        } else {
+            mouseWithinGeometry(getLaneShape(), laneDrawingConstants.halfWidth);
         }
-        if (!myNet->getViewNet()->getNetworkViewOptions().selectEdges() && myNet->getViewNet()->getMouseButtonKeyPressed().shiftKeyPressed()) {
-            markParent = true;
-        }
-        mouseWithinGeometry(getLaneShape(), laneDrawingConstants.halfWidth, markParent? myParentEdge->getGUIGlObject() : nullptr);
         // check if dotted contours has to be drawn
         if (!drawRailway) {
             // inspect contour
@@ -836,6 +837,9 @@ GNELane::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
             // build menu commands
             GUIDesigns::buildFXMenuCommand(ret, "Shape pos: " + toString(pos), nullptr, nullptr, 0);
             GUIDesigns::buildFXMenuCommand(ret, "Length pos: " + toString(pos * getLaneParametricLength() / getLaneShapeLength()), nullptr, nullptr, 0);
+            if (myParentEdge->getNBEdge()->getDistance() != 0) {
+                GUIDesigns::buildFXMenuCommand(ret, "Distance: " + toString(myParentEdge->getNBEdge()->getDistancAt(pos)), nullptr, nullptr, 0);
+            }
             GUIDesigns::buildFXMenuCommand(ret, "Height: " + toString(firstAnglePos.z()), nullptr, nullptr, 0);
             GUIDesigns::buildFXMenuCommand(ret, "Angle: " + toString((GeomHelper::naviDegree(angle))), nullptr, nullptr, 0);
         }

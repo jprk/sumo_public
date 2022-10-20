@@ -1393,6 +1393,7 @@ MSLCM_LC2013::_wantsChange(
                 && MIN2(neighDist, currentDist) - posOnLane > overtakeDist
                 // maybe do not overtake on the right at high speed
                 && (!checkOverTakeRight || !right)
+                && myStrategicParam >= 0
                 && (neighLead.first == 0 || !neighLead.first->isStopped()
                     // neighboring stopped vehicle leaves enough space to overtake leader
                     || neighLead.second > overtakeDist)) {
@@ -1555,7 +1556,8 @@ MSLCM_LC2013::_wantsChange(
                            ? mySpeedGainProbability / myChangeProbThresholdRight
                            : -mySpeedGainProbability / myChangeProbThresholdLeft;
 
-    inconvenience = MAX2(thisLaneVSafe / neighLaneVSafe - 1, inconvenience);
+    const double relSpeedDiff = thisLaneVSafe == 0 ? 0 : (thisLaneVSafe - neighLaneVSafe) / MAX2(thisLaneVSafe, neighLaneVSafe);
+    inconvenience = MAX2(relSpeedDiff, inconvenience);
     inconvenience = MIN2(1.0, inconvenience);
 
     const bool speedGainInconvenient = inconvenience > myCooperativeParam;

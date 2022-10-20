@@ -24,6 +24,8 @@ title: ChangeLog
   - Fixed vehicle collision with pedestrian on shared lane after lane width change. Issue #11602
   - Fixed emergency breaking near shared walkingarea. Issue #11478  
   - Fixed invalid junction collision warning involving short approach edges. Issue #11609
+  - Fixed crash on inconsistent opposite-direction edge definitions. Issue #11661
+  - Fixed deadlock between car and pedestrian on shared walkingarea. Issue #11734
   - Fixed incorrect/delayed vehicle inserting on bidi-edge. Issue #11419
   - Fixed collisions on bidi-edge. Issue #11477
   - Fixed emergency braking when using carFollowModel IDM. Issue #11498, #11564, #11564
@@ -40,11 +42,13 @@ title: ChangeLog
     - Fixed emergency braking during opposite direction driving. Issue #11481
     - Fixed bug where car blocks itself during continuous laneChange after loading state. Issue #11394
     - Fixed invalid speed adaptations for lane changing while on an intersection. Issue #11507
+    - Fixed strategic change happening despite lcStrategic=-1. Issue #11752
   - output
     - fcd-output now includes riding persons even if their vehicle is not equipped with fcd device. Issue #11454
     - fcd-output of persons now respects edge and shape filters. Issue #11455
     - Output of a persons speed in access stage is now correct (was given as 0 before). Issue #11453
     - Fixed several bugs that prevented intermodal vehroute output from being re-used as simulation input. Issue #7006
+    - Vehroute-output no longer includes unfinished persons by default. Issue #11730
   - railways:
     - Fixed unsafe train insertion with oncoming vehicle. Issue #11384
     - Fixed invalid error when trying to insert train before red signal with high speed. Issue #11440
@@ -60,11 +64,14 @@ title: ChangeLog
   - Fixed bugs related to object locking (via the lock menu). Issue #10863
   - Additional object chooser no longer lists POIs and polygons. Issue #11580
   - Fixed invalid context menu after clicking on overlapped lanes. Issue #11577
-  - Context menus on ambiguously overlapping objects now gives a choice of object. Holding ALT always givea all choices. Issue #10916
+  - Context menus on ambiguously overlapping objects now gives a choice of object. Holding ALT always gives all choices. Issue #10916
   - Junctions covered by a walkingarea can now be moved. Issue #11622
   - In tls mode, icons are now drawn on top of walkingarea shapes. Issue #11302
   - Setting a numerical value for departPosLat is now working. Issue #11694
   - Fixed parsing of `<closingReroute>` permissions. Issue #11699
+  - Ids of crossings and walkingareas can now be drawn. Issue #11664
+  - Visual scaling for selected data elements now works. Issue #10937
+  - Fixed crash when using the "undo/redo history" dialog. Issue #11370
   
 - sumo-gui
   - Fixed crash when opening busStop parameters after simulation end. Issue #11499 (regression in 1.13.0)
@@ -76,6 +83,8 @@ title: ChangeLog
   - Detector names are now shown in the parameter dialog. Issue #11029
   - TAZs parameters are now loaded. Issue #7479
   - Fixed insufficient precision when saving edge scaling scheme. Issue #11711
+  - Fixed corrupted 3D view after window resize and minimize operation. Issue #11727
+  - Initial camera coordinates are now matching for the 3D view. Issue #11742
   
 - netconvert
   - Fixed invalid red phase at traffic lights with very low connection speeds. Issue #11307 (regression in 1.14.0)
@@ -92,6 +101,8 @@ title: ChangeLog
   - Fixed invalid bidi edges with ptline-output. Issue #11497
   - Invalid state string length now always triggers a warning. Issue #11637
   - Activating option **--ptline-output** no longer modifies the network. Issue #10732
+  - Fixed bug that caused inconsistent opposite-edge declarations to be written. Issue #11731
+  - OSM import: fixed public transport stop assignment to edge without proper permissions. Issue #11656
 
 - duarouter
   - vTypeDistributions with attribute `vTypes` now consider vType-probabilities. Issue #11376
@@ -108,7 +119,7 @@ title: ChangeLog
   - Simpla: fixed invalid behavior when subsequent edges vary in lane number. Issue #11276
   - traceFile no longer contains redundant calls to helper method `person.removeStages`. Issue #11418
   - Libsumo can now be compiled with having fox-toolkit installed. Issue #11115
-  - Context subscription filters for vTypes and vClasses are now compatible with all othe filters. Issue #11540
+  - Context subscription filters for vTypes and vClasses are now compatible with all other filters. Issue #11540
   - Function `simulation.getDistance2D(..., isGeo=True)` now works. Issue #11610
 
 - Tools
@@ -119,11 +130,14 @@ title: ChangeLog
   - plot_net_dump.py: Fixed invalid error message when closing figure window. Issue #11280
   - plot_net_dump.py: fixed error when trying to plot homogeneous edgeData. Issue #11351
   - generateRailSignalConstraints.py: Fixed missing inactive insertion constraints when **--write-inactive** is set. Issue #11375
-  - generateRailSignalConstraints.py: Added missing constraints from bidirectional stop usage. Issue #11371  
-  - generateRailSignalConstraints.py: now detecting swapped ended times. Issue #11687
+  - generateRailSignalConstraints.py: Added missing constraints from bidirectional stop usage. Issue #11371
+  - generateRailSignalConstraints.py: now detecting swapped ended times. Issue #11687, #11741   
   - Fixed use of `gapPenalty` parameter in function `sumolib.route.mapTrace`. Issue #11292
   - plotXMLAttributes.py: Now support plotting by rank (by specifying attribute `@RANK`). Issue #11605
-  
+  - osmWebWizard.py Now aborts early if the OSM download fails and no longer leaves empty directories behind. Issue #11722
+  - osmWebWizard.py Now gives better feedback on certificate errors. Issue #10804
+  - turnfile2EdgeRelations.py: Fixed invalid end element, preserving comments. Issue #11748
+  - gtfs2pt.py: Now handling empty timetable. Issue #11763  
 
 ### Enhancements
 
@@ -136,11 +150,13 @@ title: ChangeLog
   - Bicycles speeds now follow a speed distribution by default (centered on 20km/h, configurable with `desiredMaxSpeed`). Issue #11102
   - Option **--emission-output.precision** now also applies to emissions in tripinfo-output. Issue #11474
   - Added option **--time-to-teleport.bidi** to resolve deadlocks on bidirectional edges. Issue #11435
-  - The vType attriutes `timeToTeleport` and `timeToTeleportBidi` can now be used to customize teleporting behavior. Issue #9497
+  - The vType attributes `timeToTeleport` and `timeToTeleportBidi` can now be used to customize teleporting behavior. Issue #9497
   - Pedestrians now react to edge speed limit (i.e. for modelling stairs). Issue #11526
   - Added option **--vehroute-output.internal** to include internal edges in the output. Issue #10601
   - Specifying pedestrian `<walk>` with `departPosLat="random"` is now supported. Issue #10573
   - Option **--devices.ssm.measures** now supports comma-separated values. Issue #10478
+  - When using the special string 'TIME' in file names, all written files now use the same time stamp. Issue #10346
+  - Added option **--pedestrian.striping.walkingarea-detail INT** to increase the smoothness of pedestrian trajectories. Issue #8797
 
 - netedit
   - Saved detector names use descriptive tags instead of the 'E1,E2, ...' tags. Issue #11028
@@ -157,10 +173,14 @@ title: ChangeLog
   - In networks with pedestrian crossings, create edge frame disallows pedestrians on road lanes by default. Issue #10970
   - In move mode, alt+right-click on overlapped objects now allows marking the front element to be moved. Issue #10900
   - In vehicle mode: alt+right-click on overlapping routes, now allows marking the front element to be used when creating 'vehicle over route'. Issue #11009
-  - In delete mode, ambiguous clicks now open a conext menu for selecting the intended target. Issue #11606
+  - In delete mode, ambiguous clicks now open a context menu for selecting the intended target. Issue #11606
   - In delete mode, the object to be deleted is now outlined. Issue #11636
   - Button tooltips can be enabled/disabled with a persistent toggle-button. Issue #11550
   - Creating accidental double stops for the same vehicle is now prevented. Issue #10078
+  - Holding the middle button now allows panning the view (also in sumo-gui). Issue #11632
+  - "Undo-Redo list" dialog now includes color codes and entity ids. Issue #4765
+  - Using distinct walkingArea color to distinguish them from other objects. Issue #11724
+  - Every vClass has it's own icon now. Issue #9872
   - Traffic light mode:
     - phase table now permits moving phases up and down. Issue #10856
     - Added buttons reset either the current program or all programs of the current traffic light to their default. Issue #9072, #11357
@@ -193,6 +213,11 @@ title: ChangeLog
   - Added extra consistency checks for public transport stop ordering in OSM input (with regard to bidi-edges). Issue #11612
   - Original ids of edges of removed edges are now stored in joined junctions parameters. Issue #11428
   - OSM import now support more symbolic speed restrictions. Issue #11682, #11683
+  - OSM import now sets the fringe type of nodes for dead-ends. Issue #6623
+  - Option **--fringe.guess** now detects more outer fringe nodes. Issue #11754
+  - Node clusters and joint traffic lights get now similar ids of the form "cluster_id0_id1" or "joinedS_...", "joinedG_...". Issue #3871
+  - Joined ids are abbreviated with the scheme `"cluster_id0_id1_id2_id3_#5more"` if too many junctions / traffic lights are participating, see also **-max-join-ids**. Issue #10795
+  
 
 - netgenerate
   - Now supports options **--geometry.remove** and **--tls.discard-simple**. Issue #11422
@@ -201,7 +226,7 @@ title: ChangeLog
   - Edges are now checked for their permissions before being used for passenger cars origin / destination. Issue #11445
 
 - polyconvert
-  - Warning messages are now aggegated by default warning. Issue #11585
+  - Warning messages are now aggregated by default warning. Issue #11585
 
 - TraCI
   - Simpla: Added additional platooning criteria via new attributes 'edgeLookAhead', 'distLookAhead' and 'lcMinDist'. Issue #9252, #11236 (Thanks to Jörg Schweizer)
@@ -209,19 +234,22 @@ title: ChangeLog
   - Net method `traci.simulation.getOption` can now be used to retrieve any simulation option. Issue #11319
   - person.getTaxiReservation parameter stateFilter now supports setting multiple bits. Issue #11501
   - Added function `traci.trafficlight.updateConstraints` for automated updating of rail signal constraints after rerouting. Issue #10134
+  - Added function `traci.gui.setAngle` to change viewport angle. Issue #11239
+  - Added functions `traci.gui.addView`, `traci.gui.removeView` to add/remove view windows. Issue #11760
+  - Fixed bug where CACC model had invalid speed while activating [ToC](ToC_Device.md). Issue #6192
 
 - tools
   - routeSampler.py: now supports options **--depart-attribute**, **--arrival-attribute** to set extra constraints. Issue #6727
   - routeSampler.py: added more statistics on processed intervals. Issue #11328
   - countEdgeUsage.py: Can now load multiple route files. Issue #11338  
-  - generateRailSignalConstraints.py: added constraints for vehicles inserted at the same stop. Issue #11378
+  - generateRailSignalConstraints.py: added constraints for vehicles inserted at the same stop. Issue #11378  
   - drtonline.py: now supports option **--tracefile** to allow for quick replication of a simulation. Issue #11414
   - Added new tool [drtOrtools.py](Tools/Drt.md#drtortoolspy) to solve DRT problems with the [ortools package](https://developers.google.com/optimization). Issue #11413
   - randomTrips.py: New option **--min-dist-fringe** which allows short fringe-to-fringe trips if trip generation with **--min-dist** fails repeatedly. Issue #10592
   - osmWebWizard.py: Now prevents turn-arounds at the start and end of routes to improve traffic flow. Issue #10167
   - osmWebWizard.py: Now reliably generates trips in small networks. Issue #11563
   - osmWebWizard.py: Now aborts scenario building if when trying and failing to retrieve satellite data. Issue #11423
-  - attributeStats.py: Now includes `stdDev` in outputs. Issue #10869
+  - attributeStats.py: Now includes `stdDev` in outputs. Issue #10869  
   
   ### Miscellaneous
 
@@ -231,6 +259,8 @@ title: ChangeLog
 - All applications now support [appending list-type options](Basics/Using_the_Command_Line_Applications.md#options) in a configuration file with extra items via the command line. Issue #405
 - osmWebWizard.py now stores network files as `.net.xml.gz` to conserve space. Issue #7713
 - Walk attribute departPosLat is now interpreted in the same coordinate system as used by the vehicles. For backward compatibility, the option **--pedestrian.striping.legacy-departposlat** may be set. Issue #11705
+- Added more entries to help menus of sumo-gui and netedit. Issue #11604
+- The new default **--xml-validation** mode is *local* which only reads the local schema file but does not do network access to prevent XXE attacks. Issue #11054
 
 ## Version 1.14.1 (19.07.2022)
 

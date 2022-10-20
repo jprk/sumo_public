@@ -138,12 +138,15 @@ private:
     static int addBidiEdgesBetweenSwitches(NBEdgeCont& ec);
 
     /// @brief add bidi-edges to connect successive public transport stops
-    static int addBidiEdgesForStops(NBEdgeCont& ec, NBPTLineCont& lc);
+    static int addBidiEdgesForStops(NBEdgeCont& ec, NBPTLineCont& lc, NBPTStopCont& sc);
 
     /// @brief add bidi-edges to connect straight tracks
     static int addBidiEdgesForStraightConnectivity(NBEdgeCont& ec, bool geometryLike);
 
-    /// recompute turning directions for both nodes of the given edge
+    /// @brief recompute turning directions for both nodes of the given edge
     static void updateTurns(NBEdge* edge);
+
+    /// @brief identify lines that are likely to require bidirectional tracks
+    static std::set<NBPTLine*> findBidiCandidates(NBPTLineCont& lc);
 
 };

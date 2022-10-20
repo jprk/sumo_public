@@ -305,7 +305,7 @@ NIXMLEdgesHandler::addEdge(const SUMOSAXAttributes& attrs) {
     if (myFromNode == myToNode) {
         // this might as well be an error. We make this a warning mostly for
         // backward compatibility
-        WRITE_WARNINGF("Ignoring self-looped edge '%' at junction '%'", myCurrentID, myFromNode->getID());
+        WRITE_WARNINGF(TL("Ignoring self-looped edge '%' at junction '%'"), myCurrentID, myFromNode->getID());
         myCurrentEdge = nullptr;
         return;
     }
@@ -462,7 +462,7 @@ NIXMLEdgesHandler::addLane(const SUMOSAXAttributes& attrs) {
 void NIXMLEdgesHandler::addSplit(const SUMOSAXAttributes& attrs) {
     if (myCurrentEdge == nullptr) {
         if (!OptionsCont::getOptions().isInStringVector("remove-edges.explicit", myCurrentID)) {
-            WRITE_WARNING("Ignoring 'split' because it cannot be assigned to an edge");
+            WRITE_WARNING(TL("Ignoring 'split' because it cannot be assigned to an edge"));
         }
         return;
     }

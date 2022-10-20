@@ -28,6 +28,8 @@
 #include <utils/gui/globjects/GUIGlObjectStorage.h>
 #include <utils/gui/settings/GUICompleteSchemeStorage.h>
 #include <utils/gui/windows/GUIPerspectiveChanger.h>
+#include <utils/gui/events/GUIEvent_AddView.h>
+#include <utils/gui/events/GUIEvent_CloseView.h>
 #include <utils/xml/XMLSubSys.h>
 #include <gui/GUIApplicationWindow.h>
 #include <gui/GUIRunThread.h>
@@ -154,6 +156,30 @@ GUI::setSchema(const std::string& viewID, const std::string& schemeName) {
 
 
 void
+GUI::addView(const std::string& viewID, const std::string& schemeName, bool in3D) {
+    GUIMainWindow* const mw = GUIMainWindow::getInstance();
+    if (mw == nullptr) {
+        throw TraCIException("GUI is not running, command not implemented in command line sumo");
+    }
+    // calling openNewView directly doesn't work from the traci/simulation thread
+    mw->sendBlockingEvent(new GUIEvent_AddView(viewID, schemeName, in3D));  // NOSONAR
+    // sonar thinks here is a memory leak but the GUIApplicationWindow does the clean up
+}
+
+
+void
+GUI::removeView(const std::string& viewID) {
+    GUIMainWindow* const mw = GUIMainWindow::getInstance();
+    if (mw == nullptr) {
+        throw TraCIException("GUI is not running, command not implemented in command line sumo");
+    }
+    // calling removeViewByID directly doesn't work from the traci/simulation thread
+    mw->sendBlockingEvent(new GUIEvent_CloseView(viewID));  // NOSONAR
+    // sonar thinks here is a memory leak but the GUIApplicationWindow does the clean up
+}
+
+
+void
 GUI::setBoundary(const std::string& viewID, double xmin, double ymin, double xmax, double ymax) {
     getView(viewID)->centerTo(Boundary(xmin, ymin, xmax, ymax));
 }
@@ -275,7 +301,7 @@ GUI::start(const std::vector<std::string>& cmd) {
         return false;
     }
 #ifdef WIN32
-    WRITE_WARNING("Libsumo on Windows does not work with GUI, falling back to plain libsumo.");
+    WRITE_WARNING(TL("Libsumo on Windows does not work with GUI, falling back to plain libsumo."));
     return false;
 #else
     try {
@@ -342,7 +368,7 @@ GUI::start(const std::vector<std::string>& cmd) {
 bool
 GUI::load(const std::vector<std::string>& /* cmd */) {
     if (myWindow != nullptr) {
-        WRITE_ERROR("libsumo.load is not implemented for the GUI.");
+        WRITE_ERROR(TL("libsumo.load is not implemented for the GUI."));
         return true;
     }
     return false;

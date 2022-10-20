@@ -262,6 +262,8 @@ enum SumoXMLTag {
     SUMO_TAG_FOE_INSERTION,
     /// @brief Predecessor constraint on insertion before rail signal
     SUMO_TAG_INSERTION_ORDER,
+    /// @brief Predecessor constraint for rail signal before bidirectional section
+    SUMO_TAG_BIDI_PREDECESSOR,
     /// @brief Saved state for constraint tracker
     SUMO_TAG_RAILSIGNAL_CONSTRAINT_TRACKER,
     /// @brief Link information for state-saving
@@ -871,6 +873,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_CA_GAIN_GAP_CACC,
     SUMO_ATTR_CA_GAIN_GAP_DOT_CACC,
     SUMO_ATTR_HEADWAY_TIME_CACC_TO_ACC,
+    SUMO_ATTR_SC_MIN_GAP,
     SUMO_ATTR_APPLYDRIVERSTATE,
     /// @}
 
@@ -943,6 +946,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_ROUTES,
     SUMO_ATTR_VTYPES,
     SUMO_ATTR_NEXT_EDGES,
+    SUMO_ATTR_DETERMINISTIC,
     /// @}
 
     /// @name trip definition attributes

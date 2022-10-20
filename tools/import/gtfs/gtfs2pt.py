@@ -196,7 +196,10 @@ def traceMap(options, typedNets, radius=100):
         net = sumolib.net.readNet(os.path.join(options.network_split, railType + ".net.xml"))
         netBox = net.getBBoxXY()
         numTraces = 0
-        traces = tracemapper.readFCD(os.path.join(options.fcd, railType + ".fcd.xml"), net, True)
+        filePath = os.path.join(options.fcd, railType + ".fcd.xml")
+        if not os.path.exists(filePath):
+            return []
+        traces = tracemapper.readFCD(filePath, net, True)
         for tid, trace in traces:
             numTraces += 1
             minX, minY, maxX, maxY = sumolib.geomhelper.addToBoundingBox(trace)
@@ -343,8 +346,8 @@ def filter_trips(options, routes, stops, outfile, begin, end):
             vehs = defaultdict(lambda: "")
         for inp in glob.glob(os.path.join(options.fcd, "*.rou.xml")):
             for veh in sumolib.xml.parse_fast(inp, "vehicle", ("id", "route", "type", "depart", "line")):
-                if len(routes.get(veh.line, [])) > 0 and len(stops.get(veh.line, [])) > 1:
-                    until = stops[veh.line][0][1]
+                if len(routes.get(veh.route, [])) > 0 and len(stops.get(veh.route, [])) > 1:
+                    until = stops[veh.route][0][1]
                     for d in range(numDays):
                         depart = max(0, d * 86400 + int(veh.depart) + until - options.duration)
                         if begin <= depart < end:
@@ -415,6 +418,8 @@ def main(options):
                     time, edge, speed, coverage, id, minute_of_week = line.split('\t')[:6]
                     routes[id].append(edge)
         else:
+            if not gtfs2fcd.dataAvailable(options):
+                sys.exit("No GTFS data found for given date %s." % options.date)
             if options.mapperlib != "tracemapper":
                 print("Warning! No mapping library found, falling back to tracemapper.")
             routes = traceMap(options, typedNets)

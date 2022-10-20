@@ -228,6 +228,7 @@ fillOptions() {
 
 int
 main(int argc, char** argv) {
+    MsgHandler::setupI18n();
     OptionsCont& oc = OptionsCont::getOptions();
     oc.setApplicationDescription("Importer of polygons and POIs for the microscopic, multi-modal traffic simulation SUMO.");
     oc.setApplicationName("polyconvert", "Eclipse SUMO polyconvert Version " VERSION_STRING);
@@ -311,7 +312,7 @@ main(int argc, char** argv) {
         if (!oc.isSet("type-file")) {
             const char* sumoPath = std::getenv("SUMO_HOME");
             if (sumoPath == nullptr) {
-                WRITE_WARNING("Environment variable SUMO_HOME is not set, using built in type maps.");
+                WRITE_WARNING(TL("Environment variable SUMO_HOME is not set, using built in type maps."));
             } else {
                 const std::string path = sumoPath + std::string("/data/typemap/");
                 if (oc.isSet("dlr-navteq-poly-files")) {

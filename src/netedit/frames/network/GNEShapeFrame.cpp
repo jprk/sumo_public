@@ -53,19 +53,19 @@ FXIMPLEMENT(GNEShapeFrame::GEOPOICreator,     MFXGroupBoxModule,     GEOPOICreat
 // ---------------------------------------------------------------------------
 
 GNEShapeFrame::GEOPOICreator::GEOPOICreator(GNEShapeFrame* polygonFrameParent) :
-    MFXGroupBoxModule(polygonFrameParent, "GEO POI Creator"),
+    MFXGroupBoxModule(polygonFrameParent, TL("GEO POI Creator")),
     myShapeFrameParent(polygonFrameParent) {
     // create RadioButtons for formats
-    myLonLatRadioButton = new FXRadioButton(getCollapsableFrame(), "Format: Lon-Lat", this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
-    myLatLonRadioButton = new FXRadioButton(getCollapsableFrame(), "Format: Lat-Lon", this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
+    myLonLatRadioButton = new FXRadioButton(getCollapsableFrame(), TL("Format: Lon-Lat"), this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
+    myLatLonRadioButton = new FXRadioButton(getCollapsableFrame(), TL("Format: Lat-Lon"), this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
     // set lat-lon as default
     myLatLonRadioButton->setCheck(TRUE);
     // create text field for coordinates
     myCoordinatesTextField = new FXTextField(getCollapsableFrame(), GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
     // create checkBox
-    myCenterViewAfterCreationCheckButton = new FXCheckButton(getCollapsableFrame(), "Center View after creation", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
+    myCenterViewAfterCreationCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Center View after creation"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
     // create button for create GEO POIs
-    myCreateGEOPOIButton = new FXButton(getCollapsableFrame(), "Create GEO POI (clipboard)", nullptr, this, MID_GNE_CREATE, GUIDesignButton);
+    myCreateGEOPOIButton = new FXButton(getCollapsableFrame(), TL("Create GEO POI (clipboard)"), nullptr, this, MID_GNE_CREATE, GUIDesignButton);
     // create information label
     myLabelCartesianPosition = new FXLabel(getCollapsableFrame(), "Cartesian equivalence:\n- X = give valid longitude\n- Y = give valid latitude", 0, GUIDesignLabelFrameInformation);
 }
@@ -83,7 +83,7 @@ GNEShapeFrame::GEOPOICreator::showGEOPOICreatorModule() {
         myCoordinatesTextField->enable();
         myCreateGEOPOIButton->enable();
     } else  {
-        myCoordinatesTextField->setText("No geo-conversion defined");
+        myCoordinatesTextField->setText(TL("No geo-conversion defined"));
         myCoordinatesTextField->disable();
         myCreateGEOPOIButton->disable();
     }
@@ -112,9 +112,9 @@ GNEShapeFrame::GEOPOICreator::onCmdSetCoordinates(FXObject*, FXSelector, void*) 
         myCoordinatesTextField->setText(inputWithoutSpaces.c_str());
     }
     if (inputWithoutSpaces.size() > 0) {
-        myCreateGEOPOIButton->setText("Create GEO POI");
+        myCreateGEOPOIButton->setText(TL("Create GEO POI"));
     } else {
-        myCreateGEOPOIButton->setText("Create GEO POI (clipboard)");
+        myCreateGEOPOIButton->setText(TL("Create GEO POI (clipboard)"));
     }
     // simply check if given value can be parsed to Position
     if (GNEAttributeCarrier::canParse<Position>(myCoordinatesTextField->getText().text())) {
@@ -131,7 +131,7 @@ GNEShapeFrame::GEOPOICreator::onCmdSetCoordinates(FXObject*, FXSelector, void*) 
         myLabelCartesianPosition->setText(("Cartesian equivalence:\n- X = " + toString(geoPos.x()) + "\n- Y = " + toString(geoPos.y())).c_str());
     } else {
         myCoordinatesTextField->setTextColor(FXRGB(255, 0, 0));
-        myLabelCartesianPosition->setText("Cartesian equivalence:\n- X = give valid longitude\n- Y = give valid latitude");
+        myLabelCartesianPosition->setText(TL("Cartesian equivalence:\n- X = give valid longitude\n- Y = give valid latitude"));
     };
     return 1;
 }
@@ -160,14 +160,14 @@ GNEShapeFrame::GEOPOICreator::onCmdCreateGEOPOI(FXObject*, FXSelector, void*) {
         std::string geoPosStr = myCoordinatesTextField->getText().text();
         if (geoPosStr.empty()) {
             // use clipboard
-            WRITE_WARNING("Using clipboard");
+            WRITE_WARNING(TL("Using clipboard"));
             geoPosStr = GUIUserIO::copyFromClipboard(*getApp());
             myCoordinatesTextField->setText(geoPosStr.c_str());
             // remove spaces, update cartesian value
             onCmdSetCoordinates(0, 0, 0);
             geoPosStr = myCoordinatesTextField->getText().text();
             myCoordinatesTextField->setText("");
-            myCreateGEOPOIButton->setText("Create GEO POI (clipboard)");
+            myCreateGEOPOIButton->setText(TL("Create GEO POI (clipboard)"));
         }
         if (GNEAttributeCarrier::canParse<Position>(geoPosStr)) {
             // create baseShape object
@@ -411,7 +411,7 @@ GNEShapeFrame::shapeDrawed() {
         myShapeAttributes->showWarningMessage();
         return false;
     } else if (myDrawingShape->getTemporalShape().size() == 0) {
-        WRITE_WARNING("Polygon shape cannot be empty");
+        WRITE_WARNING(TL("Polygon shape cannot be empty"));
         return false;
     } else {
         // create baseShape object

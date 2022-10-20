@@ -53,7 +53,8 @@ void NBPTLine::addPTStop(NBPTStop* pStop) {
     myPTStops.push_back(pStop);
 }
 
-std::vector<NBPTStop*> NBPTLine::getStops() {
+const std::vector<NBPTStop*>&
+NBPTLine::getStops() {
     return myPTStops;
 }
 
@@ -151,13 +152,13 @@ const std::vector<NBEdge*>& NBPTLine::getRoute() const {
 }
 
 
-std::vector<NBEdge*>
+std::vector<std::pair<NBEdge*, std::string> >
 NBPTLine::getStopEdges(const NBEdgeCont& ec) const {
-    std::vector<NBEdge*> result;
+    std::vector<std::pair<NBEdge*, std::string> > result;
     for (NBPTStop* stop : myPTStops) {
         NBEdge* e = ec.retrieve(stop->getEdgeId());
         if (e != nullptr) {
-            result.push_back(e);
+            result.push_back({e, stop->getID()});
         }
     }
     return result;
@@ -180,13 +181,13 @@ NBPTLine::getRouteStart(const NBEdgeCont& ec) const {
     if (myPTStops.size() > 0) {
         NBEdge* firstStopEdge = ec.retrieve(myPTStops.front()->getEdgeId());
         if (firstStopEdge == nullptr) {
-            WRITE_WARNINGF("Could not retrieve edge '%' for first stop of line '%'.", myPTStops.front()->getEdgeId(), myPTLineId);
+            WRITE_WARNINGF(TL("Could not retrieve edge '%' for first stop of line '%'."), myPTStops.front()->getEdgeId(), myPTLineId);
             return nullptr;
 
         }
         auto it = std::find(validEdges.begin(), validEdges.end(), firstStopEdge);
         if (it == validEdges.end()) {
-            WRITE_WARNINGF("First stop edge '%' is not part of the route of line '%'.", firstStopEdge->getID(), myPTLineId);
+            WRITE_WARNINGF(TL("First stop edge '%' is not part of the route of line '%'."), firstStopEdge->getID(), myPTLineId);
             return nullptr;
         }
     }
@@ -210,13 +211,13 @@ NBPTLine::getRouteEnd(const NBEdgeCont& ec) const {
     if (myPTStops.size() > 0) {
         NBEdge* lastStopEdge = ec.retrieve(myPTStops.back()->getEdgeId());
         if (lastStopEdge == nullptr) {
-            WRITE_WARNINGF("Could not retrieve edge '%' for last stop of line '%'.", myPTStops.back()->getEdgeId(), myPTLineId);
+            WRITE_WARNINGF(TL("Could not retrieve edge '%' for last stop of line '%'."), myPTStops.back()->getEdgeId(), myPTLineId);
             return nullptr;
 
         }
         auto it = std::find(validEdges.begin(), validEdges.end(), lastStopEdge);
         if (it == validEdges.end()) {
-            WRITE_WARNINGF("Last stop edge '%' is not part of the route of line '%'.", lastStopEdge->getID(), myPTLineId);
+            WRITE_WARNINGF(TL("Last stop edge '%' is not part of the route of line '%'."), lastStopEdge->getID(), myPTLineId);
             return nullptr;
         }
     }
@@ -275,7 +276,7 @@ NBPTLine::deleteInvalidStops(const NBEdgeCont& ec, const NBPTStopCont& sc) {
         NBPTStop* stop = *it;
         if (sc.get(stop->getID()) == nullptr ||
                 ec.getByID(stop->getEdgeId()) == nullptr) {
-            WRITE_WARNINGF("Removed invalid stop '%' from line '%'.", stop->getID(), getLineID());
+            WRITE_WARNINGF(TL("Removed invalid stop '%' from line '%'."), stop->getID(), getLineID());
             it = myPTStops.erase(it);
         } else {
             it++;
@@ -292,10 +293,10 @@ NBPTLine::deleteDuplicateStops() {
     for (auto it = myPTStops.begin(); it != myPTStops.end();) {
         NBPTStop* stop = *it;
         if (lastAreaID != -1 && stop->getAreaID() == lastAreaID) {
-            WRITE_WARNINGF("Removed duplicate stop '%' at area '%' from line '%'.", stop->getID(), toString(lastAreaID), getLineID());
+            WRITE_WARNINGF(TL("Removed duplicate stop '%' at area '%' from line '%'."), stop->getID(), toString(lastAreaID), getLineID());
             it = myPTStops.erase(it);
         } else if (lastName != "" && stop->getName() == lastName) {
-            WRITE_WARNINGF("Removed duplicate stop '%' named '%' from line '%'.", stop->getID(), lastName, getLineID());
+            WRITE_WARNINGF(TL("Removed duplicate stop '%' named '%' from line '%'."), stop->getID(), lastName, getLineID());
             it = myPTStops.erase(it);
         } else {
             it++;

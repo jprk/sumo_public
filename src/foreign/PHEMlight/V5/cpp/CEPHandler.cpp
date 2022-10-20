@@ -87,19 +87,23 @@ namespace PHEMlightdllV5 {
         VEHPHEMLightJSON::VEH* Vehicle;
 
         if (!ReadVehicleFile(DataPath, emissionRep, Helper, fleetMix, Vehicle)) {
+            delete Vehicle;
             return false;
         }
 
         if (DataCor != nullptr) {
             if (!CalcCorrection(DataCor, Helper, Vehicle->getVehicleData())) {
+                delete Vehicle;
                 return false;
             }
         }
 
         if (!ReadEmissionData(true, DataPath, emissionRep, Helper, fleetMix, DataCor, headerFCvalues, matrixFCvalues, idlingValuesFCvalues)) {
+            delete Vehicle;
             return false;
         }
         if (!ReadEmissionData(false, DataPath, emissionRep, Helper, fleetMix, DataCor, headerPollutants, matrixPollutants, idlingValuesPollutants)) {
+            delete Vehicle;
             return false;
         }
 
@@ -376,7 +380,10 @@ namespace PHEMlightdllV5 {
     std::string CEPHandler::ReadLine(std::ifstream& s) {
         std::string line;
         std::getline(s, line);
-        line.erase(line.find_last_not_of(" \n\r\t") + 1);
+        size_t lastNWChar = line.find_last_not_of(" \n\r\t");
+        if (lastNWChar != std::string::npos) {
+            line.erase(lastNWChar + 1);
+        }
         return line;
     }
 

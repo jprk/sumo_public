@@ -66,7 +66,7 @@ FXIMPLEMENT(GNECrossingFrame::CreateCrossing,       MFXGroupBoxModule,     Creat
 // ---------------------------------------------------------------------------
 
 GNECrossingFrame::CurrentJunction::CurrentJunction(GNECrossingFrame* crossingFrameParent) :
-    MFXGroupBoxModule(crossingFrameParent, "Junction") {
+    MFXGroupBoxModule(crossingFrameParent, TL("Junction")) {
     // Create frame for junction ID
     FXHorizontalFrame* junctionIDFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create label
@@ -191,7 +191,7 @@ GNECrossingFrame::EdgesSelector::onCmdInvertSelection(FXObject*, FXSelector, voi
 // ---------------------------------------------------------------------------
 
 GNECrossingFrame::CrossingParameters::CrossingParameters(GNECrossingFrame* crossingFrameParent) :
-    MFXGroupBoxModule(crossingFrameParent, "Crossing parameters"),
+    MFXGroupBoxModule(crossingFrameParent, TL("Crossing parameters")),
     myCrossingFrameParent(crossingFrameParent),
     myCrossingTemplate(nullptr),
     myCurrentParametersValid(true) {
@@ -217,7 +217,7 @@ GNECrossingFrame::CrossingParameters::CrossingParameters(GNECrossingFrame* cross
     myCrossingWidthLabel->disable();
     myCrossingWidth->disable();
     // Create help button
-    myHelpCrossingAttribute = new FXButton(getCollapsableFrame(), "Help", nullptr, this, MID_HELP, GUIDesignButtonRectangular);
+    myHelpCrossingAttribute = new FXButton(getCollapsableFrame(), TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
     myHelpCrossingAttribute->disable();
 }
 
@@ -262,7 +262,7 @@ GNECrossingFrame::CrossingParameters::disableCrossingParameters() {
     // clear all values of parameters
     myCrossingEdges->setText("");
     myCrossingPriorityCheckButton->setCheck(false);
-    myCrossingPriorityCheckButton->setText("false");
+    myCrossingPriorityCheckButton->setText(TL("false"));
     myCrossingWidth->setText("");
     // Disable all elements of the crossing frames
     myCrossingEdgesLabel->disable();
@@ -429,9 +429,9 @@ GNECrossingFrame::CrossingParameters::onCmdSetAttribute(FXObject*, FXSelector, v
 
     // change label of crossing priority
     if (myCrossingPriorityCheckButton->getCheck()) {
-        myCrossingPriorityCheckButton->setText("true");
+        myCrossingPriorityCheckButton->setText(TL("true"));
     } else {
-        myCrossingPriorityCheckButton->setText("false");
+        myCrossingPriorityCheckButton->setText(TL("false"));
     }
 
     // Check width
@@ -461,10 +461,10 @@ GNECrossingFrame::CrossingParameters::onCmdHelp(FXObject*, FXSelector, void*) {
 // ---------------------------------------------------------------------------
 
 GNECrossingFrame::CreateCrossing::CreateCrossing(GNECrossingFrame* crossingFrameParent) :
-    MFXGroupBoxModule(crossingFrameParent, "Create"),
+    MFXGroupBoxModule(crossingFrameParent, TL("Create")),
     myCrossingFrameParent(crossingFrameParent) {
     // Create groupbox for create crossings
-    myCreateCrossingButton = new FXButton(getCollapsableFrame(), "Create crossing", 0, this, MID_GNE_CREATE, GUIDesignButton);
+    myCreateCrossingButton = new FXButton(getCollapsableFrame(), TL("Create crossing"), 0, this, MID_GNE_CREATE, GUIDesignButton);
     myCreateCrossingButton->disable();
 }
 
@@ -491,7 +491,7 @@ GNECrossingFrame::CreateCrossing::onCmdCreateCrossing(FXObject*, FXSelector, voi
             // update default create edge option
             myCrossingFrameParent->getViewNet()->getViewParent()->getCreateEdgeFrame()->getEdgeTypeSelector()->enableCheckBoxDisablePedestrians();
         } else {
-            WRITE_WARNING("There is already another crossing with the same edges in the junction; Duplicated crossing aren't allowed.");
+            WRITE_WARNING(TL("There is already another crossing with the same edges in the junction; Duplicated crossing aren't allowed."));
         }
     }
     return 1;
@@ -512,7 +512,7 @@ GNECrossingFrame::CreateCrossing::setCreateCrossingButton(bool value) {
 // ---------------------------------------------------------------------------
 
 GNECrossingFrame::Information::Information(GNECrossingFrame* crossingFrameParent) :
-    MFXGroupBoxModule(crossingFrameParent, "Information") {
+    MFXGroupBoxModule(crossingFrameParent, TL("Information")) {
     // candidate
     FXLabel* colorCandidateLabel = new FXLabel(getCollapsableFrame(), " Candidate", 0, GUIDesignLabelLeft);
     colorCandidateLabel->setBackColor(MFXUtils::getFXColor(crossingFrameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.possible));

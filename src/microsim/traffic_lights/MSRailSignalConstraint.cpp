@@ -144,7 +144,7 @@ MSRailSignalConstraint_Predecessor::loadState(const SUMOSAXAttributes& attrs) {
         throw ProcessError("Unknown lane '" + laneID + "' in loaded state.");
     }
     if (myTrackerLookup.count(lane) == 0) {
-        WRITE_WARNINGF("Unknown tracker lane '%' in loaded state.", laneID);
+        WRITE_WARNINGF(TL("Unknown tracker lane '%' in loaded state."), laneID);
         return;
     }
     PassedTracker* tracker = myTrackerLookup[lane];
@@ -195,7 +195,7 @@ MSRailSignalConstraint_Predecessor::getDescription() const {
     if (passedIDs.size() > 0) {
         passedIDs2 = " (" + toString(passedIDs) + ")";
     }
-    return ("predecessor " + myTripId + vehID + " at signal " + myTrackers.front()->getLane()->getEdge().getFromJunction()->getID()
+    return (toString(getTag()) + "  " + myTripId + vehID + " at signal " + myTrackers.front()->getLane()->getEdge().getFromJunction()->getID()
             + " passed=" + StringUtils::prune(toString(myTrackers.front()->myPassed)) + passedIDs2);
 }
 

@@ -59,7 +59,7 @@ bool
 SUMORouteHandler::checkLastDepart() {
     if (myVehicleParameter->departProcedure == DepartDefinition::GIVEN) {
         if (myVehicleParameter->depart < myLastDepart) {
-            WRITE_WARNINGF("Route file should be sorted by departure time, ignoring '%'!", myVehicleParameter->id);
+            WRITE_WARNINGF(TL("Route file should be sorted by departure time, ignoring '%'!"), myVehicleParameter->id);
             return false;
         }
     }
@@ -219,7 +219,7 @@ SUMORouteHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
                     if (myHardFail) {
                         throw ProcessError("Invalid parsing embedded VType");
                     } else {
-                        WRITE_ERROR("Invalid parsing embedded VType");
+                        WRITE_ERROR(TL("Invalid parsing embedded VType"));
                     }
                 }
             }

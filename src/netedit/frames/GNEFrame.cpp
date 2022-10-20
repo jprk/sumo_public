@@ -230,7 +230,7 @@ GNEFrame::openHelpAttributesDialog(const GNEAttributeCarrier* AC) const {
     FXHorizontalFrame* myHorizontalFrameOKButton = new FXHorizontalFrame(attributesHelpDialog, GUIDesignAuxiliarHorizontalFrame);
     // Create Button Close (And two more horizontal frames to center it)
     new FXHorizontalFrame(myHorizontalFrameOKButton, GUIDesignAuxiliarHorizontalFrame);
-    new FXButton(myHorizontalFrameOKButton, "OK\t\tclose", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), attributesHelpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
+    new FXButton(myHorizontalFrameOKButton, TL("OK\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), attributesHelpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
     new FXHorizontalFrame(myHorizontalFrameOKButton, GUIDesignAuxiliarHorizontalFrame);
     // Write Warning in console if we're in testing mode
     WRITE_DEBUG("Opening HelpAttributes dialog for tag '" + AC->getTagProperty().getTagStr() + "' showing " + toString(AC->getTagProperty().getNumberOfAttributes()) + " attributes");
@@ -299,9 +299,10 @@ GNEFrame::selectedOverlappedElement(GNEAttributeCarrier* /* AC */) {
 }
 
 
-void
+bool
 GNEFrame::createPath(const bool /*useLastRoute*/) {
     // this function has to be reimplemente in all child frames that uses a path or consecutiveLanePath
+    return false;
 }
 
 

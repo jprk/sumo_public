@@ -70,9 +70,14 @@ MSStateHandler::MSStateTimeHandler::getTime(const std::string& fileName) {
     handler.setFileName(fileName);
     handler.myTime = -1;
     SUMOSAXReader* parser = XMLSubSys::getSAXReader(handler);
-    if (!parser->parseFirst(fileName)) {
+    try {
+        if (!parser->parseFirst(fileName)) {
+            delete parser;
+            throw ProcessError("Can not read XML-file '" + fileName + "'.");
+        }
+    } catch (ProcessError&) {
         delete parser;
-        throw ProcessError("Can not read XML-file '" + fileName + "'.");
+        throw;
     }
     // parse
     while (parser->parseNext() && handler.myTime != -1);
@@ -366,6 +371,9 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         }
         case SUMO_TAG_PREDECESSOR: // intended fall-through
         case SUMO_TAG_INSERTION_PREDECESSOR:
+        case SUMO_TAG_FOE_INSERTION:
+        case SUMO_TAG_INSERTION_ORDER:
+        case SUMO_TAG_BIDI_PREDECESSOR:
             NLHandler::addPredecessorConstraint(element, attrs, myConstrainedSignal);
             break;
         case SUMO_TAG_TLLOGIC: {

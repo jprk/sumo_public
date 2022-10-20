@@ -281,13 +281,13 @@ NIImporter_SUMO::_loadNetwork(OptionsCont& oc) {
         NBEdge* prohibitorFrom = myEdges[it->prohibitorFrom]->builtEdge;
         NBEdge* prohibitorTo = myEdges[it->prohibitorTo]->builtEdge;
         if (prohibitedFrom == nullptr) {
-            WRITE_WARNINGF("Edge '%' in prohibition was not built.", it->prohibitedFrom);
+            WRITE_WARNINGF(TL("Edge '%' in prohibition was not built."), it->prohibitedFrom);
         } else if (prohibitedTo == nullptr) {
-            WRITE_WARNINGF("Edge '%' in prohibition was not built.", it->prohibitedTo);
+            WRITE_WARNINGF(TL("Edge '%' in prohibition was not built."), it->prohibitedTo);
         } else if (prohibitorFrom == nullptr) {
-            WRITE_WARNINGF("Edge '%' in prohibition was not built.", it->prohibitorFrom);
+            WRITE_WARNINGF(TL("Edge '%' in prohibition was not built."), it->prohibitorFrom);
         } else if (prohibitorTo == nullptr) {
-            WRITE_WARNINGF("Edge '%' in prohibition was not built.", it->prohibitorTo);
+            WRITE_WARNINGF(TL("Edge '%' in prohibition was not built."), it->prohibitorTo);
         } else {
             NBNode* n = prohibitedFrom->getToNode();
             n->addSortedLinkFoes(
@@ -514,7 +514,7 @@ NIImporter_SUMO::myEndElement(int element) {
         case SUMO_TAG_EDGE:
             if (myCurrentEdge != nullptr) {
                 if (myEdges.find(myCurrentEdge->id) != myEdges.end()) {
-                    WRITE_WARNINGF("Edge '%' occurred at least twice in the input.", myCurrentEdge->id);
+                    WRITE_WARNINGF(TL("Edge '%' occurred at least twice in the input."), myCurrentEdge->id);
                 } else {
                     myEdges[myCurrentEdge->id] = myCurrentEdge;
                 }
@@ -532,7 +532,7 @@ NIImporter_SUMO::myEndElement(int element) {
             break;
         case SUMO_TAG_TLLOGIC:
             if (!myCurrentTL) {
-                WRITE_ERROR("Unmatched closing tag for tl-logic.");
+                WRITE_ERROR(TL("Unmatched closing tag for tl-logic."));
             } else {
                 if (!myTLLCont.insert(myCurrentTL)) {
                     WRITE_WARNING("Could not add program '" + myCurrentTL->getProgramID() + "' for traffic light '" + myCurrentTL->getID() + "'");
@@ -729,7 +729,7 @@ NIImporter_SUMO::addJunction(const SUMOSAXAttributes& attrs) {
     NBNetBuilder::transformCoordinate(pos, true, myLocation);
     NBNode* node = new NBNode(id, pos, type);
     if (!myNodeCont.insert(node)) {
-        WRITE_WARNINGF("Junction '%' occurred at least twice in the input.", id);
+        WRITE_WARNINGF(TL("Junction '%' occurred at least twice in the input."), id);
         delete node;
         myLastParameterised.push_back(myNodeCont.retrieve(id));
         return;
@@ -938,7 +938,7 @@ NIImporter_SUMO::initTrafficLightLogic(const SUMOSAXAttributes& attrs, NBLoadedS
 void
 NIImporter_SUMO::addPhase(const SUMOSAXAttributes& attrs, NBLoadedSUMOTLDef* currentTL) {
     if (!currentTL) {
-        WRITE_ERROR("found phase without tl-logic");
+        WRITE_ERROR(TL("found phase without tl-logic"));
         return;
     }
     const std::string& id = currentTL->getID();

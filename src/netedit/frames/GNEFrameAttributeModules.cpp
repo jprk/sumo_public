@@ -81,10 +81,12 @@ GNEFrameAttributeModules::AttributesEditorRow::AttributesEditorRow(GNEFrameAttri
     myACAttr(ACAttr),
     myACParent(ACParent) {
     // Create and hide label
-    myAttributeLabel = new FXLabel(this, "attributeLabel", nullptr, GUIDesignLabelAttribute);
+    myAttributeLabel = new MFXLabelTooltip(this,
+        attributeEditorParent->getFrameParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(), 
+        "attributeLabel", nullptr, GUIDesignLabelAttribute);
     myAttributeLabel->hide();
     // Create and hide check button
-    myAttributeCheckButton = new FXCheckButton(this, "attributeCheckButton", this, MID_GNE_SET_ATTRIBUTE_BOOL, GUIDesignCheckButtonAttribute);
+    myAttributeCheckButton = new FXCheckButton(this, TL("attributeCheckButton"), this, MID_GNE_SET_ATTRIBUTE_BOOL, GUIDesignCheckButtonAttribute);
     myAttributeCheckButton->hide();
     // Create and hide ButtonCombinableChoices
     myAttributeButtonCombinableChoices = new MFXButtonTooltip(this,
@@ -192,6 +194,7 @@ GNEFrameAttributeModules::AttributesEditorRow::AttributesEditorRow(GNEFrameAttri
         } else {
             // Show attribute Label
             myAttributeLabel->setText(myACAttr.getAttrStr().c_str());
+            myAttributeLabel->setTipText(myACAttr.getDefinition().c_str());
             myAttributeLabel->show();
         }
         // Set field depending of the type of value
@@ -215,10 +218,10 @@ GNEFrameAttributeModules::AttributesEditorRow::AttributesEditorRow(GNEFrameAttri
                 // set check button
                 if ((booleanVector.size() > 0) && booleanVector.front()) {
                     myValueCheckButton->setCheck(true);
-                    myValueCheckButton->setText("true");
+                    myValueCheckButton->setText(TL("true"));
                 } else {
                     myValueCheckButton->setCheck(false);
-                    myValueCheckButton->setText("false");
+                    myValueCheckButton->setText(TL("false"));
                 }
                 // show check button
                 myValueCheckButton->show();
@@ -486,10 +489,10 @@ GNEFrameAttributeModules::AttributesEditorRow::onCmdSetAttribute(FXObject*, FXSe
         if (myValueCheckButton->shown()) {
             // Set true o false depending of the checkBox
             if (myValueCheckButton->getCheck()) {
-                myValueCheckButton->setText("true");
+                myValueCheckButton->setText(TL("true"));
                 newVal = "true";
             } else {
-                myValueCheckButton->setText("false");
+                myValueCheckButton->setText(TL("false"));
                 newVal = "false";
             }
         } else {
@@ -680,7 +683,7 @@ GNEFrameAttributeModules::AttributesEditorRow::mergeJunction(SumoXMLAttr attr, c
 // ---------------------------------------------------------------------------
 
 GNEFrameAttributeModules::AttributesEditor::AttributesEditor(GNEFrame* frameParent) :
-    MFXGroupBoxModule(frameParent, "Internal attributes"),
+    MFXGroupBoxModule(frameParent, TL("Internal attributes")),
     myFrameParent(frameParent),
     myIncludeExtended(true) {
     // resize myAttributesEditorRows
@@ -690,7 +693,7 @@ GNEFrameAttributeModules::AttributesEditor::AttributesEditor(GNEFrame* framePare
     // leave it hidden
     myAttributesEditorFlow->hideFlowEditor();
     // Create help button
-    myHelpButton = new FXButton(getCollapsableFrame(), "Help", nullptr, this, MID_HELP, GUIDesignButtonRectangular);
+    myHelpButton = new FXButton(getCollapsableFrame(), TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
 }
 
 
@@ -901,10 +904,10 @@ GNEFrameAttributeModules::AttributesEditor::onCmdAttributesEditorHelp(FXObject*,
 // ---------------------------------------------------------------------------
 
 GNEFrameAttributeModules::AttributesEditorExtended::AttributesEditorExtended(GNEFrame* frameParent) :
-    MFXGroupBoxModule(frameParent, "Extended attributes"),
+    MFXGroupBoxModule(frameParent, TL("Extended attributes")),
     myFrameParent(frameParent) {
     // Create open dialog button
-    new FXButton(getCollapsableFrame(), "Open attributes editor", nullptr, this, MID_GNE_SET_ATTRIBUTE_DIALOG, GUIDesignButton);
+    new FXButton(getCollapsableFrame(), TL("Open attributes editor"), nullptr, this, MID_GNE_SET_ATTRIBUTE_DIALOG, GUIDesignButton);
 }
 
 
@@ -935,11 +938,11 @@ GNEFrameAttributeModules::AttributesEditorExtended::onCmdOpenDialog(FXObject*, F
 // ---------------------------------------------------------------------------
 
 GNEFrameAttributeModules::GenericDataAttributes::GenericDataAttributes(GNEFrame* frameParent) :
-    MFXGroupBoxModule(frameParent, "Attributes"),
+    MFXGroupBoxModule(frameParent, TL("Attributes")),
     myFrameParent(frameParent) {
     // create textfield and buttons
     myTextFieldParameters = new FXTextField(getCollapsableFrame(), GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
-    myButtonEditParameters = new FXButton(getCollapsableFrame(), "Edit attributes", nullptr, this, MID_GNE_OPEN_PARAMETERS_DIALOG, GUIDesignButton);
+    myButtonEditParameters = new FXButton(getCollapsableFrame(), TL("Edit attributes"), nullptr, this, MID_GNE_OPEN_PARAMETERS_DIALOG, GUIDesignButton);
 }
 
 

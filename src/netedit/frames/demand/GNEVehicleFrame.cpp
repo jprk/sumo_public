@@ -36,7 +36,7 @@
 // ---------------------------------------------------------------------------
 
 GNEVehicleFrame::HelpCreation::HelpCreation(GNEVehicleFrame* vehicleFrameParent) :
-    MFXGroupBoxModule(vehicleFrameParent, "Help"),
+    MFXGroupBoxModule(vehicleFrameParent, TL("Help")),
     myVehicleFrameParent(vehicleFrameParent) {
     myInformationLabel = new FXLabel(getCollapsableFrame(), "", 0, GUIDesignLabelFrameInformation);
 }
@@ -68,46 +68,46 @@ GNEVehicleFrame::HelpCreation::updateHelpCreation() {
         // vehicles
         case SUMO_TAG_VEHICLE:
             information
-                    << "- Click over a route to\n"
-                    << "  create a vehicle.";
+                    << TL("- Click over a route to\n")
+                    << TL("  create a vehicle.");
             break;
         case SUMO_TAG_TRIP:
             information
-                    << "- Select two edges to\n"
-                    << "  create a Trip.";
+                    << TL("- Select two edges to\n")
+                    << TL("  create a Trip.");
             break;
         case GNE_TAG_VEHICLE_WITHROUTE:
             information
-                    << "- Select two edges to\n"
-                    << "  create a vehicle with\n"
-                    << "  embedded route.";
+                    << TL("- Select two edges to\n")
+                    << TL("  create a vehicle with\n")
+                    << TL("  embedded route.");
             break;
         case GNE_TAG_TRIP_JUNCTIONS:
             information
-                    << "- Select two junctions\n"
-                    << "  to create a Trip.";
+                    << TL("- Select two junctions\n")
+                    << TL("  to create a Trip.");
             break;
         // flows
         case GNE_TAG_FLOW_ROUTE:
             information
-                    << "- Click over a route to\n"
-                    << "  create a routeFlow.";
+                    << TL("- Click over a route to\n")
+                    << TL("  create a routeFlow.");
             break;
         case SUMO_TAG_FLOW:
             information
-                    << "- Select two edges to\n"
-                    << "  create a flow.";
+                    << TL("- Select two edges to\n")
+                    << TL("  create a flow.");
             break;
         case GNE_TAG_FLOW_WITHROUTE:
             information
-                    << "- Select two edges to\n"
-                    << "  create a flow with\n"
-                    << "  embedded route.";
+                    << TL("- Select two edges to\n")
+                    << TL("  create a flow with\n")
+                    << TL("  embedded route.");
             break;
         case GNE_TAG_FLOW_JUNCTIONS:
             information
-                    << "- Select two junctions\n"
-                    << "  to create a flow.";
+                    << TL("- Select two junctions\n")
+                    << TL("  to create a flow.");
             break;
         default:
             break;
@@ -282,9 +282,9 @@ GNEVehicleFrame::demandElementSelected() {
         myHelpCreation->showHelpCreation();
         // show warning if we have selected a vType oriented to pedestrians or containers
         if (myTypeSelector->getCurrentDemandElement()->getVClass() == SVC_PEDESTRIAN) {
-            WRITE_WARNING("VType with vClass == 'pedestrian' is oriented to pedestrians");
+            WRITE_WARNING(TL("VType with vClass == 'pedestrian' is oriented to pedestrians"));
         } else if (myTypeSelector->getCurrentDemandElement()->getVClass() == SVC_IGNORING) {
-            WRITE_WARNING("VType with vClass == 'ignoring' is oriented to containers");
+            WRITE_WARNING(TL("VType with vClass == 'ignoring' is oriented to containers"));
         }
     } else {
         // hide all moduls if selected item isn't valid
@@ -296,7 +296,7 @@ GNEVehicleFrame::demandElementSelected() {
 }
 
 
-void
+bool
 GNEVehicleFrame::createPath(const bool useLastRoute) {
     // first check if parameters are valid
     if (myVehicleAttributes->areValuesValid() && myTypeSelector->getCurrentDemandElement()) {
@@ -315,7 +315,7 @@ GNEVehicleFrame::createPath(const bool useLastRoute) {
         // check if use last route
         if (useLastRoute) {
             // build vehicle using last route
-            buildVehicleOverRoute(vehicleTag, myViewNet->getLastCreatedRoute());
+            return buildVehicleOverRoute(vehicleTag, myViewNet->getLastCreatedRoute());
         } else {
             // check number of edges
             if ((myPathCreator->getSelectedEdges().size() > 0) || (myPathCreator->getSelectedJunctions().size() > 0)) {
@@ -500,9 +500,11 @@ GNEVehicleFrame::createPath(const bool useLastRoute) {
                 myPathCreator->abortPathCreation();
                 // refresh myVehicleAttributes
                 myVehicleAttributes->refreshAttributesCreator();
+                return true;
             }
         }
     }
+    return false;
 }
 
 

@@ -1139,10 +1139,10 @@ def createCrossing(hasTLS):
     focusOnFrame()
     # jump to create crossing button depending of hasTLS
     if hasTLS:
-        for _ in range(attrs.crossing.create.button):
+        for _ in range(attrs.crossing.createTLS.button):
             typeTab()
     else:
-        for _ in range(attrs.crossing.createTLS.button):
+        for _ in range(attrs.crossing.create.button):
             typeTab()
     # type space to create crossing
     typeSpace()
@@ -1604,6 +1604,62 @@ def changeContainerFlowPlan(containerFlowPlan):
         typeTab()
     # paste the new containerFlowPlan
     pasteIntoTextField(containerFlowPlan)
+    # type enter to save change
+    typeEnter()
+
+#################################################
+# personPlan elements
+#################################################
+
+
+def personPlanMode():
+    """
+    @brief change to person mode
+    """
+    typeKey('c')
+    # wait for gl debug
+    time.sleep(DELAY_CHANGEMODE)
+
+
+def changePersonPlanMode(personPlan):
+    """
+    @brief change containerPlan
+    """
+    # focus current frame
+    focusOnFrame()
+    # jump to person plan
+    for _ in range(5):
+        typeTab()
+    # paste the new containerPlan
+    pasteIntoTextField(personPlan)
+    # type enter to save change
+    typeEnter()
+
+#################################################
+# containerPlan elements
+#################################################
+
+
+def containerPlanMode():
+    """
+    @brief change to person mode
+    """
+    typeKey('h')
+    # wait for gl debug
+    time.sleep(DELAY_CHANGEMODE)
+
+
+def changeContainerPlanMode(containerPlan):
+    """
+    @brief change containerPlan
+    """
+    # focus current frame
+    focusOnFrame()
+    # jump to container plan
+    for _ in range(5):
+        typeTab()
+    # paste the new containerPlan
+    pasteIntoTextField(containerPlan)
     # type enter to save change
     typeEnter()
 
@@ -2210,10 +2266,10 @@ def resetSingleTLSPhases(joined):
     focusOnFrame()
     # type tab 2 times to jump to create TLS button
     if (joined):
-        for _ in range(attrs.TLS.deleteJoined):
+        for _ in range(attrs.TLS.resetPhaseSingle):
             typeTab()
     else:
-        for _ in range(attrs.TLS.deleteSingle):
+        for _ in range(attrs.TLS.resetPhaseJoined):
             typeTab()
     # create TLS
     typeSpace()

@@ -868,7 +868,7 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
                         && OptionsCont::getOptions().exists("pedestrian.striping.stripe-width")
                         && OptionsCont::getOptions().getString("pedestrian.model") == "striping"
                         && OptionsCont::getOptions().getFloat("pedestrian.striping.stripe-width") < vType->width) {
-                    WRITE_WARNINGF("Pedestrian vType '%' width % is larger than pedestrian.striping.stripe-width and this may cause collisions with vehicles.", id, vType->width);
+                    WRITE_WARNINGF(TL("Pedestrian vType '%' width % is larger than pedestrian.striping.stripe-width and this may cause collisions with vehicles."), id, vType->width);
                 }
             }
         }
@@ -944,7 +944,7 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
             if (!ok) {
                 return handleVehicleTypeError(hardFail, vType);
             } else if (lcmS == "JE2013") {
-                WRITE_WARNING("Lane change model 'JE2013' is deprecated. Using default model instead.");
+                WRITE_WARNING(TL("Lane change model 'JE2013' is deprecated. Using default model instead."));
                 lcmS = "default";
             }
             if (SUMOXMLDefinitions::LaneChangeModels.hasString(lcmS)) {
@@ -1402,6 +1402,7 @@ SUMOVehicleParserHelper::getAllowedCFModelAttrs() {
         CACCParams.insert(SUMO_ATTR_CA_OVERRIDE);
         CACCParams.insert(SUMO_ATTR_HEADWAY_TIME_CACC_TO_ACC);
         CACCParams.insert(SUMO_ATTR_APPLYDRIVERSTATE);
+        CACCParams.insert(SUMO_ATTR_SC_MIN_GAP);
         allowedCFModelAttrs[SUMO_TAG_CF_CACC] = CACCParams;
         allParams.insert(CACCParams.begin(), CACCParams.end());
         // CC

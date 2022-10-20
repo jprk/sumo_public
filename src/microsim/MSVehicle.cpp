@@ -303,7 +303,7 @@ MSVehicle::Influencer::GapControlState::init() {
         MSNet::VehicleStateListener* vsl = dynamic_cast<MSNet::VehicleStateListener*>(&vehStateListener);
         MSNet::getInstance()->addVehicleStateListener(vsl);
     } else {
-        WRITE_ERROR("MSVehicle::Influencer::GapControlState::init(): No MSNet instance found!")
+        WRITE_ERROR(TL("MSVehicle::Influencer::GapControlState::init(): No MSNet instance found!"))
     }
 }
 
@@ -316,7 +316,7 @@ MSVehicle::Influencer::GapControlState::cleanup() {
 void
 MSVehicle::Influencer::GapControlState::activate(double tauOrig, double tauNew, double additionalGap, double dur, double rate, double decel, const MSVehicle* refVeh) {
     if (MSGlobals::gUseMesoSim) {
-        WRITE_ERROR("No gap control available for meso.")
+        WRITE_ERROR(TL("No gap control available for meso."))
     } else {
         // always deactivate control before activating (triggers clean-up of refVehMap)
 //        std::cout << "activate gap control with refVeh=" << (refVeh==nullptr? "NULL" : refVeh->getID()) << std::endl;
@@ -939,7 +939,7 @@ MSVehicle::Influencer::implicitDeltaPosRemote(const MSVehicle* veh) {
         return 0;
     } else {
         if (DIST2SPEED(dist) > veh->getMaxSpeed() * 1.1) {
-            WRITE_WARNINGF("Vehicle '%' moved by TraCI from % to % (dist %) with implied speed of % (exceeding maximum speed %). time=%.",
+            WRITE_WARNINGF(TL("Vehicle '%' moved by TraCI from % to % (dist %) with implied speed of % (exceeding maximum speed %). time=%."),
                            veh->getID(), veh->getPosition(), myRemoteXYPos, dist, DIST2SPEED(dist), veh->getMaxSpeed(), time2string(SIMSTEP));
             // some sanity check here
             dist = MIN2(dist, SPEED2DIST(veh->getMaxSpeed() * 2));
@@ -1797,7 +1797,7 @@ MSVehicle::processNextStop(double currentVelocity) {
                     // split the train
                     MSVehicle* splitVeh = dynamic_cast<MSVehicle*>(MSNet::getInstance()->getVehicleControl().getVehicle(stop.pars.split));
                     if (splitVeh == nullptr) {
-                        WRITE_WARNINGF("Vehicle '%' to split from vehicle '%' is not known. time=%.", stop.pars.split, getID(), SIMTIME)
+                        WRITE_WARNINGF(TL("Vehicle '%' to split from vehicle '%' is not known. time=%."), stop.pars.split, getID(), SIMTIME)
                     } else {
                         MSNet::getInstance()->getInsertionControl().add(splitVeh);
                         splitVeh->getRoute().getEdges()[0]->removeWaiting(splitVeh);
@@ -2704,7 +2704,7 @@ MSVehicle::planMoveInternal(const SUMOTime t, MSLeaderInfo ahead, DriveItemVecto
                 //std::cout << "   blocker=" << Named::getIDSecure(blocker.first) << "\n";
             }
             if (n == 0) {
-                WRITE_WARNINGF("Suspicious right_before_left junction '%s'.", lane->getEdge().getToJunction()->getID());
+                WRITE_WARNINGF(TL("Suspicious right_before_left junction '%'."), lane->getEdge().getToJunction()->getID());
             }
             //std::cout << "   blockerLink=" << blocker.second << " link=" << *link << "\n";
             if (blocker.second == *link) {
@@ -4247,10 +4247,10 @@ MSVehicle::executeMove() {
 
     // Lanes, which the vehicle touched at some moment of the executed simstep
     std::vector<MSLane*> passedLanes;
-    // remeber previous lane (myLane is updated in processLaneAdvances)
+    // remember previous lane (myLane is updated in processLaneAdvances)
     const MSLane* oldLane = myLane;
     // Reason for a possible emergency stop
-    std::string emergencyReason = " for unknown reasons";
+    std::string emergencyReason = TL(" for unknown reasons");
     processLaneAdvances(passedLanes, emergencyReason);
 
     updateTimeLoss(vNext);
@@ -4258,11 +4258,9 @@ MSVehicle::executeMove() {
 
     if (!hasArrivedInternal() && !myLane->getEdge().isVaporizing()) {
         if (myState.myPos > myLane->getLength()) {
-            WRITE_WARNING("Vehicle '" + getID() + "' performs emergency stop at the end of lane '" + myLane->getID()
-                          + "'" + emergencyReason
-                          + " (decel=" + toString(myAcceleration - myState.mySpeed)
-                          + ", offset=" + toString(myState.myPos - myLane->getLength())
-                          + "), time=" + time2string(MSNet::getInstance()->getCurrentTimeStep()) + ".");
+            WRITE_WARNINGF(TL("Vehicle '%' performs emergency stop at the end of lane '%'% (decel=%, offset=%), time=%."),
+                           getID(), myLane->getID(), emergencyReason, myAcceleration - myState.mySpeed,
+                           myState.myPos - myLane->getLength(), time2string(SIMSTEP));
             MSNet::getInstance()->getVehicleControl().registerEmergencyStop();
             MSNet::getInstance()->informVehicleStateListener(this, MSNet::VehicleState::EMERGENCYSTOP);
             myState.myPos = myLane->getLength();
@@ -4332,8 +4330,8 @@ MSVehicle::executeMove() {
         if (newOpposite == nullptr) {
             if (!myLaneChangeModel->hasBlueLight()) {
                 // unusual overtaking at junctions is ok for emergency vehicles
-                WRITE_WARNING("Unexpected end of opposite lane for vehicle '" + getID() + "' at lane '" + myLane->getID() + "', time=" +
-                              time2string(MSNet::getInstance()->getCurrentTimeStep()) + ".");
+                WRITE_WARNINGF(TL("Unexpected end of opposite lane for vehicle '%' at lane '%', time=%."),
+                               getID(), myLane->getID(), time2string(SIMSTEP));
             }
             myLaneChangeModel->changedToOpposite();
             if (myState.myPos < getLength()) {
@@ -4457,7 +4455,7 @@ MSVehicle::updateState(double vNext) {
             decelPlus += 2 * NUMERICAL_EPS;
             const double emergencyFraction = decelPlus / MAX2(NUMERICAL_EPS, getCarFollowModel().getEmergencyDecel() - getCarFollowModel().getMaxDecel());
             if (emergencyFraction >= MSGlobals::gEmergencyDecelWarningThreshold) {
-                WRITE_WARNINGF("Vehicle '%' performs emergency braking on lane '%' with decel=%, wished=%, severity=%, time=%.",
+                WRITE_WARNINGF(TL("Vehicle '%' performs emergency braking on lane '%' with decel=%, wished=%, severity=%, time=%."),
                                //+ " decelPlus=" + toString(decelPlus)
                                //+ " prevAccel=" + toString(previousAcceleration)
                                //+ " reserve=" + toString(MAX2(NUMERICAL_EPS, getCarFollowModel().getEmergencyDecel() - getCarFollowModel().getMaxDecel()))
@@ -5859,7 +5857,7 @@ MSVehicle::getUpcomingLanesUntil(double distance) const {
     std::vector<const MSLane*> lanes;
 
     if (distance <= 0.) {
-        // WRITE_WARNINGF("MSVehicle::getUpcomingLanesUntil(): distance ('%') should be greater than 0.", distance);
+        // WRITE_WARNINGF(TL("MSVehicle::getUpcomingLanesUntil(): distance ('%') should be greater than 0."), distance);
         return lanes;
     }
 
@@ -5928,7 +5926,7 @@ MSVehicle::getPastLanesUntil(double distance) const {
     std::vector<const MSLane*> lanes;
 
     if (distance <= 0.) {
-        // WRITE_WARNINGF("MSVehicle::getPastLanesUntil(): distance ('%') should be greater than 0.", distance);
+        // WRITE_WARNINGF(TL("MSVehicle::getPastLanesUntil(): distance ('%') should be greater than 0."), distance);
         return lanes;
     }
 

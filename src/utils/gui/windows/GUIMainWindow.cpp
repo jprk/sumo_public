@@ -155,6 +155,18 @@ GUIMainWindow::getViewByID(const std::string& id) const {
 }
 
 
+void
+GUIMainWindow::removeViewByID(const std::string& id) {
+    for (GUIGlChildWindow* const window : myGLWindows) {
+        if (std::string(window->getTitle().text()) == id) {
+            window->close();
+            removeGLChild(window);
+            return;
+        }
+    }
+}
+
+
 FXFont*
 GUIMainWindow::getBoldFont() {
     return myBoldFont;
@@ -271,7 +283,7 @@ GUIMainWindow::setWindowSizeAndPos() {
     if (oc.isSet("window-size")) {
         std::vector<std::string> windowSize = oc.getStringVector("window-size");
         if (windowSize.size() != 2) {
-            WRITE_ERROR("option window-size requires INT,INT");
+            WRITE_ERROR(TL("option window-size requires INT,INT"));
         } else {
             try {
                 windowWidth = StringUtils::toInt(windowSize[0]);
@@ -288,7 +300,7 @@ GUIMainWindow::setWindowSizeAndPos() {
         if (oc.isSet("window-pos")) {
             std::vector<std::string> windowPos = oc.getStringVector("window-pos");
             if (windowPos.size() != 2) {
-                WRITE_ERROR("option window-pos requires INT,INT");
+                WRITE_ERROR(TL("option window-pos requires INT,INT"));
             } else {
                 try {
                     x = StringUtils::toInt(windowPos[0]);

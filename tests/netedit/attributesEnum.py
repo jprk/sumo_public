@@ -53,6 +53,13 @@ class modes:
     class demand:
         grid = '1'
         junctionShape = '2'
+        spreadVehicle = '3'
+        showShapes = '4'
+        showAllTrips = '5'
+        showPersonPlans = '6'
+        lockPerson = '7'
+        showContainerPlans = '8'
+        lockContainer = '9'
 
     class data:
         junctionShape = '1'
@@ -201,9 +208,9 @@ class edge:
         parameters = 22
 
     class template:
-        create = 35
-        copy = 36
-        clear = 37
+        create = 33
+        copy = 34
+        clear = 35
 
 # lane
 
@@ -349,7 +356,7 @@ class crossing:
         edges = 1
         priority = 2
         width = 3
-        button = 12
+        button = 11
 
     class createTLS:
         edges = 1
@@ -2073,10 +2080,10 @@ class stop:
         expected = 9
         permitted = 10
         parking = 11
-        actType = 12
-        tripID = 13
-        line = 14
-        onDemad = 15
+        actType = 13
+        tripID = 14
+        line = 15
+        onDemad = 16
 
 # stop (over parkings)
 
@@ -2183,10 +2190,10 @@ class stopLane:
         expected = 11
         permitted = 12
         parking = 13
-        actType = 14
-        tripID = 15
-        line = 16
-        onDemad = 17
+        actType = 15
+        tripID = 16
+        line = 17
+        onDemad = 18
 
 # waypoint (over busStop/containerStop/chargingStation)
 
@@ -2235,10 +2242,10 @@ class waypoint:
         expected = 9
         permitted = 10
         parking = 11
-        actType = 12
-        tripID = 13
-        line = 14
-        speed = 15
+        actType = 13
+        tripID = 14
+        line = 15
+        speed = 16
 
 # waypoint (over parkings)
 
@@ -2345,10 +2352,10 @@ class waypointLane:
         expected = 11
         permitted = 12
         parking = 13
-        actType = 14
-        tripID = 15
-        line = 16
-        speed = 17
+        actType = 15
+        tripID = 16
+        line = 17
+        speed = 18
 
 # Person
 
@@ -2421,6 +2428,189 @@ class personFlow:
         spacingOption = 13
         parameters = 15
 
+# PersonPlans
+
+
+class personTripEdgeEdge:
+    class create:
+        arrivalPos = 8
+        vTypes = 9
+        modes = 10
+        lines = 11
+
+    class inspect:
+        to = 1
+        arrivalPos = 2
+        vTypes = 3
+        modes = 4
+        lines = 5
+
+    class inspectSelection:
+        arrivalPos = 1
+        vTypes = 2
+        modes = 3
+        lines = 4
+
+
+class personTripEdgeBusStop:
+    class create:
+        vTypes = 8
+        modes = 9
+        lines = 10
+
+    class inspect:
+        to = 1
+        vTypes = 2
+        modes = 3
+        lines = 4
+
+    class inspectSelection:
+        vTypes = 1
+        modes = 2
+        lines = 3
+
+
+class personTripJunctions:
+    class create:
+        vTypes = 8
+        modes = 9
+        lines = 10
+
+    class inspect:
+        to = 1
+        vTypes = 2
+        modes = 3
+        lines = 4
+
+    class inspectSelection:
+        vTypes = 1
+        modes = 2
+        lines = 3
+
+
+class rideEdgeEdge:
+    class create:
+        arrivalPos = 8
+        lines = 9
+
+    class inspect:
+        to = 1
+        arrivalPos = 2
+        lines = 3
+
+    class inspectSelection:
+        arrivalPos = 1
+        lines = 2
+
+
+class rideEdgeBusStop:
+    class create:
+        lines = 8
+
+    class inspect:
+        to = 1
+        lines = 2
+
+    class inspectSelection:
+        lines = 1
+
+
+class walkEdgeEdge:
+    class create:
+        arrivalPos = 8
+
+    class inspect:
+        to = 1
+        arrivalPos = 2
+
+    class inspectSelection:
+        arrivalPos = 1
+
+
+class walkEdges:
+    class create:
+        arrivalPos = 8
+
+    class inspect:
+        edges = 1
+        arrivalPos = 2
+
+    class inspectSelection:
+        arrivalPos = 1
+
+
+class walkRoute:
+    class create:
+        arrivalPos = 8
+
+    class inspect:
+        route = 1
+        arrivalPos = 2
+
+    class inspectSelection:
+        arrivalPos = 1
+
+
+class walkEdgeBusStop:
+    class inspect:
+        to = 1
+
+
+class walkJunctions:
+    class inspect:
+        to = 1
+
+
+class personStopEdge:
+    class create:
+        friendlyPos = 8
+        durationEnable = 9
+        duration = 10
+        untilEnable = 11
+        until = 12
+        actType = 12
+
+    class inspect:
+        edge = 1
+        endPos = 2
+        friendlyPos = 3
+        durationEnable = 4
+        duration = 5
+        untilEnable = 6
+        until = 7
+        actType = 7
+
+    class inspectSelection:
+        friendlyPos = 1
+        durationEnable = 2
+        duration = 3
+        untilEnable = 4
+        until = 5
+        actType = 6
+
+
+class personStopBusStop:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 10
+        until = 11
+        actType = 11
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        actType = 4
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        actType = 4
+
 # Container
 
 
@@ -2485,6 +2675,137 @@ class containerFlow:
         terminateOption = 11
         spacingOption = 12
         parameters = 14
+
+# ContainerPlans
+
+
+class transportEdgeEdge:
+    class create:
+        arrivalPos = 8
+        lines = 9
+
+    class inspect:
+        to = 1
+        arrivalPos = 2
+        lines = 3
+
+    class inspectSelection:
+        arrivalPos = 1
+        lines = 2
+
+
+class transportEdgeContainerStop:
+    class create:
+        lines = 8
+
+    class inspect:
+        to = 1
+        lines = 2
+
+    class inspectSelection:
+        lines = 1
+
+
+class transhipEdgeEdge:
+    class create:
+        departPos = 8
+        arrivalPos = 9
+        speed = 9
+
+    class inspect:
+        to = 1
+        departPos = 2
+        arrivalPos = 3
+        speed = 4
+
+    class inspectSelection:
+        departPos = 1
+        arrivalPos = 2
+        speed = 3
+
+
+class transhipEdgeContainerStop:
+    class create:
+        departPos = 8
+        speed = 9
+
+    class inspect:
+        to = 1
+        departPos = 2
+        speed = 3
+
+    class inspectSelection:
+        departPos = 1
+        speed = 2
+
+
+class transhipEdges:
+    class create:
+        departPos = 8
+        arrivalPos = 9
+        speed = 9
+
+    class inspect:
+        edges = 1
+        departPos = 2
+        arrivalPos = 3
+        speed = 4
+
+    class inspectSelection:
+        departPos = 1
+        arrivalPos = 2
+        speed = 3
+
+
+class containerStopEdge:
+    class create:
+        friendlyPos = 8
+        durationEnable = 9
+        duration = 10
+        untilEnable = 11
+        until = 12
+        actType = 12
+
+    class inspect:
+        edge = 1
+        endPos = 2
+        friendlyPos = 3
+        durationEnable = 4
+        duration = 5
+        untilEnable = 6
+        until = 7
+        actType = 7
+
+    class inspectSelection:
+        friendlyPos = 1
+        durationEnable = 2
+        duration = 3
+        untilEnable = 4
+        until = 5
+        actType = 6
+
+
+class containerStopBusStop:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 10
+        until = 11
+        actType = 11
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        actType = 4
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        actType = 4
 
 # --------------------------------
 # DATA ELEMENTS

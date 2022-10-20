@@ -23,6 +23,11 @@
 //    Microscopic Simulation of Adaptive and Cooperative Adaptive Cruise
 //     Control Vehicles. Transportation Research Record: Journal of the
 //     Transportation Research Board, No. 2623, 2017. (DOI: 10.3141/2623-01).
+//[3]  Xiao, L., Wang, M., Schakel, W., & van Arem, B. (2018). Unravelling
+//    effects of cooperative adaptive cruise control deactivation on
+//    traffic flow characteristics at merging bottlenecks. Transportation
+//    Research Part C: Emerging Technologies, 96, 380–397.
+//    <https://doi.org/10.1016/j.trc.2018.10.008>
 /****************************************************************************/
 #include <config.h>
 
@@ -153,7 +158,7 @@ MSCFModel_ACC::insertionFollowSpeed(const MSVehicle* const v, double speed, doub
 
 /// @todo update interactionGap logic
 double
-MSCFModel_ACC::interactionGap(const MSVehicle* const /* veh */, double /* vL */) const {
+MSCFModel_ACC::interactionGap(const MSVehicle* const /*veh */, double /* vL */) const {
     /*maximum radar range is ACC is enabled*/
     return 250;
 }
@@ -163,32 +168,50 @@ double MSCFModel_ACC::accelSpeedControl(double vErr) const {
     return mySpeedControlGain * vErr;
 }
 
-double MSCFModel_ACC::accelGapControl(const MSVehicle* const /* veh */, const double gap2pred, const double speed, const double predSpeed, double vErr) const {
-
-#ifdef DEBUG_ACC
-    if (DEBUG_COND) {
-        std::cout << "        applying gapControl" << std::endl;
-    }
-#endif
+double MSCFModel_ACC::accelGapControl(const MSVehicle* const veh, const double gap2pred, const double speed, const double predSpeed, double vErr) const {
 
 // Gap control law
     double gclAccel = 0.0;
     double desSpacing = myHeadwayTime * speed;
     double spacingErr = gap2pred - desSpacing;
     double deltaVel = predSpeed - speed;
+    double L = veh->getLength();
+
+// see dynamic gap margin definition from (Xiao et. al, 2018)[3]
+    if (speed < 10.8){
+    	spacingErr = spacingErr - L - 2;
+    } else if (speed <= 15.0 && speed >= 10.8){
+    	spacingErr = spacingErr - L - (75/speed -5);
+	} else {
+    	spacingErr = spacingErr - L;
+	}
 
 
     if (fabs(spacingErr) < 0.2 && fabs(vErr) < 0.1) {
         // gap mode
         gclAccel = myGapControlGainSpeed * deltaVel + myGapControlGainSpace * spacingErr;
+#ifdef DEBUG_ACC        
+        if (DEBUG_COND) {
+            std::cout << "        applying gap control:  spacingErr=" << spacingErr << " speedErr=" << vErr << std::endl;
+        }
+#endif
     } else if (spacingErr < 0)  {
         // collision avoidance mode
         gclAccel = myCollisionAvoidanceGainSpeed * deltaVel + myCollisionAvoidanceGainSpace * spacingErr;
+#ifdef DEBUG_ACC        
+        if (DEBUG_COND) {
+            std::cout << "        applying collision avoidance:  spacingErr=" << spacingErr << " speedErr=" << vErr << std::endl;
+        }
+#endif
     } else {
         // gap closing mode
         gclAccel = myGapClosingControlGainSpeed * deltaVel + myGapClosingControlGainSpace * spacingErr;
+#ifdef DEBUG_ACC
+        if (DEBUG_COND) {
+            std::cout << "        applying gap closing:  spacingErr=" << spacingErr << " speedErr=" << vErr << std::endl;
+        }
+#endif
     }
-
     return gclAccel;
 }
 

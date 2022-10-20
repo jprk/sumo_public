@@ -21,6 +21,8 @@
 
 #include <netedit/GNENet.h>
 #include <netedit/GNEViewNet.h>
+#include <netedit/GNEViewParent.h>
+#include <netedit/GNEApplicationWindow.h>
 #include <netedit/dialogs/GNEAllowVClassesDialog.h>
 #include <netedit/dialogs/GNESingleParametersDialog.h>
 #include <utils/gui/div/GUIDesigns.h>
@@ -53,16 +55,18 @@ GNEAttributesCreatorRow::GNEAttributesCreatorRow(GNEAttributesCreator* Attribute
     myAttributesCreatorParent(AttributesCreatorParent),
     myAttrProperties(attrProperties) {
     // Create left visual elements
-    myAttributeLabel = new FXLabel(this, "name", nullptr, GUIDesignLabelAttribute);
+    myAttributeLabel = new MFXLabelTooltip(this, 
+        AttributesCreatorParent->getFrameParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(), 
+        "name", nullptr, GUIDesignLabelAttribute);
     myAttributeLabel->hide();
-    myEnableAttributeCheckButton = new FXCheckButton(this, "name", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButtonAttribute);
+    myEnableAttributeCheckButton = new FXCheckButton(this, TL("name"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButtonAttribute);
     myEnableAttributeCheckButton->hide();
-    myAttributeButton = new FXButton(this, "button", nullptr, this, MID_GNE_SET_ATTRIBUTE_DIALOG, GUIDesignButtonAttribute);
+    myAttributeButton = new FXButton(this, TL("button"), nullptr, this, MID_GNE_SET_ATTRIBUTE_DIALOG, GUIDesignButtonAttribute);
     myAttributeButton->hide();
     // Create right visual elements
     myValueTextField = new FXTextField(this, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
     myValueTextField->hide();
-    myValueCheckButton = new FXCheckButton(this, "Disabled", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
+    myValueCheckButton = new FXCheckButton(this, TL("Disabled"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
     myValueCheckButton->hide();
     myValueComboBox = new FXComboBox(this, GUIDesignComboBoxNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBoxAttribute);
     myValueComboBox->hide();
@@ -188,6 +192,7 @@ GNEAttributesCreatorRow::refreshRow() {
     if ((myAttrProperties.getAttr() == SUMO_ATTR_ID) && myAttrProperties.hasAutomaticID()) {
         // show label
         myAttributeLabel->setText(myAttrProperties.getAttrStr().c_str());
+        myAttributeLabel->setTipText(myAttrProperties.getDefinition().c_str());
         myAttributeLabel->show();
         // generate ID
         myValueTextField->setText(generateID().c_str());
@@ -216,16 +221,17 @@ GNEAttributesCreatorRow::refreshRow() {
         } else {
             // show label
             myAttributeLabel->setText(myAttrProperties.getAttrStr().c_str());
+            myAttributeLabel->setTipText(myAttrProperties.getDefinition().c_str());
             myAttributeLabel->show();
         }
         // right
         if (myAttrProperties.isBool()) {
             if (GNEAttributeCarrier::parse<bool>(myAttributesCreatorParent->getCurrentTemplateAC()->getAttribute(myAttrProperties.getAttr()))) {
                 myValueCheckButton->setCheck(true);
-                myValueCheckButton->setText("true");
+                myValueCheckButton->setText(TL("true"));
             } else {
                 myValueCheckButton->setCheck(false);
-                myValueCheckButton->setText("false");
+                myValueCheckButton->setText(TL("false"));
             }
             myValueCheckButton->show();
             // check if enable or disable
@@ -336,10 +342,10 @@ GNEAttributesCreatorRow::onCmdSetAttribute(FXObject* obj, FXSelector, void*) {
         }
     } else if (obj == myValueCheckButton) {
         if (myValueCheckButton->getCheck()) {
-            myValueCheckButton->setText("true");
+            myValueCheckButton->setText(TL("true"));
             myAttributesCreatorParent->getCurrentTemplateAC()->setAttribute(myAttrProperties.getAttr(), "true");
         } else {
-            myValueCheckButton->setText("false");
+            myValueCheckButton->setText(TL("false"));
             myAttributesCreatorParent->getCurrentTemplateAC()->setAttribute(myAttrProperties.getAttr(), "false");
         }
     } else if (obj == myValueComboBox) {

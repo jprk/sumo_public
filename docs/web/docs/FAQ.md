@@ -279,7 +279,7 @@ the TraCI script being run. Here are some guidelines for figuring out
 what is happening:
 
 - The SUMO error *connection reset by peer* indicates a problem in the
-script. The python strack trace should point to the problem (in the
+script. The python stack trace should point to the problem (in the
 simplest case, the script ends without calling *traci.close()*)
 - The error **TraCIFatalError** *connection closed by SUMO* indicates
 a problem with SUMO
@@ -290,7 +290,7 @@ of error can be safely handled by the script with *try/except*
 figure out what went wrong in a simulation run or why the simulation
 aborted.
 - If SUMO crashes (just stops instead of quitting with an error
-message) [you can run sumo in a debugger while executing your script](TraCI/Interfacing_TraCI_from_Python.md#debugging_a_traci_session_on_linux) and send the stracktrace to the developers.
+message) [you can run sumo in a debugger while executing your script](TraCI/Interfacing_TraCI_from_Python.md#debugging_a_traci_session_on_linux) and send the stack trace to the developers.
 
 ### Error: tcpip::Storage::readIsSafe: want to read 8 bytes from Storage, but only 4 remaining
 
@@ -392,7 +392,7 @@ and simply type `git pull`.
 
 ### Is there further documentation on Git and Subversion?
 
-  There are the [Git book](https://git-scm.com/book/de/v1) and the
+  There are the [Git book](https://git-scm.com/book/) and the
   [Subversion book](http://svnbook.red-bean.com/) and the [GitHub help](https://help.github.com/) is also worth reading.
 
 ### How to get an older version of SUMO?

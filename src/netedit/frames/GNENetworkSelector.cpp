@@ -46,14 +46,14 @@ FXIMPLEMENT(GNENetworkSelector, MFXGroupBoxModule, SelectorParentNetworkElements
 // ---------------------------------------------------------------------------
 
 GNENetworkSelector::GNENetworkSelector(GNEFrame* frameParent, const Type networkElementType) :
-    MFXGroupBoxModule(frameParent, "NetworkElements"),
+    MFXGroupBoxModule(frameParent, TL("NetworkElements")),
     myFrameParent(frameParent),
     myNetworkElementType(networkElementType) {
     // Create horizontal frame
     FXHorizontalFrame* buttonsFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // Create buttons
-    myClearSelection = new FXButton(buttonsFrame, "Clear", nullptr, this, MID_GNE_CLEARSELECTION, GUIDesignButtonRectangular100);
-    myUseSelected = new FXButton(buttonsFrame, "Use selected", nullptr, this, MID_GNE_USESELECTED, GUIDesignButtonRectangular100);
+    myClearSelection = new FXButton(buttonsFrame, TL("Clear"), nullptr, this, MID_GNE_CLEARSELECTION, GUIDesignButtonRectangular100);
+    myUseSelected = new FXButton(buttonsFrame, TL("Use selected"), nullptr, this, MID_GNE_USESELECTED, GUIDesignButtonRectangular100);
     // Create list
     myList = new FXList(getCollapsableFrame(), this, MID_GNE_SELECT, GUIDesignListFixedHeight, 0, 0, 0, 100);
     // create information label and update modul name
@@ -62,13 +62,13 @@ GNENetworkSelector::GNENetworkSelector(GNEFrame* frameParent, const Type network
             new FXLabel(this,
                         "-Click over an edge to select\n-ESC to clear selection",
                         0, GUIDesignLabelFrameInformation);
-            setText("Edges");
+            setText(TL("Edges"));
             break;
         case Type::LANE:
             new FXLabel(this,
                         "-Click over a lane to select\n-ESC to clear selection",
                         0, GUIDesignLabelFrameInformation);
-            setText("Lanes");
+            setText(TL("Lanes"));
             break;
         default:
             throw ProcessError("Invalid NetworkElementType");

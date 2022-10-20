@@ -256,9 +256,9 @@ GNEAllowVClassesDialog::constructor() {
     buildVClass(myContentCenterFrame, SVC_MOPED, GUIIcon::VCLASS_MOPED, "Motorcycle not allowed in motorways");
     buildVClass(myContentCenterFrame, SVC_BICYCLE, GUIIcon::VCLASS_BICYCLE, "Human-powered, pedal-driven vehicle");
     buildVClass(myContentCenterFrame, SVC_PEDESTRIAN, GUIIcon::VCLASS_PEDESTRIAN, "Person traveling on foot");
-    buildVClass(myContentCenterFrame, SVC_TRAM, GUIIcon::VCLASS_RAIL_ELECTRIC, "Rail vehicle which runs on tracks");
-    buildVClass(myContentCenterFrame, SVC_RAIL_ELECTRIC, GUIIcon::VCLASS_RAIL_URBAN, "Rail electric vehicle");
-    buildVClass(myContentCenterFrame, SVC_RAIL_FAST, GUIIcon::VCLASS_RAIL_URBAN, "High-speed rail vehicle");
+    buildVClass(myContentCenterFrame, SVC_TRAM, GUIIcon::VCLASS_TRAM, "Rail vehicle which runs on tracks");
+    buildVClass(myContentCenterFrame, SVC_RAIL_ELECTRIC, GUIIcon::VCLASS_RAIL_ELECTRIC, "Rail electric vehicle");
+    buildVClass(myContentCenterFrame, SVC_RAIL_FAST, GUIIcon::VCLASS_RAIL_FAST, "High-speed rail vehicle");
     buildVClass(myContentCenterFrame, SVC_RAIL_URBAN, GUIIcon::VCLASS_RAIL_URBAN, "Heavier than tram");
     buildVClass(myContentCenterFrame, SVC_RAIL, GUIIcon::VCLASS_RAIL, "Heavy rail vehicle");
     // create right frame and fill it  (8 vehicles)
@@ -274,8 +274,8 @@ GNEAllowVClassesDialog::constructor() {
     // create dialog buttons bot centered
     FXHorizontalFrame* buttonsFrame = new FXHorizontalFrame(mainFrame, GUIDesignHorizontalFrame);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
-    myAcceptButton = new FXButton(buttonsFrame, "accept\t\tclose", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
-    myCancelButton = new FXButton(buttonsFrame, "cancel\t\tclose", GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, MID_GNE_BUTTON_CANCEL, GUIDesignButtonCancel);
+    myAcceptButton = new FXButton(buttonsFrame, TL("accept\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
+    myCancelButton = new FXButton(buttonsFrame, TL("cancel\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, MID_GNE_BUTTON_CANCEL, GUIDesignButtonCancel);
     myResetButton = new FXButton(buttonsFrame,  "reset\t\tclose",  GUIIconSubSys::getIcon(GUIIcon::RESET), this, MID_GNE_BUTTON_RESET,  GUIDesignButtonReset);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
     // reset dialog

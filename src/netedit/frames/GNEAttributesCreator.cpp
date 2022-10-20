@@ -47,7 +47,7 @@ FXIMPLEMENT(GNEAttributesCreator, MFXGroupBoxModule, AttributesCreatorMap, ARRAY
 // ===========================================================================
 
 GNEAttributesCreator::GNEAttributesCreator(GNEFrame* frameParent) :
-    MFXGroupBoxModule(frameParent, "Internal attributes"),
+    MFXGroupBoxModule(frameParent, TL("Internal attributes")),
     myFrameParent(frameParent),
     myTemplateAC(nullptr) {
     // resize myAttributesCreatorRows
@@ -57,7 +57,7 @@ GNEAttributesCreator::GNEAttributesCreator(GNEFrame* frameParent) :
     // create reset and help button
     myFrameButtons = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     myResetButton = new FXButton(myFrameButtons, "", GUIIconSubSys::getIcon(GUIIcon::RESET), this, MID_GNE_RESET, GUIDesignButtonIcon);
-    new FXButton(myFrameButtons, "Help", nullptr, this, MID_HELP, GUIDesignButtonRectangular);
+    new FXButton(myFrameButtons, TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
 }
 
 

@@ -513,8 +513,10 @@ GNEViewNet::openObjectDialogAtCursor(const FXEvent* /*ev*/) {
         const auto GLObjects = getGUIGlObjectsUnderCursor();
         // check if we're cliking while alt button is pressed
         if (myMouseButtonKeyPressed.altKeyPressed()) {
+            // set clicked popup position
+            myClickedPopupPosition = getPositionInformation();
             // create cursor popup dialog for mark front element
-            myPopup = new GUICursorDialog(GUICursorDialog::CursorDialogType::FRONT_ELEMENT, this, GLObjects);
+            myPopup = new GUICursorDialog(GUIGLObjectPopupMenu::PopupType::FRONT_ELEMENT, this, GLObjects);
             // open popup dialog
             openPopupDialog();
         } else if (GLObjects.empty()) {
@@ -532,6 +534,7 @@ GNEViewNet::openObjectDialogAtCursor(const FXEvent* /*ev*/) {
                 filteredGLObjects.push_back(overlappedElement);
             }
             bool connections = false;
+            bool TLS = false;
             // fill filtered objects
             for (const auto &glObject : GLObjects) {
                 // always avoid edges
@@ -541,13 +544,28 @@ GNEViewNet::openObjectDialogAtCursor(const FXEvent* /*ev*/) {
                 if (glObject->getType() == GLO_CONNECTION) {
                     connections = true;
                 }
+                if (glObject->getType() == GLO_TLLOGIC) {
+                    TLS = true;
+                }
                 filteredGLObjects.push_back(glObject);
             }
-            // filter junctions if there are connections
+            auto it = filteredGLObjects.begin();
             if (connections) {
-                for (auto it = filteredGLObjects.begin(); it != filteredGLObjects.end(); it++) {
+                // filter junctions if there are connections
+                while (it != filteredGLObjects.end()) {
                     if ((*it)->getType() == GLO_JUNCTION) {
                         it = filteredGLObjects.erase(it);
+                    } else {
+                        it++;
+                    }
+                }
+            } else if (TLS) {
+                // filter all elements except TLLogi
+                while (it != filteredGLObjects.end()) {
+                    if ((*it)->getType() != GLO_TLLOGIC) {
+                        it = filteredGLObjects.erase(it);
+                    } else {
+                        it++;
                     }
                 }
             }
@@ -563,8 +581,10 @@ GNEViewNet::openDeleteDialogAtCursor(const std::vector<GUIGlObject*> &GLObjects)
     if (myPopup) {
         destroyPopup();
     }
+    // set clicked popup position
+    myClickedPopupPosition = getPositionInformation();
     // create cursor popup dialog for delete element
-    myPopup = new GUICursorDialog(GUICursorDialog::CursorDialogType::DELETE_ELEMENT, this, GLObjects);
+    myPopup = new GUICursorDialog(GUIGLObjectPopupMenu::PopupType::DELETE_ELEMENT, this, GLObjects);
     myCreatedPopup = true;
     // open popup dialog
     openPopupDialog();
@@ -576,9 +596,10 @@ GNEViewNet::openSelectDialogAtCursor(const std::vector<GUIGlObject*> &GLObjects)
     if (myPopup) {
         destroyPopup();
     }
-    // create cursor popup dialog for delete element
+    // set clicked popup position
+    myClickedPopupPosition = getPositionInformation();
     // create cursor popup dialog for select element
-    myPopup = new GUICursorDialog(GUICursorDialog::CursorDialogType::SELECT_ELEMENT, this, GLObjects);
+    myPopup = new GUICursorDialog(GUIGLObjectPopupMenu::PopupType::SELECT_ELEMENT, this, GLObjects);
     myCreatedPopup = true;
     // open popup dialog
     openPopupDialog();
@@ -657,7 +678,7 @@ GNEViewNet::getEditNetworkElementShapes() const {
 
 void
 GNEViewNet::buildColorRainbow(const GUIVisualizationSettings& s, GUIColorScheme& scheme, int active, GUIGlObjectType objectType,
-                              bool hide, double hideThreshold) {
+                              bool hide, double hideThreshold, bool hide2, double hideThreshold2) {
     assert(!scheme.isFixed());
     UNUSED_PARAMETER(s);
     double minValue = std::numeric_limits<double>::infinity();
@@ -726,6 +747,11 @@ GNEViewNet::buildColorRainbow(const GUIVisualizationSettings& s, GUIColorScheme&
             const double rawRange = maxValue - minValue;
             minValue = MAX2(hideThreshold + MIN2(1.0, rawRange / 100.0), minValue);
             scheme.addColor(RGBColor(204, 204, 204), hideThreshold);
+        }
+        if (hide2) {
+            const double rawRange = maxValue - minValue;
+            maxValue = MIN2(hideThreshold2 - MIN2(1.0, rawRange / 100.0), maxValue);
+            scheme.addColor(RGBColor(204, 204, 204), hideThreshold2);
         }
         double range = maxValue - minValue;
         scheme.addColor(RGBColor::RED, (minValue));
@@ -1665,7 +1691,7 @@ GNEViewNet::drawDeleteContour(const GUIGlObject* GLObject, const GNEAttributeCar
         !(myEditModes.isCurrentSupermodeDemand() && (myEditModes.demandEditMode == DemandEditMode::DEMAND_DELETE))) {
         return false;
     } else if (AC->getTagProperty().isDataElement() && 
-        (!myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_DELETE))) {
+        !(myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_DELETE))) {
         return false;
     }
     // check if we're in post drawing
@@ -1697,7 +1723,7 @@ GNEViewNet::drawSelectContour(const GUIGlObject* GLObject, const GNEAttributeCar
         !(myEditModes.isCurrentSupermodeDemand() && (myEditModes.demandEditMode == DemandEditMode::DEMAND_SELECT))) {
         return false;
     } else if (AC->getTagProperty().isDataElement() && 
-        (!myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_SELECT))) {
+        !(myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_SELECT))) {
         return false;
     }
     // check if we're in post drawing
@@ -2515,8 +2541,8 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
         const int index = edgeGeometry.indexOfClosest(getPositionInformation(), true);
         // get new position
         Position newPosition = edgeGeometry[index];
-        // edit using GNEGeometryPointDialog
-        GNEGeometryPointDialog(this, &newPosition);
+        // edit using modal GNEGeometryPointDialog
+        GNEGeometryPointDialog(this, &newPosition);  // NOSONAR
         // now check position
         if (newPosition != edgeGeometry[index]) {
             // update new position
@@ -2547,8 +2573,8 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
         const int index = polygonGeometry.indexOfClosest(getPositionInformation(), true);
         // get new position
         Position newPosition = polygonGeometry[index];
-        // edit using GNEGeometryPointDialog
-        GNEGeometryPointDialog(this, &newPosition);
+        // edit using modal GNEGeometryPointDialog
+        GNEGeometryPointDialog(this, &newPosition);  // NOSONAR
         // now check position
         if (newPosition != polygonGeometry[index]) {
             // update new position
@@ -2567,8 +2593,8 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
         const int index = TAZGeometry.indexOfClosest(getPositionInformation(), true);
         // get new position
         Position newPosition = TAZGeometry[index];
-        // edit using GNEGeometryPointDialog
-        GNEGeometryPointDialog(this, &newPosition);
+        // edit using modal GNEGeometryPointDialog
+        GNEGeometryPointDialog(this, &newPosition);  // NOSONAR
         // now check position
         if (newPosition != TAZGeometry[index]) {
             // update new position
@@ -5400,8 +5426,6 @@ GNEViewNet::processLeftButtonPressNetwork(void* eventData) {
                 // update AC under cursor
                 AC = myObjectsUnderCursor.getAttributeCarrierFront();
             }
-            // now filter locked elements forcing excluding walkingAreas
-            myObjectsUnderCursor.filterLockedElements(myLockManager, {GLO_WALKINGAREA});
             // check if we're editing a shape
             if (myEditNetworkElementShapes.getEditedNetworkElement()) {
                 // check if we're removing a geometry point
@@ -5415,6 +5439,8 @@ GNEViewNet::processLeftButtonPressNetwork(void* eventData) {
                     processClick(eventData);
                 }
             } else {
+                // now filter locked elements forcing excluding walkingAreas
+                myObjectsUnderCursor.filterLockedElements(myLockManager, {GLO_WALKINGAREA});
                 // allways swap lane to edges in movement mode
                 myObjectsUnderCursor.swapLane2Edge();
                 // check that AC under cursor isn't a demand element
