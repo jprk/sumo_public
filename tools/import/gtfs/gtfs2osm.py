@@ -42,7 +42,8 @@ OSM2SUMO_MODES = {
     'train': 'rail',
     'tram': 'tram',
     'subway': 'rail_urban',
-    'ferry': 'ship'
+    'ferry': 'ship',
+    'trolleybus': 'trolleybus'
 }
 
 GTFS2OSM_MODES = {
@@ -55,6 +56,7 @@ GTFS2OSM_MODES = {
     # '5':  'cableTram',
     # '6':  'aerialLift',
     # '7':  'funicular',
+    '11': 'trolleybus',
     # https://developers.google.com/transit/gtfs/reference/extended-route-types
     '100':  'train',        # DB
     '109':  'train',  # S-Bahn
@@ -167,8 +169,11 @@ def import_gtfs(options, gtfsZip):
                          trips.service_id.isin(added.service_id)]
 
     # filter routes by modes
+    # JP: We need to address difference between `trolleybus` and `bus`, therefore we will split
+    # the comma/separated options.modes string into a tuple of strings denoting particular modes
+    split_modes = options.modes.split(',')
     filter_gtfs_modes = [key for key, value in GTFS2OSM_MODES.items()
-                         if value in options.modes]
+                         if value in split_modes]
     routes = routes[routes['route_type'].isin(filter_gtfs_modes)]
 
     return routes, trips_on_day, shapes, stops, stop_times

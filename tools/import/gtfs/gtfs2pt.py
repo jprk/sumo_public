@@ -146,7 +146,8 @@ def splitNet(options):
             edgeTypes = [sumoType]
             if "rail" in sumoType or sumoType == "subway":
                 edgeTypes = ["railway." + sumoType]
-            elif sumoType in ("tram", "bus"):
+            # TODO: Check if we have some trolleybus-specific edge types in OSM/SUMO
+            elif sumoType in ("tram", "bus", "trolleybus"):
                 edgeTypes = ["railway.tram"] if sumoType == "tram" else []
                 for hwType in ("bus_guideway", "living_street", "motorway", "motorway_link", "primary", "primary_link",
                                "residential", "secondary", "secondary_link", "tertiary", "tertiary_link",
