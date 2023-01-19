@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,11 +17,8 @@
 ///
 // Dialog for edit VType distributions
 /****************************************************************************/
-#include <config.h>
 
 #include <netedit/frames/demand/GNETypeFrame.h>
-#include <netedit/GNENet.h>
-#include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/windows/GUIAppEnum.h>
@@ -280,7 +277,7 @@ GNEVTypeDistributionsDialog::ParametersOperations::ParametersOperations(FXHorizo
     // create buttons
     mySortButton =  new FXButton(this, TL("Sort"),  GUIIconSubSys::getIcon(GUIIcon::RELOAD), this, MID_GNE_BUTTON_SORT, GUIDesignButtonRectangular100);
     myClearButton = new FXButton(this, TL("Clear"), GUIIconSubSys::getIcon(GUIIcon::CLEANJUNCTIONS), this, MID_GNE_BUTTON_CLEAR, GUIDesignButtonRectangular100);
-    myLoadButton =  new FXButton(this, TL("Load"),  GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, MID_GNE_BUTTON_LOAD, GUIDesignButtonRectangular100);
+    myLoadButton =  new FXButton(this, TL("Load"),  GUIIconSubSys::getIcon(GUIIcon::OPEN), this, MID_GNE_BUTTON_LOAD, GUIDesignButtonRectangular100);
     mySaveButton =  new FXButton(this, TL("Save"),  GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_GNE_BUTTON_SAVE, GUIDesignButtonRectangular100);
     myHelpButton =  new FXButton(this, TL("Help"),  GUIIconSubSys::getIcon(GUIIcon::HELP), this, MID_HELP, GUIDesignButtonRectangular100);
 }
@@ -514,7 +511,7 @@ GNEVTypeDistributionsDialog::openDialog() {
 }
 
 
-void 
+void
 GNEVTypeDistributionsDialog::closeDialog() {
     // hide
     hide();

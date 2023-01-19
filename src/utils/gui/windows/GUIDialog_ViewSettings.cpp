@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -16,6 +16,7 @@
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @author  Laura Bieker
+/// @author  Mirko Barthauer
 /// @date    Wed, 21. Dec 2005
 ///
 // The dialog to change the view (gui) settings.
@@ -85,6 +86,7 @@ FXIMPLEMENT(GUIDialog_ViewSettings::SizePanel,  FXObject,       GUIDialog_SizeMa
 // ===========================================================================
 GUIDialog_ViewSettings::GUIDialog_ViewSettings(GUISUMOAbstractView* parent, GUIVisualizationSettings* settings, std::vector<GUISUMOAbstractView::Decal>* decals, FXMutex* decalsLock) :
     FXDialogBox(parent, "View Settings", GUIDesignViewSettingsMainDialog),
+    GUIPersistentWindowPos(this, "VIEWSETTINGS", true, 20, 40, 700, 500, 400, 20),
     myParent(parent), mySettings(settings), myBackup(settings->name, settings->netedit),
     myDecals(decals), myDecalsLock(decalsLock), myDecalsTable(nullptr),
     myDataValuePanel(nullptr) {
@@ -127,16 +129,19 @@ GUIDialog_ViewSettings::GUIDialog_ViewSettings(GUISUMOAbstractView* parent, GUIV
     }
     // build legend frame
     buildLegendFrame(tabbook);
-    // build openGL frame
-    buildOpenGLFrame(tabbook);
     // build 3D frame
     build3DFrame(tabbook);
+    if (mySettings->netedit) {
+        myFrame3D->disable();
+    }
+    // build openGL frame
+    buildOpenGLFrame(tabbook);
     // build buttons
     buildButtons(contentFrame);
     // rebuild color matrix
     rebuildColorMatrices(false);
     setIcon(GUIIconSubSys::getIcon(GUIIcon::EMPTY));
-    loadWindowSize();
+    loadWindowPos();
 }
 
 
@@ -200,7 +205,6 @@ GUIDialog_ViewSettings::setCurrent(GUIVisualizationSettings* settings) {
 
 long
 GUIDialog_ViewSettings::onCmdOk(FXObject*, FXSelector, void*) {
-    saveWindowSize();
     hide();
     return 1;
 }
@@ -208,7 +212,6 @@ GUIDialog_ViewSettings::onCmdOk(FXObject*, FXSelector, void*) {
 
 long
 GUIDialog_ViewSettings::onCmdCancel(FXObject*, FXSelector, void*) {
-    saveWindowSize();
     hide();
     mySettings->copy(myBackup);
     myParent->update();
@@ -316,6 +319,7 @@ GUIDialog_ViewSettings::onCmdNameChange(FXObject*, FXSelector, void* ptr) {
     myShowBTRange->setCheck(mySettings->showBTRange);
     myShowRouteIndex->setCheck(mySettings->showRouteIndex);
     myScaleLength->setCheck(mySettings->scaleLength);
+    myDrawReversed->setCheck(mySettings->drawReversed);
     myShowParkingInfo->setCheck(mySettings->showParkingInfo);
     /*
     myShowLaneChangePreference->setCheck(mySettings->drawLaneChangePreference);
@@ -369,6 +373,7 @@ GUIDialog_ViewSettings::onCmdNameChange(FXObject*, FXSelector, void* ptr) {
     myDrawBoundaries->setCheck(mySettings->drawBoundaries);
     myForceDrawForPositionSelection->setCheck(mySettings->forceDrawForPositionSelection);
     myForceDrawForRectangleSelection->setCheck(mySettings->forceDrawForRectangleSelection);
+    myDisableDottedContours->setCheck(mySettings->disableDottedContours);
     myGeometryIndicesPanel->update(mySettings->geometryIndices);
     myShowSizeLegend->setCheck(mySettings->showSizeLegend);
     myShowColorLegend->setCheck(mySettings->showColorLegend);
@@ -569,6 +574,8 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
             tmpSettings.laneParam = myParamKey->getText().text();
         } else if (tmpSettings.getLaneEdgeScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_EDGEDATA_NUMERICAL) {
             tmpSettings.edgeData = myParamKey->getText().text();
+        } else if (tmpSettings.getLaneEdgeScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_EDGEDATA_LIVE) {
+            tmpSettings.edgeData = myParamKey->getText().text();
         }
     } else if (sender == myVehicleParamKey) {
         if (tmpSettings.vehicleColorer.getScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_PARAM_NUMERICAL) {
@@ -586,6 +593,8 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
         updatePOIParams();
     } else if (sender == myPOITextParamKey) {
         tmpSettings.poiTextParam = myPOITextParamKey->getText().text();
+    } else if (sender == myMeanDataID) {
+        tmpSettings.edgeDataID = myMeanDataID->getText().text();
     }
     tmpSettings.edgeValueHideCheck = (myLaneColorRainbowCheck->getCheck() != FALSE);
     tmpSettings.edgeValueHideThreshold = myLaneColorRainbowThreshold->getValue();
@@ -603,6 +612,7 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     tmpSettings.showBTRange = (myShowBTRange->getCheck() != FALSE);
     tmpSettings.showRouteIndex = (myShowRouteIndex->getCheck() != FALSE);
     tmpSettings.scaleLength = (myScaleLength->getCheck() != FALSE);
+    tmpSettings.drawReversed = (myDrawReversed->getCheck() != FALSE);
     tmpSettings.showParkingInfo = (myShowParkingInfo->getCheck() != FALSE);
     /*
     tmpSettings.drawLaneChangePreference = (myShowLaneChangePreference->getCheck() != FALSE);
@@ -668,13 +678,19 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     tmpSettings.drawBoundaries = (myDrawBoundaries->getCheck() != FALSE);
     tmpSettings.forceDrawForPositionSelection = (myForceDrawForPositionSelection->getCheck() != FALSE);
     tmpSettings.forceDrawForRectangleSelection = (myForceDrawForRectangleSelection->getCheck() != FALSE);
+    tmpSettings.disableDottedContours = (myDisableDottedContours->getCheck() != FALSE);
     tmpSettings.geometryIndices = myGeometryIndicesPanel->getSettings();
     tmpSettings.showSizeLegend = (myShowSizeLegend->getCheck() != FALSE);
     tmpSettings.showColorLegend = (myShowColorLegend->getCheck() != FALSE);
     tmpSettings.showVehicleColorLegend = (myShowVehicleColorLegend->getCheck() != FALSE);
     tmpSettings.show3DTLSDomes = (myShow3DTLSDomes->getCheck() != FALSE);
     tmpSettings.show3DTLSLinkMarkers = (myShow3DTLSLinkMarkers->getCheck() != FALSE);
+    tmpSettings.show3DHeadUpDisplay = (myShow3DHeadUpDisplay->getCheck() != FALSE);
     tmpSettings.generate3DTLSModels = (myGenerate3DTLSModels->getCheck() != FALSE);
+    const unsigned char lightFactor = (unsigned char)myLight3DFactor->getValue();
+    tmpSettings.ambient3DLight.set(lightFactor / 2, lightFactor / 2, lightFactor / 2, 255);
+    tmpSettings.diffuse3DLight.set(lightFactor, lightFactor, lightFactor, 255);
+    tmpSettings.skyColor = MFXUtils::getRGBColor(mySkyColor->getRGBA());
 
     // lanes (colors)
     if (sender == myLaneColorRainbow) {
@@ -866,6 +882,7 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     if (doRebuildColorMatrices) {
         rebuildColorMatrices(true);
     }
+    myParent->handle(this, FXSEL(SEL_CHANGED, MID_SIMPLE_VIEW_COLORCHANGE), nullptr);
     myParent->forceRefresh();
     getApp()->forceRefresh();
     return 1;
@@ -1081,7 +1098,7 @@ GUIDialog_ViewSettings::onUpdExportSetting(FXObject* sender, FXSelector, void* p
 long
 GUIDialog_ViewSettings::onCmdImportSetting(FXObject*, FXSelector, void* /*data*/) {
     FXFileDialog opendialog(this, TL("Import view settings"));
-    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG));
+    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN));
     opendialog.setSelectMode(SELECTFILE_ANY);
     opendialog.setPatternList("*.xml,*.xml.gz");
     if (gCurrentFolder.length() != 0) {
@@ -1350,6 +1367,8 @@ GUIDialog_ViewSettings::rebuildColorMatrices(bool doCreate) {
     }
     std::string activeSchemeName = myLaneEdgeColorMode->getText().text();
     myParamKey->clearItems();
+    myMeanDataID->clearItems();
+    myMeanDataID->hide();
     if (activeSchemeName == GUIVisualizationSettings::SCHEME_NAME_EDGE_PARAM_NUMERICAL) {
         myParamKey->appendItem(mySettings->edgeParam.c_str());
         for (const std::string& attr : myParent->getEdgeLaneParamKeys(true)) {
@@ -1375,6 +1394,32 @@ GUIDialog_ViewSettings::rebuildColorMatrices(bool doCreate) {
         }
         myParamKey->enable();
         myParamKey->setEditable(false);
+    } else if (activeSchemeName == GUIVisualizationSettings::SCHEME_NAME_EDGEDATA_LIVE) {
+        if (mySettings->edgeDataID != "") {
+            myMeanDataID->appendItem(mySettings->edgeDataID.c_str());
+        }
+        for (const std::string& attr : myParent->getMeanDataIDs()) {
+            if (attr != mySettings->edgeDataID) {
+                myMeanDataID->appendItem(attr.c_str());
+            }
+        }
+        if (myMeanDataID->getNumItems() > 0) {
+            if (mySettings->edgeDataID == "") {
+                mySettings->edgeDataID = myMeanDataID->getItemText(0).text();
+            }
+            myMeanDataID->enable();
+            myMeanDataID->setEditable(false);
+            myMeanDataID->show();
+            myMeanDataID->setNumVisible(myMeanDataID->getNumItems());
+            myParamKey->appendItem(mySettings->edgeData.c_str());
+            for (const std::string& attr : myParent->getMeanDataAttrs(mySettings->edgeDataID)) {
+                if (attr != mySettings->edgeData) {
+                    myParamKey->appendItem(attr.c_str());
+                }
+            }
+            myParamKey->enable();
+            myParamKey->setEditable(false);
+        }
     } else {
         myParamKey->disable();
     }
@@ -1708,29 +1753,6 @@ GUIDialog_ViewSettings::SizePanel::onCmdSizeChange(FXObject* obj, FXSelector sel
 
 
 void
-GUIDialog_ViewSettings::saveWindowSize() {
-    getApp()->reg().writeIntEntry("VIEWSETTINGS", "x", getX());
-    getApp()->reg().writeIntEntry("VIEWSETTINGS", "y", getY());
-    getApp()->reg().writeIntEntry("VIEWSETTINGS", "width", getWidth());
-    getApp()->reg().writeIntEntry("VIEWSETTINGS", "height", getHeight());
-}
-
-void
-GUIDialog_ViewSettings::loadWindowSize() {
-    // ensure window is visible after switching screen resolutions
-    const FXint minSize = 400;
-    const FXint minTitlebarHeight = 20;
-    setX(MAX2(0, MIN2(getApp()->reg().readIntEntry("VIEWSETTINGS", "x", 150),
-                      getApp()->getRootWindow()->getWidth() - minSize)));
-    setY(MAX2(minTitlebarHeight,
-              MIN2(getApp()->reg().readIntEntry("VIEWSETTINGS", "y", 150),
-                   getApp()->getRootWindow()->getHeight() - minSize)));
-    setWidth(MAX2(getApp()->reg().readIntEntry("VIEWSETTINGS", "width", 700), minSize));
-    setHeight(MAX2(getApp()->reg().readIntEntry("VIEWSETTINGS", "height", 500), minSize));
-}
-
-
-void
 GUIDialog_ViewSettings::buildHeader(FXVerticalFrame* contentFrame) {
     FXHorizontalFrame* horizontalFrame = new FXHorizontalFrame(contentFrame, GUIDesignViewSettingsHorizontalFrame1);
     mySchemeName = new FXComboBox(horizontalFrame, 20, this, MID_SIMPLE_VIEW_NAMECHANGE, GUIDesignViewSettingsComboBox1);
@@ -1742,10 +1764,10 @@ GUIDialog_ViewSettings::buildHeader(FXVerticalFrame* contentFrame) {
     }
     mySchemeName->setNumVisible(5);
 
-    new FXButton(horizontalFrame, "\t\tSave the setting to registry", GUIIconSubSys::getIcon(GUIIcon::SAVEDB), this, MID_SIMPLE_VIEW_SAVE, GUIDesignButtonToolbar);
+    new FXButton(horizontalFrame, "\t\tSave the setting to registry", GUIIconSubSys::getIcon(GUIIcon::SAVE_DATABASE), this, MID_SIMPLE_VIEW_SAVE, GUIDesignButtonToolbar);
     new FXButton(horizontalFrame, "\t\tRemove the setting from registry", GUIIconSubSys::getIcon(GUIIcon::REMOVEDB), this, MID_SIMPLE_VIEW_DELETE, GUIDesignButtonToolbar);
     new FXButton(horizontalFrame, "\t\tExport setting to file", GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_SIMPLE_VIEW_EXPORT, GUIDesignButtonToolbar);
-    new FXButton(horizontalFrame, "\t\tLoad setting from file", GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, MID_SIMPLE_VIEW_IMPORT, GUIDesignButtonToolbar);
+    new FXButton(horizontalFrame, "\t\tLoad setting from file", GUIIconSubSys::getIcon(GUIIcon::OPEN), this, MID_SIMPLE_VIEW_IMPORT, GUIDesignButtonToolbar);
 
     new FXVerticalSeparator(horizontalFrame);
     new FXLabel(horizontalFrame, "Export includes:", nullptr, GUIDesignViewSettingsLabel1);
@@ -1804,11 +1826,15 @@ GUIDialog_ViewSettings::buildStreetsFrame(FXTabBook* tabbook) {
     FXVerticalFrame* verticalFrame = new FXVerticalFrame(scrollWindow, GUIDesignViewSettingsVerticalFrame2);
     //  ... color settings
     FXVerticalFrame* verticalFrameColor = new FXVerticalFrame(verticalFrame, GUIDesignViewSettingsVerticalFrame6);
-    FXMatrix* matrixColor = new FXMatrix(verticalFrameColor, 4, GUIDesignViewSettingsMatrix3);
+    FXMatrix* matrixColor = new FXMatrix(verticalFrameColor, 5, GUIDesignViewSettingsMatrix3);
     new FXLabel(matrixColor, "Color", nullptr, GUIDesignViewSettingsLabel1);
     myLaneEdgeColorMode = new MFXIconComboBox(matrixColor, 30, true, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
     myLaneColorInterpolation = new FXCheckButton(matrixColor, TL("Interpolate"), this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignCheckButtonViewSettings);
     myLaneColorSettingFrame = new FXVerticalFrame(verticalFrameColor, GUIDesignViewSettingsVerticalFrame4);
+    myMeanDataID = new FXComboBox(matrixColor, 1, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
+    myMeanDataID->disable();
+    myMeanDataID->hide();
+    myMeanDataID->setEditable(false);
     myParamKey = new FXComboBox(matrixColor, 1, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
     myParamKey->disable();
     myParamKey->setEditable(true);
@@ -1962,6 +1988,8 @@ GUIDialog_ViewSettings::buildVehiclesFrame(FXTabBook* tabbook) {
     myScaleLength->setCheck(mySettings->scaleLength);
     myShowParkingInfo = new FXCheckButton(matrixShow, TL("Show parking info"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     myShowParkingInfo->setCheck(mySettings->showParkingInfo);
+    myDrawReversed = new FXCheckButton(matrixShow, TL("Draw reversed vehicles in reverse"), this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myDrawReversed->setCheck(mySettings->drawReversed);
     //new FXLabel(matrixShow, " ", nullptr, GUIDesignViewSettingsLabel1);
     //myShowLaneChangePreference = new FXCheckButton(matrixShow, TL("Show lane change preference"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     //myShowLaneChangePreference->setCheck(mySettings->drawLaneChangePreference);
@@ -2355,7 +2383,10 @@ GUIDialog_ViewSettings::buildOpenGLFrame(FXTabBook* tabbook) {
     myForceDrawForRectangleSelection = new FXCheckButton(m86, "Force draw for rectangle selection", this, MID_SIMPLE_VIEW_COLORCHANGE);
     myForceDrawForRectangleSelection->setCheck(mySettings->forceDrawForRectangleSelection);
     FXMatrix* m87 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myRecalculateBoundaries = new FXButton(m87, "Recalculate boundaries", nullptr, this, MID_SIMPLE_VIEW_COLORCHANGE,
+    myDisableDottedContours = new FXCheckButton(m87, "Disable dotted contours during selection/deletion", this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myDisableDottedContours->setCheck(mySettings->disableDottedContours);
+    FXMatrix* m88 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
+    myRecalculateBoundaries = new FXButton(m88, "Recalculate boundaries", nullptr, this, MID_SIMPLE_VIEW_COLORCHANGE,
                                            (BUTTON_DEFAULT | FRAME_RAISED | FRAME_THICK | LAYOUT_TOP | LAYOUT_LEFT), 0, 0, 0, 0, 20, 20, 4, 4);
     FXMatrix* m89 = new FXMatrix(verticalFrame, 2, GUIDesignMatrixViewSettings);
     myGeometryIndicesPanel = new NamePanel(m89, this, "Show geometry point indices", mySettings->geometryIndices);
@@ -2364,23 +2395,45 @@ GUIDialog_ViewSettings::buildOpenGLFrame(FXTabBook* tabbook) {
 
 void
 GUIDialog_ViewSettings::build3DFrame(FXTabBook* tabbook) {
-    FXTabItem* frame3D = new FXTabItem(tabbook, "3D", nullptr, GUIDesignViewSettingsTabItemBook1);
+    myFrame3D = new FXTabItem(tabbook, "3D view", nullptr, GUIDesignViewSettingsTabItemBook1);
     FXScrollWindow* scrollWindow = new FXScrollWindow(tabbook);
     FXVerticalFrame* verticalFrame = new FXVerticalFrame(scrollWindow, GUIDesignViewSettingsVerticalFrame2);
 
     FXMatrix* m82 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
     myShow3DTLSLinkMarkers = new FXCheckButton(m82, "Show TLS link markers", this, MID_SIMPLE_VIEW_COLORCHANGE);
     myShow3DTLSLinkMarkers->setCheck(mySettings->show3DTLSLinkMarkers);
-    FXMatrix* m83 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myShow3DTLSDomes = new FXCheckButton(m83, "Show domes around TLS models from decals", this, MID_SIMPLE_VIEW_COLORCHANGE);
+    //FXMatrix* m83 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
+    myShow3DTLSDomes = new FXCheckButton(m82, "Show domes around TLS models from decals", this, MID_SIMPLE_VIEW_COLORCHANGE);
     myShow3DTLSDomes->setCheck(mySettings->show3DTLSDomes);
-    FXMatrix* m84 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myGenerate3DTLSModels = new FXCheckButton(m84, "Show auto-generated TLS models", this, MID_SIMPLE_VIEW_COLORCHANGE);
+    //FXMatrix* m84 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
+    myGenerate3DTLSModels = new FXCheckButton(m82, "Show auto-generated TLS models", this, MID_SIMPLE_VIEW_COLORCHANGE);
     myGenerate3DTLSModels->setCheck(mySettings->generate3DTLSModels);
+    myShow3DHeadUpDisplay = new FXCheckButton(m82, "Show head-up display", this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myShow3DHeadUpDisplay->setCheck(mySettings->show3DHeadUpDisplay);
+
+    new FXHorizontalSeparator(verticalFrame, GUIDesignHorizontalSeparator);
+
+    FXMatrix* m2 = new FXMatrix(verticalFrame, 2, GUIDesignMatrixViewSettings);
+    new FXLabel(m2, "Sun brightness", nullptr, GUIDesignViewSettingsLabel1);
+    myLight3DFactor = new FXSpinner(m2, 10, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsSpinDial1);
+    myLight3DFactor->setRange(0, 255);
+    myLight3DFactor->setValue(mySettings->diffuse3DLight.red());
+    /*
+    new FXLabel(m2, "Ambient", nullptr, GUIDesignViewSettingsLabel1);
+    myAmbient3DLight = new FXColorWell(m2, MFXUtils::getFXColor(mySettings->ambient3DLight), this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsColorWell);
+    myAmbient3DLight->setOpaqueOnly(true);
+    new FXLabel(m2, "Diffuse", nullptr, GUIDesignViewSettingsLabel1);
+    myDiffuse3DLight = new FXColorWell(m2, MFXUtils::getFXColor(mySettings->diffuse3DLight), this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsColorWell);
+    myDiffuse3DLight->setOpaqueOnly(true);
+    */
+    new FXLabel(m2, "Sky color", nullptr, GUIDesignViewSettingsLabel1);
+    mySkyColor = new FXColorWell(m2, MFXUtils::getFXColor(mySettings->skyColor), this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsColorWell);
+    mySkyColor->setOpaqueOnly(true);
+
 #ifdef HAVE_OSG
-    UNUSED_PARAMETER(frame3D);
+    UNUSED_PARAMETER(myFrame3D);
 #else
-    frame3D->disable();
+    myFrame3D->disable();
 #endif
 }
 

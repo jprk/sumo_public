@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 
 #include <utils/foxtools/fxheader.h>
 #include <utils/gui/windows/GUISUMOAbstractView.h>
+#include <utils/gui/div/GUIPersistentWindowPos.h>
 #include <utils/foxtools/MFXAddEditTypedTable.h>
 
 
@@ -42,7 +43,7 @@ class MFXIconComboBox;
  *
  * @todo Check whether saving/loading settings should be done via XML
  */
-class GUIDialog_ViewSettings : public FXDialogBox {
+class GUIDialog_ViewSettings : public FXDialogBox, public GUIPersistentWindowPos {
     /// @brief FOX Declaration
     FXDECLARE(GUIDialog_ViewSettings)
 
@@ -304,6 +305,7 @@ protected:
     FXRealSpinner* myLaneColorRainbowThreshold2 = nullptr;
     FXButton* myJunctionColorRainbow = nullptr;
     FXComboBox* myParamKey = nullptr;
+    FXComboBox* myMeanDataID = nullptr;
 
     /// @brief ... lane scaler
     MFXIconComboBox* myLaneEdgeScaleMode = nullptr;
@@ -348,6 +350,7 @@ protected:
     FXCheckButton* myShowBTRange = nullptr;
     FXCheckButton* myShowRouteIndex = nullptr;
     FXCheckButton* myScaleLength = nullptr;
+    FXCheckButton* myDrawReversed = nullptr;
     FXCheckButton* myShowParkingInfo = nullptr;
     /*FXCheckButton* myShowLaneChangePreference = nullptr;*/
 
@@ -422,7 +425,12 @@ protected:
     /// @brief 3D
     FXCheckButton* myShow3DTLSLinkMarkers = nullptr;
     FXCheckButton* myShow3DTLSDomes = nullptr;
+    FXCheckButton* myShow3DHeadUpDisplay = nullptr;
     FXCheckButton* myGenerate3DTLSModels = nullptr;
+    FXSpinner* myLight3DFactor = nullptr;
+    //FXColorWell* myAmbient3DLight = nullptr;
+    //FXColorWell* myDiffuse3DLight = nullptr;
+    FXColorWell* mySkyColor = nullptr;
 
     /// @brief openGL
     FXCheckButton* myDither = nullptr;
@@ -430,6 +438,7 @@ protected:
     FXCheckButton* myDrawBoundaries = nullptr;
     FXCheckButton* myForceDrawForPositionSelection = nullptr;
     FXCheckButton* myForceDrawForRectangleSelection = nullptr;
+    FXCheckButton* myDisableDottedContours = nullptr;
     FXButton* myRecalculateBoundaries = nullptr;
 
     /// @brief name panels
@@ -478,6 +487,9 @@ protected:
     FXCheckButton* mySaveBreakpoints = nullptr;
 
     /// @}
+
+    /// @brief Frame3D
+    FXTabItem* myFrame3D = nullptr;
 
     /// @brief update color ranges
     bool updateColorRanges(FXObject* sender, std::vector<FXColorWell*>::const_iterator colIt,
@@ -533,12 +545,6 @@ protected:
      * @param[in] file The name of the file to read the decals from
      */
     void loadDecals(const std::string& file);
-
-    /// @brief save window position and size to the registry
-    void saveWindowSize();
-
-    /// @brief load window position and size from the registry
-    void loadWindowSize();
 
     /// @brief reload known vehicle parameters
     void updateVehicleParams();

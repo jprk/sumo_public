@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -147,7 +147,7 @@ public:
     /** @brief Save the state of the laneChangeModel
      * @param[in] out The OutputDevice to write the information into
      */
-    virtual void saveState(OutputDevice& out) const; 
+    virtual void saveState(OutputDevice& out) const;
 
     /** @brief Loads the state of the laneChangeModel from the given attributes
      * @param[in] attrs XML attributes describing the current state
@@ -468,7 +468,22 @@ public:
     int getShadowDirection() const;
 
     /// @brief return the angle offset during a continuous change maneuver
-    double getAngleOffset() const;
+    double calcAngleOffset();
+
+    /// @brief return the angle offset resulting from lane change and sigma
+    inline double getAngleOffset() const {
+        return myAngleOffset;
+    }
+
+    /// @brief set the angle offset resulting from lane change and sigma
+    inline void setAngleOffset(const double angleOffset) {
+        myAngleOffset = angleOffset;
+    }
+
+    /// @brief set the angle offset of the previous time step
+    inline void setPreviousAngleOffset(const double angleOffset) {
+        myPreviousAngleOffset = angleOffset;
+    }
 
     /// @brief reset the flag whether a vehicle already moved to false
     inline bool alreadyChanged() const {
@@ -560,6 +575,10 @@ public:
         return mySpeedLat;
     }
 
+    /* @brief reset the angle (in case no lane changing happens in this step
+     * and the maneuver was finished in the previous step) */
+    virtual void resetSpeedLat();
+
     /// @brief return the lateral speed of the current lane change maneuver
     double getAccelerationLat() const {
         return myAccelerationLat;
@@ -649,6 +668,12 @@ protected:
 
     /// @brief the current lateral acceleration
     double myAccelerationLat;
+
+    /// @brief the current angle offset resulting from lane change and sigma
+    double myAngleOffset;
+
+    /// @brief the angle offset of the previous time step resulting from lane change and sigma
+    double myPreviousAngleOffset;
 
     /// @brief the speed when committing to a change maneuver
     double myCommittedSpeed;

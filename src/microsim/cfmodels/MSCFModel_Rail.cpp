@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -208,7 +208,7 @@ double MSCFModel_Rail::getSpeedAfterMaxDecel(double /* speed */) const {
 //    double a = 0;//trainParams.decl - gr/trainParams.rotWeight;
 //
 //    return speed + a * DELTA_T / 1000.;
-    WRITE_ERROR(TL("function call not allowd for rail model. Exiting!"));
+    WRITE_ERROR(TL("function call not allowed for rail model. Exiting!"));
     throw ProcessError();
 }
 

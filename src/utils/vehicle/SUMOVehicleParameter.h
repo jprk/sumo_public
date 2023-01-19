@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -95,6 +95,7 @@ const int STOP_ENDED_SET = 2 << 16;
 const int STOP_STARTED_SET = 2 << 17;
 const int STOP_POSLAT_SET = 2 << 18;
 const int STOP_ONDEMAND_SET = 2 << 19;
+const int STOP_JUMP_SET = 2 << 20;
 
 const double MIN_STOP_LENGTH = 2 * POSITION_EPS;
 
@@ -435,6 +436,9 @@ public:
         /// @brief whether the stop may be skipped
         bool onDemand = false;
 
+        /// @brief transfer time if there shall be a jump from this stop to the next route edge
+        SUMOTime jump = -1;
+
         /// @brief the time at which this stop was reached
         mutable SUMOTime started = -1;
 
@@ -449,6 +453,9 @@ public:
 
         /// @brief Information for the output which parameter were set
         int parametersSet = 0;
+
+        /// @brief Whether this stop was triggered by a collision
+        bool collision = false;
 
         /// @brief return flags as per Vehicle::getStops
         int getFlags() const;

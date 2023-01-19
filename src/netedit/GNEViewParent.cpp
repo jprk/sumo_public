@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -22,7 +22,6 @@
 /****************************************************************************/
 
 #include <netedit/dialogs/GNEDialogACChooser.h>
-#include <netedit/elements/additional/GNEAdditional.h>
 #include <netedit/elements/network/GNEWalkingArea.h>
 #include <netedit/frames/common/GNEDeleteFrame.h>
 #include <netedit/frames/common/GNEInspectorFrame.h>
@@ -31,6 +30,7 @@
 #include <netedit/frames/data/GNEEdgeDataFrame.h>
 #include <netedit/frames/data/GNEEdgeRelDataFrame.h>
 #include <netedit/frames/data/GNETAZRelDataFrame.h>
+#include <netedit/frames/data/GNEMeanDataFrame.h>
 #include <netedit/frames/demand/GNEContainerFrame.h>
 #include <netedit/frames/demand/GNEContainerPlanFrame.h>
 #include <netedit/frames/demand/GNEPersonFrame.h>
@@ -48,7 +48,6 @@
 #include <netedit/frames/network/GNEWireFrame.h>
 #include <netedit/frames/network/GNETAZFrame.h>
 #include <netedit/frames/network/GNETLSEditorFrame.h>
-#include <utils/foxtools/MFXButtonTooltip.h>
 #include <utils/foxtools/MFXMenuButtonTooltip.h>
 #include <utils/gui/div/GUIDesigns.h>
 
@@ -65,17 +64,17 @@
 
 FXDEFMAP(GNEViewParent) GNEViewParentMap[] = {
     FXMAPFUNC(SEL_COMMAND,  MID_MAKESNAPSHOT,                       GNEViewParent::onCmdMakeSnapshot),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEJUNCTION,                     GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEEDGE,                         GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEWALKINGAREA,                  GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEVEHICLE,                      GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPERSON,                       GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEROUTE,                        GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATESTOP,                         GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATETLS,                          GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEADD,                          GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPOI,                          GNEViewParent::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPOLY,                         GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_J_LOCATEJUNCTION,      GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_E_LOCATEEDGE,          GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_W_LOCATEWALKINGAREA,   GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_V_LOCATEVEHICLE,       GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_P_LOCATEPERSON,        GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_R_LOCATEROUTE,         GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_S_LOCATESTOP,          GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_T_LOCATETLS,           GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL,    GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_O_LOCATEPOI,           GNEViewParent::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_L_LOCATEPOLY,          GNEViewParent::onCmdLocate),
     FXMAPFUNC(SEL_COMMAND,  FXMDIChild::ID_MDI_MENUCLOSE,           GNEViewParent::onCmdClose),
     FXMAPFUNC(SEL_CHANGED,  MID_GNE_VIEWPARENT_FRAMEAREAWIDTH,      GNEViewParent::onCmdUpdateFrameAreaWidth),
 };
@@ -89,7 +88,7 @@ FXIMPLEMENT(GNEViewParent, GUIGlChildWindow, GNEViewParentMap, ARRAYNUMBER(GNEVi
 // ===========================================================================
 
 GNEViewParent::GNEViewParent(FXMDIClient* p, FXMDIMenu* mdimenu, const FXString& name, GNEApplicationWindow* parentWindow,
-                             FXGLCanvas* share, GNENet* net, const bool newNet, GNEUndoList* undoList, FXIcon* ic, FXuint opts, FXint x, FXint y, FXint w, FXint h) :
+                             FXGLCanvas* share, GNENet* net, GNEUndoList* undoList, FXIcon* ic, FXuint opts, FXint x, FXint y, FXint w, FXint h) :
     GUIGlChildWindow(p, parentWindow, mdimenu, name, parentWindow->getToolbarsGrip().navigation, ic, opts, x, y, w, h),
     myGNEAppWindows(parentWindow) {
     // Add child to parent
@@ -99,17 +98,17 @@ GNEViewParent::GNEViewParent(FXMDIClient* p, FXMDIMenu* mdimenu, const FXString&
     new FXVerticalSeparator(myGripNavigationToolbar, GUIDesignVerticalSeparator);
 
     // Create undo/redo buttons
-    myUndoButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(), 
-        "\tUndo\tUndo the last change. (Ctrl+Z)", GUIIconSubSys::getIcon(GUIIcon::UNDO), parentWindow, MID_HOTKEY_CTRL_Z_UNDO, GUIDesignButtonToolbar);
-    myRedoButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(), 
-        "\tRedo\tRedo the last change. (Ctrl+Y)", GUIIconSubSys::getIcon(GUIIcon::REDO), parentWindow, MID_HOTKEY_CTRL_Y_REDO, GUIDesignButtonToolbar);
+    myUndoButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(),
+                                        "\tUndo\tUndo the last change. (Ctrl+Z)", GUIIconSubSys::getIcon(GUIIcon::UNDO), parentWindow, MID_HOTKEY_CTRL_Z_UNDO, GUIDesignButtonToolbar);
+    myRedoButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(),
+                                        "\tRedo\tRedo the last change. (Ctrl+Y)", GUIIconSubSys::getIcon(GUIIcon::REDO), parentWindow, MID_HOTKEY_CTRL_Y_REDO, GUIDesignButtonToolbar);
 
     // Create Vertical separator
     new FXVerticalSeparator(myGripNavigationToolbar, GUIDesignVerticalSeparator);
 
     // create compute path manager button
-    myComputePathManagerButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(), 
-        "\tCompute path manager\tCompute path manager", GUIIconSubSys::getIcon(GUIIcon::COMPUTEPATHMANAGER), parentWindow, MID_GNE_TOOLBAREDIT_COMPUTEPATHMANAGER, GUIDesignButtonToolbar);
+    myComputePathManagerButton = new MFXButtonTooltip(myGripNavigationToolbar, myGNEAppWindows->getStaticTooltipMenu(),
+            "\tCompute path manager\tCompute path manager.", GUIIconSubSys::getIcon(GUIIcon::COMPUTEPATHMANAGER), parentWindow, MID_GNE_TOOLBAREDIT_COMPUTEPATHMANAGER, GUIDesignButtonToolbar);
 
     // Create Frame Splitter
     myFramesSplitter = new FXSplitter(myChildWindowContentFrame, this, MID_GNE_VIEWPARENT_FRAMEAREAWIDTH, GUIDesignSplitter | SPLITTER_HORIZONTAL);
@@ -124,7 +123,7 @@ GNEViewParent::GNEViewParent(FXMDIClient* p, FXMDIMenu* mdimenu, const FXString&
     FXComposite* tmp = new FXComposite(this);
 
     // Create view net
-    GNEViewNet* viewNet = new GNEViewNet(tmp, myViewArea, *myParent, this, net, newNet, undoList, myParent->getGLVisual(), share);
+    GNEViewNet* viewNet = new GNEViewNet(tmp, myViewArea, *myParent, this, net, undoList, myParent->getGLVisual(), share);
 
     // show toolbar grips
     myGNEAppWindows->getToolbarsGrip().buildMenuToolbarsGrip();
@@ -332,6 +331,12 @@ GNEViewParent::getTAZRelDataFrame() const {
 }
 
 
+GNEMeanDataFrame*
+GNEViewParent::getMeanDataFrame() const {
+    return myDataFrames.meanDataFrame;
+}
+
+
 void
 GNEViewParent::showFramesArea() {
     const bool frameShown = myCommonFrames.isCommonFrameShown() ||
@@ -492,7 +497,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
         GNEDialogACChooser** chooserLoc = nullptr;
         std::string locateTitle;
         switch (messageId) {
-            case MID_LOCATEJUNCTION:
+            case MID_HOTKEY_SHIFT_J_LOCATEJUNCTION:
                 chooserLoc = &myACChoosers.ACChooserJunction;
                 locateTitle = "Junction";
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getJunctions().size());
@@ -500,7 +505,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(junction.second);
                 }
                 break;
-            case MID_LOCATEEDGE:
+            case MID_HOTKEY_SHIFT_E_LOCATEEDGE:
                 chooserLoc = &myACChoosers.ACChooserEdges;
                 locateTitle = "Edge";
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getEdges().size());
@@ -508,7 +513,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(edge.second);
                 }
                 break;
-            case MID_LOCATEWALKINGAREA:
+            case MID_HOTKEY_SHIFT_W_LOCATEWALKINGAREA:
                 chooserLoc = &myACChoosers.ACChooserWalkingAreas;
                 locateTitle = "WalkingArea";
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getWalkingAreas().size());
@@ -516,19 +521,19 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(walkingArea);
                 }
                 break;
-            case MID_LOCATEVEHICLE: {
+            case MID_HOTKEY_SHIFT_V_LOCATEVEHICLE: {
                 chooserLoc = &myACChoosers.ACChooserVehicles;
                 locateTitle = "Vehicle";
                 const auto demandElements = viewNet->getNet()->getAttributeCarriers()->getDemandElements();
                 // reserve memory
                 ACsToLocate.reserve(demandElements.at(SUMO_TAG_VEHICLE).size() +
-                        demandElements.at(SUMO_TAG_TRIP).size() +
-                        demandElements.at(GNE_TAG_VEHICLE_WITHROUTE).size() +
-                        demandElements.at(GNE_TAG_TRIP_JUNCTIONS).size() +
-                        demandElements.at(SUMO_TAG_FLOW).size() +
-                        demandElements.at(GNE_TAG_FLOW_ROUTE).size() +
-                        demandElements.at(GNE_TAG_FLOW_WITHROUTE).size() +
-                        demandElements.at(GNE_TAG_FLOW_JUNCTIONS).size());
+                                    demandElements.at(SUMO_TAG_TRIP).size() +
+                                    demandElements.at(GNE_TAG_VEHICLE_WITHROUTE).size() +
+                                    demandElements.at(GNE_TAG_TRIP_JUNCTIONS).size() +
+                                    demandElements.at(SUMO_TAG_FLOW).size() +
+                                    demandElements.at(GNE_TAG_FLOW_ROUTE).size() +
+                                    demandElements.at(GNE_TAG_FLOW_WITHROUTE).size() +
+                                    demandElements.at(GNE_TAG_FLOW_JUNCTIONS).size());
                 // fill ACsToLocate with vehicles,...
                 for (const auto& vehicle : demandElements.at(SUMO_TAG_VEHICLE)) {
                     ACsToLocate.push_back(vehicle);
@@ -563,11 +568,11 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                 }
                 break;
             }
-            case MID_LOCATEPERSON:
+            case MID_HOTKEY_SHIFT_P_LOCATEPERSON:
                 chooserLoc = &myACChoosers.ACChooserPersons;
                 locateTitle = "Person";
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_PERSON).size() +
-                        viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_PERSONFLOW).size());
+                                    viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_PERSONFLOW).size());
                 // fill ACsToLocate with persons
                 for (const auto& person : viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_PERSON)) {
                     ACsToLocate.push_back(person);
@@ -577,7 +582,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(personFlow);
                 }
                 break;
-            case MID_LOCATEROUTE:
+            case MID_HOTKEY_SHIFT_R_LOCATEROUTE:
                 chooserLoc = &myACChoosers.ACChooserRoutes;
                 locateTitle = "Route";
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_ROUTE).size());
@@ -585,15 +590,15 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(route);
                 }
                 break;
-            case MID_LOCATESTOP: {
+            case MID_HOTKEY_SHIFT_S_LOCATESTOP: {
                 chooserLoc = &myACChoosers.ACChooserStops;
                 locateTitle = "Stop";
                 // reserve memory
                 ACsToLocate.reserve(viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_LANE).size() +
-                        viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_BUSSTOP).size() +
-                        viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_CONTAINERSTOP).size() +
-                        viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_CHARGINGSTATION).size() +
-                        viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_PARKINGAREA).size());
+                                    viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_BUSSTOP).size() +
+                                    viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_CONTAINERSTOP).size() +
+                                    viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_CHARGINGSTATION).size() +
+                                    viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_PARKINGAREA).size());
                 // fill ACsToLocate with stop over lanes
                 for (const auto& stopLane : viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_STOP_LANE)) {
                     ACsToLocate.push_back(stopLane);
@@ -616,7 +621,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                 }
                 break;
             }
-            case MID_LOCATETLS:
+            case MID_HOTKEY_SHIFT_T_LOCATETLS:
                 chooserLoc = &myACChoosers.ACChooserTLS;
                 locateTitle = "TLS";
                 // fill ACsToLocate with junctions that haven TLS
@@ -627,7 +632,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     }
                 }
                 break;
-            case MID_LOCATEADD:
+            case MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL:
                 chooserLoc = &myACChoosers.ACChooserAdditional;
                 locateTitle = "Additional";
                 for (const auto& additionalTag : viewNet->getNet()->getAttributeCarriers()->getAdditionals()) {
@@ -642,7 +647,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     }
                 }
                 break;
-            case MID_LOCATEPOI:
+            case MID_HOTKEY_SHIFT_O_LOCATEPOI:
                 chooserLoc = &myACChoosers.ACChooserPOI;
                 locateTitle = "POI";
                 // fill ACsToLocate with POIs
@@ -656,7 +661,7 @@ GNEViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
                     ACsToLocate.push_back(POI);
                 }
                 break;
-            case MID_LOCATEPOLY:
+            case MID_HOTKEY_SHIFT_L_LOCATEPOLY:
                 chooserLoc = &myACChoosers.ACChooserPolygon;
                 locateTitle = "Poly";
                 // fill ACsToLocate with polys and TAZs (because share namespae)
@@ -1009,10 +1014,7 @@ GNEViewParent::DemandFrames::getCurrentShownFrame() const {
 // GNEViewParent::DataFrames - methods
 // ---------------------------------------------------------------------------
 
-GNEViewParent::DataFrames::DataFrames() :
-    edgeDataFrame(nullptr),
-    edgeRelDataFrame(nullptr),
-    TAZRelDataFrame(nullptr) {
+GNEViewParent::DataFrames::DataFrames() {
 }
 
 
@@ -1021,6 +1023,7 @@ GNEViewParent::DataFrames::buildDataFrames(GNEViewParent* viewParent, GNEViewNet
     edgeDataFrame = new GNEEdgeDataFrame(viewParent, viewNet);
     edgeRelDataFrame = new GNEEdgeRelDataFrame(viewParent, viewNet);
     TAZRelDataFrame = new GNETAZRelDataFrame(viewParent, viewNet);
+    meanDataFrame = new GNEMeanDataFrame(viewParent, viewNet);
 }
 
 
@@ -1029,6 +1032,7 @@ GNEViewParent::DataFrames::hideDataFrames() {
     edgeDataFrame->hide();
     edgeRelDataFrame->hide();
     TAZRelDataFrame->hide();
+    meanDataFrame->hide();
 }
 
 
@@ -1038,6 +1042,7 @@ GNEViewParent::DataFrames::setDataFramesWidth(int frameWidth) {
     edgeDataFrame->setFrameWidth(frameWidth);
     edgeRelDataFrame->setFrameWidth(frameWidth);
     TAZRelDataFrame->setFrameWidth(frameWidth);
+    meanDataFrame->setFrameWidth(frameWidth);
 }
 
 
@@ -1049,6 +1054,8 @@ GNEViewParent::DataFrames::isDataFrameShown() const {
     } else if (edgeRelDataFrame->shown()) {
         return true;
     } else if (TAZRelDataFrame->shown()) {
+        return true;
+    } else if (meanDataFrame->shown()) {
         return true;
     } else {
         return false;
@@ -1065,6 +1072,8 @@ GNEViewParent::DataFrames::getCurrentShownFrame() const {
         return edgeRelDataFrame;
     } else if (TAZRelDataFrame->shown()) {
         return TAZRelDataFrame;
+    } else if (meanDataFrame->shown()) {
+        return meanDataFrame;
     } else {
         return nullptr;
     }

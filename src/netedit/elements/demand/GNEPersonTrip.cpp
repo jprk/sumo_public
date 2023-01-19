@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -37,8 +37,8 @@
 
 GNEPersonTrip::GNEPersonTrip(SumoXMLTag tag, GNENet* net) :
     GNEDemandElement("", net, GLO_PERSONTRIP, tag, GUIIconSubSys::getIcon(GUIIcon::PERSONTRIP_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-    myArrivalPosition(0) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
+myArrivalPosition(0) {
     // reset default values
     resetDefaultValues();
 }
@@ -48,11 +48,11 @@ GNEPersonTrip::GNEPersonTrip(GNENet* net, GNEDemandElement* personParent, GNEEdg
                              double arrivalPosition, const std::vector<std::string>& types, const std::vector<std::string>& modes,
                              const std::vector<std::string>& lines) :
     GNEDemandElement(personParent, net, GLO_PERSONTRIP, GNE_TAG_PERSONTRIP_EDGE, GUIIconSubSys::getIcon(GUIIcon::PERSONTRIP_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {personParent}, {}),
-    myArrivalPosition(arrivalPosition),
-    myVTypes(types),
-    myModes(modes),
-    myLines(lines) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {personParent}, {}),
+myArrivalPosition(arrivalPosition),
+myVTypes(types),
+myModes(modes),
+myLines(lines) {
 }
 
 
@@ -60,11 +60,11 @@ GNEPersonTrip::GNEPersonTrip(GNENet* net, GNEDemandElement* personParent, GNEEdg
                              double arrivalPosition, const std::vector<std::string>& types, const std::vector<std::string>& modes,
                              const std::vector<std::string>& lines) :
     GNEDemandElement(personParent, net, GLO_PERSONTRIP, GNE_TAG_PERSONTRIP_BUSSTOP, GUIIconSubSys::getIcon(GUIIcon::PERSONTRIP_BUSSTOP),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge}, {}, {toBusStop}, {personParent}, {}),
-    myArrivalPosition(arrivalPosition),
-    myVTypes(types),
-    myModes(modes),
-    myLines(lines) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge}, {}, {toBusStop}, {personParent}, {}),
+myArrivalPosition(arrivalPosition),
+myVTypes(types),
+myModes(modes),
+myLines(lines) {
 }
 
 
@@ -72,11 +72,13 @@ GNEPersonTrip::GNEPersonTrip(GNENet* net, GNEDemandElement* personParent, GNEJun
                              double arrivalPosition, const std::vector<std::string>& types, const std::vector<std::string>& modes,
                              const std::vector<std::string>& lines) :
     GNEDemandElement(personParent, net, GLO_PERSONTRIP, GNE_TAG_PERSONTRIP_JUNCTIONS, GUIIconSubSys::getIcon(GUIIcon::PERSONTRIP_JUNCTIONS),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {fromJunction, toJunction}, {}, {}, {}, {personParent}, {}),
-    myArrivalPosition(arrivalPosition),
-    myVTypes(types),
-    myModes(modes),
-    myLines(lines) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {
+    fromJunction, toJunction
+}, {}, {}, {}, {personParent}, {}),
+myArrivalPosition(arrivalPosition),
+myVTypes(types),
+myModes(modes),
+myLines(lines) {
 }
 
 
@@ -221,12 +223,6 @@ GNEPersonTrip::getPositionInView() const {
 std::string
 GNEPersonTrip::getParentName() const {
     return getParentDemandElements().front()->getID();
-}
-
-
-double
-GNEPersonTrip::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 

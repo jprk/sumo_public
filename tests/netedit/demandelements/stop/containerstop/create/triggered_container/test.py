@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--gui-testing-debug-gl'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # go to demand mode
 netedit.supermodeDemand()
@@ -41,25 +41,25 @@ netedit.stopMode()
 netedit.changeStopType("stopContainerStop")
 
 # change triggered
-netedit.changeDefaultValue(netedit.attrs.stop.create.triggered, "container")
+netedit.changeDefaultValue(netedit.attrs.stopContainerStop.create.triggered, "container")
 
 # try to create stop
 netedit.leftClick(referencePosition, 290, 155)
 
 # set invalid value
-netedit.changeDefaultValue(netedit.attrs.stop.create.expected, ";;;;;;;;;;")
+netedit.changeDefaultValue(netedit.attrs.stopContainerStop.create.expected, ";;;;;;;;;;")
 
 # try to create stop
 netedit.leftClick(referencePosition, 295, 155)
 
 # set invalid value
-netedit.changeDefaultValue(netedit.attrs.stop.create.expected, "")
+netedit.changeDefaultValue(netedit.attrs.stopContainerStop.create.expected, "")
 
 # try to create stop
 netedit.leftClick(referencePosition, 300, 155)
 
 # set valid value
-netedit.changeDefaultValue(netedit.attrs.stop.create.expected, "containerID1 containerID2 containerID3")
+netedit.changeDefaultValue(netedit.attrs.stopContainerStop.create.expected, "containerID1 containerID2 containerID3")
 
 # create stop
 netedit.leftClick(referencePosition, 305, 155)

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -385,11 +385,11 @@ MSLCM_SL2015::_patchSpeed(double min, const double wanted, double max, const MSC
 #ifdef DEBUG_PATCHSPEED
             if (v < min) {
                 if (gDebugFlag2) {
-                    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " ignoring low nVSafe=" << v << " min=" << min << "\n";
+                    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " ignoring low nVSafe=" << v << " (accel=" << (*i) << ") min=" << min << "\n";
                 }
             } else {
                 if (gDebugFlag2) {
-                    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " ignoring high nVSafe=" << v << " max=" << max << "\n";
+                    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " ignoring high nVSafe=" << v << " (accel=" << (*i) << ") max=" << max << "\n";
                 }
             }
 #endif
@@ -825,12 +825,7 @@ MSLCM_SL2015::informFollower(int blocked,
 #endif
         }
     } else if (neighFollow.first != 0) {
-        // we are not blocked no, make sure it remains that way
-        const MSVehicle* nv = neighFollow.first;
-        const double vsafe1 = nv->getCarFollowModel().followSpeed(
-                                  nv, nv->getSpeed(), neighFollow.second + SPEED2DIST(plannedSpeed), plannedSpeed, myVehicle.getCarFollowModel().getMaxDecel());
-        const double vsafe = nv->getCarFollowModel().followSpeed(
-                                 nv, nv->getSpeed(), neighFollow.second + SPEED2DIST(plannedSpeed - vsafe1), plannedSpeed, myVehicle.getCarFollowModel().getMaxDecel());
+        const double vsafe = MSLCHelper::getSpeedPreservingSecureGap(myVehicle, *neighFollow.first, neighFollow.second, plannedSpeed);
         msg(neighFollow, vsafe, dir | LCA_AMBLOCKINGFOLLOWER);
 #ifdef DEBUG_INFORM
         if (gDebugFlag2) {
@@ -2171,9 +2166,37 @@ MSLCM_SL2015::updateExpectedSublaneSpeeds(const MSLeaderDistanceInfo& ahead, int
                 const PersonDist pedLeader = lane->nextBlocking(myVehicle.getPositionOnLane() - myVehicle.getVehicleType().getLength(), foeRight, foeLeft);
                 if (pedLeader.first != 0) {
                     const double pedGap = pedLeader.second - myVehicle.getVehicleType().getMinGap() - myVehicle.getVehicleType().getLength();
-                    // we do not know the walking direction here so we take the pedestrian speeda s 0
+                    // we do not know the walking direction here so we take the pedestrian speed as 0
                     vSafe = MIN2(getCarFollowModel().stopSpeed(&myVehicle, vMax, pedGap),
-                            forecastAverageSpeed(vSafe, vMax, pedGap, 0));
+                                 forecastAverageSpeed(vSafe, vMax, pedGap, 0));
+#ifdef DEBUG_EXPECTED_SLSPEED
+                    if (DEBUG_COND) {
+                        std::cout << "   updateExpectedSublaneSpeeds edgeSublane=" << edgeSublane << " pedLeader=" << pedLeader.first->getID() << " gap=" << pedGap << " vSafe=" << vSafe << "\n";
+                    }
+#endif
+                }
+            }
+            // take bidi pedestrians into account
+            if (bidi != nullptr && bidi->getEdge().getPersons().size() > 0 && bidi->hasPedestrians()) {
+                /// XXX this could be done faster by checking all sublanes at once (but would complicate the MSPModel API)
+                double foeRight, foeLeft;
+                ahead.getSublaneBorders(sublane, 0, foeRight, foeLeft);
+                const double foeRightBidi = bidi->getWidth() - foeLeft;
+                const double foeLeftBidi = bidi->getWidth() - foeRight;
+                // get all leaders ahead or overlapping
+                const double relativeBackPos = myVehicle.getLane()->getLength() - myVehicle.getPositionOnLane() + myVehicle.getLength();
+                const double stopTime = ceil(myVehicle.getSpeed() / myVehicle.getCarFollowModel().getMaxDecel());
+                PersonDist pedLeader = bidi->nextBlocking(relativeBackPos, foeRightBidi, foeLeftBidi, stopTime, true);
+                if (pedLeader.first != 0) {
+                    const double pedGap = pedLeader.second - myVehicle.getVehicleType().getMinGap() - myVehicle.getVehicleType().getLength();
+                    // we do not know the walking direction here so we take the pedestrian speed as 0
+                    vSafe = MIN2(getCarFollowModel().stopSpeed(&myVehicle, vMax, pedGap),
+                                 forecastAverageSpeed(vSafe, vMax, pedGap, 0));
+#ifdef DEBUG_EXPECTED_SLSPEED
+                    if (DEBUG_COND) {
+                        std::cout << "   updateExpectedSublaneSpeeds edgeSublane=" << edgeSublane << " pedLeader=" << pedLeader.first->getID() << " (bidi) gap=" << pedGap << " vSafe=" << vSafe << "\n";
+                    }
+#endif
                 }
             }
             vSafe = MIN2(vMax, vSafe);
@@ -2948,8 +2971,7 @@ MSLCM_SL2015::checkStrategicChange(int ret,
 
 bool
 MSLCM_SL2015::mustOvertakeStopped(const MSLane& neighLane, const MSLeaderDistanceInfo& leaders, const MSLeaderDistanceInfo& neighLead,
-        double posOnLane, double neighDist, bool right, double latLaneDist, double& currentDist, double& latDist)
-{
+                                  double posOnLane, double neighDist, bool right, double latLaneDist, double& currentDist, double& latDist) {
     bool mustOvertake = false;
     const bool checkOverTakeRight = avoidOvertakeRight();
     int rightmost;
@@ -2964,27 +2986,27 @@ MSLCM_SL2015::mustOvertakeStopped(const MSLane& neighLane, const MSLeaderDistanc
             if (leader.first != 0 && leader.first->isStopped() && leader.second < REACT_TO_STOPPED_DISTANCE) {
                 const double overtakeDist = leader.second + myVehicle.getVehicleType().getLength() + leader.first->getVehicleType().getLengthWithGap();
                 if (// current destination leaves enough space to overtake the leader
-                        MIN2(neighDist, currentDist) - posOnLane > overtakeDist
-                        // maybe do not overtake on the right at high speed
-                        && (!checkOverTakeRight || !right)
-                        && (!neighLead.hasStoppedVehicle() || hasLaneBeyond)
-                        //&& (neighLead.first == 0 || !neighLead.first->isStopped()
-                        //    // neighboring stopped vehicle leaves enough space to overtake leader
-                        //    || neighLead.second > overtakeDist))
-                    ) {
-                        // avoid becoming stuck behind a stopped leader
-                        currentDist = myVehicle.getPositionOnLane() + leader.second;
-                        latDist = latLaneDist;
-                        mustOvertake = true;
+                    MIN2(neighDist, currentDist) - posOnLane > overtakeDist
+                    // maybe do not overtake on the right at high speed
+                    && (!checkOverTakeRight || !right)
+                    && (!neighLead.hasStoppedVehicle() || hasLaneBeyond)
+                    //&& (neighLead.first == 0 || !neighLead.first->isStopped()
+                    //    // neighboring stopped vehicle leaves enough space to overtake leader
+                    //    || neighLead.second > overtakeDist))
+                ) {
+                    // avoid becoming stuck behind a stopped leader
+                    currentDist = myVehicle.getPositionOnLane() + leader.second;
+                    latDist = latLaneDist;
+                    mustOvertake = true;
 #ifdef DEBUG_WANTS_CHANGE
-                        if (DEBUG_COND) {
-                            std::cout << " veh=" << myVehicle.getID() << " overtake stopped leader=" << leader.first->getID()
-                                << " overtakeDist=" << overtakeDist
-                                << " remaining=" << MIN2(neighDist, currentDist) - posOnLane
-                                << "\n";
-                        }
-#endif
+                    if (DEBUG_COND) {
+                        std::cout << " veh=" << myVehicle.getID() << " overtake stopped leader=" << leader.first->getID()
+                                  << " overtakeDist=" << overtakeDist
+                                  << " remaining=" << MIN2(neighDist, currentDist) - posOnLane
+                                  << "\n";
                     }
+#endif
+                }
             }
 
         }

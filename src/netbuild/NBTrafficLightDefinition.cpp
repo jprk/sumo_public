@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -112,7 +112,7 @@ NBTrafficLightDefinition::compute(OptionsCont& oc) {
         for (auto it : nodes) {
             it->removeTrafficLight(this);
         }
-        WRITE_WARNING("The traffic light '" + getID() + "' does not control any links; it will not be build.");
+        WRITE_WARNINGF(TL("The traffic light '%' does not control any links; it will not be build."), getID());
         return nullptr;
     }
     // compute the time needed to brake
@@ -471,7 +471,12 @@ NBTrafficLightDefinition::collectAllLinks(NBConnectionVector& into) {
                         // must be registered in MSRailCrossing
                         into.push_back(NBConnection(incoming, el.fromLane, el.toEdge, el.toLane, -1));
                     } else if (incoming->getToNode()->getType() == SumoXMLNodeType::RAIL_SIGNAL
-                               && incoming->getToNode()->getDirection(incoming, el.toEdge) == LinkDirection::TURN) {
+                               && incoming->getToNode()->getDirection(incoming, el.toEdge) == LinkDirection::TURN
+                               // assume explicit connections at sharp turn-arounds are either for reversal or due to a geometry glitch
+                               // (the might also be due to faulty connection
+                               // input but they would not come from guessing)
+                               && (incoming->getBidiEdge() == el.toEdge)
+                              ) {
                         // turnarounds stay uncontrolled at rail signal
                     } else {
                         into.push_back(NBConnection(incoming, el.fromLane, el.toEdge, el.toLane, tlIndex++));

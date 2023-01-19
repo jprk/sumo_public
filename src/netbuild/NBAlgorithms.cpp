@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -210,7 +210,7 @@ NBNodeTypeComputer::computeNodeTypes(NBNodeCont& nc, NBTrafficLightLogicCont& tl
             continue;
         }
         // determine the type
-        SumoXMLNodeType type = SumoXMLNodeType::RIGHT_BEFORE_LEFT;
+        SumoXMLNodeType type = oc.getBool("junctions.left-before-right") ? SumoXMLNodeType::LEFT_BEFORE_RIGHT : SumoXMLNodeType::RIGHT_BEFORE_LEFT;
         for (EdgeVector::const_iterator i = n->myIncomingEdges.begin(); i != n->myIncomingEdges.end(); i++) {
             for (EdgeVector::const_iterator j = i + 1; j != n->myIncomingEdges.end(); j++) {
                 // @todo "getOppositeIncoming" should probably be refactored into something the edge knows
@@ -315,7 +315,10 @@ NBEdgePriorityComputer::computeEdgePriorities(NBNodeCont& nc) {
             continue;
         }
         // compute the priorities on junction when needed
-        if (node.second->getType() != SumoXMLNodeType::RIGHT_BEFORE_LEFT && node.second->getType() != SumoXMLNodeType::ALLWAY_STOP && node.second->getType() != SumoXMLNodeType::NOJUNCTION) {
+        if (node.second->getType() != SumoXMLNodeType::RIGHT_BEFORE_LEFT
+                && node.second->getType() != SumoXMLNodeType::LEFT_BEFORE_RIGHT
+                && node.second->getType() != SumoXMLNodeType::ALLWAY_STOP
+                && node.second->getType() != SumoXMLNodeType::NOJUNCTION) {
             if (node.second->getRightOfWay() == RightOfWay::EDGEPRIORITY) {
                 for (NBEdge* e : node.second->getIncomingEdges()) {
                     e->setJunctionPriority(node.second, e->getPriority());
@@ -399,7 +402,7 @@ NBEdgePriorityComputer::setPriorityJunctionPriorities(NBNode& n, bool forceStrai
         for (auto item : counterOutgoingEdges) {
             tmp2[item.first->getID()] = item.second->getID();
         }
-        std::cout << "n=" << n.getID() << " bestIn=" << bestIn->getID() << " bestOut=" << bestOut->getID()
+        std::cout << "n=" << n.getID() << " bestIn=" << bestIn->getID() << " bestOut=" << toString(bestOutgoing)
                   << " counterBest=" << counterIncomingEdges.find(bestIncoming[0])->second->getID()
                   << " mainExplicit=" << mainDirectionExplicit
                   << " forceStraight=" << forceStraight

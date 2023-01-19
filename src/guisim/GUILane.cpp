@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -32,11 +32,12 @@
 #include <utils/common/StdDefs.h>
 #include <utils/geom/GeomHelper.h>
 #include <utils/gui/div/GLHelper.h>
-#include <utils/gui/globjects/GLIncludes.h>
-#include <utils/gui/globjects/GUIPolygon.h>
-#include <utils/gui/windows/GUISUMOAbstractView.h>
 #include <utils/gui/div/GUIParameterTableWindow.h>
 #include <utils/gui/div/GUIGlobalSelection.h>
+#include <utils/gui/globjects/GLIncludes.h>
+#include <utils/gui/globjects/GUIPolygon.h>
+#include <utils/gui/images/VClassIcons.h>
+#include <utils/gui/windows/GUISUMOAbstractView.h>
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <microsim/MSGlobals.h>
 #include <microsim/MSLane.h>
@@ -353,7 +354,15 @@ GUILane::drawLinkRule(const GUIVisualizationSettings& s, const GUINet& net, cons
         glTranslated(end.x(), end.y(), 0);
         glRotated(rot, 0, 0, 1);
         // select glID
+
         switch (link->getState()) {
+            case LINKSTATE_ALLWAY_STOP:
+            case LINKSTATE_STOP: {
+                // might be a traffic light link
+                int tlID = net.getLinkTLID(link);
+                GLHelper::pushName(tlID != 0 ? tlID : getGlID());
+                break;
+            }
             case LINKSTATE_TL_GREEN_MAJOR:
             case LINKSTATE_TL_GREEN_MINOR:
             case LINKSTATE_TL_RED:
@@ -938,7 +947,7 @@ GUILane::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
     ret->insertMenuPaneChild(reachableByClass);
     new FXMenuCascade(ret, "Select reachable", GUIIconSubSys::getIcon(GUIIcon::FLAG), reachableByClass);
     for (auto i : SumoVehicleClassStrings.getStrings()) {
-        GUIDesigns::buildFXMenuCommand(reachableByClass, i.c_str(), nullptr, &parent, MID_REACHABILITY);
+        GUIDesigns::buildFXMenuCommand(reachableByClass, i.c_str(), VClassIcons::getVClassIcon(SumoVehicleClassStrings.get(i)), &parent, MID_REACHABILITY);
     }
     return ret;
 }
@@ -951,11 +960,11 @@ GUILane::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView& view) {
     // add items
     ret->mkItem("allowed speed [m/s]", false, getSpeedLimit());
     const std::map<SUMOVehicleClass, double>* restrictions = MSNet::getInstance()->getRestrictions(myEdge->getEdgeType());
-    if (restrictions != nullptr) { 
+    if (restrictions != nullptr) {
         for (const auto& elem : *restrictions) {
             ret->mkItem(("  allowed speed [m/s]: " + toString(elem.first)).c_str(), false, elem.second);
         }
-    } 
+    }
     ret->mkItem("length [m]", false, myLength);
     ret->mkItem("width [m]", false, myWidth);
     ret->mkItem("street name", false, myEdge->getStreetName());
@@ -975,8 +984,8 @@ GUILane::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView& view) {
     ret->mkItem("disallowed vehicle class", false, getVehicleClassNames(~myPermissions));
     ret->mkItem("permission code", false, myPermissions);
     ret->mkItem("color value", true, new FunctionBinding<GUILane, double>(this, &GUILane::getColorValueForTracker));
-    if (myEdge->getBidiEdge() != nullptr) {
-        ret->mkItem("bidi-edge", false, myEdge->getBidiEdge()->getID());
+    if (myBidiLane != nullptr) {
+        ret->mkItem("bidi-lane", false, myBidiLane->getID());
     }
     for (const auto& kv : myEdge->getParametersMap()) {
         ret->mkItem(("edgeParam:" + kv.first).c_str(), false, kv.second);
@@ -984,12 +993,6 @@ GUILane::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView& view) {
     ret->checkFont(myEdge->getStreetName());
     ret->closeBuilding();
     return ret;
-}
-
-
-double
-GUILane::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 
@@ -1353,6 +1356,10 @@ GUILane::getColorValue(const GUIVisualizationSettings& s, int activeScheme) cons
                 capacity += pa->getCapacity() - pa->getOccupancy();
             }
             return capacity;
+        }
+        case 39: {
+            // by live edge data value
+            return GUINet::getGUIInstance()->getMeanData(this, s.edgeDataID, s.edgeData);
         }
     }
     return 0;

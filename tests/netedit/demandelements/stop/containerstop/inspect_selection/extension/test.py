@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--gui-testing-debug-gl'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # go to demand mode
 netedit.supermodeDemand()
@@ -47,25 +47,25 @@ netedit.inspectMode()
 netedit.leftClick(referencePosition, 290, 155)
 
 # change value
-netedit.modifyBoolAttribute(netedit.attrs.stop.inspectSelection.extensionEnable, False)
+netedit.modifyBoolAttribute(netedit.attrs.stopContainerStop.inspectSelection.extensionEnable, False)
 
 # change value
-netedit.modifyBoolAttribute(netedit.attrs.stop.inspectSelection.extensionEnable, False)
+netedit.modifyBoolAttribute(netedit.attrs.stopContainerStop.inspectSelection.extensionEnable, False)
 
 # change value
-netedit.modifyAttribute(netedit.attrs.stop.inspectSelection.extension, "dummyValue", False)
+netedit.modifyAttribute(netedit.attrs.stopContainerStop.inspectSelection.extension, "dummyValue", False)
 
 # change value
-netedit.modifyAttribute(netedit.attrs.stop.inspectSelection.extension, "", False)
+netedit.modifyAttribute(netedit.attrs.stopContainerStop.inspectSelection.extension, "", False)
 
 # change value
-netedit.modifyAttribute(netedit.attrs.stop.inspectSelection.extension, "-5", False)
+netedit.modifyAttribute(netedit.attrs.stopContainerStop.inspectSelection.extension, "-5", False)
 
 # change value
-netedit.modifyAttribute(netedit.attrs.stop.inspectSelection.extension, "0", False)
+netedit.modifyAttribute(netedit.attrs.stopContainerStop.inspectSelection.extension, "0", False)
 
 # change value
-netedit.modifyAttribute(netedit.attrs.stop.inspectSelection.extension, "3.5", False)
+netedit.modifyAttribute(netedit.attrs.stopContainerStop.inspectSelection.extension, "3.5", False)
 
 # Check undo redo
 netedit.undo(referencePosition, 2)

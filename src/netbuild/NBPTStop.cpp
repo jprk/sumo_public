@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,9 +21,10 @@
 
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/common/StringUtils.h>
-#include "NBPTStop.h"
 #include "NBEdge.h"
 #include "NBEdgeCont.h"
+#include "NBPTPlatform.h"
+#include "NBPTStop.h"
 
 
 // ===========================================================================
@@ -42,13 +43,12 @@ NBPTStop::NBPTStop(std::string ptStopId, Position position, std::string edgeId, 
     myPermissions(svcPermissions),
     myStartPos(0),
     myEndPos(0),
-    myBidiStop(nullptr),
+    myBidiStop(std::weak_ptr<NBPTStop>()),
     myIsLoose(origEdgeId == ""),
     myIsPlatform(false),
     myIsMultipleStopPositions(false),
     myAreaID(-1),
-    myGivenStartPos(givenStartPos)
-{
+    myGivenStartPos(givenStartPos) {
 }
 
 

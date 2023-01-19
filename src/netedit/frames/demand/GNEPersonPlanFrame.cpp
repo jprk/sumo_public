@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,7 +35,7 @@
 // GNEPersonPlanFrame - methods
 // ---------------------------------------------------------------------------
 
-GNEPersonPlanFrame::GNEPersonPlanFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNEPersonPlanFrame::GNEPersonPlanFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "PersonPlans"),
     myRouteHandler("", viewNet->getNet(), true, false) {
 
@@ -53,6 +53,9 @@ GNEPersonPlanFrame::GNEPersonPlanFrame(GNEViewParent *viewParent, GNEViewNet* vi
 
     // Create GNEElementTree modul
     myPersonHierarchy = new GNEElementTree(this);
+
+    // create legend label
+    myPathLegend = new GNEPathLegendModule(this);
 }
 
 
@@ -93,12 +96,13 @@ GNEPersonPlanFrame::show() {
             myPersonSelector->setDemandElement(nullptr);
         }
     } else {
-        // hide all moduls except helpCreation
+        // hide all moduls
         myPersonSelector->hideDemandElementSelector();
         myPersonPlanTagSelector->hideTagSelector();
         myPersonPlanAttributes->hideAttributesCreatorModule();
         myPathCreator->hidePathCreatorModule();
         myPersonHierarchy->hideHierarchicalElementTree();
+        myPathLegend->hidePathLegendModule();
     }
     // show frame
     GNEFrame::show();
@@ -148,7 +152,7 @@ GNEPersonPlanFrame::addPersonPlanElement(const GNEViewNetHelper::ObjectsUnderCur
     const bool requireBusStop = ((personPlanTag == GNE_TAG_PERSONTRIP_BUSSTOP) || (personPlanTag == GNE_TAG_WALK_BUSSTOP) ||
                                  (personPlanTag == GNE_TAG_RIDE_BUSSTOP) || (personPlanTag == GNE_TAG_STOPPERSON_BUSSTOP));
     const bool requireEdge = ((personPlanTag == GNE_TAG_PERSONTRIP_EDGE) || (personPlanTag == GNE_TAG_WALK_EDGE) ||
-                              (personPlanTag == GNE_TAG_RIDE_EDGE) || (personPlanTag == GNE_TAG_WALK_EDGES) || 
+                              (personPlanTag == GNE_TAG_RIDE_EDGE) || (personPlanTag == GNE_TAG_WALK_EDGES) ||
                               (personPlanTag == GNE_TAG_STOPPERSON_EDGE));
     const bool requireJunction = ((personPlanTag == GNE_TAG_PERSONTRIP_JUNCTIONS) || (personPlanTag == GNE_TAG_WALK_JUNCTIONS));
     // continue depending of tag
@@ -207,6 +211,8 @@ GNEPersonPlanFrame::tagSelected() {
         if (previousEdge) {
             // set path creator mode
             myPathCreator->showPathCreatorModule(personPlanTag, true, false);
+            // show legend
+            myPathLegend->showPathLegendModule();
             // add previous edge or junction
             if (myPersonPlanTagSelector->getCurrentTemplateAC()->getTagProperty().hasAttribute(SUMO_ATTR_FROMJUNCTION)) {
                 myPathCreator->addJunction(previousEdge->getToJunction(), false, false);
@@ -216,6 +222,8 @@ GNEPersonPlanFrame::tagSelected() {
         } else {
             // set path creator mode
             myPathCreator->showPathCreatorModule(personPlanTag, false, false);
+            // show legend
+            myPathLegend->showPathLegendModule();
         }
         // show person hierarchy
         myPersonHierarchy->showHierarchicalElementTree(myPersonSelector->getCurrentDemandElement());
@@ -224,6 +232,7 @@ GNEPersonPlanFrame::tagSelected() {
         myPersonPlanAttributes->hideAttributesCreatorModule();
         myPathCreator->hidePathCreatorModule();
         myPersonHierarchy->hideHierarchicalElementTree();
+        myPathLegend->hidePathLegendModule();
     }
 }
 
@@ -242,6 +251,7 @@ GNEPersonPlanFrame::demandElementSelected() {
             myPersonPlanAttributes->hideAttributesCreatorModule();
             myPathCreator->hidePathCreatorModule();
             myPersonHierarchy->hideHierarchicalElementTree();
+            myPathLegend->hidePathLegendModule();
         }
     } else {
         // hide moduls if person selected isn't valid
@@ -249,6 +259,7 @@ GNEPersonPlanFrame::demandElementSelected() {
         myPersonPlanAttributes->hideAttributesCreatorModule();
         myPathCreator->hidePathCreatorModule();
         myPersonHierarchy->hideHierarchicalElementTree();
+        myPathLegend->hidePathLegendModule();
     }
 }
 

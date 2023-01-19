@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -124,17 +124,18 @@ MSFCDExport::write(OutputDevice& of, SUMOTime timestep, bool elevation) {
                     }
                 }
                 if (writeDistance) {
-                    double pos;
+                    double lanePos = veh->getPositionOnLane();
                     if (microVeh != nullptr && microVeh->getLane()->isInternal()) {
-                        pos = microVeh->getRoute().getDistanceBetween(0, microVeh->getPositionOnLane(),
-                                microVeh->getEdge(), &microVeh->getLane()->getEdge(), true, microVeh->getRoutePosition());
-                    } else {
-                        pos = veh->getPositionOnLane();
+                        lanePos = microVeh->getRoute().getDistanceBetween(0, lanePos, microVeh->getEdge(), &microVeh->getLane()->getEdge(),
+                                  true, microVeh->getRoutePosition());
                     }
-                    of.writeOptionalAttr(SUMO_ATTR_DISTANCE, veh->getEdge()->getDistanceAt(pos), mask);
+                    of.writeOptionalAttr(SUMO_ATTR_DISTANCE, veh->getEdge()->getDistanceAt(lanePos), mask);
                 }
                 of.writeOptionalAttr(SUMO_ATTR_ODOMETER, veh->getOdometer(), mask);
                 of.writeOptionalAttr(SUMO_ATTR_POSITION_LAT, veh->getLateralPositionOnLane(), mask);
+                if (microVeh != nullptr) {
+                    of.writeOptionalAttr(SUMO_ATTR_SPEED_LAT, microVeh->getLaneChangeModel().getSpeedLat(), mask);
+                }
                 if (maxLeaderDistance >= 0 && microVeh != nullptr) {
                     std::pair<const MSVehicle* const, double> leader = microVeh->getLeader(maxLeaderDistance);
                     if (leader.first != nullptr) {
@@ -221,8 +222,8 @@ MSFCDExport::hasOwnOutput(const MSTransportable* p, bool filter, bool shapeFilte
 
 void
 MSFCDExport::writeTransportable(OutputDevice& of, const MSEdge* e, MSTransportable* p, const SUMOVehicle* v,
-        bool filter, bool shapeFilter, bool inRadius,
-        SumoXMLTag tag, bool useGeo, bool elevation, long long int mask) {
+                                bool filter, bool shapeFilter, bool inRadius,
+                                SumoXMLTag tag, bool useGeo, bool elevation, long long int mask) {
     if (!hasOwnOutput(p, filter, shapeFilter, inRadius)) {
         return;
     }

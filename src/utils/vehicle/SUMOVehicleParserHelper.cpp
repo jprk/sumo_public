@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2008-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -290,7 +290,7 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
                     if (flowParameter->repetitionNumber < 0) {
                         return handleVehicleError(hardFail, flowParameter, "Negative repetition number in the definition of " + toString(tag) + " '" + id + "'.");
                     }
-                    if (flowParameter->repetitionOffset < 0) {
+                    if (flowParameter->repetitionOffset < 0 && !hasProb) {
                         if (poissonFlow) {
                             flowParameter->repetitionEnd = SUMOTime_MAX;
                         } else {
@@ -783,12 +783,12 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
                 // backward compatibility because pedestrian maxSpeed was subject to speedFactor up to 1.14.1
                 vType->desiredMaxSpeed = vType->maxSpeed;;
                 vType->maxSpeed = MAX2(vType->maxSpeed, SUMOVTypeParameter::VClassDefaultValues(vClass).maxSpeed);
-            } else if (vClass == SVC_BICYCLE){
+            } else if (vClass == SVC_BICYCLE) {
                 // backward compatibility because default desired speed did not exist up to 1.14.1
                 vType->desiredMaxSpeed = MAX2(vType->maxSpeed, vType->desiredMaxSpeed);
             }
         }
-                
+
         if (attrs.hasAttribute(SUMO_ATTR_SPEEDFACTOR)) {
             bool ok = true;
             vType->speedFactor.parse(attrs.get<std::string>(SUMO_ATTR_SPEEDFACTOR, vType->id.c_str(), ok), hardFail);

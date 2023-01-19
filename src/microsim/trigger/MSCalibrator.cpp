@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2005-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -169,8 +169,10 @@ MSCalibrator::myStartElement(int element,
     if (element == SUMO_TAG_FLOW) {
         AspiredState state;
         SUMOTime lastEnd = -1;
+        SUMOTime lastBegin = -1;
         if (myIntervals.size() > 0) {
             lastEnd = myIntervals.back().end;
+            lastBegin = myIntervals.back().begin;
             if (lastEnd == -1) {
                 lastEnd = myIntervals.back().begin;
             }
@@ -181,7 +183,9 @@ MSCalibrator::myStartElement(int element,
             state.v = attrs.getOpt<double>(SUMO_ATTR_SPEED, nullptr, ok, -1.);
             state.begin = attrs.getSUMOTimeReporting(SUMO_ATTR_BEGIN, getID().c_str(), ok);
             if (state.begin < lastEnd) {
-                WRITE_ERROR("Overlapping or unsorted intervals in calibrator '" + getID() + "'.");
+                WRITE_ERRORF("Overlapping or unsorted intervals in calibrator '%' (end=%, begin2=%).", getID(), time2string(lastEnd), time2string(state.begin));
+            } else if (state.begin <= lastBegin) {
+                WRITE_ERRORF("Overlapping or unsorted intervals in calibrator '%' (begin=%, begin2=%).", getID(), time2string(lastBegin), time2string(state.begin));
             }
             state.end = attrs.getOptSUMOTimeReporting(SUMO_ATTR_END, getID().c_str(), ok, -1);
             state.vehicleParameter = SUMOVehicleParserHelper::parseVehicleAttributes(element, attrs, true, true, true);
@@ -402,7 +406,7 @@ MSCalibrator::execute(SUMOTime currentTime) {
         MSVehicleControl& vc = MSNet::getInstance()->getVehicleControl();
         while (wishedNum > adaptedNum + insertionSlack) {
             SUMOVehicleParameter* pars = myCurrentStateInterval->vehicleParameter;
-            const MSRoute* route = myProbe != nullptr ? myProbe->sampleRoute() : nullptr;
+            ConstMSRoutePtr route = myProbe != nullptr ? myProbe->sampleRoute() : nullptr;
             if (route == nullptr) {
                 route = MSRoute::dictionary(pars->routeid);
             }

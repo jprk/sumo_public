@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -403,21 +403,10 @@ enum SumoXMLTag {
     /// @brief parameters
     AGEN_TAG_PARAM,
 
-    /// @name SUMOConfig elements
-    /// @brief configuration
-    SUMO_TAG_CONFIGURATION,
-    /// @brief net file
-    SUMO_TAG_NETFILE,
-    /// @brief additional files
-    SUMO_TAG_ADDITIONALFILES,
-    /// @brief route files
-    SUMO_TAG_ROUTEFILES,
-    /// @brief data files
-    SUMO_TAG_DATAFILES,
-    ///@}
-
     /// @name NETEDIT elements
     /// @{
+    /// @brief edge rel (defined in a single lane)
+    GNE_TAG_EDGEREL_SINGLE,
     /// @brief internal lane
     GNE_TAG_INTERNAL_LANE,
     /// @brief Point of interest over Lane
@@ -556,6 +545,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_VEHICLE            = 60,
     SUMO_ATTR_ODOMETER           = 61,
     SUMO_ATTR_POSITION_LAT       = 62,
+    SUMO_ATTR_SPEED_LAT          = 63,
     /// @}
 
     /// @name common attributes
@@ -648,7 +638,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_INSERTIONCHECKS,
     SUMO_ATTR_TIME_TO_TELEPORT,
     SUMO_ATTR_TIME_TO_TELEPORT_BIDI,
-    /// @brief Class specific timing values for vehicle manoeuvering through angle ranges
+    /// @brief Class specific timing values for vehicle maneuvering through angle ranges
     SUMO_ATTR_MANEUVER_ANGLE_TIMES,
     /// @}
 
@@ -730,8 +720,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_RECUPERATIONEFFICIENCY,
     /// @brief Recuperation efficiency (by deceleration)
     SUMO_ATTR_RECUPERATIONEFFICIENCY_BY_DECELERATION,
-    /// @brief Stopping treshold
-    SUMO_ATTR_STOPPINGTRESHOLD,
+    /// @brief Stopping threshold
+    SUMO_ATTR_STOPPINGTHRESHOLD,
     /// @}
 
     /// @name elecHybrid device export parameters
@@ -1134,6 +1124,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_JOIN,
     SUMO_ATTR_INTENDED,
     SUMO_ATTR_ONDEMAND,
+    SUMO_ATTR_JUMP,
+    SUMO_ATTR_COLLISION,
     SUMO_ATTR_VALUE,
     SUMO_ATTR_PROHIBITOR,
     SUMO_ATTR_PROHIBITED,
@@ -1347,6 +1339,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_ROUTEFILES,
     /// @brief route files
     SUMO_ATTR_DATAFILES,
+    /// @brief meanData files
+    SUMO_ATTR_MEANDATAFILES,
     ///@}
 
     //@name Netedit Attributes (used as virtual property holders, must be in SumoXMLAttr)
@@ -1407,8 +1401,10 @@ enum SumoXMLAttr {
     GNE_ATTR_VTYPE_DISTRIBUTION,
     /// @brief poisson definition (used in flow)
     GNE_ATTR_POISSON,
-    /// @brief stop index
+    /// @brief stop index (position in the parent's children
     GNE_ATTR_STOPINDEX,
+    /// @brief stop index (position in the parent's path)
+    GNE_ATTR_PATHSTOPINDEX,
 
     // @}
 
@@ -1475,6 +1471,7 @@ enum class SumoXMLNodeType {
     PRIORITY,
     PRIORITY_STOP, // like priority but all minor links have stop signs
     RIGHT_BEFORE_LEFT,
+    LEFT_BEFORE_RIGHT,
     ALLWAY_STOP,
     ZIPPER,
     DISTRICT,
@@ -1528,7 +1525,9 @@ enum class ParkingType {
 /// @brief algorithms for computing right of way
 enum class RightOfWay {
     DEFAULT,
-    EDGEPRIORITY
+    EDGEPRIORITY,
+    MIXEDPRIORITY,
+    ALLWAYSTOP,
 };
 
 /// @brief classifying boundary nodes

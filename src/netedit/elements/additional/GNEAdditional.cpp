@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -18,7 +18,6 @@
 // A abstract class for representation of additional elements
 /****************************************************************************/
 #include <config.h>
-
 #include <foreign/fontstash/fontstash.h>
 #include <netedit/GNENet.h>
 #include <netedit/GNEViewNet.h>
@@ -28,42 +27,38 @@
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/div/GUIParameterTableWindow.h>
-#include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
-
 #include "GNEAdditional.h"
+
 
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
-GNEAdditional::GNEAdditional(const std::string& id, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon *icon, std::string additionalName,
+GNEAdditional::GNEAdditional(const std::string& id, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon* icon, std::string additionalName,
                              const std::vector<GNEJunction*>& junctionParents,
                              const std::vector<GNEEdge*>& edgeParents,
                              const std::vector<GNELane*>& laneParents,
                              const std::vector<GNEAdditional*>& additionalParents,
                              const std::vector<GNEDemandElement*>& demandElementParents,
                              const std::vector<GNEGenericData*>& genericDataParents) :
-    GUIGlObject(type, id, icon),
+    GNEPathManager::PathElement(type, id, icon, GNEPathManager::PathElement::Options::ADDITIONAL_ELEMENT),
     GNEHierarchicalElement(net, tag, junctionParents, edgeParents, laneParents, additionalParents, demandElementParents, genericDataParents),
-    GNEPathManager::PathElement(this, GNEPathManager::PathElement::Options::ADDITIONAL_ELEMENT),
     myAdditionalName(additionalName) {
     // check if is template
     myIsTemplate = (id == "");
 }
 
 
-GNEAdditional::GNEAdditional(GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon *icon, std::string additionalName,
+GNEAdditional::GNEAdditional(GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon* icon, std::string additionalName,
                              const std::vector<GNEJunction*>& junctionParents,
                              const std::vector<GNEEdge*>& edgeParents,
                              const std::vector<GNELane*>& laneParents,
                              const std::vector<GNEAdditional*>& additionalParents,
                              const std::vector<GNEDemandElement*>& demandElementParents,
                              const std::vector<GNEGenericData*>& genericDataParents) :
-    GUIGlObject(type, additionalParents.front()->getID(), icon),
+    GNEPathManager::PathElement(type, additionalParents.front()->getID(), icon, GNEPathManager::PathElement::Options::ADDITIONAL_ELEMENT),
     GNEHierarchicalElement(net, tag, junctionParents, edgeParents, laneParents, additionalParents, demandElementParents, genericDataParents),
-    GNEPathManager::PathElement(this, GNEPathManager::PathElement::Options::ADDITIONAL_ELEMENT),
     myAdditionalName(additionalName) {
 }
 
@@ -204,7 +199,7 @@ GNEAdditional::getOptionalAdditionalName() const {
 }
 
 
-bool 
+bool
 GNEAdditional::isGLObjectLocked() {
     if (myNet->getViewNet()->getEditModes().isCurrentSupermodeNetwork()) {
         return myNet->getViewNet()->getLockManager().isObjectLocked(getType(), isAttributeCarrierSelected());
@@ -226,7 +221,7 @@ GNEAdditional::deleteGLObject() {
 }
 
 
-void 
+void
 GNEAdditional::selectGLObject() {
     if (isAttributeCarrierSelected()) {
         unselectAttributeCarrier();

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -155,12 +155,16 @@ public:
                 _IntermodalEdge* const otherTazDepart = other != nullptr ? getDepartConnector(other) : tazDepart;
                 _IntermodalEdge* const otherTazArrive = other != nullptr ? getArrivalConnector(other) : tazArrive;
                 for (const E* out : edge->getSuccessors()) {
-                    tazDepart->addSuccessor(getDepartConnector(out));
-                    getArrivalConnector(out)->addSuccessor(otherTazArrive);
+                    if (out->isNormal()) {
+                        tazDepart->addSuccessor(getDepartConnector(out));
+                        getArrivalConnector(out)->addSuccessor(otherTazArrive);
+                    }
                 }
                 for (const E* in : edge->getPredecessors()) {
-                    getArrivalConnector(in)->addSuccessor(tazArrive);
-                    otherTazDepart->addSuccessor(getDepartConnector(in));
+                    if (in->isNormal()) {
+                        getArrivalConnector(in)->addSuccessor(tazArrive);
+                        otherTazDepart->addSuccessor(getDepartConnector(in));
+                    }
                 }
                 continue;
             }

@@ -109,7 +109,7 @@ Using python tools, conversion of .net.xml files into further formats is support
   information or filter stops when reducing the network size.
 - [Public transport
   lines](Tutorials/PT_from_OpenStreetMap.md#initial_network_and_public_transit_information_extraction): Automatically updated when reducing network extent.
-- [Shape definitions](Simulation/Shapes.md) to be embedded in network output that supports this ([OpenDRIVE](Networks/Import/OpenDRIVE.md))
+- [Shape definitions](Simulation/Shapes.md) to be embedded in network output that supports this ([OpenDRIVE](Networks/Further_Outputs.md#embedding_road_objects))
 - [Elevation Data files](Networks/Elevation.md#including_elevation_data_in_a_network)
 
 ## Export
@@ -130,6 +130,8 @@ The following list ouf output is explained in more detail at
   road-side parking can be imported from OSM)
 - Railway topology output: A file for analyzing the topology of
   railway networks in regard to bi-directional track usage
+- [OpenDrive road objects](Networks/Further_Outputs.md#opendrive_road_objects)
+- [VISUM districts](Networks/Further_Outputs.md#visum-districts)
 
 # Options
 
@@ -206,6 +208,8 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--railway.topology.output** {{DT_FILE}} | Analyze topology of the railway network |
 | **--polygon-output** {{DT_FILE}} | Write shapes that are embedded in the network input and that are not supported by polyconvert (OpenDRIVE) |
 | **--opendrive-output.straight-threshold** {{DT_FLOAT}} | Builds parameterized curves whenever the angular change  between straight segments exceeds FLOAT degrees; *default:* **1e-08** |
+| **--opendrive-output.lefthand-left** {{DT_BOOL}} | Write lanes in lefthand networks on the left side (positive indices); *default:* **false** |
+| **--opendrive-output.shape-match-dist** {{DT_FLOAT}} | Match loaded shapes to the closest edge within FLOAT and export as road objects; *default:* **-1** |
 
 ### Projection
 
@@ -266,6 +270,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--opposites.guess** {{DT_BOOL}} | Enable guessing of opposite direction lanes usable for overtaking; *default:* **false** |
 | **--opposites.guess.fix-lengths** {{DT_BOOL}} | Ensure that opposite edges have the same length; *default:* **true** |
 | **--fringe.guess** {{DT_BOOL}} | Enable guessing of network fringe nodes; *default:* **false** |
+| **--fringe.guess.speed-threshold** {{DT_FLOAT}} | Guess disconnected edges above the given speed as outer fringe; *default:* **13.8889** |
 | **--lefthand** {{DT_BOOL}} | Assumes left-hand traffic on the network; *default:* **false** |
 | **--edges.join** {{DT_BOOL}} | Merges edges which connect the same nodes and are close to each other (recommended for VISSIM import); *default:* **false** |
 | **--speed.offset** {{DT_FLOAT}} | Modifies all edge speeds by adding FLOAT; *default:* **0** |
@@ -312,6 +317,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--tls.ignore-internal-junction-jam** {{DT_BOOL}} | Do not build mutually conflicting response matrix, potentially ignoring vehicles that are stuck at an internal junction when their phase has ended; *default:* **false** |
 | **--tls.guess-signals** {{DT_BOOL}} | Interprets tls nodes surrounding an intersection as signal positions for a larger TLS. This is typical pattern for OSM-derived networks; *default:* **false** |
 | **--tls.guess-signals.dist** {{DT_FLOAT}} | Distance for interpreting nodes as signal locations; *default:* **25** |
+| **--tls.guess-signals.slack** {{DT_INT}} | Number of uncontrolled entry edges to accept and still consider the central node as a traffic light; *default:* **0** |
 | **--tls.cycle.time** {{DT_INT}} | Use INT as cycle duration; *default:* **90** |
 | **--tls.green.time** {{DT_INT}} | Use INT as green phase duration; *default:* **31** |
 | **-D** {{DT_FLOAT}}<br> **--tls.yellow.min-decel** {{DT_FLOAT}} | Defines smallest vehicle deceleration; *default:* **3** |
@@ -336,6 +342,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--tls.max-dur** {{DT_INT}} | Default maximum phase duration for traffic lights with variable phase length; *default:* **50** |
 | **--tls.group-signals** {{DT_BOOL}} | Assign the same tls link index to connections that share the same states; *default:* **false** |
 | **--tls.ungroup-signals** {{DT_BOOL}} | Assign a distinct tls link index to every connection; *default:* **false** |
+| **--tls.rebuild** {{DT_BOOL}} | rebuild all traffic light plans in the network; *default:* **false** |
 
 ### Ramp Guessing
 
@@ -383,6 +390,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | Option | Description |
 |--------|-------------|
 | **--junctions.right-before-left.speed-threshold** {{DT_FLOAT}} | Allow building right-before-left junctions when the incoming edge speeds are below FLOAT (m/s); *default:* **13.6111** |
+| **--junctions.left-before-right** {{DT_BOOL}} | Build left-before-right junctions instead of right-before-left junctions; *default:* **false** |
 | **--no-internal-links** {{DT_BOOL}} | Omits internal links; *default:* **false** |
 | **--no-turnarounds** {{DT_BOOL}} | Disables building turnarounds; *default:* **false** |
 | **--no-turnarounds.tls** {{DT_BOOL}} | Disables building turnarounds at tls-controlled junctions; *default:* **false** |
@@ -465,8 +473,9 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--osm.layer-elevation.max-grade** {{DT_FLOAT}} | Maximum grade threshold in % at 50km/h when reconstrucing elevation based on layer data. The value is scaled according to road speed.; *default:* **10** |
 | **--osm.oneway-spread-right** {{DT_BOOL}} | Whether one-way roads should be spread to the side instead of centered; *default:* **false** |
 | **--osm.lane-access** {{DT_BOOL}} | Import lane-specific access restrictions; *default:* **false** |
-| **--osm.bike-access** {{DT_BOOL}} | Check additional attributes to fix directions and permissions on bike paths; *default:* **false** |
+| **--osm.bike-access** {{DT_BOOL}} | Import bike lanes and fix directions and permissions on bike paths; *default:* **false** |
 | **--osm.sidewalks** {{DT_BOOL}} | Import sidewalks; *default:* **false** |
+| **--osm.crossings** {{DT_BOOL}} | Import crossings; *default:* **false** |
 | **--osm.turn-lanes** {{DT_BOOL}} | Import turning arrows from OSM to help with connection building; *default:* **false** |
 | **--osm.stop-output.length** {{DT_FLOAT}} | The default length of a public transport stop in FLOAT m; *default:* **25** |
 | **--osm.stop-output.length.bus** {{DT_FLOAT}} | The default length of a bus stop in FLOAT m; *default:* **15** |
@@ -530,6 +539,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **-l** {{DT_FILE}}<br> **--log** {{DT_FILE}} | Writes all messages to FILE (implies verbose) |
 | **--message-log** {{DT_FILE}} | Writes all non-error messages to FILE (implies verbose) |
 | **--error-log** {{DT_FILE}} | Writes all warnings and errors to FILE |
+| **--language** {{DT_STR}} | Language to use in messages; *default:* **C** |
 | **--ignore-errors** {{DT_BOOL}} | Continue on broken input; *default:* **false** |
 | **--ignore-errors.connections** {{DT_BOOL}} | Continue on invalid connections; *default:* **false** |
 | **--show-errors.connections-first-try** {{DT_BOOL}} | Show errors in connections at parsing; *default:* **false** |

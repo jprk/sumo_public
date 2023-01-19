@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -63,7 +63,7 @@ typedef std::vector<std::string> StringVector;
  *  construction of derived, value and type holding, classes is allowed.
  *
  *  At the begin (after being constructed) an Option either has a default value or not.
- *   In dependance to this, myHaveTheDefaultValue is set. Also, myAmSet is set to
+ *   In dependence to this, myHaveTheDefaultValue is set. Also, myAmSet is set to
  *   true if a default value was supported. myAmWritable is set to true,
  *   indicating that a new value may be set.
  *

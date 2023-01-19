@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2007-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2007-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -246,7 +246,7 @@ MSDevice_Routing::preInsertionReroute(const SUMOTime currentTime) {
     const MSEdge* source = *myHolder.getRoute().begin();
     const MSEdge* dest = myHolder.getRoute().getLastEdge();
     if (source->isTazConnector() && dest->isTazConnector()) {
-        const MSRoute* cached = MSRoutingEngine::getCachedRoute(std::make_pair(source, dest));
+        ConstMSRoutePtr cached = MSRoutingEngine::getCachedRoute(std::make_pair(source, dest));
         if (cached != nullptr && cached->size() > 2) {
             myHolder.replaceRoute(cached, "device.rerouting", true);
             return myPreInsertionPeriod;

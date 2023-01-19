@@ -20,7 +20,7 @@ following properties:
   [SWIG](http://www.swig.org/))
 - Support for other programming languages via
   [SWIG](http://www.swig.org/)
-
+  
 # Limitations
 
 The following things currently do not work (or work differently than with the TraCI Python client):
@@ -35,6 +35,8 @@ The following things currently do not work (or work differently than with the Tr
 - with traci every TraCIException will generate a message on stderr, Libsumo does not generate this message
 - libsumo by itself cannot be used to [connect multiple clients to the simulation](TraCI/Interfacing_TraCI_from_Python.md#controlling_the_same_simulation_from_multiple_clients) (though connecting normal TraCI clients to a libsumo instance is possible)
 - running parallel instances of libsumo requires the [multiprocessing module (in python)](https://docs.python.org/3/library/multiprocessing.html)
+
+To avoid the limituations with respect to GUI, multi-clients support, you can also use [libraci](Libtraci.md). This is a C++ traci client library which is fully API-compatible with libsumo.
 
 # Building it
 
@@ -91,7 +93,7 @@ Please note the extra `#define` for enabling GUI code which is not needed if you
 using namespace libsumo;
 
 int main(int argc, char* argv[]) {
-    Simulation::load({"-c", "test.sumocfg"});
+    Simulation::start({"sumo", "-c", "test.sumocfg"});
     for (int i = 0; i < 5; i++) {
         Simulation::step();
     }
@@ -124,7 +126,7 @@ import org.eclipse.sumo.libsumo.StringVector;
 public class Test {
     public static void main(String[] args) {
         System.loadLibrary("libsumojni");
-        Simulation.load(new StringVector(new String[] {"-c", "test.sumocfg"}));
+        Simulation.start(new StringVector(new String[] {"sumo", "-c", "test.sumocfg"}));
         for (int i = 0; i < 5; i++) {
             Simulation.step();
         }
@@ -143,4 +145,21 @@ javac -cp $SUMO_HOME/bin/libsumo-1.8.0-SNAPSHOT.jar Test.java
 
 ```
 java -Djava.library.path=$SUMO_HOME/bin -cp $SUMO_HOME/bin/libsumo-1.8.0-SNAPSHOT.jar:. Test
+```
+
+### casting subscription results
+
+Please be aware that casting subscription results is not straightforward with Java.
+You have to use the `cast` function as below. If the cast is not successful it will not throw an exception
+but return a null pointer.
+
+```
+TraCIResults ssRes = Simulation.getSubscriptionResults();
+for (Map.Entry<Integer, TraCIResult> entry : ssRes.entrySet()) {
+    TraCIResult sR = entry.getValue();
+    TraCIStringList vehIDs = TraCIStringList.cast(sR);
+    for (String vehID : vehIDs.getValue()) {
+        System.out.println("Subscription Departed vehicles: " + vehID);
+    }
+}
 ```

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -84,9 +84,11 @@ ROEdge::ROEdge(const std::string& id, RONode* from, RONode* to, int index, const
 
 
 ROEdge::~ROEdge() {
-    for (std::vector<ROLane*>::iterator i = myLanes.begin(); i != myLanes.end(); ++i) {
-        delete (*i);
+    for (ROLane* const lane : myLanes) {
+        delete lane;
     }
+    delete myReversedRoutingEdge;
+    delete myRailwayRoutingEdge;
 }
 
 

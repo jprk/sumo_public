@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -351,7 +351,7 @@ class TlLogic(sumolib.net.TLSProgram):
                 outGoingConns = conn.getFrom().getOutgoing()[conn.getTo()]
                 # note lane IDs if there are links with same start and end edge not controlled this signal group
                 # edge IDs otherwise
-                if len(set([outConn.getTLLinkIndex() for outConn in outGoingConns])) > 1:      
+                if len(set([outConn.getTLLinkIndex() for outConn in outGoingConns])) > 1:
                     inOutRelations.append((conn.getFromLane().getID(), conn.getToLane().getID()))
                 else:
                     inOutRelations.append((conn.getFrom().getID(), conn.getTo().getID()))
@@ -655,7 +655,7 @@ def toCsv(options):
                 tlLogics.append(tlLogic)
         # check for same signal groups
         if options.group:
-            if not len(set([len(tlLogic._signalGroups) for tlLogic in tlLogics])) == 1:
+            if not len(set([len(tll._signalGroups) for tll in tlLogics])) == 1:
                 print("Signal states of TL %s cannot be grouped unambiguously. "
                       "Please remove the group option or the contradictory tll file." % tls.getID())
                 return

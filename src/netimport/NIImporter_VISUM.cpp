@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -30,8 +30,8 @@
 #include <utils/options/OptionsCont.h>
 #include <utils/geom/GeoConvHelper.h>
 #include <netbuild/NBDistrict.h>
-
 #include <netbuild/NBNetBuilder.h>
+#include <netbuild/NBPTStop.h>
 #include "NILoader.h"
 #include "NIImporter_VISUM.h"
 
@@ -1004,7 +1004,7 @@ NIImporter_VISUM::parse_AreaSubPartElement() {
         shape = shape.reverse();
     }
     if (mySubPartsAreas.find(id) == mySubPartsAreas.end()) {
-        WRITE_ERROR("Unkown are for area part '" + myCurrentID + "'.");
+        WRITE_ERROR("Unknown are for area part '" + myCurrentID + "'.");
         return;
     }
 
@@ -1192,21 +1192,10 @@ void NIImporter_VISUM::parse_stopPoints() {
         Position pos = edge->getGeometry().positionAtOffset(edge->getLength() * relPos);
 
         const double length = OptionsCont::getOptions().getFloat("osm.stop-output.length");
-        NBPTStop* ptStop = new NBPTStop(id, pos, edge->getID(), edge->getID(), length, name, permissions);
+        std::shared_ptr<NBPTStop> ptStop = std::make_shared<NBPTStop>(id, pos, edge->getID(), edge->getID(), length, name, permissions);
         myNetBuilder.getPTStopCont().insert(ptStop);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 double

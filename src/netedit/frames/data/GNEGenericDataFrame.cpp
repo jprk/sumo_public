@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -144,7 +144,7 @@ GNEGenericDataFrame::DataSetSelector::onCmdCreateDataSet(FXObject*, FXSelector, 
         WRITE_WARNING(TL("Invalid duplicated dataSet ID"));
     } else {
         // build data set
-        GNEDataHandler dataHandler(myGenericDataFrameParent->getViewNet()->getNet(), "", true);
+        GNEDataHandler dataHandler(myGenericDataFrameParent->getViewNet()->getNet(), "", true, false);
         dataHandler.buildDataSet(dataSetID);
         // refresh tag selector
         refreshDataSetSelector(myGenericDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->retrieveDataSet(dataSetID));
@@ -288,7 +288,7 @@ GNEGenericDataFrame::IntervalSelector::onCmdCreateInterval(FXObject*, FXSelector
         GNEDataSet* dataSet = myGenericDataFrameParent->myDataSetSelector->getDataSet();
         if (dataSet && dataSet->checkNewInterval(begin, end)) {
             // declare dataHandler
-            GNEDataHandler dataHandler(myGenericDataFrameParent->getViewNet()->getNet(), "", true);
+            GNEDataHandler dataHandler(myGenericDataFrameParent->getViewNet()->getNet(), "", true, false);
             // build data interval
             dataHandler.buildDataInterval(nullptr, dataSet->getID(), begin, end);
         }
@@ -409,7 +409,9 @@ GNEGenericDataFrame::AttributeSelector::~AttributeSelector() {}
 
 void
 GNEGenericDataFrame::AttributeSelector::refreshAttributeSelector() {
-    // first clear items
+    // save current attribute
+    const auto currentAttribute = myAttributesComboBox->getText();
+    // clear items
     myAttributesComboBox->clearItems();
     // restore myMinMaxLabel
     myMinMaxLabel->setText(TL("Scale: Min -> Max"));
@@ -446,6 +448,12 @@ GNEGenericDataFrame::AttributeSelector::refreshAttributeSelector() {
             myAttributesComboBox->setNumVisible(myAttributesComboBox->getNumItems());
         } else {
             myAttributesComboBox->setNumVisible(10);
+        }
+        // set current item
+        for (int i = 0; i < myAttributesComboBox->getNumItems(); i++) {
+            if (myAttributesComboBox->getItem(i).text() == currentAttribute) {
+                myAttributesComboBox->setCurrentItem(i, TRUE);
+            }
         }
     }
     // recalc frame
@@ -561,7 +569,7 @@ GNEGenericDataFrame::updateFrameAfterUndoRedo() {
 }
 
 
-GNEGenericDataFrame::GNEGenericDataFrame(GNEViewParent *viewParent, GNEViewNet* viewNet, SumoXMLTag tag, const bool pathCreator) :
+GNEGenericDataFrame::GNEGenericDataFrame(GNEViewParent* viewParent, GNEViewNet* viewNet, SumoXMLTag tag, const bool pathCreator) :
     GNEFrame(viewParent, viewNet, toString(tag)),
     myDataSetSelector(nullptr),
     myIntervalSelector(nullptr),

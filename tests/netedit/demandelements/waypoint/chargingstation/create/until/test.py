@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--gui-testing-debug-gl'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # go to demand mode
 netedit.supermodeDemand()
@@ -41,34 +41,34 @@ netedit.stopMode()
 netedit.changeStopType("waypointChargingStation")
 
 # disable duration
-netedit.changeDefaultBoolValue(netedit.attrs.waypoint.create.durationEnable)
+netedit.changeDefaultBoolValue(netedit.attrs.waypointChargingStation.create.durationEnable)
 
 # enable until
-netedit.changeDefaultBoolValue(netedit.attrs.waypoint.create.untilEnable)
+netedit.changeDefaultBoolValue(netedit.attrs.waypointChargingStation.create.untilEnable)
 
 # create waypoint
 netedit.leftClick(referencePosition, 290, 195)
 
 # set invalid value
-netedit.changeDefaultValue(netedit.attrs.waypoint.create.until, "dummyValue")
+netedit.changeDefaultValue(netedit.attrs.waypointChargingStation.create.until, "dummyValue")
 
 # try to create waypoint
 netedit.leftClick(referencePosition, 291, 195)
 
 # set invalid value
-netedit.changeDefaultValue(netedit.attrs.waypoint.create.until, "-20")
+netedit.changeDefaultValue(netedit.attrs.waypointChargingStation.create.until, "-20")
 
 # try to create waypoint
 netedit.leftClick(referencePosition, 292, 195)
 
 # set valid value
-netedit.changeDefaultValue(netedit.attrs.waypoint.create.until, "0")
+netedit.changeDefaultValue(netedit.attrs.waypointChargingStation.create.until, "0")
 
 # try to create waypoint
 netedit.leftClick(referencePosition, 293, 195)
 
 # set valid value
-netedit.changeDefaultValue(netedit.attrs.waypoint.create.until, "22.33")
+netedit.changeDefaultValue(netedit.attrs.waypointChargingStation.create.until, "22.33")
 
 # try to create waypoint
 netedit.leftClick(referencePosition, 294, 195)

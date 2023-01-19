@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2010-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -360,7 +360,7 @@ def generate_rerouters_process(parameters):
         sequence = distances.items()
 
     for pid, dists in sequence:
-        list_of_dist = [tuple(reversed(x)) for x in dists.items() if x[1] is not None]
+        list_of_dist = [tuple(reversed(kv)) for kv in dists.items() if kv[1] is not None]
         list_of_dist = sorted(list_of_dist)
         temp_rerouters = [(pid, 0.0)]
 

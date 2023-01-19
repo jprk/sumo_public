@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -180,7 +180,7 @@ MSDevice_Tripinfo::notifyMove(SUMOTrafficObject& veh, double /*oldPos*/,
                               double /*newPos*/, double newSpeed) {
     if (veh.isStopped()) {
         myStoppingTime += DELTA_T;
-    } else if (newSpeed <= SUMO_const_haltingSpeed) {
+    } else if (newSpeed <= SUMO_const_haltingSpeed && lowAcceleration(veh)) {
         myWaitingTime += DELTA_T;
         if (!myAmWaiting) {
             myWaitingCount++;
@@ -190,6 +190,18 @@ MSDevice_Tripinfo::notifyMove(SUMOTrafficObject& veh, double /*oldPos*/,
         myAmWaiting = false;
     }
     return true;
+}
+
+
+bool
+MSDevice_Tripinfo::lowAcceleration(const SUMOTrafficObject& veh) {
+    if (MSGlobals::gUseMesoSim) {
+        // acceleration is not modelled
+        return false;
+    } else {
+        const MSVehicle& v = dynamic_cast<const MSVehicle&>(veh);
+        return v.getAcceleration() <= v.accelThresholdForWaiting();
+    }
 }
 
 

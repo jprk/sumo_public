@@ -821,9 +821,12 @@
         <xsd:attribute name="started" type="timeTypeWithErrorValue"/>
         <xsd:attribute name="ended" type="timeTypeWithErrorValue"/>
         <xsd:attribute name="onDemand" type="boolType"/>
+        <xsd:attribute name="jump" type="timeTypeWithErrorValue"/>
         <!-- save-state backward compatibility -->
         <xsd:attribute name="actualArrival" type="timeType"/>
         <xsd:attribute name="depart" type="timeType"/>
+        <!-- save-state  -->
+        <xsd:attribute name="collision" type="boolType"/>
     </xsd:complexType>
 
     <xsd:complexType name="vTypeDistributionType">
@@ -832,7 +835,7 @@
         </xsd:sequence>
         <xsd:attribute name="id" type="idType" use="required"/>
         <xsd:attribute name="vTypes" type="xsd:string" use="optional"/>
-        <xsd:attribute name="determnistic" type="xsd:int" use="optional"/>
+        <xsd:attribute name="deterministic" type="xsd:int" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="routeDistributionType">
@@ -914,7 +917,7 @@
                     <xsd:attribute name="parkingArea" type="xsd:string"/>
                     <xsd:attribute name="containerStop" type="xsd:string"/>
                     <xsd:attribute name="chargingStation" type="xsd:string"/>
-                    <xsd:attribute name="lines" type="xsd:string" use="required"/>
+                    <xsd:attribute name="lines" type="xsd:string" use="optional"/>
                     <xsd:attribute name="arrivalPos" type="xsd:float"/>
                     <xsd:attribute name="cost" type="xsd:float"/>
                     <xsd:attribute name="intended" type="xsd:string" use="optional"/>
@@ -1001,7 +1004,7 @@
                     <xsd:attribute name="parkingArea" type="xsd:string"/>
                     <xsd:attribute name="containerStop" type="xsd:string"/>
                     <xsd:attribute name="chargingStation" type="xsd:string"/>
-                    <xsd:attribute name="lines" type="xsd:string" use="required"/>
+                    <xsd:attribute name="lines" type="xsd:string" use="optional"/>
                     <xsd:attribute name="arrivalPos" type="xsd:float"/>
                     <xsd:attribute name="cost" type="xsd:float"/>
                     <xsd:attribute name="intended" type="xsd:string" use="optional"/>

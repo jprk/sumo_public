@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -336,9 +336,8 @@ computeRoutes(RONet& net, OptionsCont& oc, ODMatrix& matrix) {
  * ----------------------------------------------------------------------- */
 int
 main(int argc, char** argv) {
-    MsgHandler::setupI18n();
     OptionsCont& oc = OptionsCont::getOptions();
-    oc.setApplicationDescription("Import O/D-matrices for macroscopic traffic assignment to generate SUMO routes");
+    oc.setApplicationDescription(TL("Import O/D-matrices for macroscopic traffic assignment to generate SUMO routes."));
     oc.setApplicationName("marouter", "Eclipse SUMO marouter Version " VERSION_STRING);
     int ret = 0;
     RONet* net = nullptr;
@@ -380,7 +379,7 @@ main(int argc, char** argv) {
         ODDistrictCont districts;
         districts.makeDistricts(net->getDistricts());
         // load the matrix
-        ODMatrix matrix(districts);
+        ODMatrix matrix(districts, oc.getFloat("scale"));
         matrix.loadMatrix(oc);
         ROMARouteHandler handler(matrix);
         matrix.loadRoutes(oc, handler);

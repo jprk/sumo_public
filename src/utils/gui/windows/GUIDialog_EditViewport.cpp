@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2005-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -54,15 +54,16 @@ FXIMPLEMENT(GUIDialog_EditViewport, FXDialogBox, GUIDialog_EditViewportMap, ARRA
 // method definitions
 // ===========================================================================
 
-GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, const char* name, int x, int y) :
-    FXDialogBox(parent, name, GUIDesignDialogBox, x, y, 0, 0, 0, 0, 0, 0),
+GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, const char* name) :
+    FXDialogBox(parent, name, GUIDesignDialogBox, 0, 0, 0, 0, 0, 0, 0, 0),
+    GUIPersistentWindowPos(this, "VIEWPORT_DIALOG_SETTINGS", false, 20, 40, 150, 150, 100, 20),
     myParent(parent) {
     // create contents frame
     FXVerticalFrame* contentsFrame = new FXVerticalFrame(this, GUIDesignContentsFrame);
     // create frame for file icons
     FXHorizontalFrame* frameFiles = new FXHorizontalFrame(contentsFrame, GUIDesignHorizontalFrameIcons);
     myLoadButton = new FXButton(frameFiles, TL("Load\t\tLoad viewport from file"),
-                                GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, GUIDialog_EditViewport::MID_LOAD, GUIDesignButtonToolbarWithText);
+                                GUIIconSubSys::getIcon(GUIIcon::OPEN), this, GUIDialog_EditViewport::MID_LOAD, GUIDesignButtonToolbarWithText);
     mySaveButton = new FXButton(frameFiles, TL("Save\t\tSave viewport to file"),
                                 GUIIconSubSys::getIcon(GUIIcon::SAVE), this, GUIDialog_EditViewport::MID_SAVE, GUIDesignButtonToolbarWithText);
     // create horizontalframe for zoom elements and OSG
@@ -134,6 +135,7 @@ GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, cons
     new FXHorizontalFrame(frameButtons, GUIDesignAuxiliarHorizontalFrame);
     // set dialog icon
     setIcon(GUIIconSubSys::getIcon(GUIIcon::EDITVIEWPORT));
+    loadWindowPos();
 }
 
 
@@ -165,7 +167,6 @@ GUIDialog_EditViewport::onCmdOk(FXObject*, FXSelector, void*) {
     // write information of current zoom status
     WRITE_DEBUG("Current Viewport values: " + toString(myXOff->getValue()) + ", " + toString(myYOff->getValue()) + ", " + toString(myZOff->getValue()) +
                 ". Zoom = '" + toString(myZoom->getValue()) + "'");
-    saveWindowPos();
     hide();
     return 1;
 }
@@ -174,7 +175,6 @@ GUIDialog_EditViewport::onCmdOk(FXObject*, FXSelector, void*) {
 long
 GUIDialog_EditViewport::onCmdCancel(FXObject*, FXSelector, void*) {
     myParent->setViewportFromToRot(myOldLookFrom, myOldLookAt, myOldRotation);
-    saveWindowPos();
     hide();
     return 1;
 }
@@ -208,7 +208,7 @@ GUIDialog_EditViewport::onCmdChanged(FXObject* o, FXSelector, void*) {
 long
 GUIDialog_EditViewport::onCmdLoad(FXObject*, FXSelector, void*) {
     FXFileDialog opendialog(this, TL("Load Viewport"));
-    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG));
+    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN));
     opendialog.setSelectMode(SELECTFILE_ANY);
     opendialog.setPatternList("*.xml,*.xml.gz");
     if (gCurrentFolder.length() != 0) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -63,9 +63,6 @@ netedit.modifyAttribute(netedit.attrs.lane.inspectSelection.disallow, "authority
 
 # Change parameter 2 with a valid value (empty)
 netedit.modifyAttribute(netedit.attrs.lane.inspectSelection.disallow, "", True)
-
-# Change parameter 8 with a valid value (empty)
-netedit.modifyAllowDisallowValue(netedit.attrs.lane.inspectSelection.disallowButton, True)
 
 # Change parameter 2 with a valid value (empty)
 netedit.modifyAttribute(netedit.attrs.lane.inspectSelection.disallow,

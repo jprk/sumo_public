@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -1733,7 +1733,7 @@ GNEAdditionalHandler::buildPOIGeo(const CommonXMLStructure::SumoBaseObject* sumo
 
 bool
 GNEAdditionalHandler::accessCanBeCreated(GNEAdditional* busStopParent, GNEEdge* edge) {
-    // check if exist another acces for the same busStop in the given edge
+    // check if exist another access for the same busStop in the given edge
     for (const auto& additional : busStopParent->getChildAdditionals()) {
         for (const auto& lane : edge->getLanes()) {
             if (additional->getAttribute(SUMO_ATTR_LANE) == lane->getID()) {
@@ -2030,8 +2030,8 @@ GNEAdditionalHandler::parseLanes(const SumoXMLTag tag, const std::vector<std::st
 }
 
 
-bool 
-GNEAdditionalHandler::checkDuplicatedAdditional(const SumoXMLTag tag, const std::string &id) {
+bool
+GNEAdditionalHandler::checkDuplicatedAdditional(const SumoXMLTag tag, const std::string& id) {
     // retrieve additional
     auto additional = myNet->getAttributeCarriers()->retrieveAdditional(tag, id, false);
     // if additional exist, check if overwrite (delete)
@@ -2054,7 +2054,7 @@ GNEAdditionalHandler::checkDuplicatedAdditional(const SumoXMLTag tag, const std:
 }
 
 
-void 
+void
 GNEAdditionalHandler::overwriteAdditional() {
     if (myAdditionalToOverwrite) {
         // remove element

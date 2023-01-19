@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2017-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -162,9 +162,9 @@ GUI::addView(const std::string& viewID, const std::string& schemeName, bool in3D
         throw TraCIException("GUI is not running, command not implemented in command line sumo");
     }
     // calling openNewView directly doesn't work from the traci/simulation thread
-    mw->sendBlockingEvent(new GUIEvent_AddView(viewID, schemeName, in3D));  // NOSONAR
+    mw->sendBlockingEvent(new GUIEvent_AddView(viewID, schemeName, in3D));
     // sonar thinks here is a memory leak but the GUIApplicationWindow does the clean up
-}
+}  // NOSONAR
 
 
 void
@@ -174,9 +174,9 @@ GUI::removeView(const std::string& viewID) {
         throw TraCIException("GUI is not running, command not implemented in command line sumo");
     }
     // calling removeViewByID directly doesn't work from the traci/simulation thread
-    mw->sendBlockingEvent(new GUIEvent_CloseView(viewID));  // NOSONAR
+    mw->sendBlockingEvent(new GUIEvent_CloseView(viewID));
     // sonar thinks here is a memory leak but the GUIApplicationWindow does the clean up
-}
+}  // NOSONAR
 
 
 void
@@ -308,35 +308,18 @@ GUI::start(const std::vector<std::string>& cmd) {
         if (!GUI::close("Libsumo started new instance.")) {
 //            SystemFrame::close();
         }
-        bool needStart = false;
-        if (std::getenv("LIBSUMO_GUI") != nullptr) {
-            needStart = true;
-            for (const std::string& a : cmd) {
-                if (a == "-S" || a == "--start") {
-                    needStart = false;
-                }
-            }
-        }
-        int origArgc = (int)cmd.size();
-        int argc = origArgc;
-        if (needStart) {
-            argc++;
-        }
-        char** argv = new char* [argc];
-        int i;
-        for (i = 0; i < origArgc; i++) {
-            argv[i] = new char[cmd[i].size() + 1];
-            std::strcpy(argv[i], cmd[i].c_str());
-        }
-        if (needStart) {
-            argv[i++] = (char*)"-S";
-        }
+        int argc = 1;
+        char array[1][10] = {{0}};
+        strcpy(array[0], "dummy");
+        char* argv[1];
+        argv[0] = array[0];
         // make the output aware of threading
         MsgHandler::setFactory(&MsgHandlerSynchronized::create);
         gSimulation = true;
         XMLSubSys::init();
         MSFrame::fillOptions();
-        OptionsIO::setArgs(argc, argv);
+        std::vector<std::string> args(cmd.begin() + 1, cmd.end());
+        OptionsIO::setArgs(args);
         OptionsIO::getOptions(true);
         OptionsCont::getOptions().processMetaOptions(false);
         // Open display
@@ -354,9 +337,7 @@ GUI::start(const std::vector<std::string>& cmd) {
         myApp->create();
         myWindow->getRunner()->enableLibsumo();
         // Load configuration given on command line
-        if (argc > 1) {
-            myWindow->loadOnStartup(true);
-        }
+        myWindow->loadOnStartup(true);
     } catch (ProcessError& e) {
         throw TraCIException(e.what());
     }

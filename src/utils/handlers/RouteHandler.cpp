@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -230,14 +230,13 @@ RouteHandler::parseSumoBaseObject(CommonXMLStructure::SumoBaseObject* obj) {
                 buildTrip(obj,
                           obj->getVehicleParameter(),
                           obj->getStringAttribute(SUMO_ATTR_FROM),
-                          obj->getStringAttribute(SUMO_ATTR_TO),
-                          obj->getStringListAttribute(SUMO_ATTR_VIA));
+                          obj->getStringAttribute(SUMO_ATTR_TO));
             } else {
                 // build trip with from-to junctions
-                buildTrip(obj,
-                          obj->getVehicleParameter(),
-                          obj->getStringAttribute(SUMO_ATTR_FROMJUNCTION),
-                          obj->getStringAttribute(SUMO_ATTR_TOJUNCTION));
+                buildTripJunctions(obj,
+                                   obj->getVehicleParameter(),
+                                   obj->getStringAttribute(SUMO_ATTR_FROMJUNCTION),
+                                   obj->getStringAttribute(SUMO_ATTR_TOJUNCTION));
             }
             break;
         case SUMO_TAG_VEHICLE:
@@ -258,15 +257,14 @@ RouteHandler::parseSumoBaseObject(CommonXMLStructure::SumoBaseObject* obj) {
                 buildFlow(obj,
                           obj->getVehicleParameter(),
                           obj->getStringAttribute(SUMO_ATTR_FROM),
-                          obj->getStringAttribute(SUMO_ATTR_TO),
-                          obj->getStringListAttribute(SUMO_ATTR_VIA));
+                          obj->getStringAttribute(SUMO_ATTR_TO));
             } else if (obj->hasStringAttribute(SUMO_ATTR_FROMJUNCTION) &&
                        obj->hasStringAttribute(SUMO_ATTR_TOJUNCTION)) {
                 // build flow with from-to junctions
-                buildFlow(obj,
-                          obj->getVehicleParameter(),
-                          obj->getStringAttribute(SUMO_ATTR_FROMJUNCTION),
-                          obj->getStringAttribute(SUMO_ATTR_TOJUNCTION));
+                buildFlowJunctions(obj,
+                                   obj->getVehicleParameter(),
+                                   obj->getStringAttribute(SUMO_ATTR_FROMJUNCTION),
+                                   obj->getStringAttribute(SUMO_ATTR_TOJUNCTION));
             }
             break;
         // persons
@@ -959,6 +957,9 @@ RouteHandler::parseStopParameters(SUMOVehicleParameter::Stop& stop, const SUMOSA
     if (attrs.hasAttribute(SUMO_ATTR_ONDEMAND)) {
         stop.parametersSet |= STOP_ONDEMAND_SET;
     }
+    if (attrs.hasAttribute(SUMO_ATTR_JUMP)) {
+        stop.parametersSet |= STOP_JUMP_SET;
+    }
     // get parameters
     bool ok = true;
     // edge/lane
@@ -1081,6 +1082,8 @@ RouteHandler::parseStopParameters(SUMOVehicleParameter::Stop& stop, const SUMOSA
     stop.ended = attrs.getOptSUMOTimeReporting(SUMO_ATTR_ENDED, nullptr, ok, -1);
     stop.posLat = attrs.getOpt<double>(SUMO_ATTR_POSITION_LAT, nullptr, ok, INVALID_DOUBLE);
     stop.actType = attrs.getOpt<std::string>(SUMO_ATTR_ACTTYPE, nullptr, ok, "");
+    stop.onDemand = attrs.getOpt<bool>(SUMO_ATTR_ONDEMAND, nullptr, ok, false);
+    stop.jump = attrs.getOptSUMOTimeReporting(SUMO_ATTR_JUMP, nullptr, ok, -1);
     return true;
 }
 

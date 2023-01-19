@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-10-10 12:26:45 by Eclipse SUMO sumo Version v1_14_1+1544-909a280
+<!-- generated on 2023-01-04 11:28:03 by Eclipse SUMO sumo Version v1_15_0+1277-3febad6e597
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -65,6 +65,7 @@
         <vtk-output value="" type="FILE" help="Save complete vehicle positions inclusive speed values in the VTK Format (usage: /path/out will produce /path/out_$TIMESTEP$.vtp files)"/>
         <amitran-output value="" type="FILE" help="Save the vehicle trajectories in the Amitran format"/>
         <summary-output value="" synonymes="summary" type="FILE" help="Save aggregated vehicle departure info into FILE"/>
+        <summary-output.period value="-1" type="TIME" help="Save summary-output with the given period"/>
         <person-summary-output value="" type="FILE" help="Save aggregated person counts into FILE"/>
         <tripinfo-output value="" synonymes="tripinfo" type="FILE" help="Save single vehicle trip info into FILE"/>
         <tripinfo-output.write-unfinished value="false" type="BOOL" help="Write tripinfo output for vehicles which have not arrived at simulation end"/>
@@ -94,6 +95,8 @@
         <stop-output value="" type="FILE" help="Record stops and loading/unloading of passenger and containers for all vehicles into FILE"/>
         <stop-output.write-unfinished value="false" type="BOOL" help="Write stop output for stops which have not ended at simulation end"/>
         <collision-output value="" type="FILE" help="Write collision information into FILE"/>
+        <edgedata-output value="" type="FILE" help="Write aggregated traffic statistics for all edges into FILE"/>
+        <lanedata-output value="" type="FILE" help="Write aggregated traffic statistics for all lanes into FILE"/>
         <statistic-output value="" synonymes="statistics-output" type="FILE" help="Write overall statistics into FILE"/>
         <save-state.times value="" type="STR[]" help="Use TIME[] as times at which a network state written"/>
         <save-state.period value="-1" type="TIME" help="save state repeatedly after TIME period"/>
@@ -150,7 +153,7 @@
         <lanechange.overtake-right value="false" type="BOOL" help="Whether overtaking on the right on motorways is permitted"/>
         <tls.all-off value="false" type="BOOL" help="Switches off all traffic lights."/>
         <tls.actuated.show-detectors value="false" type="BOOL" help="Sets default visibility for actuation detectors"/>
-        <tls.actuated.jam-threshold value="-1" type="FLOAT" help="Sets default jam-treshold parameter for all actuation detectors"/>
+        <tls.actuated.jam-threshold value="-1" type="FLOAT" help="Sets default jam-threshold parameter for all actuation detectors"/>
         <tls.actuated.detector-length value="0" type="FLOAT" help="Sets default detector length parameter for all actuation detectors"/>
         <tls.delay_based.detector-range value="100" type="FLOAT" help="Sets default range for detecting delayed vehicles"/>
         <tls.yellow.min-decel value="3" type="FLOAT" help="Minimum deceleration when braking at yellow"/>
@@ -164,7 +167,7 @@
         <overhead-wire.recuperation value="true" type="BOOL" help="Enable recuperation from the vehicle equipped with elecHybrid device into the ovrehead wire."/>
         <overhead-wire.substation-current-limits value="true" type="BOOL" help="Enable current limits of traction substation during solving the overhead wire electrical circuit."/>
         <emergencydecel.warning-threshold value="1" type="FLOAT" help="Sets the fraction of emergency decel capability that must be used to trigger a warning."/>
-        <parking.maneuver value="false" type="BOOL" help="Whether parking simulation includes manoeuvering time and associated lane blocking"/>
+        <parking.maneuver value="false" type="BOOL" help="Whether parking simulation includes maneuvering time and associated lane blocking"/>
         <use-stop-ended value="false" type="BOOL" help="Override stop until times with stop ended times when given"/>
         <pedestrian.model value="striping" type="STR" help="Select among pedestrian models [&apos;nonInteracting&apos;, &apos;striping&apos;, &apos;remote&apos;]"/>
         <pedestrian.striping.stripe-width value="0.64" type="FLOAT" help="Width of parallel stripes for segmenting a sidewalk (meters) for use with model &apos;striping&apos;"/>
@@ -233,6 +236,7 @@
         <log value="" synonymes="l log-file" type="FILE" help="Writes all messages to FILE (implies verbose)"/>
         <message-log value="" type="FILE" help="Writes all non-error messages to FILE (implies verbose)"/>
         <error-log value="" type="FILE" help="Writes all warnings and errors to FILE"/>
+        <language value="C" type="STR" help="Language to use in messages"/>
         <duration-log.disable value="false" synonymes="no-duration-log" type="BOOL" help="Disable performance reports for individual simulation steps"/>
         <duration-log.statistics value="false" synonymes="t" type="BOOL" help="Enable statistics on vehicle trips"/>
         <no-step-log value="false" type="BOOL" help="Disable console output of current simulation step"/>
@@ -261,6 +265,12 @@
         <device.btsender.probability value="-1" type="FLOAT" help="The probability for a vehicle to have a &apos;btsender&apos; device"/>
         <device.btsender.explicit value="" synonymes="device.btsender.knownveh" type="STR[]" help="Assign a &apos;btsender&apos; device to named vehicles"/>
         <device.btsender.deterministic value="false" type="BOOL" help="The &apos;btsender&apos; devices are set deterministic using a fraction of 1000"/>
+        <person-device.btsender.probability value="-1" type="FLOAT" help="The probability for a person to have a &apos;btsender&apos; device"/>
+        <person-device.btsender.explicit value="" synonymes="person-device.btsender.knownveh" type="STR[]" help="Assign a &apos;btsender&apos; device to named persons"/>
+        <person-device.btsender.deterministic value="false" type="BOOL" help="The &apos;btsender&apos; devices are set deterministic using a fraction of 1000"/>
+        <person-device.btreceiver.probability value="-1" type="FLOAT" help="The probability for a person to have a &apos;btreceiver&apos; device"/>
+        <person-device.btreceiver.explicit value="" synonymes="person-device.btreceiver.knownveh" type="STR[]" help="Assign a &apos;btreceiver&apos; device to named persons"/>
+        <person-device.btreceiver.deterministic value="false" type="BOOL" help="The &apos;btreceiver&apos; devices are set deterministic using a fraction of 1000"/>
     </communication>
 
     <battery>
@@ -445,6 +455,7 @@
         <window-size value="" type="STR[]" help="Create initial window with the given x,y size"/>
         <window-pos value="" type="STR[]" help="Create initial window at the given x,y position"/>
         <tracker-interval value="1" type="TIME" help="The aggregation period for value tracker windows"/>
+        <osg-view value="false" type="BOOL" help="Start with an OpenSceneGraph view instead of the regular 2D view"/>
         <gui-testing value="false" type="BOOL" help="Enable overlay for screen recognition"/>
         <gui-testing-debug value="false" type="BOOL" help="Enable output messages during GUI-Testing"/>
         <gui-testing.setting-output value="" type="FILE" help="Save gui settings in the given settings output file"/>

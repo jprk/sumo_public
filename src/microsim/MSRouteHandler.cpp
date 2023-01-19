@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -75,10 +75,9 @@ MSRouteHandler::~MSRouteHandler() {}
 
 void
 MSRouteHandler::deleteActivePlanAndVehicleParameter() {
-    MSTransportable::MSTransportablePlan::iterator i;
     if (myActiveTransportablePlan != nullptr) {
-        for (i = myActiveTransportablePlan->begin(); i != myActiveTransportablePlan->end(); i++) {
-            delete *i;
+        for (MSStage* const s : *myActiveTransportablePlan) {
+            delete s;
         }
         delete myActiveTransportablePlan;
     }
@@ -366,11 +365,9 @@ MSRouteHandler::closeRoute(const bool mayBeDisconnected) {
             delete myActiveRouteColor;
             myActiveRouteColor = nullptr;
             if (myActiveRouteRefID != "" && myCurrentRouteDistribution != nullptr) {
-                const MSRoute* route = MSRoute::dictionary(myActiveRouteRefID, &myParsingRNG);
+                ConstMSRoutePtr route = MSRoute::dictionary(myActiveRouteRefID, &myParsingRNG);
                 if (route != nullptr) {
-                    if (myCurrentRouteDistribution->add(route, myActiveRouteProbability)) {
-                        route->addReference();
-                    }
+                    myCurrentRouteDistribution->add(route, myActiveRouteProbability);
                 }
                 myActiveRouteID = "";
                 myActiveRouteRefID = "";
@@ -422,8 +419,8 @@ MSRouteHandler::closeRoute(const bool mayBeDisconnected) {
         route->setCosts(myCurrentCosts);
         route->setReroute(mustReroute);
         myActiveRoute.clear();
-        if (!MSRoute::dictionary(myActiveRouteID, route)) {
-            delete route;
+        ConstMSRoutePtr constRoute = std::shared_ptr<const MSRoute>(route);
+        if (!MSRoute::dictionary(myActiveRouteID, constRoute)) {
             if (!MSGlobals::gStateLoaded) {
                 if (myVehicleParameter != nullptr) {
                     if (MSNet::getInstance()->getVehicleControl().getVehicle(myVehicleParameter->id) == nullptr) {
@@ -437,9 +434,7 @@ MSRouteHandler::closeRoute(const bool mayBeDisconnected) {
             }
         } else {
             if (myCurrentRouteDistribution != nullptr) {
-                if (myCurrentRouteDistribution->add(route, myActiveRouteProbability)) {
-                    route->addReference();
-                }
+                myCurrentRouteDistribution->add(constRoute, myActiveRouteProbability);
             }
         }
         myActiveRouteID = "";
@@ -466,7 +461,7 @@ MSRouteHandler::openRouteDistribution(const SUMOSAXAttributes& attrs) {
             return;
         }
     }
-    myCurrentRouteDistribution = new RandomDistributor<const MSRoute*>();
+    myCurrentRouteDistribution = new RandomDistributor<ConstMSRoutePtr>();
     std::vector<double> probs;
     if (attrs.hasAttribute(SUMO_ATTR_PROBS)) {
         bool ok = true;
@@ -481,14 +476,12 @@ MSRouteHandler::openRouteDistribution(const SUMOSAXAttributes& attrs) {
         int probIndex = 0;
         while (st.hasNext()) {
             std::string routeID = st.next();
-            const MSRoute* route = MSRoute::dictionary(routeID, &myParsingRNG);
+            ConstMSRoutePtr route = MSRoute::dictionary(routeID, &myParsingRNG);
             if (route == nullptr) {
                 throw ProcessError("Unknown route '" + routeID + "' in distribution '" + myCurrentRouteDistributionID + "'.");
             }
             const double prob = ((int)probs.size() > probIndex ? probs[probIndex] : 1.0);
-            if (myCurrentRouteDistribution->add(route, prob, false)) {
-                route->addReference();
-            }
+            myCurrentRouteDistribution->add(route, prob, false);
             probIndex++;
         }
         if (probs.size() > 0 && probIndex != (int)probs.size()) {
@@ -526,9 +519,9 @@ void
 MSRouteHandler::closeVehicle() {
     // get nested route
     const std::string embeddedRouteID = "!" + myVehicleParameter->id;
-    const MSRoute* route = nullptr;
+    ConstMSRoutePtr route = nullptr;
     if (myReplayRerouting) {
-        RandomDistributor<const MSRoute*>* rDist = MSRoute::distDictionary(embeddedRouteID);
+        RandomDistributor<ConstMSRoutePtr>* rDist = MSRoute::distDictionary(embeddedRouteID);
         if (rDist != nullptr && rDist->getVals().size() > 0) {
             route = rDist->getVals().front();
         }
@@ -540,10 +533,6 @@ MSRouteHandler::closeVehicle() {
     if (myVehicleParameter->departProcedure == DepartDefinition::GIVEN) {
         // let's check whether this vehicle had to depart before the simulation starts
         if (!(myAddVehiclesDirectly || checkLastDepart()) || (myVehicleParameter->depart < string2time(OptionsCont::getOptions().getString("begin")) && !myAmLoadingState)) {
-            if (route != nullptr) {
-                route->addReference();
-                route->release();
-            }
             return;
         }
     }
@@ -614,11 +603,10 @@ MSRouteHandler::closeVehicle() {
         try {
             vehicle = vehControl.buildVehicle(myVehicleParameter, route, vtype, !MSGlobals::gCheckRoutes, true, !myAmLoadingState);
         } catch (const ProcessError& e) {
+            myVehicleParameter = nullptr;
             if (!MSGlobals::gCheckRoutes) {
                 WRITE_WARNING(e.what());
                 vehControl.fixVehicleCounts();
-                myVehicleParameter = nullptr;
-                vehicle = nullptr;
                 return;
             } else {
                 throw e;
@@ -632,7 +620,7 @@ MSRouteHandler::closeVehicle() {
             myVehicleParameter->depart += MSNet::getInstance()->getInsertionControl().computeRandomDepartOffset();
             vehControl.addVehicle(myVehicleParameter->id, vehicle);
             if (myReplayRerouting) {
-                RandomDistributor<const MSRoute*>* rDist = MSRoute::distDictionary(embeddedRouteID);
+                RandomDistributor<ConstMSRoutePtr>* rDist = MSRoute::distDictionary(embeddedRouteID);
                 if (rDist != nullptr) {
                     for (int i = 0; i < (int)rDist->getVals().size() - 1; i++) {
                         SUMOTime replacedAt = rDist->getVals()[i]->getReplacedTime();
@@ -698,8 +686,8 @@ MSRouteHandler::closeVehicle() {
 }
 
 
-MSRoute*
-MSRouteHandler::addVehicleStopsToImplicitRoute(const MSRoute* route, bool isPermanent) {
+ConstMSRoutePtr
+MSRouteHandler::addVehicleStopsToImplicitRoute(ConstMSRoutePtr route, bool isPermanent) {
     // the route was defined without edges and its current edges were
     // derived from route-stops.
     // We may need to add additional edges for the vehicle-stops
@@ -722,10 +710,9 @@ MSRouteHandler::addVehicleStopsToImplicitRoute(const MSRoute* route, bool isPerm
             WRITE_WARNING("Could not merge vehicle stops for vehicle '" + myVehicleParameter->id + "' into implicitly defined route '" + route->getID() + "'");
         }
     }
-    MSRoute* newRoute = new MSRoute("!" + myVehicleParameter->id, edges,
-                                    isPermanent, new RGBColor(route->getColor()), route->getStops());
+    ConstMSRoutePtr newRoute = std::make_shared<MSRoute>("!" + myVehicleParameter->id, edges,
+                               isPermanent, new RGBColor(route->getColor()), route->getStops());
     if (!MSRoute::dictionary(newRoute->getID(), newRoute)) {
-        delete newRoute;
         throw ProcessError("Could not adapt implicit route for " + std::string(isPermanent ? "flow" : "vehicle") + "  '" + myVehicleParameter->id + "'");
     }
     return newRoute;
@@ -944,7 +931,7 @@ MSRouteHandler::closeFlow() {
         myVehicleParameter->parametersSet |= VEHPARS_FORCE_REROUTE;
         closeRoute(true);
     }
-    const MSRoute* route = MSRoute::dictionary(myVehicleParameter->routeid, &myParsingRNG);
+    ConstMSRoutePtr route = MSRoute::dictionary(myVehicleParameter->routeid, &myParsingRNG);
     if (route == nullptr) {
         throw ProcessError("The route '" + myVehicleParameter->routeid + "' for flow '" + myVehicleParameter->id + "' is not known.");
     }
@@ -1025,9 +1012,9 @@ MSRouteHandler::addRideOrTransport(const SUMOSAXAttributes& attrs, const SumoXML
         const std::string aid = myVehicleParameter->id;
         bool ok = true;
         const MSEdge* from = nullptr;
-        const std::string desc = attrs.get<std::string>(SUMO_ATTR_LINES, aid.c_str(), ok);
+        const std::string desc = attrs.getOpt<std::string>(SUMO_ATTR_LINES, aid.c_str(), ok, "ANY");
         StringTokenizer st(desc);
-        MSStoppingPlace* s = retrieveStoppingPlace(attrs, "in " + agent + " '" + aid + "'");
+        MSStoppingPlace* s = retrieveStoppingPlace(attrs, " in " + agent + " '" + aid + "'");
         MSEdge* to = nullptr;
         if (s != nullptr) {
             to = &s->getLane().getEdge();
@@ -1105,12 +1092,12 @@ MSRouteHandler::addRideOrTransport(const SUMOSAXAttributes& attrs, const SumoXML
 
 MSStoppingPlace*
 MSRouteHandler::retrieveStoppingPlace(const SUMOSAXAttributes& attrs, const std::string& errorSuffix, SUMOVehicleParameter::Stop* stopParam) {
+    bool ok = true;
     // dummy stop parameter to hold the attributes
     SUMOVehicleParameter::Stop stop;
     if (stopParam != nullptr) {
         stop = *stopParam;
     } else {
-        bool ok = true;
         stop.busstop = attrs.getOpt<std::string>(SUMO_ATTR_BUS_STOP, nullptr, ok, "");
         stop.busstop = attrs.getOpt<std::string>(SUMO_ATTR_TRAIN_STOP, nullptr, ok, stop.busstop); // alias
         stop.chargingStation = attrs.getOpt<std::string>(SUMO_ATTR_CHARGING_STATION, nullptr, ok, "");
@@ -1122,30 +1109,38 @@ MSRouteHandler::retrieveStoppingPlace(const SUMOSAXAttributes& attrs, const std:
     if (stop.busstop != "") {
         toStop = MSNet::getInstance()->getStoppingPlace(stop.busstop, SUMO_TAG_BUS_STOP);
         if (toStop == nullptr) {
-            WRITE_ERROR("The busStop '" + stop.busstop + "' is not known " + errorSuffix + ".");
+            ok = false;
+            WRITE_ERROR("The busStop '" + stop.busstop + "' is not known" + errorSuffix + ".");
         }
     } else if (stop.containerstop != "") {
         toStop = MSNet::getInstance()->getStoppingPlace(stop.containerstop, SUMO_TAG_CONTAINER_STOP);
         if (toStop == nullptr) {
-            WRITE_ERROR("The containerStop '" + stop.containerstop + "' is not known " + errorSuffix + ".");
+            ok = false;
+            WRITE_ERROR("The containerStop '" + stop.containerstop + "' is not known" + errorSuffix + ".");
         }
     } else if (stop.parkingarea != "") {
         toStop = MSNet::getInstance()->getStoppingPlace(stop.parkingarea, SUMO_TAG_PARKING_AREA);
         if (toStop == nullptr) {
-            WRITE_ERROR("The parkingArea '" + stop.parkingarea + "' is not known " + errorSuffix + ".");
+            ok = false;
+            WRITE_ERROR("The parkingArea '" + stop.parkingarea + "' is not known" + errorSuffix + ".");
         }
     } else if (stop.chargingStation != "") {
         // ok, we have a charging station
         toStop = MSNet::getInstance()->getStoppingPlace(stop.chargingStation, SUMO_TAG_CHARGING_STATION);
         if (toStop == nullptr) {
-            WRITE_ERROR("The chargingStation '" + stop.chargingStation + "' is not known " + errorSuffix + ".");
+            ok = false;
+            WRITE_ERROR("The chargingStation '" + stop.chargingStation + "' is not known" + errorSuffix + ".");
         }
     } else if (stop.overheadWireSegment != "") {
         // ok, we have an overhead wire segment
         toStop = MSNet::getInstance()->getStoppingPlace(stop.overheadWireSegment, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
         if (toStop == nullptr) {
-            WRITE_ERROR("The overhead wire segment '" + stop.overheadWireSegment + "' is not known " + errorSuffix + ".");
+            ok = false;
+            WRITE_ERROR("The overhead wire segment '" + stop.overheadWireSegment + "' is not known" + errorSuffix + ".");
         }
+    }
+    if (!ok && MSGlobals::gCheckRoutes) {
+        throw ProcessError("Invalid stop definition" + errorSuffix + ".");
     }
     return toStop;
 }
@@ -1234,8 +1229,7 @@ MSRouteHandler::addStop(const SUMOSAXAttributes& attrs) {
             stop.startPos = attrs.getOpt<double>(SUMO_ATTR_STARTPOS, nullptr, ok, MAX2(0., stop.endPos - MIN_STOP_LENGTH));
             if (!myAmLoadingState) {
                 const bool friendlyPos = attrs.getOpt<bool>(SUMO_ATTR_FRIENDLY_POS, nullptr, ok, !attrs.hasAttribute(SUMO_ATTR_STARTPOS) && !attrs.hasAttribute(SUMO_ATTR_ENDPOS));
-                // @note stop startPos=endPos is interpreted as a collision in MSBaseVehicle::addStops so we cannot use minLength=0
-                if (!ok || (checkStopPos(stop.startPos, stop.endPos, edge->getLength(), NUMERICAL_EPS, friendlyPos) != StopPos::STOPPOS_VALID)) {
+                if (!ok || (checkStopPos(stop.startPos, stop.endPos, edge->getLength(), 0, friendlyPos) != StopPos::STOPPOS_VALID)) {
                     WRITE_ERROR("Invalid start or end position for stop on "
                                 + (stop.lane != ""
                                    ? ("lane '" + stop.lane)
@@ -1326,7 +1320,7 @@ MSRouteHandler::parseWalkPositions(const SUMOSAXAttributes& attrs, const std::st
             }
         }
 
-        bs = retrieveStoppingPlace(attrs, description);
+        bs = retrieveStoppingPlace(attrs, " " + description);
         if (bs != nullptr) {
             arrivalPos = bs->getAccessPos(toEdge != nullptr ? toEdge : &bs->getLane().getEdge());
             if (arrivalPos < 0) {
@@ -1463,7 +1457,7 @@ MSRouteHandler::addWalk(const SUMOSAXAttributes& attrs) {
             MSStoppingPlace* bs = nullptr;
             if (attrs.hasAttribute(SUMO_ATTR_ROUTE)) {
                 myActiveRouteID = attrs.get<std::string>(SUMO_ATTR_ROUTE, myVehicleParameter->id.c_str(), ok);
-                const MSRoute* route = MSRoute::dictionary(myActiveRouteID, &myParsingRNG);
+                ConstMSRoutePtr route = MSRoute::dictionary(myActiveRouteID, &myParsingRNG);
                 if (route == nullptr) {
                     throw ProcessError("The route '" + myActiveRouteID + "' for walk of person '" + myVehicleParameter->id + "' is not known.");
                 }

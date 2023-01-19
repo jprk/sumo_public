@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -42,10 +42,11 @@
 // member method definitions
 // ===========================================================================
 
-GNEDataHandler::GNEDataHandler(GNENet* net, const std::string& file, const bool allowUndoRedo) :
+GNEDataHandler::GNEDataHandler(GNENet* net, const std::string& file, const bool allowUndoRedo, const bool overwrite) :
     DataHandler(file),
     myNet(net),
-    myAllowUndoRedo(allowUndoRedo) {
+    myAllowUndoRedo(allowUndoRedo),
+    myOverwrite(overwrite) {
 }
 
 
@@ -124,7 +125,7 @@ GNEDataHandler::buildEdgeData(const CommonXMLStructure::SumoBaseObject* sumoBase
             if (edge) {
                 GNEGenericData* edgeData = new GNEEdgeData(dataInterval, edge, parameters);
                 if (myAllowUndoRedo) {
-                    myNet->getViewNet()->getUndoList()->begin(GUIIcon::EDGEDATA, "add " + toString(SUMO_TAG_MEANDATA_EDGE));
+                    myNet->getViewNet()->getUndoList()->begin(GUIIcon::EDGEDATA, "add " + toString(GNE_TAG_EDGEREL_SINGLE));
                     myNet->getViewNet()->getUndoList()->add(new GNEChange_GenericData(edgeData, true), true);
                     myNet->getViewNet()->getUndoList()->end();
                 } else {
@@ -133,13 +134,13 @@ GNEDataHandler::buildEdgeData(const CommonXMLStructure::SumoBaseObject* sumoBase
                     edgeData->incRef("buildEdgeData");
                 }
             } else {
-                writeErrorInvalidParent(SUMO_TAG_MEANDATA_EDGE, SUMO_TAG_EDGE);
+                writeErrorInvalidParent(GNE_TAG_EDGEREL_SINGLE, SUMO_TAG_EDGE);
             }
         } else {
-            writeErrorInvalidParent(SUMO_TAG_MEANDATA_EDGE, SUMO_TAG_DATAINTERVAL);
+            writeErrorInvalidParent(GNE_TAG_EDGEREL_SINGLE, SUMO_TAG_DATAINTERVAL);
         }
     } else {
-        writeErrorInvalidParent(SUMO_TAG_MEANDATA_EDGE, SUMO_TAG_DATASET);
+        writeErrorInvalidParent(GNE_TAG_EDGEREL_SINGLE, SUMO_TAG_DATASET);
     }
 }
 
@@ -161,7 +162,7 @@ GNEDataHandler::buildEdgeRelationData(const CommonXMLStructure::SumoBaseObject* 
             if (fromEdge && toEdge) {
                 GNEGenericData* edgeData = new GNEEdgeRelData(dataInterval, fromEdge, toEdge, parameters);
                 if (myAllowUndoRedo) {
-                    myNet->getViewNet()->getUndoList()->begin(GUIIcon::EDGERELDATA, "add " + toString(SUMO_TAG_MEANDATA_EDGE));
+                    myNet->getViewNet()->getUndoList()->begin(GUIIcon::EDGERELDATA, "add " + toString(GNE_TAG_EDGEREL_SINGLE));
                     myNet->getViewNet()->getUndoList()->add(new GNEChange_GenericData(edgeData, true), true);
                     myNet->getViewNet()->getUndoList()->end();
                 } else {

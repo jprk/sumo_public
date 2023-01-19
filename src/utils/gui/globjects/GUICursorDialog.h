@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -41,7 +41,7 @@ class GUICursorDialog : public GUIGLObjectPopupMenu {
 
 public:
     /// @brief constructor used for Pop-up dialogs
-    GUICursorDialog(GUIGLObjectPopupMenu::PopupType type, GUISUMOAbstractView* view, const std::vector<GUIGlObject*> &objects);
+    GUICursorDialog(GUIGLObjectPopupMenu::PopupType type, GUISUMOAbstractView* view, const std::vector<GUIGlObject*>& objects);
 
     /// @brief destructor
     ~GUICursorDialog();
@@ -51,13 +51,13 @@ public:
 
     /// @brief set front element
     long onCmdSetFrontElement(FXObject*, FXSelector, void*);
-    
+
     /// @brief delete element
     long onCmdDeleteElement(FXObject*, FXSelector, void*);
 
     /// @brief select element
     long onCmdSelectElement(FXObject*, FXSelector, void*);
-    
+
     /// @brief open properties popUp
     long onCmdOpenPropertiesPopUp(FXObject*, FXSelector, void*);
 
@@ -105,8 +105,8 @@ protected:
 
 private:
     /// @brief build dialog elements
-    void buildDialogElements(GUISUMOAbstractView* view, const FXString text, GUIIcon icon, 
-                             FXSelector sel, const std::vector<GUIGlObject*> &objects);
+    void buildDialogElements(GUISUMOAbstractView* view, const FXString text, GUIIcon icon,
+                             FXSelector sel, const std::vector<GUIGlObject*>& objects);
 
     /// @brief Invalidated copy constructor.
     GUICursorDialog(const GUICursorDialog&) = delete;

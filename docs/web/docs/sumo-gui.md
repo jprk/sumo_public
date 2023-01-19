@@ -509,7 +509,7 @@ value/range
 
 ## Vehicle Visualisation Settings
 
-### Vehicle shape shemes
+### Vehicle shape schemes
 
 | Name          | Description                                                                                                                      |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -625,7 +625,20 @@ Each text can be configured with regard to it's size color and background color.
 | by inclination                           | %       | By the average change in height between start and end of the lane per m                                                                                                |
 | by segment inclination                   | %       | By the average change in height between start and end of each geometry segment                                                                                         |
 | by average speed                         | m/s     | By the average speed of vehicles on the lane                                                                                                                           |
-| by average relative speed                | %       | By the average speed of vehicles on the lane as percentage of the allowed speed                                                                                        |
+| by average relative speed                | %       | By the average speed of vehicles on the lane as percentage of the allowed speed      |
+| by routing device assumed speed          | m/s   | The averaged speed [computed by the rerouting device](Demand/Automatic_Routing.md#edge_weights) |
+| by insertion backlog                     |       | The number of cars currently delayed for insertion on the lane     |
+| by TAZ                                   |       | By the color of the TAZ to whish this edge belongs (if [TAZs](Demand/Importing_O/D_Matrices.md#describing_the_taz) with colors are loaded) |
+| by param (numerical, streetwise)         |       | By the edge parameter configured in the drop-down list of all known edge parameters.  |
+| by param (numerical, lanewise)           |       | By the lane parameter configured in the drop-down list of all known lane parameters.  |
+| by edgeData (numerical, streetwise)      |       | By the edgeData attribute configured in the drop-down list of all loaded edgeData attributes.  |
+| by edgeData (numerical, streetwise)      |       | By the edgeData attribute configured in the drop-down list of all loaded edgeData attributes.  |
+| by distance (kilometrage)                | m     | By the kilometrage value at start of the edge (negative values indicate falling kilometrage)   |
+| by abs distance (kilometrage)            | m     | By the kilometrage value at start of the edge  |
+| by reachability (traveltime)             | s     | Traveltime for reaching this edge from the most recently used 'selected reachability' location |
+| by thread index                          |       | Index of the thread that is computing this lane (when running with option **--threads** |
+| free parking spaces                      |       | Total number of free parkingArea spaces on that edge |
+| by live edgeData                         |       | By the selected attribute value of the selected meanData id being recorded in the current simulation (configuration via two drop-down lists) |
 
 **Table 2.2 Lane scaling schemes**
 
@@ -749,6 +762,13 @@ the color via [TraCI](TraCI.md) and setting the alpha-channel.
 
 All objects that have their color set (via input files or visualisation
 settings) support (Red,Green,Blue,Alpha) color values.
+
+## 3D-specific Settings
+The scene is illuminated by a directional light source ("the sun"). The light color originates from the grayscale range can be varied through the 3D-specific Visualization Settings. The **sun brightness** value ranges from 0 (=black) to 255 (=white) and represents the grayscale diffuse light. The ambient light value is half of the diffuse light.
+
+The 3D scene background color can be set to any RGB color. The OSG standard background color is _(51,51,102)_.
+
+Additionally, the visibility of traffic light related items can be set (see [automatically generated 3D environment](#automatically_generated_3d_environment)).
 
 # Configuration Files
 
@@ -886,14 +906,30 @@ present to open a new 3D view. A pre-compiled Windows version for testing is ava
 supplying the command line option **--osg-view true**.
 
 ## 3D Viewport
-The view of the 3D scene can be changed using two methods: The camera can be moved by mouse actions 
-(LMB drag for translational movement, MMB drag for pitch and yaw rotation) or the view can be defined in the 
-viewport dialog. Open the viewport editor using the ![Open_viewport_editor.gif](images/Open_viewport_editor.gif
+The view of the 3D scene can be changed using two methods: The camera can be moved by mouse and keyboard or the view can be defined in the 
+viewport dialog. The following table summarizes which mouse actions and keys can be used to control the view.
+
+| Name          | Description                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `F`           | Switch between `terrain` and `ego` camera manipulator modes (default: `terrain`)                                                 |
+| `Up` arrow    | Move in view direction                                                                                                           |
+| `Down` arrow  | Move away from view direction                                                                                                    |
+| `Left` arrow  | Move sidewards to the left                                                                                                       |
+| `Right` arrow | Move sidewards to the right                                                                                                      |
+| LMB drag      | Move position in `terrain` mode                                                                                                  |
+| MMB drag      | Rotate view in `terrain` mode (with view target as pivot point)                                                                  |
+| RMB drag      | Zoom view in `terrain` mode                                                                                                      |
+| Mouse movement| Rotate view in `ego` mode (with eye position as pivot point)                                                                     |
+
+Open the viewport editor using the ![Open_viewport_editor.gif](images/Open_viewport_editor.gif
 "Open viewport editor") button. The camera position itself is listed in the left column wheras right "LookAt" coordinates define the 
 target to look at. "LookAt" coordinates are normalized to length 1 by OSG automatically.
 
 Interacting with network elements and vehicles works like in the 2D view: Context-dependent options are available by RMB click on the object 
 to inspect.
+
+## Rendering statistics
+OSG draws some rendering statistics (e.g. frames per seconds) on top of the 3D view by pressing the `I` key. Pressing the key multiple times will unveal different statistics and finally hide them again.
 
 ## Automatically generated 3D environment
 Only some of the regular network components have been ported to the 3D view (yet). Currently the following are displayed:
@@ -975,6 +1011,13 @@ the menu using *File-\>Open EdgeData*.
 
 All attributes will be loaded and can be selected in the street visualization
 settings
+
+## Using Live Data
+
+Instead of loading data from a file you can visualize the aggregated data that is currently being collected by the simulation.
+For this you need to color 'by live edgeData' and select the id of the configure `edgeData` (or `laneData`) element.
+This will always show the current aggregation interval (so the collected data is reset to 0 at the start of a new interval).
+By using the option **--edgedata-output FILE** or **--lanedata-output FILE** you can quickly configure a data colletion that aggregates over the whole simulation.
 
 ## Coloring by Data
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,73 +26,49 @@
 #include <version.h>
 #endif
 
-#include <string>
-#include <sstream>
-#include <algorithm>
-#include <iomanip>
 #include <fxkeys.h>
 
-#include <guisim/GUINet.h>
 #include <guisim/GUILane.h>
-#include <netload/NLHandler.h>
-#include <traci-server/TraCIServer.h>
-#include <microsim/MSGlobals.h>
-#include <microsim/MSEdge.h>
-#include <microsim/MSVehicle.h>
-#include <microsim/MSStateHandler.h>
-#include <microsim/MSVehicleControl.h>
+#include <guisim/GUINet.h>
 #include <microsim/MSEdgeControl.h>
 #include <microsim/MSInsertionControl.h>
+#include <microsim/MSStateHandler.h>
 #include <microsim/transportables/MSTransportableControl.h>
-
-#include "GUISUMOViewParent.h"
-#include "GUILoadThread.h"
-#include "GUIRunThread.h"
-#include "GUIApplicationWindow.h"
-#include "GUIEvent_SimulationLoaded.h"
-#include "GUIEvent_SimulationEnded.h"
-
-#include <utils/common/ToString.h>
-#include <utils/common/RandHelper.h>
-#include <utils/common/Command.h>
+#include <netload/NLHandler.h>
+#include <traci-server/TraCIServer.h>
 #include <utils/foxtools/MFXButtonTooltip.h>
-#include <utils/foxtools/MFXUtils.h>
 #include <utils/foxtools/MFXLCDLabel.h>
-#include <utils/foxtools/MFXThreadEvent.h>
 #include <utils/foxtools/MFXLinkLabel.h>
 #include <utils/foxtools/MFXRealSpinner.h>
-
-#include <utils/xml/XMLSubSys.h>
-#include <utils/gui/images/GUITexturesHelper.h>
-#include <utils/gui/events/GUIEvent_SimulationStep.h>
-#include <utils/gui/events/GUIEvent_Message.h>
+#include <utils/gui/cursors/GUICursorSubSys.h>
+#include <utils/gui/div/GLHelper.h>
+#include <utils/gui/div/GUIDesigns.h>
+#include <utils/gui/div/GUIDialog_GLChosenEditor.h>
+#include <utils/gui/div/GUIGlobalSelection.h>
+#include <utils/gui/div/GUIMessageWindow.h>
+#include <utils/gui/div/GUIUserIO.h>
 #include <utils/gui/events/GUIEvent_AddView.h>
 #include <utils/gui/events/GUIEvent_CloseView.h>
-#include <utils/gui/div/GUIMessageWindow.h>
-#include <utils/gui/div/GUIDialog_GLChosenEditor.h>
-#include <utils/gui/tracker/GUIParameterTracker.h>
-#include <utils/gui/div/GUIParameterTableWindow.h>
-#include <utils/gui/images/GUIIconSubSys.h>
-#include <utils/gui/cursors/GUICursorSubSys.h>
-#include <utils/gui/shortcuts/GUIShortcutsSubSys.h>
-#include <utils/gui/div/GUIIOGlobals.h>
-#include <utils/gui/div/GUIUserIO.h>
-#include <utils/gui/div/GLHelper.h>
-#include <utils/gui/settings/GUICompleteSchemeStorage.h>
-#include <utils/gui/globjects/GUIGlObjectStorage.h>
+#include <utils/gui/events/GUIEvent_Message.h>
 #include <utils/gui/globjects/GUIShapeContainer.h>
-#include <utils/gui/div/GUIGlobalSelection.h>
-#include <utils/gui/div/GUIDesigns.h>
+#include <utils/gui/images/GUITexturesHelper.h>
+#include <utils/gui/images/VClassIcons.h>
+#include <utils/gui/settings/GUICompleteSchemeStorage.h>
 #include <utils/gui/settings/GUISettingsHandler.h>
-#include <utils/gui/windows/GUIAppEnum.h>
-#include <utils/gui/windows/GUISUMOAbstractView.h>
+#include <utils/gui/shortcuts/GUIShortcutsSubSys.h>
 #include <utils/gui/windows/GUIPerspectiveChanger.h>
-#include <utils/options/OptionsCont.h>
+#include <utils/xml/XMLSubSys.h>
+
+#include "GUIApplicationWindow.h"
+#include "GUIEvent_SimulationEnded.h"
+#include "GUIEvent_SimulationLoaded.h"
 #include "GUIGlobals.h"
+#include "GUILoadThread.h"
+#include "GUIRunThread.h"
 #include "dialogs/GUIDialog_AboutSUMO.h"
-#include "dialogs/GUIDialog_HallOfFame.h"
 #include "dialogs/GUIDialog_AppSettings.h"
 #include "dialogs/GUIDialog_Breakpoints.h"
+#include "dialogs/GUIDialog_HallOfFame.h"
 
 
 #define MIN_DRAW_DELAY 20
@@ -102,40 +78,49 @@
 // FOX-declarations
 // ===========================================================================
 FXDEFMAP(GUIApplicationWindow) GUIApplicationWindowMap[] = {
+    // close
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_Q_CLOSE,    GUIApplicationWindow::onCmdQuit),
     FXMAPFUNC(SEL_SIGNAL,   MID_HOTKEY_CTRL_Q_CLOSE,    GUIApplicationWindow::onCmdQuit),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_ALT_F4_CLOSE,    GUIApplicationWindow::onCmdQuit),
     FXMAPFUNC(SEL_CLOSE,    MID_WINDOW,                 GUIApplicationWindow::onCmdQuit),
-
+    // toolbar
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_SHIFT_N_NEWWINDOW,                  GUIApplicationWindow::onCmdNewWindow),
-    FXMAPFUNC(SEL_COMMAND,  MID_OPEN_CONFIG,                                    GUIApplicationWindow::onCmdOpenConfiguration),
-    FXMAPFUNC(SEL_COMMAND,  MID_OPEN_NETWORK,                                   GUIApplicationWindow::onCmdOpenNetwork),
-    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_P,                                  GUIApplicationWindow::onCmdOpenShapes),
-    FXMAPFUNC(SEL_COMMAND,  MID_OPEN_EDGEDATA,                                  GUIApplicationWindow::onCmdOpenEdgeData),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK,       GUIApplicationWindow::onCmdOpenConfiguration),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK,           GUIApplicationWindow::onCmdOpenNetwork),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_P_OPENSHAPES,                       GUIApplicationWindow::onCmdOpenShapes),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_U_OPENEDGEDATA,                     GUIApplicationWindow::onCmdOpenEdgeData),
     FXMAPFUNC(SEL_COMMAND,  MID_RECENTFILE,                                     GUIApplicationWindow::onCmdOpenRecent),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_R_RELOAD,                           GUIApplicationWindow::onCmdReload),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_QUICK_RELOAD,                       GUIApplicationWindow::onCmdQuickReload),
-    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_SHIFT_S_SAVENETWORK_AS,             GUIApplicationWindow::onCmdSaveConfig),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_SHIFT_S_SAVESUMOCONFIG,             GUIApplicationWindow::onCmdSaveConfig),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_W_CLOSESIMULATION,                  GUIApplicationWindow::onCmdClose),
-    FXMAPFUNC(SEL_COMMAND,  MID_EDITCHOSEN,                                     GUIApplicationWindow::onCmdEditChosen),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG,  GUIApplicationWindow::onCmdEditChosen),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS,  GUIApplicationWindow::onCmdEditBreakpoints),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_F9_EDIT_VIEWSCHEME,                      GUIApplicationWindow::onCmdEditViewScheme),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_I_EDITVIEWPORT,                     GUIApplicationWindow::onCmdEditViewport),
-    FXMAPFUNC(SEL_COMMAND,  MID_NETEDIT,                                        GUIApplicationWindow::onCmdNetedit),
-
-    FXMAPFUNC(SEL_COMMAND,  MID_APPSETTINGS,                            GUIApplicationWindow::onCmdAppSettings),
-    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_G_GAMINGMODE_TOGGLEGRID,    GUIApplicationWindow::onCmdGaming),
-    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_J_TOGGLEDRAWJUNCTIONSHAPE,  GUIApplicationWindow::onCmdToggleDrawJunctionShape),
-    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_F_FULSCREENMODE,            GUIApplicationWindow::onCmdFullScreen),
-    FXMAPFUNC(SEL_COMMAND,  MID_LISTINTERNAL,                           GUIApplicationWindow::onCmdListInternal),
-    FXMAPFUNC(SEL_COMMAND,  MID_LISTPARKING,                            GUIApplicationWindow::onCmdListParking),
-    FXMAPFUNC(SEL_COMMAND,  MID_LISTTELEPORTING,                        GUIApplicationWindow::onCmdListTeleporting),
-    FXMAPFUNC(SEL_COMMAND,  MID_NEW_MICROVIEW,                          GUIApplicationWindow::onCmdNewView),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_T_OPENNETEDIT_OPENSUMO,             GUIApplicationWindow::onCmdNeteditNetwork),
+    //FXMAPFUNC(SEL_COMMAND,  MID_NETEDIT_SUMOCFG,                                GUIApplicationWindow::onCmdNeteditSUMOConfig),
+    // gaming
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_H_APPSETTINGS_OPENEDGETYPES,    GUIApplicationWindow::onCmdAppSettings),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_G_GAMINGMODE_TOGGLEGRID,        GUIApplicationWindow::onCmdGaming),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_J_TOGGLEDRAWJUNCTIONSHAPE,      GUIApplicationWindow::onCmdToggleDrawJunctionShape),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_F_FULSCREENMODE,                GUIApplicationWindow::onCmdFullScreen),
+    FXMAPFUNC(SEL_COMMAND,  MID_LISTINTERNAL,                               GUIApplicationWindow::onCmdListInternal),
+    FXMAPFUNC(SEL_COMMAND,  MID_LISTPARKING,                                GUIApplicationWindow::onCmdListParking),
+    FXMAPFUNC(SEL_COMMAND,  MID_LISTTELEPORTING,                            GUIApplicationWindow::onCmdListTeleporting),
+    FXMAPFUNC(SEL_COMMAND,  MID_NEW_MICROVIEW,                              GUIApplicationWindow::onCmdNewView),
+    // OSG
 #ifdef HAVE_OSG
     FXMAPFUNC(SEL_COMMAND,  MID_NEW_OSGVIEW,    GUIApplicationWindow::onCmdNewOSG),
+    FXMAPFUNC(SEL_UPDATE,   MID_NEW_OSGVIEW,    GUIApplicationWindow::onUpdAddView),
+
 #endif
+    // Time
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP,           GUIApplicationWindow::onCmdStart),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS,          GUIApplicationWindow::onCmdStart),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_S_MODE_STOPSIMULATION_SELECT,                    GUIApplicationWindow::onCmdStop),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK,               GUIApplicationWindow::onCmdStop),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE,              GUIApplicationWindow::onCmdStep),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS,  GUIApplicationWindow::onCmdStep),
     FXMAPFUNC(SEL_COMMAND,  MID_DELAY_INC,                                              GUIApplicationWindow::onCmdDelayInc),
     FXMAPFUNC(SEL_COMMAND,  MID_DELAY_DEC,                                              GUIApplicationWindow::onCmdDelayDec),
@@ -145,38 +130,34 @@ FXDEFMAP(GUIApplicationWindow) GUIApplicationWindowMap[] = {
     FXMAPFUNC(SEL_COMMAND,  MID_DELAY_TOGGLE,                                           GUIApplicationWindow::onCmdDelayToggle),
     FXMAPFUNC(SEL_COMMAND,  MID_DEMAND_SCALE,                                           GUIApplicationWindow::onCmdDemandScale),
     FXMAPFUNC(SEL_COMMAND,  MID_CLEARMESSAGEWINDOW,                                     GUIApplicationWindow::onCmdClearMsgWindow),
-
+    // Stats
     FXMAPFUNC(SEL_COMMAND,  MID_SHOWNETSTATS,       GUIApplicationWindow::onCmdShowStats),
     FXMAPFUNC(SEL_COMMAND,  MID_SHOWVEHSTATS,       GUIApplicationWindow::onCmdShowStats),
     FXMAPFUNC(SEL_COMMAND,  MID_SHOWPERSONSTATS,    GUIApplicationWindow::onCmdShowStats),
-
     // these functions do not assign shortcut keys to commands, but rather affect the button enable status upon other events (e.g. simulation loaded)
     // since those events are invoked through pseudo key events (?), the same key shortcuts as in cmd must be supplied as well
-    FXMAPFUNC(SEL_UPDATE,   MID_OPEN_CONFIG,            GUIApplicationWindow::onUpdOpen),
-    FXMAPFUNC(SEL_UPDATE,   MID_OPEN_NETWORK,           GUIApplicationWindow::onUpdOpen),
-    FXMAPFUNC(SEL_UPDATE,   MID_OPEN_NETWORK,           GUIApplicationWindow::onUpdOpen),
-    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_P,          GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_OPEN_EDGEDATA,          GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_R_RELOAD,   GUIApplicationWindow::onUpdReload),
-    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_QUICK_RELOAD, GUIApplicationWindow::onUpdReload),
-    FXMAPFUNC(SEL_UPDATE,   MID_RECENTFILE,             GUIApplicationWindow::onUpdOpenRecent),
-    FXMAPFUNC(SEL_UPDATE,   MID_NEW_MICROVIEW,          GUIApplicationWindow::onUpdAddView),
-#ifdef HAVE_OSG
-    FXMAPFUNC(SEL_UPDATE,   MID_NEW_OSGVIEW,    GUIApplicationWindow::onUpdAddView),
-#endif
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK,               GUIApplicationWindow::onUpdOpen),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK,                   GUIApplicationWindow::onUpdOpen),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_P_OPENSHAPES,                               GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_U_OPENEDGEDATA,                             GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_R_RELOAD,                                   GUIApplicationWindow::onUpdReload),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_QUICK_RELOAD,                               GUIApplicationWindow::onUpdReload),
+    FXMAPFUNC(SEL_UPDATE,   MID_RECENTFILE,                                             GUIApplicationWindow::onUpdOpenRecent),
+    FXMAPFUNC(SEL_UPDATE,   MID_NEW_MICROVIEW,                                          GUIApplicationWindow::onUpdAddView),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS,          GUIApplicationWindow::onUpdStart),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK,               GUIApplicationWindow::onUpdStop),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS,  GUIApplicationWindow::onUpdStep),
     FXMAPFUNC(SEL_UPDATE,   MID_SIMSAVE,                                                GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_SIMLOAD,                                                GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_EDITCHOSEN,                                             GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG,          GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS,          GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_F9_EDIT_VIEWSCHEME,                              GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_I_EDITVIEWPORT,                             GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_NETEDIT,                                                GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_T_OPENNETEDIT_OPENSUMO,                     GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_DEMAND_SCALE,                                           GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_G_GAMINGMODE_TOGGLEGRID,                    GUIApplicationWindow::onUpdNeedsSimulation),
     FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_CTRL_F_FULSCREENMODE,                            GUIApplicationWindow::onUpdNeedsSimulation),
+    //FXMAPFUNC(SEL_UPDATE, MID_NETEDIT_SUMOCFG,                                        GUIApplicationWindow::onUpdNeteditSUMOConfig),
     FXMAPFUNC(SEL_UPDATE,   MID_TRACI_STATUS,                                           GUIApplicationWindow::onUpdTraCIStatus),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_F1_ONLINEDOCUMENTATION,                          GUIApplicationWindow::onCmdHelp),
     FXMAPFUNC(SEL_COMMAND,  MID_CHANGELOG,                                              GUIApplicationWindow::onCmdChangelog),
@@ -184,31 +165,31 @@ FXDEFMAP(GUIApplicationWindow) GUIApplicationWindowMap[] = {
     FXMAPFUNC(SEL_COMMAND,  MID_TUTORIAL,                                               GUIApplicationWindow::onCmdTutorial),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_F11_HALLOFFAME,                            GUIApplicationWindow::onCmdHallOfFame),
     FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_F12_ABOUT,                                       GUIApplicationWindow::onCmdAbout),
-
     // forward requests to the active view
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEJUNCTION, GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEEDGE,     GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEVEHICLE,  GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPERSON,   GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATECONTAINER, GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATETLS,      GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEADD,      GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPOI,      GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_COMMAND,  MID_LOCATEPOLY,     GUIApplicationWindow::onCmdLocate),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEJUNCTION, GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEEDGE,     GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEVEHICLE,  GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEPERSON,   GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATECONTAINER, GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATETLS,      GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEADD,      GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEPOI,      GUIApplicationWindow::onUpdNeedsSimulation),
-    FXMAPFUNC(SEL_UPDATE,   MID_LOCATEPOLY,     GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_J_LOCATEJUNCTION,      GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_E_LOCATEEDGE,          GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_V_LOCATEVEHICLE,       GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_P_LOCATEPERSON,        GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_C_LOCATECONTAINER,     GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_T_LOCATETLS,           GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL,    GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_O_LOCATEPOI,           GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_COMMAND,  MID_HOTKEY_SHIFT_L_LOCATEPOLY,          GUIApplicationWindow::onCmdLocate),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_J_LOCATEJUNCTION,      GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_E_LOCATEEDGE,          GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_V_LOCATEVEHICLE,       GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_P_LOCATEPERSON,        GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_C_LOCATECONTAINER,     GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_T_LOCATETLS,           GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL,    GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_O_LOCATEPOI,           GUIApplicationWindow::onUpdNeedsSimulation),
+    FXMAPFUNC(SEL_UPDATE,   MID_HOTKEY_SHIFT_L_LOCATEPOLY,          GUIApplicationWindow::onUpdNeedsSimulation),
+    // keys
     FXMAPFUNC(SEL_KEYPRESS,              0,     GUIApplicationWindow::onKeyPress),
     FXMAPFUNC(SEL_KEYRELEASE,            0,     GUIApplicationWindow::onKeyRelease),
-
+    // clipboard
     FXMAPFUNC(SEL_CLIPBOARD_REQUEST, 0, GUIApplicationWindow::onClipboardRequest),
-
+    // events
     FXMAPFUNC(FXEX::SEL_THREAD_EVENT, ID_LOADTHREAD_EVENT,  GUIApplicationWindow::onLoadThreadEvent),
     FXMAPFUNC(FXEX::SEL_THREAD_EVENT, ID_RUNTHREAD_EVENT,   GUIApplicationWindow::onRunThreadEvent),
     FXMAPFUNC(FXEX::SEL_THREAD,       ID_LOADTHREAD_EVENT,  GUIApplicationWindow::onLoadThreadEvent),
@@ -221,6 +202,7 @@ FXIMPLEMENT(GUIApplicationWindow, FXMainWindow, GUIApplicationWindowMap, ARRAYNU
 // ===========================================================================
 // static members
 // ===========================================================================
+
 std::mt19937 GUIApplicationWindow::myGamingRNG;
 
 // ===========================================================================
@@ -228,23 +210,11 @@ std::mt19937 GUIApplicationWindow::myGamingRNG;
 // ===========================================================================
 GUIApplicationWindow::GUIApplicationWindow(FXApp* a, const std::string& configPattern) :
     GUIMainWindow(a),
-    myLoadThread(nullptr), myRunThread(nullptr),
-    myAmLoading(false),
-    myIsReload(false),
-    myGuiSettingsFileMTime(-2),
-    myAlternateSimDelay(0.),
-    myRecentNetworksAndConfigs(a, "files"),
+    myFileMenuRecentNetworks(new FXMenuPane(this)),
+    myFileMenuRecentConfigs(new FXMenuPane(this)),
+    myRecentNetworks(a, "networks"),
+    myRecentConfigs(a, "configs"),
     myConfigPattern(configPattern),
-    hadDependentBuild(false),
-    myShowTimeAsHMS(false),
-    myHaveNotifiedAboutSimEnd(false),
-    // game specific
-    myJamSoundTime(60),
-    myPreviousCollisionNumber(0),
-    myWaitingTime(0),
-    myTimeLoss(0),
-    myEmergencyVehicleCount(0),
-    myTotalDistance(0),
     myLastStepEventMillis(SysUtils::getCurrentMillis() - MIN_DRAW_DELAY) {
     // init icons
     GUIIconSubSys::initIcons(a);
@@ -256,6 +226,12 @@ GUIApplicationWindow::GUIApplicationWindow(FXApp* a, const std::string& configPa
 }
 
 
+GUIRunThread*
+GUIApplicationWindow::getRunner() {
+    return myRunThread;
+}
+
+
 void
 GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
     // don't do this twice
@@ -263,10 +239,12 @@ GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
         return;
     }
     hadDependentBuild = true;
-
+    if (gLanguage == "C") {
+        gLanguage = getApp()->reg().readStringEntry("gui", "language", "C");
+        MsgHandler::setupI18n(gLanguage);
+    }
     setTarget(this);
     setSelector(MID_WINDOW);
-
     // build menu bar
     myMenuBarDrag = new FXToolBarShell(this, GUIDesignToolBar);
     myMenuBar = new FXMenuBar(myTopDock, myMenuBarDrag, GUIDesignToolbarMenuBar);
@@ -277,13 +255,12 @@ GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
     myLoadThreadEvent.setSelector(ID_LOADTHREAD_EVENT);
     myRunThreadEvent.setTarget(this);
     myRunThreadEvent.setSelector(ID_RUNTHREAD_EVENT);
-
     // build the status bar
     myStatusbar = new FXStatusBar(this, GUIDesignStatusBar);
     {
         // build TraCi info
         myTraCiFrame = new FXHorizontalFrame(myStatusbar, GUIDesignHorizontalFrameStatusBar);
-        auto button = new FXButton(myTraCiFrame, TL("TraCI"), nullptr, this, MID_TRACI_STATUS, GUIDesignButtonStatusBarFixed);
+        auto button = new FXButton(myTraCiFrame, "TraCI", nullptr, this, MID_TRACI_STATUS, GUIDesignButtonStatusBarFixed);
         button->setBackColor(FXRGBA(253, 255, 206, 255));
         if (TraCIServer::getInstance() == nullptr) {
             myTraCiFrame->hide();
@@ -301,7 +278,6 @@ GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
         myStatButtons.push_back(new FXButton(myStatusbar, "-", GUIIconSubSys::getIcon(GUIIcon::GREENCONTAINER), this, MID_SHOWVEHSTATS));
         myStatButtons.back()->hide();
     }
-
     // make the window a mdi-window
     myMainSplitter = new FXSplitter(this, GUIDesignSplitter | SPLITTER_VERTICAL | SPLITTER_REVERSED);
     myMDIClient = new FXMDIClient(myMainSplitter, GUIDesignSplitterMDI);
@@ -310,7 +286,6 @@ GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
     new FXMDIDeleteButton(myMenuBar, myMDIClient, FXMDIClient::ID_MDI_MENUCLOSE, GUIDesignMDIButtonRight);
     new FXMDIRestoreButton(myMenuBar, myMDIClient, FXMDIClient::ID_MDI_MENURESTORE, GUIDesignMDIButtonRight);
     new FXMDIMinimizeButton(myMenuBar, myMDIClient, FXMDIClient::ID_MDI_MENUMINIMIZE, GUIDesignMDIButtonRight);
-
     // build the message window
     myMessageWindow = new GUIMessageWindow(myMainSplitter, this);
     // fill menu and tool bar
@@ -326,7 +301,6 @@ GUIApplicationWindow::dependentBuild(const bool isLibsumo) {
     myStatusbar->getStatusLine()->setText(TL("Ready."));
     // set the caption
     setTitle(MFXUtils::getTitleText("SUMO " VERSION_STRING));
-
     // start the simulation-thread (it will loop until the application ends deciding by itself whether to perform a step or not)
     myRunThread->start();
     setIcon(GUIIconSubSys::getIcon(GUIIcon::SUMO));
@@ -355,7 +329,6 @@ GUIApplicationWindow::create() {
     myControlMenu->create();
     myWindowMenu->create();
     myHelpMenu->create();
-
     FXint textWidth = getApp()->getNormalFont()->getTextWidth("8", 1) * 24;
     myCartesianFrame->setWidth(textWidth);
     myGeoFrame->setWidth(textWidth);
@@ -389,12 +362,17 @@ GUIApplicationWindow::~GUIApplicationWindow() {
     myRunThread->prepareDestruction();
     myRunThread->join();
     closeAllWindows();
-    //
+    // close icons
     GUIIconSubSys::close();
+    GUICursorSubSys::close();
+    // delete visual
     delete myGLVisual;
     // delete some non-parented windows
     delete myToolBarDrag1;
-    //
+    delete mySimDelayTarget;
+    // delete rest of elements
+    delete myFileMenuRecentNetworks;
+    delete myFileMenuRecentConfigs;
     delete myRunThread;
     delete myFileMenu;
     delete myEditMenu;
@@ -404,7 +382,6 @@ GUIApplicationWindow::~GUIApplicationWindow() {
     delete myControlMenu;
     delete myWindowMenu;
     delete myHelpMenu;
-
     delete myLoadThread;
 
     while (!myEvents.empty()) {
@@ -431,6 +408,12 @@ GUIApplicationWindow::detach() {
 
 
 void
+GUIApplicationWindow::addToWindowsMenu(FXMenuPane* /*menuPane*/) {
+    // unused, implement in children
+}
+
+
+void
 GUIApplicationWindow::fillMenuBar() {
     // build file menu
     myFileMenu = new FXMenuPane(this);
@@ -441,16 +424,16 @@ GUIApplicationWindow::fillMenuBar() {
     new FXMenuSeparator(myFileMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("&Open Simulation..."), "Ctrl+O", TL("Open a simulation (Configuration file)."),
-                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, MID_OPEN_CONFIG);
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_SUMOCONFIG), this, MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("Open &Network..."), "Ctrl+N", TL("Open a network."),
-                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_OPEN_NETWORK);
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("Open Shapes "), "Ctrl+P", TL("Load POIs and Polygons for visualization."),
-                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_SHAPES), this, MID_HOTKEY_CTRL_P);
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_SHAPES), this, MID_HOTKEY_CTRL_P_OPENSHAPES);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("Open EdgeData "), "Ctrl+U", TL("Load edge related data for visualization."),
-                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_OPEN_EDGEDATA);
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_HOTKEY_CTRL_U_OPENEDGEDATA);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("&Reload"), "Ctrl+R", TL("Reloads the simulation / the network."),
                                            GUIIconSubSys::getIcon(GUIIcon::RELOAD), this, MID_HOTKEY_CTRL_R_RELOAD);
@@ -460,44 +443,29 @@ GUIApplicationWindow::fillMenuBar() {
     new FXMenuSeparator(myFileMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("Save Configuration"), "Ctrl+Shift+S", TL("Save current options as a configuration file."),
-                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_HOTKEY_CTRL_SHIFT_S_SAVENETWORK_AS);
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_SUMOCONFIG), this, MID_HOTKEY_CTRL_SHIFT_S_SAVESUMOCONFIG);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("Close"), "Ctrl+W", TL("Close the simulation."),
                                            GUIIconSubSys::getIcon(GUIIcon::CLOSE), this, MID_HOTKEY_CTRL_W_CLOSESIMULATION);
-    // Recent files
-    FXMenuSeparator* sep1 = new FXMenuSeparator(myFileMenu);
-    sep1->setSelector(FXRecentFiles::ID_ANYFILES);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_1);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_2);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_3);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_4);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_5);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_6);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_7);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_8);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_9);
-    GUIDesigns::buildFXMenuCommandRecentFile(myFileMenu, "", &myRecentNetworksAndConfigs, FXRecentFiles::ID_FILE_10);
-    GUIDesigns::buildFXMenuCommand(myFileMenu, TL("C&lear Recent Files"), nullptr, &myRecentNetworksAndConfigs, FXRecentFiles::ID_CLEAR);
-    GUIDesigns::buildFXMenuCommand(myFileMenu, TL("No Recent Files"), nullptr, &myRecentNetworksAndConfigs, MFXRecentNetworks::ID_NOFILES);
-    myRecentNetworksAndConfigs.setTarget(this);
-    myRecentNetworksAndConfigs.setSelector(MID_RECENTFILE);
+    new FXMenuSeparator(myFileMenu);
+    // build recent files
+    buildRecentNetworks(myFileMenu, myFileMenuRecentNetworks);
+    buildRecentConfigs(myFileMenu, myFileMenuRecentConfigs);
     new FXMenuSeparator(myFileMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myFileMenu,
                                            TL("&Quit"), "Ctrl+Q", TL("Quit the Application."),
                                            nullptr, this, MID_HOTKEY_CTRL_Q_CLOSE);
-
     // build edit menu
     mySelectByPermissions = new FXMenuPane(this);
     std::vector<std::string> vehicleClasses = SumoVehicleClassStrings.getStrings();
     for (const auto& vehicleClass : vehicleClasses) {
-        GUIDesigns::buildFXMenuCommand(mySelectByPermissions, vehicleClass, nullptr, this, MID_EDITCHOSEN);
+        GUIDesigns::buildFXMenuCommand(mySelectByPermissions, vehicleClass, VClassIcons::getVClassIcon(SumoVehicleClassStrings.get(vehicleClass)), this, MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG);
     }
-
     myEditMenu = new FXMenuPane(this);
     GUIDesigns::buildFXMenuTitle(myMenuBar, TL("&Edit"), nullptr, myEditMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myEditMenu,
                                            TL("Edit Selected..."), "Ctrl+E", TL("Opens a dialog for editing the list of selected items."),
-                                           GUIIconSubSys::getIcon(GUIIcon::FLAG), this, MID_EDITCHOSEN);
+                                           GUIIconSubSys::getIcon(GUIIcon::FLAG), this, MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG);
     mySelectLanesMenuCascade = new FXMenuCascade(myEditMenu,
             TL("Select lanes which allow...\t\tOpens a menu for selecting a vehicle class by which to selected lanes."),
             GUIIconSubSys::getIcon(GUIIcon::FLAG), mySelectByPermissions);
@@ -513,52 +481,53 @@ GUIApplicationWindow::fillMenuBar() {
                                            GUIIconSubSys::getIcon(GUIIcon::EDITVIEWPORT), this, MID_HOTKEY_CTRL_I_EDITVIEWPORT);
     new FXMenuSeparator(myEditMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myEditMenu,
-                                           TL("Open in netedit"), "Ctrl+T", TL("Opens the netedit application with the current network."),
-                                           GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), this, MID_NETEDIT);
-
+                                           TL("Open network in netedit"), "Ctrl+T", TL("Opens current network in NETEDIT."),
+                                           GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), this, MID_HOTKEY_CTRL_T_OPENNETEDIT_OPENSUMO);
+    //GUIDesigns::buildFXMenuCommandShortcut(myEditMenu,
+    //                                       TL("Open config in netedit"), "", TL("Opens current sumo config in NETEDIT."),
+    //                                       GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), this, MID_NETEDIT_SUMOCFG);
     // build settings menu
     mySettingsMenu = new FXMenuPane(this);
     GUIDesigns::buildFXMenuTitle(myMenuBar, TL("&Settings"), nullptr, mySettingsMenu);
     GUIDesigns::buildFXMenuCommandShortcut(mySettingsMenu,
                                            TL("Application Settings"), "Ctrl+H", TL("Open a Dialog for Application Settings editing."),
-                                           nullptr, this, MID_APPSETTINGS);
+                                           nullptr, this, MID_HOTKEY_CTRL_H_APPSETTINGS_OPENEDGETYPES);
     myGamingModeCheckbox = new FXMenuCheck(mySettingsMenu,
                                            TL("Gaming Mode\tCtrl+G\tToggle gaming mode on/off."),
                                            this, MID_HOTKEY_CTRL_G_GAMINGMODE_TOGGLEGRID);
     GUIDesigns::buildFXMenuCommandShortcut(mySettingsMenu,
                                            TL("Full Screen Mode"), "Ctrl+F", TL("Toggle full screen mode on/off."),
                                            GUIIconSubSys::getIcon(GUIIcon::FULL_SCREEN), this, MID_HOTKEY_CTRL_F_FULSCREENMODE);
-
     // build Locate menu
     myLocatorMenu = new FXMenuPane(this);
     GUIDesigns::buildFXMenuTitle(myMenuBar, TL("&Locate"), nullptr, myLocatorMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Junctions"), "Shift+J", TL("Open a Dialog for Locating a Junction."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEJUNCTION), this, MID_LOCATEJUNCTION);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEJUNCTION), this, MID_HOTKEY_SHIFT_J_LOCATEJUNCTION);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Edges"), "Shift+E", TL("Open a Dialog for Locating an Edge."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEEDGE), this, MID_LOCATEEDGE);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEEDGE), this, MID_HOTKEY_SHIFT_E_LOCATEEDGE);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Vehicles"), "Shift+V", TL("Open a Dialog for Locating a Vehicle."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEVEHICLE), this, MID_LOCATEVEHICLE);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEVEHICLE), this, MID_HOTKEY_SHIFT_V_LOCATEVEHICLE);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Persons"), "Shift+P", TL("Open a Dialog for Locating a Person."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON), this, MID_LOCATEPERSON);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON), this, MID_HOTKEY_SHIFT_P_LOCATEPERSON);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Container"), "Shift+C", TL("Open a Dialog for Locating a Container."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER), this, MID_LOCATECONTAINER);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER), this, MID_HOTKEY_SHIFT_C_LOCATECONTAINER);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&TLS"), "Shift+T", TL("Open a Dialog for Locating a Traffic Light."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATETLS), this, MID_LOCATETLS);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATETLS), this, MID_HOTKEY_SHIFT_T_LOCATETLS);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("&Additional"), "Shift+A", TL("Open a Dialog for Locating an Additional Structure."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEADD), this, MID_LOCATEADD);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEADD), this, MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("P&oI"), "Shift+O", TL("Open a Dialog for Locating a Point of Interest."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI), this, MID_LOCATEPOI);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI), this, MID_HOTKEY_SHIFT_O_LOCATEPOI);
     GUIDesigns::buildFXMenuCommandShortcut(myLocatorMenu,
                                            TL("Po&lygon"), "Shift+L", TL("Open a Dialog for Locating a Polygon."),
-                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPOLY), this, MID_LOCATEPOLY);
+                                           GUIIconSubSys::getIcon(GUIIcon::LOCATEPOLY), this, MID_HOTKEY_SHIFT_L_LOCATEPOLY);
     new FXMenuSeparator(myLocatorMenu);
     new FXMenuCheck(myLocatorMenu,
                     TL("Show Internal Structures\t\tShow internal junctions and streets in locator dialog."),
@@ -570,7 +539,6 @@ GUIApplicationWindow::fillMenuBar() {
     new FXMenuCheck(myLocatorMenu,
                     TL("Show vehicles outside the road network\t\tShow vehicles that are teleporting or driving remote-controlled outside the road network in locator dialog."),
                     this, MID_LISTTELEPORTING);
-
     // build control menu
     // the shortcut designator is not only at text in the submenu but also defines the real shortcut key assigned with it!
     // secondary shortcuts (ctrl+A, ctrl+S, ctrl+D) are defined in GUIShortcutsSubSys::buildSUMOAccelerators
@@ -594,25 +562,14 @@ GUIApplicationWindow::fillMenuBar() {
                                            GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_SIMSAVE);
     GUIDesigns::buildFXMenuCommandShortcut(myControlMenu,
                                            TL("Load"), "", TL("Load simulation state for the current network from file."),
-                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, MID_SIMLOAD);
-
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN), this, MID_SIMLOAD);
     // build windows menu
     myWindowMenu = new FXMenuPane(this);
     GUIDesigns::buildFXMenuTitle(myMenuBar, TL("&Window"), nullptr, myWindowMenu);
-    new FXMenuCheck(myWindowMenu,
-                    TL("Show Status Line\t\tToggle the Status Bar on/off."),
-                    myStatusbar, FXWindow::ID_TOGGLESHOWN);
-    new FXMenuCheck(myWindowMenu,
-                    TL("Show Message Window\t\tToggle the Message Window on/off."),
-                    myMessageWindow, FXWindow::ID_TOGGLESHOWN);
-    new FXMenuCheck(myWindowMenu,
-                    TL("Show Simulation Time\t\tToggle the Simulation Time on/off."),
-                    myToolBar3, FXWindow::ID_TOGGLESHOWN);
-    new FXMenuCheck(myWindowMenu,
-                    TL("Show Simulation Delay\t\tToggle the Simulation Delay Entry on/off."),
-                    myToolBar4, FXWindow::ID_TOGGLESHOWN);
-    addToWindowsMenu(myWindowMenu);
-    new FXMenuSeparator(myWindowMenu);
+    GUIDesigns::buildFXMenuCommandShortcut(myWindowMenu, TL("Open new view"), "", "", GUIIconSubSys::getIcon(GUIIcon::MICROVIEW), this, MID_NEW_MICROVIEW);
+#ifdef HAVE_OSG
+    GUIDesigns::buildFXMenuCommandShortcut(myWindowMenu, TL("Open new 3D view"), "", "", GUIIconSubSys::getIcon(GUIIcon::OSGVIEW), this, MID_NEW_OSGVIEW);
+#endif
     GUIDesigns::buildFXMenuCommandShortcut(myWindowMenu,
                                            TL("Tile &Horizontally"), "", "",
                                            GUIIconSubSys::getIcon(GUIIcon::WINDOWS_TILE_HORI), myMDIClient, FXMDIClient::ID_MDI_TILEHORIZONTAL);
@@ -629,11 +586,28 @@ GUIApplicationWindow::fillMenuBar() {
     FXMenuSeparator* sep2 = new FXMenuSeparator(myWindowMenu);
     sep2->setTarget(myMDIClient);
     sep2->setSelector(FXMDIClient::ID_MDI_ANY);
-    GUIDesigns::buildFXMenuCommand(myWindowMenu, "", nullptr, myMDIClient, FXMDIClient::ID_MDI_1);
+    // for whatever reason, sonar complains in the next line that sep2 may leak, but fox does the cleanup
+    GUIDesigns::buildFXMenuCommand(myWindowMenu, "", nullptr, myMDIClient, FXMDIClient::ID_MDI_1);  // NOSONAR
     GUIDesigns::buildFXMenuCommand(myWindowMenu, "", nullptr, myMDIClient, FXMDIClient::ID_MDI_2);
     GUIDesigns::buildFXMenuCommand(myWindowMenu, "", nullptr, myMDIClient, FXMDIClient::ID_MDI_3);
     GUIDesigns::buildFXMenuCommand(myWindowMenu, "", nullptr, myMDIClient, FXMDIClient::ID_MDI_4);
     GUIDesigns::buildFXMenuCommand(myWindowMenu, TL("&Others..."), nullptr, myMDIClient, FXMDIClient::ID_MDI_OVER_5);
+
+    new FXMenuSeparator(myWindowMenu);
+    new FXMenuCheck(myWindowMenu,
+                    TL("Show Status Line\t\tToggle the Status Bar on/off."),
+                    myStatusbar, FXWindow::ID_TOGGLESHOWN);
+    new FXMenuCheck(myWindowMenu,
+                    TL("Show Message Window\t\tToggle the Message Window on/off."),
+                    myMessageWindow, FXWindow::ID_TOGGLESHOWN);
+    new FXMenuCheck(myWindowMenu,
+                    TL("Show Simulation Time\t\tToggle the Simulation Time on/off."),
+                    myToolBar3, FXWindow::ID_TOGGLESHOWN);
+    new FXMenuCheck(myWindowMenu,
+                    TL("Show Simulation Delay\t\tToggle the Simulation Delay Entry on/off."),
+                    myToolBar4, FXWindow::ID_TOGGLESHOWN);
+    addToWindowsMenu(myWindowMenu);
+
     new FXMenuSeparator(myWindowMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myWindowMenu,
                                            TL("Clear Message Window"), "", TL("Clear the message window."),
@@ -644,53 +618,52 @@ GUIApplicationWindow::fillMenuBar() {
                                  TL("&Help"),
                                  nullptr, myHelpMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myHelpMenu, TL("&Online Documentation"), "F1", TL("Open Online documentation."),
-        nullptr, this, MID_HOTKEY_F1_ONLINEDOCUMENTATION);
-    new FXMenuSeparator(myEditMenu);
+                                           nullptr, this, MID_HOTKEY_F1_ONLINEDOCUMENTATION);
+    new FXMenuSeparator(myHelpMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myHelpMenu, TL("&Changelog"), "", TL("Open Changelog."),
-        nullptr, this, MID_CHANGELOG);
+                                           nullptr, this, MID_CHANGELOG);
     GUIDesigns::buildFXMenuCommandShortcut(myHelpMenu, TL("&Hotkeys"), "", TL("Open Hotkeys."),
-        nullptr, this, MID_HOTKEYS);
+                                           nullptr, this, MID_HOTKEYS);
     GUIDesigns::buildFXMenuCommandShortcut(myHelpMenu, TL("&Tutorial"), "", TL("Open Tutorial."),
-        nullptr, this, MID_TUTORIAL);
-    new FXMenuSeparator(myEditMenu);
+                                           nullptr, this, MID_TUTORIAL);
+    new FXMenuSeparator(myHelpMenu);
     GUIDesigns::buildFXMenuCommandShortcut(myHelpMenu, TL("&About"), "F12", TL("About sumo-gui."),
-        GUIIconSubSys::getIcon(GUIIcon::SUMO_MINI), this, MID_HOTKEY_F12_ABOUT);
+                                           GUIIconSubSys::getIcon(GUIIcon::SUMO_MINI), this, MID_HOTKEY_F12_ABOUT);
     // build SUMO Accelerators (hotkeys)
-    GUIShortcutsSubSys::buildSUMOAccelerators(this);
+    GUIShortcutsSubSys::buildAccelerators(getAccelTable(), this, true);
 }
 
 
 void
 GUIApplicationWindow::buildToolBars() {
-    // build tool bars
+    // file and simulation tool bar
     {
-        // file and simulation tool bar
         myToolBarDrag1 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar1 = new FXToolBar(myTopDock, myToolBarDrag1, GUIDesignToolBarRaisedNextTop);
         new FXToolBarGrip(myToolBar1, myToolBar1, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
         // build file tools
         new MFXButtonTooltip(myToolBar1, myStaticTooltipMenu, TL("\tOpen simulation\tOpen a simulation (Configuration file)."),
-            GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG), this, MID_OPEN_CONFIG, GUIDesignButtonToolbar);
+                             GUIIconSubSys::getIcon(GUIIcon::OPEN_SUMOCONFIG), this, MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK, GUIDesignButtonToolbar);
         new MFXButtonTooltip(myToolBar1, myStaticTooltipMenu, TL("\tOpen network\tOpen a network."),
-            GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_OPEN_NETWORK, GUIDesignButtonToolbar);
-        new MFXButtonTooltip(myToolBar1, myStaticTooltipMenu, TL("\tReload\tReloads the simulation / the network."), 
-            GUIIconSubSys::getIcon(GUIIcon::RELOAD), this, MID_HOTKEY_CTRL_R_RELOAD, GUIDesignButtonToolbar);
+                             GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), this, MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK, GUIDesignButtonToolbar);
+        new MFXButtonTooltip(myToolBar1, myStaticTooltipMenu, TL("\tReload\tReloads the simulation / the network."),
+                             GUIIconSubSys::getIcon(GUIIcon::RELOAD), this, MID_HOTKEY_CTRL_R_RELOAD, GUIDesignButtonToolbar);
     }
+    // simulation toolbar
     {
-        // simulation toolbar
         myToolBarDrag2 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar2 = new FXToolBar(myTopDock, myToolBarDrag2, GUIDesignToolBarRaisedSameTop);
         new FXToolBarGrip(myToolBar2, myToolBar2, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
         // build simulation tools
-        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tRun\tStart/Resume the loaded simulation."), 
-            GUIIconSubSys::getIcon(GUIIcon::START), this, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS, GUIDesignButtonToolbar);
-        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tStop\tHalt the running simulation."), 
-            GUIIconSubSys::getIcon(GUIIcon::STOP), this, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK, GUIDesignButtonToolbar);
-        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tStep\tPerform a single simulation step."), 
-            GUIIconSubSys::getIcon(GUIIcon::STEP), this, MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS, GUIDesignButtonToolbar);
+        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tRun\tStart/Resume the loaded simulation."),
+                             GUIIconSubSys::getIcon(GUIIcon::START), this, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS, GUIDesignButtonToolbar);
+        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tStop\tHalt the running simulation."),
+                             GUIIconSubSys::getIcon(GUIIcon::STOP), this, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK, GUIDesignButtonToolbar);
+        new MFXButtonTooltip(myToolBar2, myStaticTooltipMenu, TL("\tStep\tPerform a single simulation step."),
+                             GUIIconSubSys::getIcon(GUIIcon::STEP), this, MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS, GUIDesignButtonToolbar);
     }
+    // Simulation Step Display
     {
-        // Simulation Step Display
         myToolBarDrag3 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar3 = new FXToolBar(myTopDock, myToolBarDrag3, GUIDesignToolBarRaisedSameTop);
         new FXToolBarGrip(myToolBar3, myToolBar3, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
@@ -703,8 +676,8 @@ GUIApplicationWindow::buildToolBars() {
         myLCDLabel->setGroove(2);
         myLCDLabel->setText("----------------");
     }
+    // Simulation Delay
     {
-        // Simulation Delay
         myToolBarDrag4 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar4 = new FXToolBar(myTopDock, myToolBarDrag4, GUIDesignToolBarRaisedSameTop);
         new FXToolBarGrip(myToolBar4, myToolBar4, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
@@ -726,8 +699,8 @@ GUIApplicationWindow::buildToolBars() {
         mySimDelaySpinner->setRange(0, 10000);
         mySimDelaySpinner->setValue(mySimDelay);
     }
+    // Scale traffic (flows and incrementally loaded vehicles)
     {
-        // Scale traffic (flows and incrementally loaded vehicles)
         myToolBarDrag8 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar8 = new FXToolBar(myTopDock, myToolBarDrag8, GUIDesignToolBarRaisedSameTop);
         new FXToolBarGrip(myToolBar8, myToolBar8, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
@@ -737,8 +710,8 @@ GUIApplicationWindow::buildToolBars() {
         myDemandScaleSpinner->setRange(0, 1000);
         myDemandScaleSpinner->setValue(1);
     }
+    // Views
     {
-        // Views
         myToolBarDrag5 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar5 = new FXToolBar(myTopDock, myToolBarDrag5, GUIDesignToolBarRaisedSameTop);
         new FXToolBarGrip(myToolBar5, myToolBar5, FXToolBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
@@ -750,8 +723,8 @@ GUIApplicationWindow::buildToolBars() {
                              GUIIconSubSys::getIcon(GUIIcon::OSGVIEW), this, MID_NEW_OSGVIEW, GUIDesignButtonToolbar);
 #endif
     }
+    /// game specific stuff
     {
-        /// game specific stuff
         // total waitingTime
         myToolBarDrag6 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar6 = new FXToolBar(myTopDock, myToolBarDrag6, GUIDesignToolBarRaisedSameTop);
@@ -763,7 +736,6 @@ GUIApplicationWindow::buildToolBars() {
         myWaitingTimeLabel->setThickness(2);
         myWaitingTimeLabel->setGroove(2);
         myWaitingTimeLabel->setText("-------------");
-
         // idealistic time loss
         myToolBarDrag7 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar7 = new FXToolBar(myTopDock, myToolBarDrag7, GUIDesignToolBarRaisedSameTop);
@@ -775,7 +747,6 @@ GUIApplicationWindow::buildToolBars() {
         myTimeLossLabel->setThickness(2);
         myTimeLossLabel->setGroove(2);
         myTimeLossLabel->setText("-------------");
-
         // total driving distance
         myToolBarDrag9 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar9 = new FXToolBar(myTopDock, myToolBarDrag9, GUIDesignToolBarRaisedSameTop);
@@ -787,7 +758,6 @@ GUIApplicationWindow::buildToolBars() {
         myTotalDistanceLabel->setThickness(2);
         myTotalDistanceLabel->setGroove(2);
         myTotalDistanceLabel->setText("-------------");
-
         // emergency vehicle counts
         myToolBarDrag10 = new FXToolBarShell(this, GUIDesignToolBar);
         myToolBar10 = new FXToolBar(myTopDock, myToolBarDrag10, GUIDesignToolBarRaisedSameTop);
@@ -803,6 +773,52 @@ GUIApplicationWindow::buildToolBars() {
 }
 
 
+void
+GUIApplicationWindow::buildRecentNetworks(FXMenuPane* fileMenu, FXMenuPane* fileMenuRecentNetworks) {
+    // for whatever reason, sonar complains in the next line that sep1 may leak, but fox does the cleanup
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_1);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_2);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_3);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_4);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_5);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_6);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_7);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_8);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_9);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentNetworks, "", &myRecentNetworks, FXRecentFiles::ID_FILE_10);
+    new FXMenuSeparator(fileMenuRecentNetworks);  // NOSONAR, Fox does the cleanup
+    GUIDesigns::buildFXMenuCommand(fileMenuRecentNetworks, "Cl&ear Recent Networks", nullptr, &myRecentNetworks, FXRecentFiles::ID_CLEAR);
+    GUIDesigns::buildFXMenuCommand(fileMenuRecentNetworks, "No Recent Networks", nullptr, &myRecentNetworks, MFXRecentNetworks::ID_NOFILES);
+    // set target
+    myRecentNetworks.setTarget(this);
+    myRecentNetworks.setSelector(MID_RECENTFILE);
+    new FXMenuCascade(fileMenu, "Recent Networks", nullptr, fileMenuRecentNetworks);
+}
+
+
+void
+GUIApplicationWindow::buildRecentConfigs(FXMenuPane* fileMenu, FXMenuPane* fileMenuRecentConfigs) {
+    // for whatever reason, sonar complains in the next line that sep1 may leak, but fox does the cleanup
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_1);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_2);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_3);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_4);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_5);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_6);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_7);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_8);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_9);
+    GUIDesigns::buildFXMenuCommandRecentFile(fileMenuRecentConfigs, "", &myRecentConfigs, FXRecentFiles::ID_FILE_10);
+    new FXMenuSeparator(fileMenuRecentConfigs);  // NOSONAR, Fox does the cleanup
+    GUIDesigns::buildFXMenuCommand(fileMenuRecentConfigs, "Cl&ear Recent Configs", nullptr, &myRecentConfigs, FXRecentFiles::ID_CLEAR);
+    GUIDesigns::buildFXMenuCommand(fileMenuRecentConfigs, "No Recent Configs", nullptr, &myRecentConfigs, MFXRecentNetworks::ID_NOFILES);
+    // set target
+    myRecentConfigs.setTarget(this);
+    myRecentConfigs.setSelector(MID_RECENTFILE);
+    new FXMenuCascade(fileMenu, "Recent Configs", nullptr, fileMenuRecentConfigs);
+}
+
+
 long
 GUIApplicationWindow::onCmdQuit(FXObject*, FXSelector, void*) {
     storeWindowSizeAndPos();
@@ -810,6 +826,7 @@ GUIApplicationWindow::onCmdQuit(FXObject*, FXSelector, void*) {
     getApp()->reg().writeIntEntry("SETTINGS", "maximized", isMaximized() ? 1 : 0);
     getApp()->reg().writeIntEntry("gui", "timeasHMS", myShowTimeAsHMS ? 1 : 0);
     getApp()->reg().writeIntEntry("gui", "alternateSimDelay", (int)myAlternateSimDelay);
+    closeAllWindows();
     getApp()->exit(0);
     return 1;
 }
@@ -911,7 +928,7 @@ GUIApplicationWindow::onCmdTutorial(FXObject*, FXSelector, void*) {
 
 
 long
-GUIApplicationWindow::onCmdNetedit(FXObject*, FXSelector, void*) {
+GUIApplicationWindow::onCmdNeteditNetwork(FXObject*, FXSelector, void*) {
     if (myGLWindows.empty()) {
         return 1;
     }
@@ -946,6 +963,52 @@ GUIApplicationWindow::onCmdNetedit(FXObject*, FXSelector, void*) {
 
 
 long
+GUIApplicationWindow::onCmdNeteditSUMOConfig(FXObject*, FXSelector, void*) {
+    if (myGLWindows.empty()) {
+        return 1;
+    }
+    FXRegistry reg("SUMO netedit", "netedit");
+    reg.read();
+    const GUISUMOAbstractView* const v = myGLWindows[0]->getView();
+    reg.writeRealEntry("viewport", "x", v->getChanger().getXPos());
+    reg.writeRealEntry("viewport", "y", v->getChanger().getYPos());
+    reg.writeRealEntry("viewport", "z", v->getChanger().getZPos());
+    reg.write();
+    std::string netedit = "netedit";
+    const char* sumoPath = getenv("SUMO_HOME");
+    if (sumoPath != nullptr) {
+        std::string newPath = std::string(sumoPath) + "/bin/netedit";
+        if (FileHelpers::isReadable(newPath) || FileHelpers::isReadable(newPath + ".exe")) {
+            netedit = "\"" + newPath + "\"";
+        }
+    }
+    std::string cmd = netedit + " --registry-viewport --sumocfg " + "\"" + OptionsCont::getOptions().getString("configuration-file") + "\"";
+    // start in background
+#ifndef WIN32
+    cmd = cmd + " &";
+#else
+    // see "help start" for the parameters
+    cmd = "start /B \"\" " + cmd;
+#endif
+    WRITE_MESSAGE("Running " + cmd + ".");
+    // yay! fun with dangerous commands... Never use this over the internet
+    SysUtils::runHiddenCommand(cmd);
+    return 1;
+}
+
+
+
+long
+GUIApplicationWindow::onUpdNeteditSUMOConfig(FXObject* sender, FXSelector, void* ptr) {
+    if (!myRunThread->simulationAvailable() || myAmLoading) {
+        return sender->handle(this, FXSEL(SEL_COMMAND, ID_DISABLE), ptr);
+    } else {
+        return sender->handle(this, OptionsCont::getOptions().isSet("configuration-file") ? FXSEL(SEL_COMMAND, ID_ENABLE) : FXSEL(SEL_COMMAND, ID_DISABLE), ptr);
+    }
+}
+
+
+long
 GUIApplicationWindow::onCmdNewWindow(FXObject*, FXSelector, void*) {
     FXRegistry reg("SUMO sumo-gui", "sumo-gui");
     std::string sumo_gui = "sumo-gui";
@@ -975,7 +1038,7 @@ long
 GUIApplicationWindow::onCmdOpenConfiguration(FXObject*, FXSelector, void*) {
     // get the new file name
     FXFileDialog opendialog(this, TL("Open Simulation Configuration"));
-    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG));
+    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN_SUMOCONFIG));
     opendialog.setSelectMode(SELECTFILE_EXISTING);
     opendialog.setPatternList(myConfigPattern.c_str());
     if (gCurrentFolder.length() != 0) {
@@ -985,7 +1048,7 @@ GUIApplicationWindow::onCmdOpenConfiguration(FXObject*, FXSelector, void*) {
         gCurrentFolder = opendialog.getDirectory();
         std::string file = opendialog.getFilename().text();
         loadConfigOrNet(file);
-        myRecentNetworksAndConfigs.appendFile(file.c_str());
+        myRecentConfigs.appendFile(file.c_str());
     }
     return 1;
 }
@@ -1005,7 +1068,7 @@ GUIApplicationWindow::onCmdOpenNetwork(FXObject*, FXSelector, void*) {
         gCurrentFolder = opendialog.getDirectory();
         std::string file = opendialog.getFilename().text();
         loadConfigOrNet(file);
-        myRecentNetworksAndConfigs.appendFile(file.c_str());
+        myRecentNetworks.appendFile(file.c_str());
     }
     return 1;
 }
@@ -1041,6 +1104,7 @@ GUIApplicationWindow::onCmdOpenShapes(FXObject*, FXSelector, void*) {
     return 1;
 }
 
+
 long
 GUIApplicationWindow::onCmdOpenEdgeData(FXObject*, FXSelector, void*) {
     // get the shape file name
@@ -1068,9 +1132,10 @@ GUIApplicationWindow::onCmdOpenEdgeData(FXObject*, FXSelector, void*) {
     return 1;
 }
 
+
 long
 GUIApplicationWindow::onCmdReload(FXObject*, FXSelector, void*) {
-    if (!myAmLoading) {
+    if (!myAmLoading && TraCIServer::getInstance() == nullptr) {
         storeWindowSizeAndPos();
         getApp()->beginWaitCursor();
         myAmLoading = true;
@@ -1191,7 +1256,7 @@ GUIApplicationWindow::onCmdStart(FXObject*, FXSelector, void*) {
         myWasStarted = true;
     }
     myRunThread->resume();
-    getApp()->forceRefresh(); // only callking myToolBar2->forceRefresh somehow loses keyboard focus
+    getApp()->forceRefresh(); // only calling myToolBar2->forceRefresh somehow looses keyboard focus
     return 1;
 }
 
@@ -1199,7 +1264,7 @@ GUIApplicationWindow::onCmdStart(FXObject*, FXSelector, void*) {
 long
 GUIApplicationWindow::onCmdStop(FXObject*, FXSelector, void*) {
     myRunThread->stop();
-    getApp()->forceRefresh(); // only callking myToolBar2->forceRefresh somehow loses keyboard focus
+    getApp()->forceRefresh(); // only calling myToolBar2->forceRefresh somehow looses keyboard focus
     return 1;
 }
 
@@ -1242,11 +1307,12 @@ GUIApplicationWindow::onCmdSaveState(FXObject*, FXSelector, void*) {
     return 1;
 }
 
+
 long
 GUIApplicationWindow::onCmdLoadState(FXObject*, FXSelector, void*) {
     // get the new file name
     FXFileDialog opendialog(this, TL("Load Simulation State"));
-    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN_CONFIG));
+    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN));
     opendialog.setSelectMode(SELECTFILE_ANY);
     opendialog.setPatternList("GZipped State (*.xml.gz)\nXML State (*.xml)");
     if (gCurrentFolder.length() != 0) {
@@ -1348,7 +1414,8 @@ GUIApplicationWindow::onUpdStart(FXObject* sender, FXSelector, void* ptr) {
                    ? FXSEL(SEL_COMMAND, ID_DISABLE) : FXSEL(SEL_COMMAND, ID_ENABLE),
                    ptr);
     if (myRunThread->simulationIsStartable() && !myAmLoading) {
-        GUIShortcutsSubSys::alterSUMOAccelerator(this, KEY_SPACE, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS);
+        // bind start simulation with space key
+        GUIShortcutsSubSys::changeAccelerator(getAccelTable(), this, KEY_SPACE, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS);
     }
     return 1;
 }
@@ -1361,7 +1428,8 @@ GUIApplicationWindow::onUpdStop(FXObject* sender, FXSelector, void* ptr) {
                    ? FXSEL(SEL_COMMAND, ID_DISABLE) : FXSEL(SEL_COMMAND, ID_ENABLE),
                    ptr);
     if (myRunThread->simulationIsStopable() && !myAmLoading) {
-        GUIShortcutsSubSys::alterSUMOAccelerator(this, KEY_SPACE, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK);
+        // bind stop simulation with space key
+        GUIShortcutsSubSys::changeAccelerator(getAccelTable(), this, KEY_SPACE, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK);
     }
     return 1;
 }
@@ -1657,7 +1725,12 @@ GUIApplicationWindow::eventOccurred() {
                 GUIEvent_AddView* ave = dynamic_cast<GUIEvent_AddView*>(e);
                 auto v = openNewView(ave->in3D() ? GUISUMOViewParent::VIEW_3D_OSG : GUISUMOViewParent::VIEW_2D_OPENGL, ave->getCaption());
                 if (ave->getSchemeName() != "") {
-                    v->setColorScheme(ave->getCaption());
+                    FXComboBox* sCombo = v->getColoringSchemesCombo();
+                    int index = sCombo->findItem(ave->getSchemeName().c_str());
+                    if (index >= 0) {
+                        sCombo->setCurrentItem(index);
+                    }
+                    v->setColorScheme(ave->getSchemeName());
                 }
                 break;
             }
@@ -1717,7 +1790,6 @@ GUIApplicationWindow::handleEvent_SimulationLoaded(GUIEvent* e) {
             // always reload if settings were modified or to restore multiple views
             if (ec->mySettingsFiles.size() > 0 && (!myIsReload || myGuiSettingsFileMTime < mTime || ec->mySettingsFiles.size() > 1)) {
                 gSchemeStorage.clearDecals();
-
                 // open a view for each file and apply settings
                 for (std::string fname : ec->mySettingsFiles) {
                     GUISettingsHandler settings(fname);
@@ -1761,7 +1833,6 @@ GUIApplicationWindow::handleEvent_SimulationLoaded(GUIEvent* e) {
                 openNewView(defaultType);
             }
             myGuiSettingsFileMTime = mTime;
-
             if (!OptionsCont::getOptions().isDefault("delay")) {
                 setDelay(OptionsCont::getOptions().getFloat("delay"));
                 mySimDelaySlider->setValue((int)mySimDelay);
@@ -1903,6 +1974,10 @@ GUIApplicationWindow::handleEvent_SimulationEnded(GUIEvent* e) {
         FXuint answer = FXMessageBox::question(this, MBOX_YES_NO, TL("Simulation ended"), "%s", text.c_str());
         if (answer == 1) { //1:yes, 2:no, 4:esc
             closeAllWindows();
+        } else {
+            GUINet::getGUIInstance()->flushOutputsAtEnd();
+            updateChildren();
+            update();
         }
         myHaveNotifiedAboutSimEnd = true;
     }
@@ -1942,7 +2017,6 @@ GUIApplicationWindow::checkGamingEvents() {
         }
     }
 #endif
-
     // update performance indicators
     for (it = vc.loadedVehBegin(); it != end; ++it) {
         const MSVehicle* veh = dynamic_cast<MSVehicle*>(it->second);
@@ -1964,6 +2038,7 @@ GUIApplicationWindow::checkGamingEvents() {
     myEmergencyVehicleLabel->setText(time2string(myEmergencyVehicleCount).c_str());
 }
 
+
 void
 GUIApplicationWindow::checkGamingEventsDRT() {
     // update performance indicators
@@ -1982,6 +2057,7 @@ GUIApplicationWindow::checkGamingEventsDRT() {
     }
     myTotalDistanceLabel->setText(toString(myTotalDistance / 100).c_str());
 }
+
 
 void
 GUIApplicationWindow::loadConfigOrNet(const std::string& file) {
@@ -2125,9 +2201,16 @@ GUIApplicationWindow::setStatusBarText(const std::string& text) {
 
 
 void
-GUIApplicationWindow::addRecentFile(const FX::FXString& f) {
-    myRecentNetworksAndConfigs.appendFile(f);
+GUIApplicationWindow::addRecentNetwork(const FX::FXString& f) {
+    myRecentNetworks.appendFile(f);
 }
+
+
+void
+GUIApplicationWindow::addRecentConfig(const FX::FXString& f) {
+    myRecentConfigs.appendFile(f);
+}
+
 
 void
 GUIApplicationWindow::updateTimeLCDTooltip() {
@@ -2137,6 +2220,7 @@ GUIApplicationWindow::updateTimeLCDTooltip() {
         myLCDLabel->setToolTipText("seconds");
     }
 }
+
 
 void
 GUIApplicationWindow::updateTimeLCD(SUMOTime time) {
@@ -2171,6 +2255,7 @@ GUIApplicationWindow::updateTimeLCD(SUMOTime time) {
     myLCDLabel->setText(str.str().c_str());
 }
 
+
 void
 GUIApplicationWindow::addHotkey(int key, Command* press, Command* release) {
     if (press != nullptr) {
@@ -2180,6 +2265,7 @@ GUIApplicationWindow::addHotkey(int key, Command* press, Command* release) {
         myHotkeyRelease[key] = release;
     }
 }
+
 
 long
 GUIApplicationWindow::onKeyPress(FXObject* o, FXSelector sel, void* ptr) {
@@ -2229,6 +2315,18 @@ GUIApplicationWindow::onKeyRelease(FXObject* o, FXSelector sel, void* ptr) {
 }
 
 
+double
+GUIApplicationWindow::getDelay() const {
+    return mySimDelay;
+}
+
+
+void
+GUIApplicationWindow::setDelay(double delay) {
+    mySimDelay = delay;
+}
+
+
 void
 GUIApplicationWindow::sendBlockingEvent(GUIEvent* event) {
     myEventMutex.lock();
@@ -2237,6 +2335,7 @@ GUIApplicationWindow::sendBlockingEvent(GUIEvent* event) {
     //myEventCondition.wait(myEventMutex);
     myEventMutex.unlock();
 }
+
 
 void
 GUIApplicationWindow::setBreakpoints(const std::vector<SUMOTime>& breakpoints) {
@@ -2248,6 +2347,7 @@ GUIApplicationWindow::setBreakpoints(const std::vector<SUMOTime>& breakpoints) {
     }
 }
 
+
 const std::vector<SUMOTime>
 GUIApplicationWindow::retrieveBreakpoints() const {
     myRunThread->getBreakpointLock().lock();
@@ -2256,5 +2356,10 @@ GUIApplicationWindow::retrieveBreakpoints() const {
     return result;
 }
 
+
+void
+GUIApplicationWindow::eraseBreakpointDialog() {
+    myBreakpointDialog = nullptr;
+}
 
 /****************************************************************************/

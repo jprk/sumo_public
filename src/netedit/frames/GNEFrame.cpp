@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -41,7 +41,7 @@ FXFont* GNEFrame::myFrameHeaderFont = nullptr;
 // method definitions
 // ===========================================================================
 
-GNEFrame::GNEFrame(GNEViewParent *viewParent, GNEViewNet* viewNet, const std::string& frameLabel) :
+GNEFrame::GNEFrame(GNEViewParent* viewParent, GNEViewNet* viewNet, const std::string& frameLabel) :
     FXVerticalFrame(viewParent->getFramesArea(), GUIDesignAuxiliarFrame),
     myViewNet(viewNet) {
 
@@ -170,7 +170,7 @@ GNEFrame::getFrameHeaderFont() const {
 }
 
 
-int 
+int
 GNEFrame::getScrollBarWidth() const {
     if (myScrollWindowsContents->verticalScrollBar()->shown()) {
         return myScrollWindowsContents->verticalScrollBar()->getWidth();
@@ -282,8 +282,8 @@ GNEFrame::shapeDrawed() {
 
 
 void
-GNEFrame::attributeUpdated() {
-    // this function has to be reimplemente in all child frames that uses a GNETagSelector modul
+GNEFrame::attributeUpdated(SumoXMLAttr /*attribute*/) {
+    // this function has to be reimplemente in all child frames that uses a AttributeEditor modul
 }
 
 
@@ -322,8 +322,8 @@ GNEFrame::buildRainbow(FXComposite* parent) {
         FXLabel* colorLabel = new FXLabel(horizontalFrameColors, "", nullptr, GUIDesignLabelLeft);
         colorLabel->setBackColor(MFXUtils::getFXColor(color));
     }
-    // return label
     return label;
-}
+    // for whatever reason, sonar complains in the next line that horizontalFrameColors may leak, but fox does the cleanup
+}  // NOSONAR
 
 /****************************************************************************/

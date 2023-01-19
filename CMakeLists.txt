@@ -10,10 +10,18 @@ option(PPROF "Link the pprof profiler library (applies to gcc/clang builds only)
 option(COVERAGE "Enable output of coverage data (applies to gcc/clang builds only)" false)
 option(SUMO_UTILS "Enable generation of a shared library for the utility functions for option handling, XML parsing etc." false)
 option(FMI "Enable generation of an FMI library for SUMO" true)
+option(NETEDIT "Enable build of netedit" true)
 set(BINARY_SUFFIX "" CACHE STRING "Append the suffix to every generated binary")
 set(COMPILE_DEFINITIONS "" CACHE STRING "Macros or defines to add when compiling")
 set(CCACHE_SUPPORT ON CACHE BOOL "Enable ccache support if installed")
 set(TCMALLOC ON CACHE BOOL "Use tcmalloc if installed")
+
+# disable warnings
+option(DISABLEWARNING_C5264 "'const' variable is not used" true)
+option(DISABLEWARNING_C4355 "'this' : used in base member initializer list" true)
+option(DISABLEWARNING_C4266 "'function' : no override available for virtual member function from base 'type'" true)
+option(DISABLEWARNING_C4127 "conditional expression is constant" true)
+option(DISABLEWARNING_C26495 "'variable' is uninitialized. Always initialize a member variable" true)
 
 # Set a default build type if none was specified
 # you may use -DCMAKE_BUILD_TYPE:STRING=Debug from the command line
@@ -107,6 +115,22 @@ if (GNU_COMPILER OR CLANG_COMPILER)
         set(ENABLED_FEATURES "${ENABLED_FEATURES} Coverage")
     endif ()
 elseif (MSVC)
+	# check if disable warnings
+	if (DISABLEWARNING_C5264)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5264")
+	endif ()
+	if (DISABLEWARNING_C4355)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4355")
+	endif ()
+	if (DISABLEWARNING_C4266)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4266")
+	endif ()
+	if (DISABLEWARNING_C4127)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4127")
+	endif ()
+	if (DISABLEWARNING_C26495)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd26495")
+	endif ()
     # enabling /WX is not possible due to warnings in external headers
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         # this is a workaround to disable lots of warnings for replacing /W3 with /W4 in VS 2019
@@ -220,22 +244,16 @@ if (SUMO_LIBRARIES AND WIN32)
     # set option for install debug and release runtime dlls
     option(INSTALL_DLL_RUNTIMES "Copy debug and release runtimes for MSVC" true)
     # Special option for MinGW32
-    if ((GNU_COMPILER AND WIN32) OR "${CMAKE_MODULE_LINKER_FLAGS}" STREQUAL "/machine:x64")
-        message(STATUS "Using 64 bit libraries from SUMO_LIBRARIES placed in " ${SUMO_LIBRARIES})
-    else()
-        message(STATUS "Using 32 bit libraries from SUMO_LIBRARIES placed in " ${SUMO_LIBRARIES})
-        set(LIB_VERSION "/32bits")
-        set(CHECK_OPTIONAL_LIBS false)
-    endif ()
-    file(GLOB XERCES_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/xerces-c-3.?.?")
-    file(GLOB ZLIB_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/zlib-?.?.??")
-    file(GLOB PROJ_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/proj-?.?.?")
-    file(GLOB FOX_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/fox-?.?.??")
-    file(GLOB FREETYPE_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/freetype-2.??.?")
+	message(STATUS "Using 64 bit libraries from SUMO_LIBRARIES placed in " ${SUMO_LIBRARIES})
+    file(GLOB XERCES_PATH "${SUMO_LIBRARIES}/xerces-c-3.?.?")
+    file(GLOB ZLIB_PATH "${SUMO_LIBRARIES}/3rdPartyLibs/zlib-?.?.??")
+    file(GLOB PROJ_PATH "${SUMO_LIBRARIES}/proj-?.?.?")
+    file(GLOB FOX_PATH "${SUMO_LIBRARIES}/fox-?.?.??")
+    file(GLOB FREETYPE_PATH "${SUMO_LIBRARIES}/freetype-2.??.?")
     file(GLOB EIGEN3_PATH "${SUMO_LIBRARIES}/eigen-3.?.?")
     file(GLOB GETTEXT_PATH "${SUMO_LIBRARIES}/gettext-?.??")
     # set all paths in prefix
-    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${EIGEN3_PATH};${XERCES_PATH};${ZLIB_PATH};${PROJ_PATH};${FOX_PATH};${FREETYPE_PATH};${GETTEXT_PATH}")
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${EIGEN3_PATH};${XERCES_PATH};${ZLIB_PATH};${PROJ_PATH};${FOX_PATH};${FREETYPE_PATH};${GETTEXT_PATH};${GETTEXT_PATH}/tools/gettext")
     # save in variable SUMO_LIBRARIES_DLL all paths to dll files
     file(GLOB SUMO_LIBRARIES_DLL "${XERCES_PATH}/bin/*.dll"
                                  "${PROJ_PATH}/bin/*.dll"
@@ -243,19 +261,19 @@ if (SUMO_LIBRARIES AND WIN32)
                                  "${ZLIB_PATH}/bin/*.dll"
 #                                 "${FREETYPE_PATH}/bin/*.dll"
                                  "${GETTEXT_PATH}/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/bzip2-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/curl-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/libpng-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/libssh2-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/openssl-*/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/sqlite-*/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/tiff-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/libxml2-*/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/libiconv-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/bzip2-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/curl-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/libpng-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/libssh2-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/openssl-*/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/sqlite-*/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/tiff-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/libxml2-*/bin/*.dll"
+                                 "${SUMO_LIBRARIES}/3rdPartyLibs/libiconv-*/bin/*.dll"
                                  )
     # check if MSVC dll runtimes have to be copied
     if (INSTALL_DLL_RUNTIMES)
-        file(GLOB MSVC_DLLS "${SUMO_LIBRARIES}${LIB_VERSION}/runtimes/*.dll")
+        file(GLOB MSVC_DLLS "${SUMO_LIBRARIES}/runtimes/*.dll")
         list(APPEND SUMO_LIBRARIES_DLL ${MSVC_DLLS})
     endif(INSTALL_DLL_RUNTIMES)
     # declare flag for use google test
@@ -271,7 +289,7 @@ if (SUMO_LIBRARIES AND WIN32)
         endif ()
     endif()
     if (USE_GOOGLETEST)
-        file(GLOB GTEST_ROOT "${SUMO_LIBRARIES}${LIB_VERSION}/googletest-?.??.?")
+        file(GLOB GTEST_ROOT "${SUMO_LIBRARIES}/googletest-?.??.?")
         message(STATUS "Found Google test: " ${GTEST_ROOT})
         include_directories("${GTEST_ROOT}/include")
         # set both google test library
@@ -351,10 +369,10 @@ if (TCMALLOC)
 endif ()
 
 if (CHECK_OPTIONAL_LIBS)
-    file(GLOB GDAL_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/gdal-?.?.?")
+    file(GLOB GDAL_PATH "${SUMO_LIBRARIES}/gdal-?.?.?")
     file(GLOB FFMPEG_PATH "${SUMO_LIBRARIES}/FFMPEG-?.?.?")
     file(GLOB OSG_PATH "${SUMO_LIBRARIES}/OSG-?.?.?")
-    file(GLOB GL2PS_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/gl2ps-?.?.?")
+    file(GLOB GL2PS_PATH "${SUMO_LIBRARIES}/gl2ps-?.?.?")
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${GDAL_PATH};${FFMPEG_PATH};${OSG_PATH};${GL2PS_PATH}")
     file(GLOB SUMO_OPTIONAL_LIBRARIES_DLL "${GDAL_PATH}/bin/*.dll" "${FFMPEG_PATH}/bin/*.dll" "${OSG_PATH}/bin/*.dll" "${GL2PS_PATH}/bin/*.dll")
 
@@ -534,6 +552,18 @@ add_custom_target(install_dll DEPENDS ${TARGET_ALL_DLLS} ${OSG_TARGET} ${PROJ_DA
 add_custom_target(install_test_dll DEPENDS ${TARGET_TEST_DLLS})
 set_property(TARGET install_dll PROPERTY FOLDER "CMake")
 set_property(TARGET install_test_dll PROPERTY FOLDER "CMake")
+
+# i18n target
+find_package(Gettext)
+if (Gettext_FOUND)
+    set(I18N_DATA ${CMAKE_SOURCE_DIR}/data/locale/tr/LC_MESSAGES/sumo.mo)
+    add_custom_command(OUTPUT ${I18N_DATA}
+                       COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/build/i18n.py -m
+                       DEPENDS ${CMAKE_SOURCE_DIR}/data/po/tr_gui.po)
+else ()
+    message(WARNING "Gettext tools not found, translation files will not be generated.")
+endif()
+add_custom_target(install_mo DEPENDS ${I18N_DATA})
 
 # java targets
 find_program(MVN_EXECUTABLE mvn)

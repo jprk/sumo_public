@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,6 +26,7 @@
 #include <utils/gui/settings/GUICompleteSchemeStorage.h>
 #include "GUIOSGPerspectiveChanger.h"
 
+
 // ===========================================================================
 // method definitions
 // ===========================================================================
@@ -42,13 +43,22 @@ GUIOSGPerspectiveChanger::GUIOSGPerspectiveChanger(
 GUIOSGPerspectiveChanger::~GUIOSGPerspectiveChanger() {}
 
 
-bool GUIOSGPerspectiveChanger::onLeftBtnRelease(void* /* data */) {
+bool
+GUIOSGPerspectiveChanger::onLeftBtnRelease(void* /* data */) {
     updateViewport();
     return false;
 }
 
 
-bool GUIOSGPerspectiveChanger::onRightBtnRelease(void* /* data */) {
+bool
+GUIOSGPerspectiveChanger::onRightBtnRelease(void* /* data */) {
+    updateViewport();
+    return false;
+}
+
+
+bool
+GUIOSGPerspectiveChanger::onMiddleBtnRelease(void* /* data */) {
     updateViewport();
     return false;
 }
@@ -57,6 +67,7 @@ bool GUIOSGPerspectiveChanger::onRightBtnRelease(void* /* data */) {
 void GUIOSGPerspectiveChanger::onMouseMove(void* /* data */) {
     //updateViewport();
 }
+
 
 double
 GUIOSGPerspectiveChanger::getRotation() const {
@@ -94,7 +105,7 @@ GUIOSGPerspectiveChanger::getZoom() const {
 }
 
 
-double 
+double
 GUIOSGPerspectiveChanger::zPos2Zoom(double /* zPos */) const {
     return 100.;
 }
@@ -112,9 +123,9 @@ GUIOSGPerspectiveChanger::setRotation(double rotation) {
 }
 
 
-void 
+void
 GUIOSGPerspectiveChanger::centerTo(const Position& pos, double radius, bool /* applyZoom */) {
-    // maintain view direction if possible and scale so that the position and the 
+    // maintain view direction if possible and scale so that the position and the
     // radius region around it are visible
     osg::Vec3d lookFrom, lookAt, up, dir, orthoDir;
     myCameraManipulator->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
@@ -123,8 +134,7 @@ GUIOSGPerspectiveChanger::centerTo(const Position& pos, double radius, bool /* a
     if (dir * osg::Z_AXIS != 0) {
         orthoDir = -osg::X_AXIS;
         up = osg::Y_AXIS;
-    }
-    else {
+    } else {
         orthoDir[0] = -dir[1];
         orthoDir[1] = dir[0];
         up = osg::Z_AXIS;
@@ -135,7 +145,7 @@ GUIOSGPerspectiveChanger::centerTo(const Position& pos, double radius, bool /* a
     // construct new camera location which respects the fovy, resets the up vector
     double fovy, aspectRatio, zNear, zFar;
     dynamic_cast<GUIOSGView&>(myCallback).myViewer->getCamera()->getProjectionMatrixAsPerspective(fovy, aspectRatio, zNear, zFar);
-    double halfFovy = DEG2RAD(.5*fovy);
+    double halfFovy = DEG2RAD(.5 * fovy);
     osg::Vec3d outerFov = dir * cos(halfFovy) + orthoDir * sin(halfFovy);
     osg::Vec3d radiusVec = leftBorder - center;
     int sign = ((outerFov ^ radiusVec) * (outerFov ^ dir) > 0) ? 1 : -1;
@@ -143,7 +153,7 @@ GUIOSGPerspectiveChanger::centerTo(const Position& pos, double radius, bool /* a
     myCameraManipulator->setHomePosition(camUpdate, center, up);
     myRotation = 0.;
     dynamic_cast<GUIOSGView&>(myCallback).myViewer->home();
-    updateViewport(lookFrom);
+    updateViewport(camUpdate);
 }
 
 
@@ -155,7 +165,7 @@ GUIOSGPerspectiveChanger::setViewport(double /* zoom */, double xPos, double yPo
 
 void
 GUIOSGPerspectiveChanger::setViewportFrom(double xPos, double yPos, double /* zPos */) {
-    // Keep camera orientation if possible and point it to point to (x,y,0) if possible. 
+    // Keep camera orientation if possible and point it to point to (x,y,0) if possible.
     // get current camera orientation
     osg::Vec3d lookFrom, lookAt, up, dir;
     myCameraManipulator->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
@@ -164,8 +174,7 @@ GUIOSGPerspectiveChanger::setViewportFrom(double xPos, double yPos, double /* zP
         lookFrom[0] = xPos;
         lookFrom[1] = yPos;
         lookAt = lookFrom - osg::Vec3d(0., 0., 1.);
-    }
-    else { // shift current view to reach (x,y,0)
+    } else { // shift current view to reach (x,y,0)
         osg::Vec3d shift;
         // compute the point on the ground which is in line with the camera direction (solve for z=0)
         double factor = -lookFrom.z() / dir.z();
@@ -192,9 +201,16 @@ GUIOSGPerspectiveChanger::updateViewport() {
 
 void
 GUIOSGPerspectiveChanger::updateViewport(osg::Vec3d& /* lookFrom */) {
-    osg::Vec3d bottomLeft = getPositionOnGround(-1.,-1.);
+    osg::Vec3d bottomLeft = getPositionOnGround(-1., -1.);
+    osg::Vec3d bottomRight = getPositionOnGround(1., -1.);
+    osg::Vec3d topLeft = getPositionOnGround(1., -1.);
     osg::Vec3d topRight = getPositionOnGround(1., 1.);
-    myViewPort.set(bottomLeft.x(), bottomLeft.y(), topRight.x(), topRight.y());
+    double xMin, xMax, yMin, yMax;
+    xMin = MIN4(bottomLeft.x(), bottomRight.x(), topLeft.x(), topRight.x());
+    xMax = MAX4(bottomLeft.x(), bottomRight.x(), topLeft.x(), topRight.x());
+    yMin = MIN4(bottomLeft.y(), bottomRight.y(), topLeft.y(), topRight.y());
+    yMax = MAX4(bottomLeft.y(), bottomRight.y(), topLeft.y(), topRight.y());
+    myViewPort.set(xMin, yMin, xMax, yMax);
 }
 
 
@@ -213,9 +229,9 @@ GUIOSGPerspectiveChanger::getPositionOnGround(double x, double y) {
     // compute crossing with ground plane
     osg::Vec3d ray = farPointWorld - nearPointWorld;
     if (abs(ray.z()) > 0) {
-        return nearPointWorld + ray*(-nearPointWorld.z() / ray.z());
+        return nearPointWorld + ray * (-nearPointWorld.z() / ray.z());
     }
-    return osg::Vec3d(0.,0.,0.);
+    return osg::Vec3d(0., 0., 0.);
 }
 
 

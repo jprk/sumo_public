@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -56,6 +56,9 @@ class MFXMenuCheckIcon;
 /// @brief text field with thick frame and width 50
 #define GUIDesignTextFielWidth50        (FRAME_THICK | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, 50, GUIDesignHeight, 2, 2, 2, 2
 
+/// @brief text field with thick frame and width 70
+#define GUIDesignTextFielWidth70        (FRAME_THICK | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, 70, GUIDesignHeight, 2, 2, 2, 2
+
 /// @brief text field with thick frame and width 50 and limited to doubles
 #define GUIDesignTextFielWidth50Real    (FRAME_THICK | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT | TEXTFIELD_REAL), 0, 0, 50, GUIDesignHeight, 2, 2, 2, 2
 
@@ -97,11 +100,17 @@ class MFXMenuCheckIcon;
 /// @brief button used in GroupBoxModule
 #define GUIDesignButtonMFXGroupBoxModule        (FRAME_LINE | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, GUIDesignHeight - 1, GUIDesignHeight - 1, 2, 2, 2, 2
 
+/// @brief button used in GroupBoxModule for extend
+#define GUIDesignButtonMFXGroupBoxModuleExtend  (FRAME_LINE | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, 60, GUIDesignHeight - 1, 2, 2, 2, 2
+
 /// @brief button rectangular with thick and raise frame with a width of 100
 #define GUIDesignButtonStatusBarFixed           (ICON_BEFORE_TEXT | JUSTIFY_CENTER_X | JUSTIFY_CENTER_Y | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, 100, GUIDesignHeight, 2, 2, 2, 2
 
 /// @brief checkable button only with icon used in TLSTable
 #define GUIDesignTLSTableCheckableButtonIcon    (MENUBUTTON_RIGHT | FRAME_THICK | FRAME_RAISED | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT), 0, 0, GUIDesignHeight, GUIDesignHeight, 0, 0, 0, 0
+
+/// @brief checkable button placed in popup (for example, locate buttons)
+#define GUIDesignButtonPopup                    (ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED)
 
 /// @}
 
@@ -158,6 +167,12 @@ class MFXMenuCheckIcon;
 
 /// @brief Button with custom width (used in GNEGeometryPointDialog)
 #define GUIDesignButtonCustomWidth(width)   (ICON_BEFORE_TEXT | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT | FRAME_THICK | FRAME_RAISED), 0, 0, width, GUIDesignHeight, 2, 2, 2, 2
+
+///  @brief button for saving elements in GUISaveDialog
+#define GUIDesignSaveDialogButtonInitial    (BUTTON_INITIAL | BUTTON_DEFAULT | FRAME_RAISED | FRAME_THICK | LAYOUT_TOP | LAYOUT_CENTER_X | LAYOUT_FIX_WIDTH), 0, 0, 150, 0, 15, 15, VERT_PAD, VERT_PAD
+
+///  @brief button for saving elements in GUISaveDialog
+#define GUIDesignSaveDialogButton           (BUTTON_DEFAULT | FRAME_RAISED | FRAME_THICK | LAYOUT_TOP | LAYOUT_CENTER_X | LAYOUT_FIX_WIDTH), 0, 0, 150, 0, 15, 15, VERT_PAD, VERT_PAD
 
 /// @}
 
@@ -624,7 +639,7 @@ class MFXMenuCheckIcon;
 /// @name design for Chooser (locator) and breakpoint dialogs
 /// @{
 /// @brief design for Chooser dialog specifying size
-#define GUIDesignChooserDialog                  (DECOR_ALL), 20, 20, 300, 350
+#define GUIDesignChooserDialog                  (DECOR_ALL), 20, 40, 300, 350
 
 /// @brief design for Chooser buttons
 #define GUIDesignChooserButtons                 (ICON_BEFORE_TEXT | LAYOUT_FIX_WIDTH | LAYOUT_FIX_HEIGHT | FRAME_THICK | FRAME_RAISED), 0, 0, 150, GUIDesignHeight, 2, 2, 2, 2

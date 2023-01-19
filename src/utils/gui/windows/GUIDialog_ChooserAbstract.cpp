@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -67,6 +67,7 @@ FXIMPLEMENT(GUIDialog_ChooserAbstract, FXMainWindow, GUIDialog_ChooserAbstractMa
 GUIDialog_ChooserAbstract::GUIDialog_ChooserAbstract(GUIGlChildWindow* windowsParent, int messageId,
         FXIcon* icon, const FXString& title, const std::vector<GUIGlID>& ids, GUIGlObjectStorage& /*glStorage*/) :
     FXMainWindow(windowsParent->getApp(), title, icon, nullptr, GUIDesignChooserDialog),
+    GUIPersistentWindowPos(this, "LOCATOR", true, 20, 40, 300, 350),
     myWindowsParent(windowsParent),
     myMessageId(messageId),
     myLocateByName(false),
@@ -104,11 +105,10 @@ GUIDialog_ChooserAbstract::GUIDialog_ChooserAbstract(GUIGlChildWindow* windowsPa
     refreshList(ids);
     // add child in windowsParent
     myWindowsParent->getParent()->addChild(this);
+    loadWindowPos();
     // create and show dialog
     create();
     show();
-
-    getApp()->reg().writeIntEntry("TL_TRACKER", "x", getX());
 }
 
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -103,6 +103,9 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.doRegister("junctions.right-before-left.speed-threshold", new Option_Float(49 / 3.6));
     oc.addDescription("junctions.right-before-left.speed-threshold", "Junctions", "Allow building right-before-left junctions when the incoming edge speeds are below FLOAT (m/s)");
 
+    oc.doRegister("junctions.left-before-right", new Option_Bool(false));
+    oc.addDescription("junctions.left-before-right", "Junctions", "Build left-before-right junctions instead of right-before-left junctions");
+
     // register the data processing options
     oc.doRegister("no-internal-links", new Option_Bool(false)); // !!! not described
     oc.addDescription("no-internal-links", "Junctions", "Omits internal links");
@@ -160,7 +163,7 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("geometry.remove.keep-edges.input-file", new Option_FileName());
     oc.addDescription("geometry.remove.keep-edges.input-file", "Processing",
-            "Ensure that the edges in FILE are not modified (Each id on a single line. Selection files from sumo-gui are also supported)");
+                      "Ensure that the edges in FILE are not modified (Each id on a single line. Selection files from sumo-gui are also supported)");
 
     if (!forNetgen) {
         oc.doRegister("geometry.remove.keep-ptstops", new Option_Bool(false));
@@ -169,11 +172,11 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("geometry.remove.min-length", new Option_Float(0));
     oc.addDescription("geometry.remove.min-length", "Processing",
-            "Allow merging edges with differing attributes when their length is below min-length");
+                      "Allow merging edges with differing attributes when their length is below min-length");
 
     oc.doRegister("geometry.remove.width-tolerance", new Option_Float(0));
     oc.addDescription("geometry.remove.width-tolerance", "Processing",
-            "Allow merging edges with differing lane widths if the difference is below FLOAT");
+                      "Allow merging edges with differing lane widths if the difference is below FLOAT");
 
     oc.doRegister("geometry.max-segment-length", new Option_Float(0));
     oc.addDescription("geometry.max-segment-length", "Processing", "splits geometry to restrict segment length");
@@ -500,6 +503,9 @@ NBFrame::fillOptions(bool forNetgen) {
 
         oc.doRegister("tls.guess-signals.dist", new Option_Float(25));
         oc.addDescription("tls.guess-signals.dist", "TLS Building", "Distance for interpreting nodes as signal locations");
+
+        oc.doRegister("tls.guess-signals.slack", new Option_Integer(0));
+        oc.addDescription("tls.guess-signals.slack", "TLS Building", "Number of uncontrolled entry edges to accept and still consider the central node as a traffic light");
     }
 
 
@@ -583,6 +589,9 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("tls.ungroup-signals", new Option_Bool(false));
     oc.addDescription("tls.ungroup-signals", "TLS Building", "Assign a distinct tls link index to every connection");
+
+    oc.doRegister("tls.rebuild", new Option_Bool(false));
+    oc.addDescription("tls.rebuild", "TLS Building", "rebuild all traffic light plans in the network");
 
     // edge pruning
     oc.doRegister("keep-edges.min-speed", new Option_Float(-1));

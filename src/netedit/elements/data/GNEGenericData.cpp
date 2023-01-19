@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -43,7 +43,7 @@
 // GNEGenericData - methods
 // ---------------------------------------------------------------------------
 
-GNEGenericData::GNEGenericData(const SumoXMLTag tag, FXIcon *icon, const GUIGlObjectType type, GNEDataInterval* dataIntervalParent,
+GNEGenericData::GNEGenericData(const SumoXMLTag tag, FXIcon* icon, const GUIGlObjectType type, GNEDataInterval* dataIntervalParent,
                                const Parameterised::Map& parameters,
                                const std::vector<GNEJunction*>& junctionParents,
                                const std::vector<GNEEdge*>& edgeParents,
@@ -51,10 +51,9 @@ GNEGenericData::GNEGenericData(const SumoXMLTag tag, FXIcon *icon, const GUIGlOb
                                const std::vector<GNEAdditional*>& additionalParents,
                                const std::vector<GNEDemandElement*>& demandElementParents,
                                const std::vector<GNEGenericData*>& genericDataParents) :
-    GUIGlObject(type, dataIntervalParent->getID(), icon),
+    GNEPathManager::PathElement(type, dataIntervalParent->getID(), icon, GNEPathManager::PathElement::Options::DATA_ELEMENT),
     Parameterised(parameters),
     GNEHierarchicalElement(dataIntervalParent->getNet(), tag, junctionParents, edgeParents, laneParents, additionalParents, demandElementParents, genericDataParents),
-    GNEPathManager::PathElement(this, GNEPathManager::PathElement::Options::DATA_ELEMENT),
     myDataIntervalParent(dataIntervalParent) {
 }
 
@@ -76,7 +75,7 @@ GNEGenericData::getDataIntervalParent() const {
 
 void
 GNEGenericData::drawAttribute(const PositionVector& shape) const {
-    if ((myTagProperty.getTag() == SUMO_TAG_MEANDATA_EDGE) && (shape.length() > 0)) {
+    if ((myTagProperty.getTag() == GNE_TAG_EDGEREL_SINGLE) && (shape.length() > 0)) {
         // obtain pointer to edge data frame (only for code legibly)
         const GNEEdgeDataFrame* edgeDataFrame = myDataIntervalParent->getNet()->getViewNet()->getViewParent()->getEdgeDataFrame();
         // check if we have to filter generic data
@@ -162,13 +161,13 @@ GNEGenericData::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView& /* p
 }
 
 
-void 
-GNEGenericData::deleteGLObject(){
+void
+GNEGenericData::deleteGLObject() {
     myNet->deleteGenericData(this, myNet->getViewNet()->getUndoList());
 }
 
 
-void 
+void
 GNEGenericData::selectGLObject() {
     if (isAttributeCarrierSelected()) {
         unselectAttributeCarrier();

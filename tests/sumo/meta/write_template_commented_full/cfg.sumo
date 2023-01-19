@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-10-10 12:26:45 by Eclipse SUMO sumo Version v1_14_1+1544-909a280
+<!-- generated on 2023-01-04 11:28:03 by Eclipse SUMO sumo Version v1_15_0+1277-3febad6e597
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -171,6 +171,9 @@
         <!-- Save aggregated vehicle departure info into FILE -->
         <summary-output value="" synonymes="summary" type="FILE"/>
 
+        <!-- Save summary-output with the given period -->
+        <summary-output.period value="-1" type="TIME"/>
+
         <!-- Save aggregated person counts into FILE -->
         <person-summary-output value="" type="FILE"/>
 
@@ -257,6 +260,12 @@
 
         <!-- Write collision information into FILE -->
         <collision-output value="" type="FILE"/>
+
+        <!-- Write aggregated traffic statistics for all edges into FILE -->
+        <edgedata-output value="" type="FILE"/>
+
+        <!-- Write aggregated traffic statistics for all lanes into FILE -->
+        <lanedata-output value="" type="FILE"/>
 
         <!-- Write overall statistics into FILE -->
         <statistic-output value="" synonymes="statistics-output" type="FILE"/>
@@ -414,7 +423,7 @@
         <!-- Sets default visibility for actuation detectors -->
         <tls.actuated.show-detectors value="false" type="BOOL"/>
 
-        <!-- Sets default jam-treshold parameter for all actuation detectors -->
+        <!-- Sets default jam-threshold parameter for all actuation detectors -->
         <tls.actuated.jam-threshold value="-1" type="FLOAT"/>
 
         <!-- Sets default detector length parameter for all actuation detectors -->
@@ -456,7 +465,7 @@
         <!-- Sets the fraction of emergency decel capability that must be used to trigger a warning. -->
         <emergencydecel.warning-threshold value="1" type="FLOAT"/>
 
-        <!-- Whether parking simulation includes manoeuvering time and associated lane blocking -->
+        <!-- Whether parking simulation includes maneuvering time and associated lane blocking -->
         <parking.maneuver value="false" type="BOOL"/>
 
         <!-- Override stop until times with stop ended times when given -->
@@ -651,6 +660,9 @@
         <!-- Writes all warnings and errors to FILE -->
         <error-log value="" type="FILE"/>
 
+        <!-- Language to use in messages -->
+        <language value="C" type="STR"/>
+
         <!-- Disable performance reports for individual simulation steps -->
         <duration-log.disable value="false" synonymes="no-duration-log" type="BOOL"/>
 
@@ -722,6 +734,24 @@
 
         <!-- The &apos;btsender&apos; devices are set deterministic using a fraction of 1000 -->
         <device.btsender.deterministic value="false" type="BOOL"/>
+
+        <!-- The probability for a person to have a &apos;btsender&apos; device -->
+        <person-device.btsender.probability value="-1" type="FLOAT"/>
+
+        <!-- Assign a &apos;btsender&apos; device to named persons -->
+        <person-device.btsender.explicit value="" synonymes="person-device.btsender.knownveh" type="STR[]"/>
+
+        <!-- The &apos;btsender&apos; devices are set deterministic using a fraction of 1000 -->
+        <person-device.btsender.deterministic value="false" type="BOOL"/>
+
+        <!-- The probability for a person to have a &apos;btreceiver&apos; device -->
+        <person-device.btreceiver.probability value="-1" type="FLOAT"/>
+
+        <!-- Assign a &apos;btreceiver&apos; device to named persons -->
+        <person-device.btreceiver.explicit value="" synonymes="person-device.btreceiver.knownveh" type="STR[]"/>
+
+        <!-- The &apos;btreceiver&apos; devices are set deterministic using a fraction of 1000 -->
+        <person-device.btreceiver.deterministic value="false" type="BOOL"/>
 
     </communication>
 
@@ -1172,6 +1202,9 @@
 
         <!-- The aggregation period for value tracker windows -->
         <tracker-interval value="1" type="TIME"/>
+
+        <!-- Start with an OpenSceneGraph view instead of the regular 2D view -->
+        <osg-view value="false" type="BOOL"/>
 
         <!-- Enable overlay for screen recognition -->
         <gui-testing value="false" type="BOOL"/>

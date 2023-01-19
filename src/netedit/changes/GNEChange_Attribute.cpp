@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -81,22 +81,20 @@ GNEChange_Attribute::undo() {
             myAC->updateGeometry();
         }
         // if is a dataelement, update attribute colors
-        if (myAC->getTagProperty().isDataElement()) {
-            if (myAC->getTagProperty().isGenericData()) {
-                myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(GNE_ATTR_DATASET))->updateAttributeColors();
-            } else {
-                myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(SUMO_ATTR_ID))->updateAttributeColors();
-            }
+        if (myAC->getTagProperty().isGenericData()) {
+            myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(GNE_ATTR_DATASET))->updateAttributeColors();
+        } else if (myAC->getTagProperty().getTag() == SUMO_TAG_DATASET) {
+            myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(SUMO_ATTR_ID))->updateAttributeColors();
         }
         // check if networkElements, additional or shapes has to be saved (only if key isn't GNE_ATTR_SELECTED)
         if (myAC->getTagProperty().isNetworkElement()) {
-            myAC->getNet()->requireSaveNet(true);
+            myAC->getNet()->getSavingStatus()->requireSaveNetwork();
         } else if (myAC->getTagProperty().isAdditionalElement()) {
-            myAC->getNet()->requireSaveAdditionals(true);
+            myAC->getNet()->getSavingStatus()->requireSaveAdditionals();
         } else if (myAC->getTagProperty().isDemandElement()) {
-            myAC->getNet()->requireSaveDemandElements(true);
+            myAC->getNet()->getSavingStatus()->requireSaveDemandElements();
         } else if (myAC->getTagProperty().isDataElement()) {
-            myAC->getNet()->requireSaveDataElements(true);
+            myAC->getNet()->getSavingStatus()->requireSaveDataElements();
         }
     }
 }
@@ -115,22 +113,20 @@ GNEChange_Attribute::redo() {
             myAC->updateGeometry();
         }
         // if is a dataelement, update attribute colors
-        if (myAC->getTagProperty().isDataElement()) {
-            if (myAC->getTagProperty().isGenericData()) {
-                myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(GNE_ATTR_DATASET))->updateAttributeColors();
-            } else {
-                myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(SUMO_ATTR_ID))->updateAttributeColors();
-            }
+        if (myAC->getTagProperty().isGenericData()) {
+            myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(GNE_ATTR_DATASET))->updateAttributeColors();
+        } else if (myAC->getTagProperty().getTag() == SUMO_TAG_DATASET) {
+            myAC->getNet()->getAttributeCarriers()->retrieveDataSet(myAC->getAttribute(SUMO_ATTR_ID))->updateAttributeColors();
         }
         // check if networkElements, additional or shapes has to be saved (only if key isn't GNE_ATTR_SELECTED)
         if (myAC->getTagProperty().isNetworkElement()) {
-            myAC->getNet()->requireSaveNet(true);
+            myAC->getNet()->getSavingStatus()->requireSaveNetwork();
         } else if (myAC->getTagProperty().isAdditionalElement()) {
-            myAC->getNet()->requireSaveAdditionals(true);
+            myAC->getNet()->getSavingStatus()->requireSaveAdditionals();
         } else if (myAC->getTagProperty().isDemandElement()) {
-            myAC->getNet()->requireSaveDemandElements(true);
+            myAC->getNet()->getSavingStatus()->requireSaveDemandElements();
         } else if (myAC->getTagProperty().isDataElement()) {
-            myAC->getNet()->requireSaveDataElements(true);
+            myAC->getNet()->getSavingStatus()->requireSaveDataElements();
         }
     }
 }

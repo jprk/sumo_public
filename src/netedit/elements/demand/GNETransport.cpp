@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -36,8 +36,8 @@
 
 GNETransport::GNETransport(SumoXMLTag tag, GNENet* net) :
     GNEDemandElement("", net, GLO_TRANSPORT, tag, GUIIconSubSys::getIcon(GUIIcon::TRANSHIP_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-    myArrivalPosition(0) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
+myArrivalPosition(0) {
     // reset default values
     resetDefaultValues();
 }
@@ -45,17 +45,17 @@ GNETransport::GNETransport(SumoXMLTag tag, GNENet* net) :
 
 GNETransport::GNETransport(GNENet* net, GNEDemandElement* containerParent, GNEEdge* fromEdge, GNEEdge* toEdge, const std::vector<std::string>& lines, const double arrivalPosition) :
     GNEDemandElement(containerParent, net, GLO_TRANSPORT, GNE_TAG_TRANSPORT_EDGE, GUIIconSubSys::getIcon(GUIIcon::TRANSHIP_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {containerParent}, {}),
-    myLines(lines),
-    myArrivalPosition(arrivalPosition) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {containerParent}, {}),
+myLines(lines),
+myArrivalPosition(arrivalPosition) {
 }
 
 
 GNETransport::GNETransport(GNENet* net, GNEDemandElement* containerParent, GNEEdge* fromEdge, GNEAdditional* toContainerStop, const std::vector<std::string>& lines, const double arrivalPosition) :
     GNEDemandElement(containerParent, net, GLO_TRANSPORT, GNE_TAG_TRANSPORT_CONTAINERSTOP, GUIIconSubSys::getIcon(GUIIcon::TRANSPORT_CONTAINERSTOP),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge}, {}, {toContainerStop}, {containerParent}, {}),
-    myLines(lines),
-    myArrivalPosition(arrivalPosition) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge}, {}, {toContainerStop}, {containerParent}, {}),
+myLines(lines),
+myArrivalPosition(arrivalPosition) {
 }
 
 
@@ -188,12 +188,6 @@ GNETransport::getPositionInView() const {
 std::string
 GNETransport::getParentName() const {
     return getParentDemandElements().front()->getID();
-}
-
-
-double
-GNETransport::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 

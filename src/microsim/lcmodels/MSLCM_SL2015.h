@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -296,7 +296,7 @@ protected:
 
 
     bool mustOvertakeStopped(const MSLane& neighLane, const MSLeaderDistanceInfo& leaders, const MSLeaderDistanceInfo& neighLead,
-        double posOnLane, double neighDist, bool right, double latLaneDist, double& currentDist, double& latDist); 
+                             double posOnLane, double neighDist, bool right, double latLaneDist, double& currentDist, double& latDist);
 
     /// @brief check whether lateral gap requirements are met override the current maneuver if necessary
     int keepLatGap(int state,

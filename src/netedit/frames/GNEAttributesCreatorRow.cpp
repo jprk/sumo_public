@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -55,9 +55,9 @@ GNEAttributesCreatorRow::GNEAttributesCreatorRow(GNEAttributesCreator* Attribute
     myAttributesCreatorParent(AttributesCreatorParent),
     myAttrProperties(attrProperties) {
     // Create left visual elements
-    myAttributeLabel = new MFXLabelTooltip(this, 
-        AttributesCreatorParent->getFrameParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(), 
-        "name", nullptr, GUIDesignLabelAttribute);
+    myAttributeLabel = new MFXLabelTooltip(this,
+                                           AttributesCreatorParent->getFrameParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
+                                           "name", nullptr, GUIDesignLabelAttribute);
     myAttributeLabel->hide();
     myEnableAttributeCheckButton = new FXCheckButton(this, TL("name"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButtonAttribute);
     myEnableAttributeCheckButton->hide();
@@ -202,7 +202,7 @@ GNEAttributesCreatorRow::refreshRow() {
         myValueTextField->show();
     } else {
         // left
-        if (myAttrProperties.isColor() || (myAttrProperties.getAttr() == SUMO_ATTR_ALLOW) || (myAttrProperties.getAttr() == SUMO_ATTR_DISALLOW)) {
+        if (myAttrProperties.isColor() || (myAttrProperties.getAttr() == SUMO_ATTR_ALLOW)) {
             // show color button
             myAttributeButton->setTextColor(FXRGB(0, 0, 0));
             myAttributeButton->killFocus();
@@ -246,7 +246,12 @@ GNEAttributesCreatorRow::refreshRow() {
             for (const auto& item : myAttrProperties.getDiscreteValues()) {
                 myValueComboBox->appendItem(item.c_str());
             }
-            myValueComboBox->setNumVisible(myValueComboBox->getNumItems());
+            // set number of visible items
+            if (myAttrProperties.showAllDiscreteValues()) {
+                myValueComboBox->setNumVisible(myValueComboBox->getNumItems());
+            } else {
+                myValueComboBox->setNumVisible(10);
+            }
             myValueComboBox->setText(myAttributesCreatorParent->getCurrentTemplateAC()->getAttribute(myAttrProperties.getAttr()).c_str());
             if (myAttrProperties.hasDefaultValue() && (myAttrProperties.getDefaultValue() == myValueComboBox->getText().text())) {
                 myValueComboBox->setTextColor(FXRGB(128, 128, 128));
@@ -439,16 +444,6 @@ GNEAttributesCreatorRow::onCmdOpenAttributeDialog(FXObject*, FXSelector, void*) 
             // update text field
             myValueTextField->setText(allow.c_str(), TRUE);
         }
-    } else if (myAttrProperties.getAttr() == SUMO_ATTR_DISALLOW) {
-        // transform disallow to allow
-        std::string allow = getVehicleClassNames(~parseVehicleClasses(myValueTextField->getText().text()));
-        // opena allowDisallow dialog
-        GNEAllowVClassesDialog(myAttributesCreatorParent->getFrameParent()->getViewNet(), &allow, &acceptChanges).execute();
-        // continue depending of acceptChanges
-        if (acceptChanges) {
-            // update text field
-            myValueTextField->setText(getVehicleClassNames(~parseVehicleClasses(allow)).c_str(), TRUE);
-        }
     }
     return 0;
 }
@@ -478,7 +473,7 @@ GNEAttributesCreatorRow::isValidID() const {
         return (myAttributesCreatorParent->getFrameParent()->getViewNet()->getNet()->getAttributeCarriers()->retrieveAdditional(
                     myAttrProperties.getTagPropertyParent().getTag(), myValueTextField->getText().text(), false) == nullptr);
     } else {
-        throw ProcessError("Unsuported additional ID");
+        throw ProcessError("Unsupported additional ID");
     }
 }
 

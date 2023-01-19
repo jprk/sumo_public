@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -207,6 +207,10 @@ NLBuilder::build() {
         }
         MSTriggeredRerouter::checkParkingRerouteConsistency();
     }
+    // declare meandata set by options
+    buildDefaultMeanData("edgedata-output", "DEFAULT_EDGEDATA", false);
+    buildDefaultMeanData("lanedata-output", "DEFAULT_LANEDATA", true);
+
     if (stateBeginMismatch && myNet.getVehicleControl().getLoadedVehicleNo() > 0) {
         throw ProcessError("Loading vehicles ahead of a state file is not supported. Correct --begin option or load vehicles with option --route-files");
     }
@@ -336,6 +340,7 @@ NLBuilder::init(const bool isLibsumo) {
     throw ProcessError();
 }
 
+
 void
 NLBuilder::initRandomness() {
     RandHelper::initRandGlobal();
@@ -346,6 +351,7 @@ NLBuilder::initRandomness() {
     RandHelper::initRandGlobal(MSDevice_BTreceiver::getRecognitionRNG());
     MSLane::initRNGs(OptionsCont::getOptions());
 }
+
 
 void
 NLBuilder::buildNet() {
@@ -379,13 +385,9 @@ NLBuilder::buildNet() {
                 stateDumpFiles.push_back(prefix + "_" + timeStamp + suffix);
             }
         }
-    } catch (IOError& e) {
-        delete edges;
-        delete junctions;
-        delete routeLoaders;
-        delete tlc;
-        throw ProcessError(e.what());
     } catch (ProcessError&) {
+        MSEdge::clear();
+        MSLane::clear();
         delete edges;
         delete junctions;
         delete routeLoaders;
@@ -438,5 +440,20 @@ NLBuilder::buildRouteLoaderControl(const OptionsCont& oc) {
     return loaders;
 }
 
+
+void
+NLBuilder::buildDefaultMeanData(const std::string& optionName, const std::string& id, bool useLanes) {
+    if (OptionsCont::getOptions().isSet(optionName)) {
+        try {
+            myDetectorBuilder.createEdgeLaneMeanData(id, -1, 0, -1, "traffic", useLanes, false, false,
+                    false, false, false, 100000, 0, SUMO_const_haltingSpeed, "", "", std::vector<MSEdge*>(), false,
+                    OptionsCont::getOptions().getString(optionName));
+        } catch (InvalidArgument& e) {
+            WRITE_ERROR(e.what());
+        } catch (IOError& e) {
+            WRITE_ERROR(e.what());
+        }
+    }
+}
 
 /****************************************************************************/

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -55,7 +55,7 @@ public:
     /// Converts german "Umlaute" to their latin-version
     static std::string convertUmlaute(std::string str);
 
-    /** Replaces all occurences of the second string by the third
+    /** Replaces all occurrences of the second string by the third
         string within the first string */
     static std::string replace(std::string str, const std::string& what, const std::string& by);
 

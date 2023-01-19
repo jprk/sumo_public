@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -64,7 +64,7 @@
 //#define DEBUGCOND (veh.getID() == "")
 
 // ===========================================================================
-// static member defintion
+// static member definition
 // ===========================================================================
 MSEdge MSTriggeredRerouter::mySpecialDest_keepDestination("MSTriggeredRerouter_keepDestination", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", -1, 0);
 MSEdge MSTriggeredRerouter::mySpecialDest_terminateRoute("MSTriggeredRerouter_terminateRoute", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", -1, 0);
@@ -191,7 +191,7 @@ MSTriggeredRerouter::myStartElement(int element,
         if (routeStr == "") {
             throw ProcessError("MSTriggeredRerouter " + getID() + ": No route id given.");
         }
-        const MSRoute* route = MSRoute::dictionary(routeStr);
+        ConstMSRoutePtr route = MSRoute::dictionary(routeStr);
         if (route == nullptr) {
             throw ProcessError("MSTriggeredRerouter " + getID() + ": Route '" + routeStr + "' does not exist.");
         }
@@ -473,7 +473,7 @@ MSTriggeredRerouter::notifyEnter(SUMOTrafficObject& tObject, MSMoveReminder::Not
     }
 
     // get rerouting params
-    const MSRoute* newRoute = rerouteDef->routeProbs.getOverallProb() > 0 ? rerouteDef->routeProbs.get() : 0;
+    ConstMSRoutePtr newRoute = rerouteDef->routeProbs.getOverallProb() > 0 ? rerouteDef->routeProbs.get() : 0;
     // we will use the route if given rather than calling our own dijsktra...
     if (newRoute != nullptr) {
 #ifdef DEBUG_REROUTER

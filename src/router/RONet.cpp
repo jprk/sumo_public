@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -73,6 +73,8 @@ RONet::RONet() :
                    && OptionsCont::getOptions().getBool("ignore-errors") ? MsgHandler::getWarningInstance() : MsgHandler::getErrorInstance()),
     myKeepVTypeDist(OptionsCont::getOptions().exists("keep-vtype-distributions")
                     && OptionsCont::getOptions().getBool("keep-vtype-distributions")),
+    myDoPTRouting(!OptionsCont::getOptions().exists("ptline-routing")
+                  || OptionsCont::getOptions().getBool("ptline-routing")),
     myHasBidiEdges(false) {
     if (myInstance != nullptr) {
         throw ProcessError("A network was already constructed.");
@@ -101,8 +103,8 @@ RONet::RONet() :
 
 
 RONet::~RONet() {
-    for (RoutablesMap::iterator routables = myRoutables.begin(); routables != myRoutables.end(); ++routables) {
-        for (RORoutable* const r : routables->second) {
+    for (const auto& routables : myRoutables) {
+        for (RORoutable* const r : routables.second) {
             const ROVehicle* const veh = dynamic_cast<const ROVehicle*>(r);
             // delete routes and the vehicle
             if (veh != nullptr && veh->getRouteDefinition()->getID()[0] == '!') {
@@ -124,6 +126,9 @@ RONet::~RONet() {
         delete r;
     }
     myRoutables.clear();
+    for (const auto& vTypeDist : myVTypeDistDict) {
+        delete vTypeDist.second;
+    }
 }
 
 
@@ -166,9 +171,13 @@ RONet::addDistrict(const std::string id, ROEdge* source, ROEdge* sink) {
         return false;
     }
     sink->setFunction(SumoXMLEdgeFunc::CONNECTOR);
-    addEdge(sink);
+    if (!addEdge(sink)) {
+        return false;
+    }
     source->setFunction(SumoXMLEdgeFunc::CONNECTOR);
-    addEdge(source);
+    if (!addEdge(source)) {
+        return false;
+    }
     sink->setOtherTazConnector(source);
     source->setOtherTazConnector(sink);
     myDistricts[id] = std::make_pair(std::vector<std::string>(), std::vector<std::string>());
@@ -213,7 +222,9 @@ RONet::addJunctionTaz(ROAbstractEdgeBuilder& eb) {
         ROEdge* source = eb.buildEdge(sourceID, nullptr, nullptr, 0);
         sink->setOtherTazConnector(source);
         source->setOtherTazConnector(sink);
-        addDistrict(tazID, source, sink);
+        if (!addDistrict(tazID, source, sink)) {
+            continue;
+        }
         auto& district = myDistricts[tazID];
         const RONode* junction = item.second;
         for (const ROEdge* edge : junction->getIncoming()) {
@@ -231,6 +242,7 @@ RONet::addJunctionTaz(ROAbstractEdgeBuilder& eb) {
     }
 }
 
+
 void
 RONet::setBidiEdges(const std::map<ROEdge*, std::string>& bidiMap) {
     for (const auto& item : bidiMap) {
@@ -242,6 +254,7 @@ RONet::setBidiEdges(const std::map<ROEdge*, std::string>& bidiMap) {
         myHasBidiEdges = true;
     }
 }
+
 
 void
 RONet::addNode(RONode* node) {
@@ -427,7 +440,7 @@ RONet::addVehicle(const std::string& id, ROVehicle* veh) {
             if (!veh->isPartOfFlow()) {
                 myPTVehicles.push_back(veh);
             }
-            if (OptionsCont::getOptions().exists("ptline-routing") && !OptionsCont::getOptions().getBool("ptline-routing")) {
+            if (!myDoPTRouting) {
                 return true;
             }
         }
@@ -496,7 +509,10 @@ void
 RONet::checkFlows(SUMOTime time, MsgHandler* errorHandler) {
     myHaveActiveFlows = false;
     for (const auto& i : myFlows) {
-        SUMOVehicleParameter* pars = i.second;
+        SUMOVehicleParameter* const pars = i.second;
+        if (pars->line != "" && !myDoPTRouting) {
+            continue;
+        }
         if (pars->repetitionProbability > 0) {
             if (pars->repetitionEnd > pars->depart && pars->repetitionsDone < pars->repetitionNumber) {
                 myHaveActiveFlows = true;
@@ -759,11 +775,13 @@ RONet::getEdgeForLaneID(const std::string& laneID) const {
     return getEdge(SUMOXMLDefinitions::getEdgeIDFromLane(laneID));
 }
 
+
 ROLane*
 RONet::getLane(const std::string& laneID) const {
     int laneIndex = SUMOXMLDefinitions::getIndexFromLane(laneID);
     return getEdgeForLaneID(laneID)->getLanes()[laneIndex];
 }
+
 
 void
 RONet::adaptIntermodalRouter(ROIntermodalRouter& router) {

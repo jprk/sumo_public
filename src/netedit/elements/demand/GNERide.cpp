@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,8 +35,8 @@
 
 GNERide::GNERide(SumoXMLTag tag, GNENet* net) :
     GNEDemandElement("", net, GLO_RIDE, tag, GUIIconSubSys::getIcon(GUIIcon::RIDE_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-    myArrivalPosition(0) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
+myArrivalPosition(0) {
     // reset default values
     resetDefaultValues();
 }
@@ -45,19 +45,19 @@ GNERide::GNERide(SumoXMLTag tag, GNENet* net) :
 GNERide::GNERide(GNENet* net, GNEDemandElement* personParent, GNEEdge* fromEdge, GNEEdge* toEdge,
                  double arrivalPosition, const std::vector<std::string>& lines) :
     GNEDemandElement(personParent, net, GLO_RIDE, GNE_TAG_RIDE_EDGE, GUIIconSubSys::getIcon(GUIIcon::RIDE_FROMTO),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {personParent}, {}),
-    myArrivalPosition(arrivalPosition),
-    myLines(lines) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {personParent}, {}),
+myArrivalPosition(arrivalPosition),
+myLines(lines) {
 }
 
 
 GNERide::GNERide(GNENet* net, GNEDemandElement* personParent, GNEEdge* fromEdge, GNEAdditional* toBusStop,
                  double arrivalPosition, const std::vector<std::string>& lines) :
     GNEDemandElement(personParent, net, GLO_RIDE, GNE_TAG_RIDE_BUSSTOP, GUIIconSubSys::getIcon(GUIIcon::RIDE_BUSSTOP),
-    GNEPathManager::PathElement::Options::DEMAND_ELEMENT,
-    {}, {fromEdge}, {}, {toBusStop}, {personParent}, {}),
-    myArrivalPosition(arrivalPosition),
-    myLines(lines) {
+                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT,
+{}, {fromEdge}, {}, {toBusStop}, {personParent}, {}),
+myArrivalPosition(arrivalPosition),
+myLines(lines) {
 }
 
 
@@ -185,12 +185,6 @@ GNERide::getPositionInView() const {
 std::string
 GNERide::getParentName() const {
     return getParentDemandElements().front()->getID();
-}
-
-
-double
-GNERide::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 

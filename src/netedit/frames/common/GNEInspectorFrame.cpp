@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -78,11 +78,11 @@ FXDEFMAP(GNEInspectorFrame::AdditionalDialog) AdditionalDialogMap[] = {
 
 // Object implementation
 FXIMPLEMENT(GNEInspectorFrame,                          FXVerticalFrame,    GNEInspectorFrameMap,       ARRAYNUMBER(GNEInspectorFrameMap))
-FXIMPLEMENT(GNEInspectorFrame::NeteditAttributesEditor, MFXGroupBoxModule,   NeteditAttributesEditorMap, ARRAYNUMBER(NeteditAttributesEditorMap))
-FXIMPLEMENT(GNEInspectorFrame::GEOAttributesEditor,     MFXGroupBoxModule,   GEOAttributesEditorMap,     ARRAYNUMBER(GEOAttributesEditorMap))
-FXIMPLEMENT(GNEInspectorFrame::TemplateEditor,          MFXGroupBoxModule,   TemplateEditorMap,          ARRAYNUMBER(TemplateEditorMap))
-FXIMPLEMENT(GNEInspectorFrame::ParametersEditor,        MFXGroupBoxModule,   ParametersEditorMap,        ARRAYNUMBER(ParametersEditorMap))
-FXIMPLEMENT(GNEInspectorFrame::AdditionalDialog,        MFXGroupBoxModule,   AdditionalDialogMap,        ARRAYNUMBER(AdditionalDialogMap))
+FXIMPLEMENT(GNEInspectorFrame::NeteditAttributesEditor, MFXGroupBoxModule,  NeteditAttributesEditorMap, ARRAYNUMBER(NeteditAttributesEditorMap))
+FXIMPLEMENT(GNEInspectorFrame::GEOAttributesEditor,     MFXGroupBoxModule,  GEOAttributesEditorMap,     ARRAYNUMBER(GEOAttributesEditorMap))
+FXIMPLEMENT(GNEInspectorFrame::TemplateEditor,          MFXGroupBoxModule,  TemplateEditorMap,          ARRAYNUMBER(TemplateEditorMap))
+FXIMPLEMENT(GNEInspectorFrame::ParametersEditor,        MFXGroupBoxModule,  ParametersEditorMap,        ARRAYNUMBER(ParametersEditorMap))
+FXIMPLEMENT(GNEInspectorFrame::AdditionalDialog,        MFXGroupBoxModule,  AdditionalDialogMap,        ARRAYNUMBER(AdditionalDialogMap))
 
 
 // ===========================================================================
@@ -102,9 +102,9 @@ GNEInspectorFrame::NeteditAttributesEditor::NeteditAttributesEditor(GNEInspector
     // Create elements for parent additional
     myLabelParentAdditional = new FXLabel(getCollapsableFrame(), "Parent", nullptr, GUIDesignLabelCenterThick);
     myTextFieldParentAdditional = new FXTextField(getCollapsableFrame(), GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
-    mySetNewParentButton = new MFXCheckableButton(false, getCollapsableFrame(), 
-        inspectorFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(), 
-        "Set new parent", nullptr, this, MID_GNE_SET_ATTRIBUTE, GUIDesignMFXCheckableButton);
+    mySetNewParentButton = new MFXCheckableButton(false, getCollapsableFrame(),
+            inspectorFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
+            "Set new parent", nullptr, this, MID_GNE_SET_ATTRIBUTE, GUIDesignMFXCheckableButton);
     // Create elements for close shape
     myHorizontalFrameCloseShape = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     myLabelCloseShape = new FXLabel(myHorizontalFrameCloseShape, "Close shape", nullptr, GUIDesignLabelAttribute);
@@ -834,7 +834,7 @@ GNEInspectorFrame::ParametersEditor::onCmdEditParameters(FXObject*, FXSelector, 
                 // write debug information
                 WRITE_DEBUG("Close multiple parameters dialog");
                 // update frame parent after attribute successfully set
-                myInspectorFrameParent->attributeUpdated();
+                myInspectorFrameParent->attributeUpdated(GNE_ATTR_PARAMETERS);
                 // Refresh parameter EditorInspector
                 refreshParametersEditor();
             } else {
@@ -848,7 +848,7 @@ GNEInspectorFrame::ParametersEditor::onCmdEditParameters(FXObject*, FXSelector, 
                 // write debug information
                 WRITE_DEBUG("Close single parameters dialog");
                 // update frame parent after attribute successfully set
-                myInspectorFrameParent->attributeUpdated();
+                myInspectorFrameParent->attributeUpdated(GNE_ATTR_PARAMETERS);
                 // Refresh parameter EditorInspector
                 refreshParametersEditor();
             } else {
@@ -892,7 +892,7 @@ GNEInspectorFrame::ParametersEditor::onCmdSetParameters(FXObject*, FXSelector, v
                 myInspectorFrameParent->myViewNet->getUndoList()->end();
             }
             // update frame parent after attribute successfully set
-            myInspectorFrameParent->attributeUpdated();
+            myInspectorFrameParent->attributeUpdated(GNE_ATTR_PARAMETERS);
         } else {
             myTextFieldParameters->setTextColor(FXRGB(255, 0, 0));
         }
@@ -986,7 +986,7 @@ GNEInspectorFrame::AdditionalDialog::onCmdOpenAdditionalDialog(FXObject*, FXSele
 // GNEInspectorFrame - methods
 // ---------------------------------------------------------------------------
 
-GNEInspectorFrame::GNEInspectorFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNEInspectorFrame::GNEInspectorFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Inspector"),
     myPreviousElementInspect(nullptr),
     myPreviousElementDelete(nullptr),
@@ -1253,6 +1253,8 @@ GNEInspectorFrame::inspectMultisection(const std::vector<GNEAttributeCarrier*>& 
     }
     // update frame width
     setFrameWidth(myViewNet->getViewParent()->getFrameAreaWidth());
+    // update viewNet
+    myViewNet->update();
 }
 
 
@@ -1381,7 +1383,7 @@ GNEInspectorFrame::inspectClickedElement(const GNEViewNetHelper::ObjectsUnderCur
 
 
 void
-GNEInspectorFrame::attributeUpdated() {
+GNEInspectorFrame::attributeUpdated(SumoXMLAttr /*attribute*/) {
     myAttributesEditor->refreshAttributeEditor(false, false);
     myNeteditAttributesEditor->refreshNeteditAttributesEditor(true);
     myGEOAttributesEditor->refreshGEOAttributesEditor(true);

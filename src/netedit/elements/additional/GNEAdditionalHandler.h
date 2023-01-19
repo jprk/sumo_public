@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -668,7 +668,7 @@ protected:
     std::vector<GNELane*> parseLanes(const SumoXMLTag tag, const std::vector<std::string>& laneIDs);
 
     /// @brief check if given ID correspond to a duplicated additional
-    bool checkDuplicatedAdditional(const SumoXMLTag tag, const std::string &id);
+    bool checkDuplicatedAdditional(const SumoXMLTag tag, const std::string& id);
 
     /// @brief remove overwrited additional
     void overwriteAdditional();
@@ -697,7 +697,7 @@ protected:
         /// @brief invalidate assignment operator
         NeteditParameters& operator=(const NeteditParameters& s) = delete;
     };
-    
+
 private:
     /// @brief pointer to GNENet
     GNENet* myNet;

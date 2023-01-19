@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -38,6 +38,7 @@
 const long long int MSDevice_FCD::myDefaultMask(~(
             ((long long int)1 << SUMO_ATTR_VEHICLE) |
             ((long long int)1 << SUMO_ATTR_ODOMETER) |
+            ((long long int)1 << SUMO_ATTR_SPEED_LAT) |
             ((long long int)1 << SUMO_ATTR_POSITION_LAT)
         ));
 
@@ -161,14 +162,14 @@ MSDevice_FCD::initOnce() {
         for (std::string attrName : oc.getStringVector("fcd-output.attributes")) {
             if (!SUMOXMLDefinitions::Attrs.hasString(attrName)) {
                 if (attrName == "all") {
-                    myWrittenAttributes = std::numeric_limits<long long int>::max() - 1;
+                    myWrittenAttributes = ~0;
                 } else {
                     WRITE_ERROR("Unknown attribute '" + attrName + "' to write in fcd output.");
                 }
                 continue;
             }
             int attr = SUMOXMLDefinitions::Attrs.get(attrName);
-            assert(attr < 63);
+            assert(attr <= 63);
             myWrittenAttributes |= ((long long int)1 << attr);
         }
     }

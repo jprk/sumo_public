@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -282,7 +282,7 @@ void
 MSDevice_SSM::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into) {
     if (equippedByDefaultAssignmentOptions(OptionsCont::getOptions(), "ssm", v, false)) {
         if (MSGlobals::gUseMesoSim) {
-            WRITE_WARNING("SSM Device for vehicle '" + v.getID() + "' will not be built. (SSMs not supported in MESO)");
+            WRITE_WARNINGF("SSM Device for vehicle '%' will not be built. (SSMs not supported in MESO)", v.getID());
             return;
         }
         // ID for the device
@@ -615,6 +615,7 @@ MSDevice_SSM::createEncounters(FoeInfoMap& foes) {
     }
 }
 
+
 void
 MSDevice_SSM::resetEncounters() {
     // Call processEncounters() with empty vehicle set
@@ -622,6 +623,7 @@ MSDevice_SSM::resetEncounters() {
     // processEncounters with empty argument closes all encounters
     processEncounters(foes, true);
 }
+
 
 void
 MSDevice_SSM::processEncounters(FoeInfoMap& foes, bool forceClose) {
@@ -2217,14 +2219,7 @@ MSDevice_SSM::classifyEncounter(const FoeInfo* foeInfo, EncounterApproachInfo& e
                         }
 #endif
                         MSLane* lane = egoEntryLink->getViaLane();
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4127) // do not warn about constant conditional expression
-#endif
                         while (true) {
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
                             // Find first of egoLane and foeLane while crossing the junction (this dertermines who's the follower)
                             // Then set the conflict lane to the lane of the leader and adapt the follower's distance to conflict
                             if (egoLane == lane) {
@@ -3243,9 +3238,14 @@ MSDevice_SSM::findSurroundingVehicles(const MSVehicle& veh, double range, FoeInf
 #endif
 
     // remove ego vehicle
-    foeCollector.erase(&veh);
+    const auto& it = foeCollector.find(&veh);
+    if (it != foeCollector.end()) {
+        delete it->second;
+        foeCollector.erase(it);
+    }
     gDebugFlag3 = false;
 }
+
 
 void
 MSDevice_SSM::getUpstreamVehicles(const UpstreamScanStartInfo& scanStart, FoeInfoMap& foeCollector, std::set<const MSLane*>& seenLanes, const std::set<const MSJunction*>& routeJunctions) {
@@ -3707,7 +3707,7 @@ MSDevice_SSM::getMeasuresAndThresholds(const SUMOVehicle& v, std::string deviceI
 
     // Check retrieved measures
     if (measures_str == "") {
-        WRITE_WARNING("No measures specified for ssm device of vehicle '" + v.getID() + "'. Registering all available SSMs.");
+        WRITE_WARNINGF("No measures specified for ssm device of vehicle '%'. Registering all available SSMs.", v.getID());
         measures_str = AVAILABLE_SSMS;
     }
     StringTokenizer st = StringTokenizer(AVAILABLE_SSMS);

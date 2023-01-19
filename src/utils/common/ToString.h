@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -319,6 +319,22 @@ inline std::string joinNamedToString(const std::set<T*, C>& ns, const T_BETWEEN&
         ids.push_back(Named::getIDSecure(n));
     }
     return joinToString(ids, between);
+}
+
+
+template <typename KEY, typename VAL, typename T_BETWEEN, typename T_BETWEEN_KEYVAL>
+inline std::string joinNamedToString(const std::map<KEY, VAL, ComparatorIdLess>& s, const T_BETWEEN& between, const T_BETWEEN_KEYVAL& between_keyval, std::streamsize accuracy = gPrecision) {
+    std::ostringstream oss;
+    bool connect = false;
+    for (typename std::map<KEY, VAL>::const_iterator it = s.begin(); it != s.end(); ++it) {
+        if (connect) {
+            oss << toString(between, accuracy);
+        } else {
+            connect = true;
+        }
+        oss << Named::getIDSecure(it->first) << between_keyval << toString(it->second, accuracy);
+    }
+    return oss.str();
 }
 
 

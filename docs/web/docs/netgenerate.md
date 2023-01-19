@@ -162,10 +162,13 @@ the offsets given).
 | **--opposites.guess** {{DT_BOOL}} | Enable guessing of opposite direction lanes usable for overtaking; *default:* **false** |
 | **--opposites.guess.fix-lengths** {{DT_BOOL}} | Ensure that opposite edges have the same length; *default:* **true** |
 | **--fringe.guess** {{DT_BOOL}} | Enable guessing of network fringe nodes; *default:* **false** |
+| **--fringe.guess.speed-threshold** {{DT_FLOAT}} | Guess disconnected edges above the given speed as outer fringe; *default:* **13.8889** |
 | **--lefthand** {{DT_BOOL}} | Assumes left-hand traffic on the network; *default:* **false** |
 | **--edges.join** {{DT_BOOL}} | Merges edges which connect the same nodes and are close to each other (recommended for VISSIM import); *default:* **false** |
 
 ### Building Defaults
+
+See the [docs](Networks/PlainXML.md) for more info on [junction types](Networks/PlainXML.md#Node_types) and [edge types](Networks/PlainXML.md#type_descriptions).
 
 | Option | Description |
 |--------|-------------|
@@ -185,7 +188,7 @@ the offsets given).
 | **--default.junctions.radius** {{DT_FLOAT}} | The default turning radius of intersections; *default:* **4** |
 | **--default.connection-length** {{DT_FLOAT}} | The default length when overriding connection lengths; *default:* **-1** |
 | **--default.right-of-way** {{DT_STR}} | The default algorithm for computing right of way rules ('default', 'edgePriority'); *default:* **default** |
-| **-j** {{DT_STR}}<br> **--default-junction-type** {{DT_STR}} | [traffic_light,priority,right_before_left,traffic_light_right_on_red,priority_stop,allway_stop,...] Determines junction type (see wiki/Networks/PlainXML#Node_types) |
+| **-j** {{DT_STR}}<br> **--default-junction-type** {{DT_STR}} | [traffic_light,priority,right_before_left,left_before_right,traffic_light_right_on_red,priority_stop,allway_stop,...] Determines junction type (see wiki/Networks/PlainXML#Node_types) |
 
 ### Tls Building
 
@@ -224,6 +227,7 @@ the offsets given).
 | **--tls.max-dur** {{DT_INT}} | Default maximum phase duration for traffic lights with variable phase length; *default:* **50** |
 | **--tls.group-signals** {{DT_BOOL}} | Assign the same tls link index to connections that share the same states; *default:* **false** |
 | **--tls.ungroup-signals** {{DT_BOOL}} | Assign a distinct tls link index to every connection; *default:* **false** |
+| **--tls.rebuild** {{DT_BOOL}} | rebuild all traffic light plans in the network; *default:* **false** |
 | **--tls.discard-simple** {{DT_BOOL}} | Does not instatiate traffic lights at geometry-like nodes; *default:* **false** |
 
 ### Edge Removal
@@ -251,6 +255,7 @@ the offsets given).
 | Option | Description |
 |--------|-------------|
 | **--junctions.right-before-left.speed-threshold** {{DT_FLOAT}} | Allow building right-before-left junctions when the incoming edge speeds are below FLOAT (m/s); *default:* **13.6111** |
+| **--junctions.left-before-right** {{DT_BOOL}} | Build left-before-right junctions instead of right-before-left junctions; *default:* **false** |
 | **--no-internal-links** {{DT_BOOL}} | Omits internal links; *default:* **false** |
 | **--no-turnarounds** {{DT_BOOL}} | Disables building turnarounds; *default:* **false** |
 | **--no-turnarounds.tls** {{DT_BOOL}} | Disables building turnarounds at tls-controlled junctions; *default:* **false** |
@@ -322,6 +327,7 @@ Options](Basics/Using_the_Command_Line_Applications.md#reporting_options).
 | **-l** {{DT_FILE}}<br> **--log** {{DT_FILE}} | Writes all messages to FILE (implies verbose) |
 | **--message-log** {{DT_FILE}} | Writes all non-error messages to FILE (implies verbose) |
 | **--error-log** {{DT_FILE}} | Writes all warnings and errors to FILE |
+| **--language** {{DT_STR}} | Language to use in messages; *default:* **C** |
 
 ### Random Number
 

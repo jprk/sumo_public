@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2014-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -231,12 +231,13 @@ protected:
     };
 
     struct WalkingAreaPath {
-        WalkingAreaPath(const MSLane* _from, const MSLane* _walkingArea, const MSLane* _to, const PositionVector& _shape, int _dir) :
+        WalkingAreaPath(const MSLane* _from, const MSLane* _walkingArea, const MSLane* _to, const PositionVector& _shape, int _dir, double _angleOverride) :
             from(_from),
             to(_to),
             lane(_walkingArea),
             shape(_shape),
             dir(_dir),
+            angleOverride(_angleOverride),
             length(_shape.length()) {
         }
 
@@ -245,6 +246,7 @@ protected:
         const MSLane* const lane; // the walkingArea;
         const PositionVector shape;
         const int dir; // the direction when entering this path
+        const double angleOverride;
         const double length;
 
     };
@@ -289,6 +291,7 @@ protected:
         /// @brief whether the transportable is jammed
         bool isJammed() const;
         const MSLane* getLane() const;
+        double getPathLength() const;
         /// @}
 
         PState(MSPerson* person, MSStageMoving* stage, const MSLane* lane);

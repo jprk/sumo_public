@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -182,14 +182,6 @@ NIXMLConnectionsHandler::parseConnection(const std::string& defRole, const std::
     std::string fromDef = def.substr(0, div);
     std::string toDef = def.substr(div + 2);
 
-    // retrieve the edges
-    // check whether the definition includes a lane information (do not process it)
-    if (fromDef.find('_') != std::string::npos) {
-        fromDef = fromDef.substr(0, fromDef.find('_'));
-    }
-    if (toDef.find('_') != std::string::npos) {
-        toDef = toDef.substr(0, toDef.find('_'));
-    }
     // retrieve them now
     NBEdge* fromE = myEdgeCont.retrieve(fromDef);
     NBEdge* toE = myEdgeCont.retrieve(toDef);

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -36,8 +36,13 @@ class GNENet;
 class GNEDataHandler : public DataHandler {
 
 public:
-    /// @brief Constructor
-    GNEDataHandler(GNENet* net, const std::string& file, const bool allowUndoRedo);
+    /**@brief Constructor
+     * @param[in] net GNENet
+     * @param[in] file Name of the parsed file
+     * @param[in] allowUndoRedo enable or disable undoRedo
+     * @param[in] overwrite enable or disable overwrite elements
+     */
+    GNEDataHandler(GNENet* net, const std::string& file, const bool allowUndoRedo, const bool overwrite);
 
     /// @brief Destructor
     ~GNEDataHandler();
@@ -91,6 +96,9 @@ protected:
 
     /// @brief allow undo/redo
     const bool myAllowUndoRedo;
+
+    /// @brief check if overwrite
+    const bool myOverwrite;
 
     /// @brief write error "duplicated additional"
     void writeErrorDuplicated(const SumoXMLTag tag, const std::string& id);

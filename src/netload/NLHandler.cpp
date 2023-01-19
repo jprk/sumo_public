@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -282,9 +282,9 @@ NLHandler::myStartElement(int element,
             case SUMO_TAG_PREDECESSOR: // intended fall-through
             case SUMO_TAG_FOE_INSERTION: // intended fall-through
             case SUMO_TAG_INSERTION_PREDECESSOR: // intended fall-through
-            case SUMO_TAG_INSERTION_ORDER:
+            case SUMO_TAG_INSERTION_ORDER: // intended fall-through
             case SUMO_TAG_BIDI_PREDECESSOR:
-                addPredecessorConstraint(element, attrs, myConstrainedSignal);
+                myLastParameterised.push_back(addPredecessorConstraint(element, attrs, myConstrainedSignal));
                 break;
             default:
                 break;
@@ -315,7 +315,6 @@ NLHandler::myEndElement(int element) {
         case SUMO_TAG_JUNCTION:
             if (!myCurrentIsBroken) {
                 try {
-                    myJunctionControlBuilder.closeJunctionLogic();
                     myJunctionControlBuilder.closeJunction(getFileName());
                 } catch (InvalidArgument& e) {
                     WRITE_ERROR(e.what());
@@ -328,6 +327,9 @@ NLHandler::myEndElement(int element) {
                 try {
                     myJunctionControlBuilder.closeTrafficLightLogic(getFileName());
                 } catch (InvalidArgument& e) {
+                    for (MSPhaseDefinition* const phase : myJunctionControlBuilder.getLoadedPhases()) {
+                        delete phase;
+                    }
                     WRITE_ERROR(e.what());
                 }
             }
@@ -367,6 +369,13 @@ NLHandler::myEndElement(int element) {
         case SUMO_TAG_CONTAINER_STOP:
         case SUMO_TAG_CHARGING_STATION:
             myTriggerBuilder.endStoppingPlace();
+            myLastParameterised.pop_back();
+            break;
+        case SUMO_TAG_PREDECESSOR: // intended fall-through
+        case SUMO_TAG_FOE_INSERTION: // intended fall-through
+        case SUMO_TAG_INSERTION_PREDECESSOR: // intended fall-through
+        case SUMO_TAG_INSERTION_ORDER: // intended fall-through
+        case SUMO_TAG_BIDI_PREDECESSOR:
             myLastParameterised.pop_back();
             break;
         case SUMO_TAG_NET:
@@ -796,7 +805,7 @@ NLHandler::addPhase(const SUMOSAXAttributes& attrs) {
     const SUMOTime duration = attrs.getSUMOTimeReporting(SUMO_ATTR_DURATION, myJunctionControlBuilder.getActiveKey().c_str(), ok);
     const std::string state = attrs.get<std::string>(SUMO_ATTR_STATE, nullptr, ok);
     if (duration == 0) {
-        WRITE_ERROR("Duration of phase " + toString(myJunctionControlBuilder.getNumberOfLoadedPhases())
+        WRITE_ERROR("Duration of phase " + toString(myJunctionControlBuilder.getLoadedPhases().size())
                     + " for tlLogic '" + myJunctionControlBuilder.getActiveKey()
                     + "' program '" + myJunctionControlBuilder.getActiveSubKey() + "' is zero.");
         return;
@@ -1103,7 +1112,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
             clanes.push_back(clane);
         }
         if (clanes.size() == 0) {
-            throw InvalidArgument("Malformed argument 'lanes' for E2Detector '" + id + "'.\nSpecify 'lanes' as a sequence of lane-IDs seperated by whitespace or comma (',')");
+            throw InvalidArgument("Malformed argument 'lanes' for E2Detector '" + id + "'.\nSpecify 'lanes' as a sequence of lane-IDs separated by whitespace or comma (',')");
         }
         if (laneGiven) {
             WRITE_WARNING("Ignoring argument 'lane' for E2Detector '" + id + "' since argument 'lanes' was given.\n"
@@ -1333,7 +1342,7 @@ NLHandler::addEdgeLaneMeanData(const SUMOSAXAttributes& attrs, int objecttype) {
     if (edgesFile != "") {
         std::ifstream strm(edgesFile.c_str());
         if (!strm.good()) {
-            throw ProcessError("Could not load names of edges for edgeData defintion '" + id + "' from '" + edgesFile + "'.");
+            throw ProcessError("Could not load names of edges for edgeData definition '" + id + "' from '" + edgesFile + "'.");
         }
         while (strm.good()) {
             std::string name;
@@ -1710,7 +1719,7 @@ NLShapeHandler::getLanePos(const std::string& poiID, const std::string& laneID, 
 }
 
 
-void
+Parameterised*
 NLHandler::addPredecessorConstraint(int element, const SUMOSAXAttributes& attrs, MSRailSignal* rs) {
     if (rs == nullptr) {
         throw InvalidArgument("Rail signal '" + toString((SumoXMLTag)element) + "' constraint must occur within a railSignalConstraints element");
@@ -1750,12 +1759,16 @@ NLHandler::addPredecessorConstraint(int element, const SUMOSAXAttributes& attrs,
         default:
             throw InvalidArgument("Unsupported rail signal constraint '" + toString((SumoXMLTag)element) + "'");
     }
+    Parameterised* result = nullptr;
     if (ok) {
         for (const std::string& foe : foes) {
             MSRailSignalConstraint* c = new MSRailSignalConstraint_Predecessor(type, signal, foe, limit, active);
             rs->addConstraint(tripId, c);
+            // XXX if there are multiple foes, only one constraint will receive the parameters
+            result = c;
         }
     }
+    return result;
 }
 
 

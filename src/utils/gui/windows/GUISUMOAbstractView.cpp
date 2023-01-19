@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -60,6 +60,8 @@
 #include <foreign/fontstash/fontstash.h>
 #include <utils/gui/cursors/GUICursorSubSys.h>
 
+#include <unordered_set>
+
 #include "GUISUMOAbstractView.h"
 #include "GUIMainWindow.h"
 #include "GUIGlChildWindow.h"
@@ -104,24 +106,26 @@ const double GUISUMOAbstractView::SENSITIVITY = 0.1; // meters
  * GUISUMOAbstractView - FOX callback mapping
  * ----------------------------------------------------------------------- */
 FXDEFMAP(GUISUMOAbstractView) GUISUMOAbstractViewMap[] = {
-    FXMAPFUNC(SEL_CONFIGURE,            0,      GUISUMOAbstractView::onConfigure),
-    FXMAPFUNC(SEL_PAINT,                0,      GUISUMOAbstractView::onPaint),
-    FXMAPFUNC(SEL_LEFTBUTTONPRESS,      0,      GUISUMOAbstractView::onLeftBtnPress),
-    FXMAPFUNC(SEL_LEFTBUTTONRELEASE,    0,      GUISUMOAbstractView::onLeftBtnRelease),
-    FXMAPFUNC(SEL_MIDDLEBUTTONPRESS,    0,      GUISUMOAbstractView::onMiddleBtnPress),
-    FXMAPFUNC(SEL_MIDDLEBUTTONRELEASE,  0,      GUISUMOAbstractView::onMiddleBtnRelease),
-    FXMAPFUNC(SEL_RIGHTBUTTONPRESS,     0,      GUISUMOAbstractView::onRightBtnPress),
-    FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,   0,      GUISUMOAbstractView::onRightBtnRelease),
-    FXMAPFUNC(SEL_DOUBLECLICKED,        0,      GUISUMOAbstractView::onDoubleClicked),
-    FXMAPFUNC(SEL_MOUSEWHEEL,           0,      GUISUMOAbstractView::onMouseWheel),
-    FXMAPFUNC(SEL_MOTION,               0,      GUISUMOAbstractView::onMouseMove),
-    FXMAPFUNC(SEL_LEAVE,                0,      GUISUMOAbstractView::onMouseLeft),
-    FXMAPFUNC(SEL_KEYPRESS,             0,      GUISUMOAbstractView::onKeyPress),
-    FXMAPFUNC(SEL_KEYRELEASE,           0,      GUISUMOAbstractView::onKeyRelease),
-    FXMAPFUNC(SEL_COMMAND, MID_CLOSE_LANE,      GUISUMOAbstractView::onCmdCloseLane),
-    FXMAPFUNC(SEL_COMMAND, MID_CLOSE_EDGE,      GUISUMOAbstractView::onCmdCloseEdge),
-    FXMAPFUNC(SEL_COMMAND, MID_ADD_REROUTER,    GUISUMOAbstractView::onCmdAddRerouter),
-    FXMAPFUNC(SEL_COMMAND, MID_REACHABILITY,    GUISUMOAbstractView::onCmdShowReachability),
+    FXMAPFUNC(SEL_CONFIGURE,            0,               GUISUMOAbstractView::onConfigure),
+    FXMAPFUNC(SEL_PAINT,                0,               GUISUMOAbstractView::onPaint),
+    FXMAPFUNC(SEL_LEFTBUTTONPRESS,      0,               GUISUMOAbstractView::onLeftBtnPress),
+    FXMAPFUNC(SEL_LEFTBUTTONRELEASE,    0,               GUISUMOAbstractView::onLeftBtnRelease),
+    FXMAPFUNC(SEL_MIDDLEBUTTONPRESS,    0,               GUISUMOAbstractView::onMiddleBtnPress),
+    FXMAPFUNC(SEL_MIDDLEBUTTONRELEASE,  0,               GUISUMOAbstractView::onMiddleBtnRelease),
+    FXMAPFUNC(SEL_RIGHTBUTTONPRESS,     0,               GUISUMOAbstractView::onRightBtnPress),
+    FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,   0,               GUISUMOAbstractView::onRightBtnRelease),
+    FXMAPFUNC(SEL_DOUBLECLICKED,        0,               GUISUMOAbstractView::onDoubleClicked),
+    FXMAPFUNC(SEL_MOUSEWHEEL,           0,               GUISUMOAbstractView::onMouseWheel),
+    FXMAPFUNC(SEL_MOTION,               0,               GUISUMOAbstractView::onMouseMove),
+    FXMAPFUNC(SEL_LEAVE,                0,               GUISUMOAbstractView::onMouseLeft),
+    FXMAPFUNC(SEL_KEYPRESS,             0,               GUISUMOAbstractView::onKeyPress),
+    FXMAPFUNC(SEL_KEYRELEASE,           0,               GUISUMOAbstractView::onKeyRelease),
+    FXMAPFUNC(SEL_COMMAND, MID_CLOSE_LANE,               GUISUMOAbstractView::onCmdCloseLane),
+    FXMAPFUNC(SEL_COMMAND, MID_CLOSE_EDGE,               GUISUMOAbstractView::onCmdCloseEdge),
+    FXMAPFUNC(SEL_COMMAND, MID_ADD_REROUTER,             GUISUMOAbstractView::onCmdAddRerouter),
+    FXMAPFUNC(SEL_COMMAND, MID_REACHABILITY,             GUISUMOAbstractView::onCmdShowReachability),
+    FXMAPFUNC(SEL_COMMAND, MID_REACHABILITY,             GUISUMOAbstractView::onCmdShowReachability),
+    FXMAPFUNC(SEL_CHANGED,  MID_SIMPLE_VIEW_COLORCHANGE, GUISUMOAbstractView::onVisualizationChange),
 };
 
 
@@ -363,6 +367,12 @@ GUISUMOAbstractView::onCmdShowReachability(FXObject*, FXSelector, void*) {
 }
 
 
+long
+GUISUMOAbstractView::onVisualizationChange(FXObject*, FXSelector, void*) {
+    return 1;
+}
+
+
 GUILane*
 GUISUMOAbstractView::getLaneUnderCursor() {
     return nullptr;
@@ -539,6 +549,31 @@ GUISUMOAbstractView::getObjectsInBoundary(Boundary bound, bool singlePosition) {
 }
 
 
+std::vector<GUIGlObject*>
+GUISUMOAbstractView::filterInernalLanes(const std::vector<GUIGlObject*>& objects) const {
+    // count number of internal lanes
+    size_t internalLanes = 0;
+    for (const auto& object : objects) {
+        if ((object->getType() == GLO_LANE) && (object->getMicrosimID().find(':') != std::string::npos)) {
+            internalLanes++;
+        }
+    }
+    // if all objects are internal lanes, return it all
+    if (objects.size() == internalLanes) {
+        return objects;
+    }
+    // in other case filter internal lanes
+    std::vector<GUIGlObject*> filteredObjects;
+    for (const auto& object : objects) {
+        if ((object->getType() == GLO_LANE) && (object->getMicrosimID().find(':') != std::string::npos)) {
+            continue;
+        }
+        filteredObjects.push_back(object);
+    }
+    return filteredObjects;
+}
+
+
 bool
 GUISUMOAbstractView::showToolTipFor(const GUIGlID idToolTip) {
     if (idToolTip != GUIGlObject::INVALID_ID) {
@@ -701,8 +736,8 @@ GUISUMOAbstractView::displayColorLegend(const GUIColorScheme& scheme, bool leftS
     double textX = left - 0.01;
     double textDir = 1;
     FONSalign textAlign = FONS_ALIGN_RIGHT;
-    const double top = -0.8;
-    const double bot = 0.8;
+    const double top = -0.7;
+    const double bot = 0.9;
     const double dy = (top - bot) / numColors;
     const double bot2 = fixed ? bot : bot + dy / 2;
     // legend placement
@@ -800,6 +835,13 @@ GUISUMOAbstractView::displayColorLegend(const GUIColorScheme& scheme, bool leftS
         glTranslated(0, 0, -0.1);
         GLHelper::drawText(text, Position(textX + textDir * textXShift, topi + textShift), 0, fontHeight, RGBColor::BLACK, 0, textAlign, fontWidth);
     }
+    // draw scheme name
+    std::string name = scheme.getName();
+    if (StringUtils::startsWith(name, "by ")) {
+        name = name.substr(3);
+    }
+    GLHelper::drawText(name, Position(textX + textDir * 0.04, -0.8), 0, fontHeight, RGBColor::BLACK, 0, textAlign, fontWidth);
+
     GLHelper::popMatrix();
     // restore matrices
     glMatrixMode(GL_PROJECTION);
@@ -953,6 +995,7 @@ GUISUMOAbstractView::getPopupPosition() const {
 void
 GUISUMOAbstractView::destroyPopup() {
     if (myPopup != nullptr) {
+        myPopup->removePopupFromObject();
         delete myPopup;
         myPopupPosition.set(0, 0);
         myPopup = nullptr;
@@ -961,11 +1004,12 @@ GUISUMOAbstractView::destroyPopup() {
 }
 
 
-void 
+void
 GUISUMOAbstractView::replacePopup(GUIGLObjectPopupMenu* popUp) {
     // use the same position of old popUp
     popUp->move(myPopup->getX(), myPopup->getY());
     // delete and replace popup
+    myPopup->removePopupFromObject();
     delete myPopup;
     myPopup = popUp;
     // create and show popUp
@@ -1117,9 +1161,9 @@ GUISUMOAbstractView::onMouseMove(FXObject*, FXSelector, void* ptr) {
     // check if popup exist
     if (myPopup) {
         // check if handle front element
-         if (myPopupPosition == getPositionInformation()) {
+        if (myPopupPosition == getPositionInformation()) {
             myPopupPosition = Position::INVALID;
-            myPopup->handle(this,FXSEL(SEL_COMMAND, MID_CURSORDIALOG_FRONT), nullptr);
+            myPopup->handle(this, FXSEL(SEL_COMMAND, MID_CURSORDIALOG_FRONT), nullptr);
             destroyPopup();
         } else if (myPopup->shown() == false) {
             destroyPopup();
@@ -1155,19 +1199,16 @@ GUISUMOAbstractView::openObjectDialogAtCursor(const FXEvent* ev) {
     // check if SUMO is enabled, initialised and Make OpenGL context current
     if (isEnabled() && myAmInitialised && makeCurrent()) {
         // get all objects under cusor
-        const auto objectsUnderCursor = getGUIGlObjectsUnderCursor();
+        auto objectsUnderCursor = getGUIGlObjectsUnderCursor();
+        // filter elements by layer
+        objectsUnderCursor = filterGUIGLObjectsByLayer(objectsUnderCursor);
         // filter elements
         std::vector<GUIGlObject*> filteredObjectsUnderCursor;
         std::vector<GUIGlObject*> filteredVehiclesUnderCursor;
         std::vector<GUIGlObject*> filteredTLSUnderCursor;
-        for (const auto &GLObject : objectsUnderCursor) {
+        for (const auto& GLObject : objectsUnderCursor) {
             if (GLObject->getType() == GLO_EDGE) {
                 // avoid edges
-                continue;
-            } 
-            if ((GLObject->getType() == GLO_LANE) && (GLObject->getMicrosimID().find(':') != std::string::npos) && 
-                myVisualizationSettings->drawJunctionShape){
-                // avoid internal lanes if junction shape is drawn
                 continue;
             }
             if (std::find(filteredObjectsUnderCursor.begin(), filteredObjectsUnderCursor.end(), GLObject) != filteredObjectsUnderCursor.end()) {
@@ -1175,9 +1216,9 @@ GUISUMOAbstractView::openObjectDialogAtCursor(const FXEvent* ev) {
                 continue;
             }
             if ((GLObject->getType() == GLO_VEHICLE) || (GLObject->getType() == GLO_TRIP) ||
-                (GLObject->getType() == GLO_FLOW) || (GLObject->getType() == GLO_ROUTEFLOW) ||
-                (GLObject->getType() == GLO_CONTAINER) || (GLObject->getType() == GLO_CONTAINERFLOW) ||
-                (GLObject->getType() == GLO_PERSON) || (GLObject->getType() == GLO_PERSONFLOW)) {
+                    (GLObject->getType() == GLO_FLOW) || (GLObject->getType() == GLO_ROUTEFLOW) ||
+                    (GLObject->getType() == GLO_CONTAINER) || (GLObject->getType() == GLO_CONTAINERFLOW) ||
+                    (GLObject->getType() == GLO_PERSON) || (GLObject->getType() == GLO_PERSONFLOW)) {
                 // filter vehicles, person and containers
                 filteredVehiclesUnderCursor.push_back(GLObject);
             }
@@ -1187,21 +1228,33 @@ GUISUMOAbstractView::openObjectDialogAtCursor(const FXEvent* ev) {
             }
             filteredObjectsUnderCursor.push_back(GLObject);
         }
+        // filter internal lanes
+        filteredObjectsUnderCursor = filterInernalLanes(filteredObjectsUnderCursor);
+        // remove duplicated elements using an unordered set
+        auto itDuplicated = filteredObjectsUnderCursor.begin();
+        std::unordered_set<GUIGlObject*> unorderedSet;
+        for (auto itElement = filteredObjectsUnderCursor.begin(); itElement != filteredObjectsUnderCursor.end(); itElement++) {
+            if (unorderedSet.insert(*itElement).second) {
+                *itDuplicated++ = *itElement;
+            }
+        }
+        filteredObjectsUnderCursor.erase(itDuplicated, filteredObjectsUnderCursor.end());
+        // continue depending of number of objects
         if (filteredObjectsUnderCursor.empty()) {
             // if filteredObjectsUnderCursor, inspect net
-            openObjectDialog({GUIGlObjectStorage::gIDStorage.getNetObject()});
+            openObjectDialog({GUIGlObjectStorage::gIDStorage.getNetObject()}, true);
         } else if (altKeyPressed) {
             // inspect all objects under cusror
-            openObjectDialog(filteredObjectsUnderCursor);
+            openObjectDialog(filteredObjectsUnderCursor, false);
         } else if (filteredVehiclesUnderCursor.size() > 0) {
             // inspect only vehicles
-            openObjectDialog(filteredVehiclesUnderCursor);
+            openObjectDialog(filteredVehiclesUnderCursor, true);
         } else if (filteredTLSUnderCursor.size() > 0) {
             // inspect only TLSs
-            openObjectDialog(filteredTLSUnderCursor);
+            openObjectDialog(filteredTLSUnderCursor, true);
         } else {
             // inspect objects under cursor
-            openObjectDialog(filteredObjectsUnderCursor);
+            openObjectDialog(filteredObjectsUnderCursor, true);
         }
         // Make OpenGL context non current
         makeNonCurrent();
@@ -1210,22 +1263,24 @@ GUISUMOAbstractView::openObjectDialogAtCursor(const FXEvent* ev) {
 
 
 void
-GUISUMOAbstractView::openObjectDialog(const std::vector<GUIGlObject*> &objects) {
+GUISUMOAbstractView::openObjectDialog(const std::vector<GUIGlObject*>& objects, const bool filter) {
     if (objects.size() > 0) {
         // create cursor popup dialog
         if (objects.size() == 1) {
             myCurrentObjectsDialog = objects;
-        } else {
+        } else if (filter) {
             // declare filtered objects
             std::vector<GUIGlObject*> filteredGLObjects;
             // fill filtered objects
-            for (const auto &glObject : objects) {
+            for (const auto& glObject : objects) {
                 // compare type with first eleement type
                 if (glObject->getType() == objects.front()->getType()) {
                     filteredGLObjects.push_back(glObject);
                 }
             }
             myCurrentObjectsDialog = filteredGLObjects;
+        } else {
+            myCurrentObjectsDialog = objects;
         }
         if (myCurrentObjectsDialog.size() > 1) {
             myPopup = new GUICursorDialog(GUIGLObjectPopupMenu::PopupType::PROPERTIES, this, myCurrentObjectsDialog);
@@ -1500,6 +1555,7 @@ GUISUMOAbstractView::showViewschemeEditor() {
     } else {
         myVisualizationChanger->setCurrent(myVisualizationSettings);
     }
+    setFocus();
     myVisualizationChanger->show();
 }
 
@@ -1507,15 +1563,7 @@ GUISUMOAbstractView::showViewschemeEditor() {
 GUIDialog_EditViewport*
 GUISUMOAbstractView::getViewportEditor() {
     if (myViewportChooser == nullptr) {
-        const FXint minSize = 100;
-        const FXint minTitlebarHeight = 20;
-        int x = MAX2(0, MIN2(getApp()->reg().readIntEntry(
-                                 "VIEWPORT_DIALOG_SETTINGS", "x", 150),
-                             getApp()->getRootWindow()->getWidth() - minSize));
-        int y = MAX2(minTitlebarHeight, MIN2(getApp()->reg().readIntEntry(
-                "VIEWPORT_DIALOG_SETTINGS", "y", 150),
-                                             getApp()->getRootWindow()->getHeight() - minSize));
-        myViewportChooser = new GUIDialog_EditViewport(this, "Edit Viewport", x, y);
+        myViewportChooser = new GUIDialog_EditViewport(this, "Edit Viewport");
         myViewportChooser->create();
     }
     updateViewportValues();
@@ -1753,7 +1801,7 @@ GUISUMOAbstractView::drawDecals() {
 }
 
 
-void 
+void
 GUISUMOAbstractView::openPopupDialog() {
     int x, y;
     FXuint b;
@@ -1868,6 +1916,49 @@ GUISUMOAbstractView::setDelay(double delay) {
 void
 GUISUMOAbstractView::setBreakpoints(const std::vector<SUMOTime>& breakpoints) {
     myApp->setBreakpoints(breakpoints);
+}
+
+
+GUISUMOAbstractView::LayerObject::LayerObject(double layer, GUIGlObject* object) :
+    myGLObject(object) {
+    first = layer;
+    second.first = object->getType();
+    second.second = object->getMicrosimID();
+}
+
+
+GUISUMOAbstractView::LayerObject::LayerObject(GUIGlObject* object) :
+    myGLObject(object) {
+    first = object->getType();
+    second.first = object->getType();
+    second.second = object->getMicrosimID();
+}
+
+
+GUIGlObject*
+GUISUMOAbstractView::LayerObject::getGLObject() const {
+    return myGLObject;
+}
+
+
+std::vector<GUIGlObject*>
+GUISUMOAbstractView::filterGUIGLObjectsByLayer(const std::vector<GUIGlObject*>& objects) const {
+    // declare map for saving shapes sorted by layer and ID
+    std::set<LayerObject> layerObjects;
+    for (const auto& object : objects) {
+        if ((object->getType() == GLO_POLYGON) || (object->getType() == GLO_POI)) {
+            layerObjects.insert(LayerObject(dynamic_cast<Shape*>(object)->getShapeLayer(), object));
+        } else {
+            layerObjects.insert(LayerObject(object));
+        }
+    }
+    // declare vector for saving object filtered by layer
+    std::vector<GUIGlObject*> objectsFiltered;
+    // insert in objects filtered
+    for (auto it = layerObjects.rbegin(); it != layerObjects.rend(); it++) {
+        objectsFiltered.push_back(it->getGLObject());
+    }
+    return objectsFiltered;
 }
 
 

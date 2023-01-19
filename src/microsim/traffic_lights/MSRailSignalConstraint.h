@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -20,6 +20,7 @@
 #pragma once
 #include <config.h>
 
+#include <utils/common/Parameterised.h>
 #include <microsim/MSMoveReminder.h>
 
 // ===========================================================================
@@ -36,15 +37,15 @@ class SUMOSAXAttributes;
  * @class MSRailSignalConstraint
  * @brief A base class for constraints
  */
-class MSRailSignalConstraint {
+class MSRailSignalConstraint : public Parameterised {
 public:
 
     enum ConstraintType {
-       PREDECESSOR = 0, // swaps to PREDECESSOR
-       INSERTION_PREDECESSOR = 1, // swaps to FOE_INSERTION
-       FOE_INSERTION = 2, // swaps to INSERTION_PREDECESSOR
-       INSERTION_ORDER = 3, // swaps to INSERTION_ORDER
-       BIDI_PREDECESSOR = 4 // swaps to BIDI_PREDECESSOR
+        PREDECESSOR = 0, // swaps to PREDECESSOR
+        INSERTION_PREDECESSOR = 1, // swaps to FOE_INSERTION
+        FOE_INSERTION = 2, // swaps to INSERTION_PREDECESSOR
+        INSERTION_ORDER = 3, // swaps to INSERTION_ORDER
+        BIDI_PREDECESSOR = 4 // swaps to BIDI_PREDECESSOR
     };
 
     /** @brief Constructor

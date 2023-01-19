@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -174,11 +174,14 @@ public:
     /// @brief highlight edges according to reachability
     virtual long onCmdShowReachability(FXObject*, FXSelector, void*);
 
+    /// @brief hook to react on change in visualization settings
+    virtual long  onVisualizationChange(FXObject*, FXSelector, void*);
+
     /// @brief open object dialog at the cursor position
     virtual void openObjectDialogAtCursor(const FXEvent* ev);
 
     /// @brief open object dialog for the given object
-    void openObjectDialog(const std::vector<GUIGlObject*> &objects);
+    void openObjectDialog(const std::vector<GUIGlObject*>& objects, const bool filter = true);
 
     /// @brief A method that updates the tooltip
     void updateToolTip();
@@ -251,6 +254,17 @@ public:
 
     /// @brief return list of loaded edgeData attributes
     virtual std::vector<std::string> getEdgeDataAttrs() const {
+        return std::vector<std::string>();
+    }
+
+    /// @brief return list of loaded edgeData ids (being computed in the current simulation)
+    virtual std::vector<std::string> getMeanDataIDs() const {
+        return std::vector<std::string>();
+    }
+
+    /// @brief return list of available attributes for the given meanData id
+    virtual std::vector<std::string> getMeanDataAttrs(const std::string& meanDataID) const {
+        UNUSED_PARAMETER(meanDataID);
         return std::vector<std::string>();
     }
 
@@ -465,6 +479,9 @@ protected:
     /// @brief returns the ids of all objects in the given boundary
     std::vector<GUIGlID> getObjectsInBoundary(Boundary bound, bool singlePosition);
 
+    /// @brief filter internal lanes in Objects under cursor
+    std::vector<GUIGlObject*> filterInernalLanes(const std::vector<GUIGlObject*>& objects) const;
+
     /// @brief invokes the tooltip for the given object
     bool showToolTipFor(const GUIGlID idToolTip);
 
@@ -512,7 +529,7 @@ protected:
     /// @brief The current popup-menu position
     Position myPopupPosition = Position(0, 0);
 
-    /// @brief vector with current objects dialog 
+    /// @brief vector with current objects dialog
     std::vector<GUIGlObject*> myCurrentObjectsDialog;
 
     /// @brief visualization settings
@@ -558,6 +575,27 @@ protected:
     long myFrameDrawTime;
 
 private:
+    /// @brief struct used for sorting objects by layer
+    struct LayerObject : public std::pair<double, std::pair<GUIGlObjectType, std::string> > {
+
+    public:
+        /// @brief constructor for shapes
+        LayerObject(double layer, GUIGlObject* object);
+
+        /// @brief constructor for non-shape elements
+        LayerObject(GUIGlObject* object);
+
+        /// @brief get GLObject
+        GUIGlObject* getGLObject() const;
+
+    private:
+        /// @brief GLObject
+        GUIGlObject* myGLObject;
+    };
+
+    /// @fbrief filter elements by layer
+    std::vector<GUIGlObject*> filterGUIGLObjectsByLayer(const std::vector<GUIGlObject*>& objects) const;
+
     // @brief sensitivity for "<>AtPosition(...) functions
     static const double SENSITIVITY;
 };

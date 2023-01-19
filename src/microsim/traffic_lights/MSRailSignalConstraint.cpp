@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -195,8 +195,12 @@ MSRailSignalConstraint_Predecessor::getDescription() const {
     if (passedIDs.size() > 0) {
         passedIDs2 = " (" + toString(passedIDs) + ")";
     }
+    std::string params = "";
+    for (auto item : getParametersMap()) {
+        params += ("\n  key=" + item.first + " value=" + item.second);
+    }
     return (toString(getTag()) + "  " + myTripId + vehID + " at signal " + myTrackers.front()->getLane()->getEdge().getFromJunction()->getID()
-            + " passed=" + StringUtils::prune(toString(myTrackers.front()->myPassed)) + passedIDs2);
+            + " passed=" + StringUtils::prune(toString(myTrackers.front()->myPassed)) + passedIDs2 + params);
 }
 
 // ===========================================================================
@@ -305,6 +309,7 @@ MSRailSignalConstraint_Predecessor::write(OutputDevice& out, const std::string& 
     if (!myAmActive) {
         out.writeAttr(SUMO_ATTR_ACTIVE, myAmActive);
     }
+    writeParams(out);
     out.closeTag();
 }
 

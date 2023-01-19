@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -81,7 +81,7 @@ GNEChange_TLS::GNEChange_TLS(GNEJunction* junction, NBTrafficLightDefinition* tl
 }
 
 
-GNEChange_TLS::GNEChange_TLS(GNEJunction* junction, NBTrafficLightDefinition* tlDef, const std::string &newID) :
+GNEChange_TLS::GNEChange_TLS(GNEJunction* junction, NBTrafficLightDefinition* tlDef, const std::string& newID) :
     GNEChange(Supermode::NETWORK, true, false),
     myJunction(junction),
     myTlDef(tlDef),
@@ -130,7 +130,7 @@ GNEChange_TLS::undo() {
         }
     }
     // enable save networkElements
-    myJunction->getNet()->requireSaveNet(true);
+    myJunction->getNet()->getSavingStatus()->requireSaveNetwork();
 }
 
 
@@ -162,7 +162,7 @@ GNEChange_TLS::redo() {
         }
     }
     // enable save networkElements
-    myJunction->getNet()->requireSaveNet(true);
+    myJunction->getNet()->getSavingStatus()->requireSaveNetwork();
 }
 
 

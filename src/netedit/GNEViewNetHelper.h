@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,6 +21,7 @@
 #include <config.h>
 
 #include <utils/foxtools/MFXButtonTooltip.h>
+#include <utils/foxtools/MFXMenuButtonTooltip.h>
 #include <utils/foxtools/MFXCheckableButton.h>
 #include <utils/gui/globjects/GUIGlObject.h>
 #include <utils/gui/globjects/GUIGlObjectTypes.h>
@@ -117,7 +118,9 @@ enum class DataEditMode {
     /// @brief mode for create edgeRelData elements
     DATA_EDGERELDATA,
     /// @brief mode for create TAZRelData elements
-    DATA_TAZRELDATA
+    DATA_TAZRELDATA,
+    /// @brief mode for create meanData elements
+    DATA_MEANDATA
 };
 
 // ===========================================================================
@@ -220,7 +223,7 @@ struct GNEViewNetHelper {
         void swapLane2Edge();
 
         /// @brief filter locked elements
-        void filterLockedElements(const GNEViewNetHelper::LockManager &lockManager, std::vector<GUIGlObjectType> forcedIgnoredTiped = {});
+        void filterLockedElements(const GNEViewNetHelper::LockManager& lockManager, std::vector<GUIGlObjectType> forcedIgnoredTiped = {});
 
         /// @brief get front GUI GL ID or a pointer to nullptr
         GUIGlID getGlIDFront() const;
@@ -293,6 +296,9 @@ struct GNEViewNetHelper {
 
         /// @brief get vector with clicked ACs
         const std::vector<GNEAttributeCarrier*>& getClickedAttributeCarriers() const;
+
+        /// @brief get vector with clicked junctions
+        const std::vector<GNEJunction*>& getClickedJunctions() const;
 
         /// @brief get vector with clicked Demand Elements
         const std::vector<GNEDemandElement*>& getClickedDemandElements() const;
@@ -383,6 +389,9 @@ struct GNEViewNetHelper {
         bool mySwapLane2edge;
 
     private:
+        /// @brief filter duplicated objects
+        std::vector<GUIGlObject*> filterDuplicatedObjects(const std::vector<GUIGlObject*>& GUIGlObjects) const;
+
         /// @brief sort by altitude and update GUIGlObjects
         void sortGUIGlObjects(const std::vector<GUIGlObject*>& GUIGlObjects);
 
@@ -464,27 +473,45 @@ struct GNEViewNetHelper {
         /// @brief default constructor
         SaveElements(GNEViewNet* viewNet);
 
+        /// @brief destructor
+        ~SaveElements();
+
         /// @brief build save buttons
         void buildSaveElementsButtons();
 
-        /// @brief checkable button for save all
-        MFXButtonTooltip* saveAll;
-
-        /// @brief checkable button for save network
-        MFXButtonTooltip* saveNetwork;
-
-        /// @brief checkable button for save additional elements
-        MFXButtonTooltip* saveAdditionalElements;
-
-        /// @brief checkable button for save demand elements
-        MFXButtonTooltip* saveDemandElements;
-
-        /// @brief checkable button for save data elements
-        MFXButtonTooltip* saveDataElements;
+        /// @brief enable or disable save individual files
+        void setSaveIndividualFiles(bool value);
 
     private:
         /// @brief pointer to net
         GNEViewNet* myViewNet;
+
+        /// The locator menu
+        FXPopup* mySaveIndividualFilesPopup = nullptr;
+
+        /// @brief checkable button for save individual files
+        MFXMenuButtonTooltip* mySaveIndividualFiles = nullptr;
+
+        /// @brief checkable button for save NETEDIT config
+        MFXButtonTooltip* mySaveNETEDITConfig = nullptr;
+
+        /// @brief checkable button for save SUMO config
+        MFXButtonTooltip* mySaveSUMOConfig = nullptr;
+
+        /// @brief checkable button for save network
+        MFXButtonTooltip* mySaveNetwork = nullptr;
+
+        /// @brief checkable button for save additional elements
+        MFXButtonTooltip* mySaveAdditionalElements = nullptr;
+
+        /// @brief checkable button for save demand elements
+        MFXButtonTooltip* mySaveDemandElements = nullptr;
+
+        /// @brief checkable button for save genericdata elements
+        MFXButtonTooltip* mySaveDataElements = nullptr;
+
+        /// @brief checkable button for save meanData elements
+        MFXButtonTooltip* mySaveMeanDataElements = nullptr;
 
         /// @brief Invalidated copy constructor.
         SaveElements(const SaveElements&) = delete;
@@ -497,7 +524,7 @@ struct GNEViewNetHelper {
     struct EditModes {
 
         /// @brief default constructor
-        EditModes(GNEViewNet* viewNet, const bool newNet);
+        EditModes(GNEViewNet* viewNet);
 
         /// @brief build checkable buttons
         void buildSuperModeButtons();
@@ -1061,7 +1088,7 @@ struct GNEViewNetHelper {
     };
 
     /// @brief struct used to group all variables related with selecting using a square or polygon
-    /// @note in the future the variables used for selecting throught a polygon will be placed here
+    /// @note in the future the variables used for selecting through a polygon will be placed here
     struct SelectingArea {
 
         /// @brief default constructor
@@ -1303,13 +1330,16 @@ struct GNEViewNetHelper {
         void updateDataCheckableButtons();
 
         /// @brief checkable button for edit mode "edgeData"
-        MFXCheckableButton* edgeDataButton;
+        MFXCheckableButton* edgeDataButton = nullptr;
 
         /// @brief checkable button for edit mode "edgeRelData"
-        MFXCheckableButton* edgeRelDataButton;
+        MFXCheckableButton* edgeRelDataButton = nullptr;
 
         /// @brief checkable button for edit mode "TAZRelData"
-        MFXCheckableButton* TAZRelDataButton;
+        MFXCheckableButton* TAZRelDataButton = nullptr;
+
+        /// @brief checkable button for edit mode "meanData"
+        MFXCheckableButton* meanDataButton = nullptr;
 
     private:
         /// @brief pointer to net
@@ -1371,7 +1401,7 @@ struct GNEViewNetHelper {
     static const RGBColor& getRainbowScaledColor(const double min, const double max, const double value);
 
     /// @brief filter elements based on the layer
-    static std::vector<GUIGlObject*> filterElementsByLayer(const std::vector<GUIGlObject*> &GLObjects);
+    static std::vector<GUIGlObject*> filterElementsByLayer(const std::vector<GUIGlObject*>& GLObjects);
 
 private:
     /// @brief scale (rainbow) colors

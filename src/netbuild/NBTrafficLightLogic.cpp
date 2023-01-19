@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -230,7 +230,7 @@ NBTrafficLightLogic::closeBuilding(bool checkVarDurations) {
                 }
             }
             if (!found) {
-                WRITE_WARNING("Non-static traffic light '" + getID() + "' does not define variable phase length.");
+                WRITE_WARNINGF(TL("Non-static traffic light '%' does not define variable phase length."), getID());
             }
         }
     }
@@ -316,7 +316,7 @@ NBTrafficLightLogic::setPhaseName(int phaseIndex, const std::string& name) {
 }
 
 
-void 
+void
 NBTrafficLightLogic::overrideState(int phaseIndex, const char c) {
     assert(phaseIndex < (int)myPhases.size());
     for (int i = 0; i < (int)myPhases[phaseIndex].state.size(); i++) {

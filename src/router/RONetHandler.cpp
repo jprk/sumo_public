@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -395,7 +395,9 @@ RONetHandler::parseDistrict(const SUMOSAXAttributes& attrs) {
     if (!ok) {
         return;
     }
-    myNet.addDistrict(myCurrentName, myEdgeBuilder.buildEdge(myCurrentName + "-source", nullptr, nullptr, 0), myEdgeBuilder.buildEdge(myCurrentName + "-sink", nullptr, nullptr, 0));
+    ROEdge* const sink = myEdgeBuilder.buildEdge(myCurrentName + "-sink", nullptr, nullptr, 0);
+    ROEdge* const source = myEdgeBuilder.buildEdge(myCurrentName + "-source", nullptr, nullptr, 0);
+    myNet.addDistrict(myCurrentName, source, sink);
     if (attrs.hasAttribute(SUMO_ATTR_EDGES)) {
         const std::vector<std::string>& desc = attrs.get<std::vector<std::string> >(SUMO_ATTR_EDGES, myCurrentName.c_str(), ok);
         for (const std::string& eID : desc) {

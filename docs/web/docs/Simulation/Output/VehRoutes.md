@@ -105,3 +105,11 @@ For example, setting the option **--device.vehroute.probability 0.25** will equi
 - **--vehroute-output.stop-edges**:   Include information about edges between stops
 - **--vehroute-output.speedfactor**:   Include information vehicle specific speedFactor in output (defaults to 'true' if the vehicle had it's departSpeed set)
 - **--vehroute-output.internal**:   Include internal edges in the output. Note, that such routes are not suitable for being loaded by sumo or duarouter!
+
+## Visualization example
+
+### departure times versus arrival times
+
+<img src="../../images/vehroute_output.png" width="500px"/>
+
+Generated with [plotXMLAttributes.py](../../Tools/Visualization.md#departure_times_versus_arrival_times).

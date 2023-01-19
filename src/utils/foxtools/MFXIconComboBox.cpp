@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2006-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2006-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -76,13 +76,6 @@ void
 MFXListItem::draw(const FXList* myList, FXDC& dc, FXint xx, FXint yy, FXint ww, FXint hh) {
     // almost the same code as FXListItem::draw except for using custom background color
     FXFont* font = myList->getFont();
-    FXint ih = 0, th = 0;
-    if (icon) {
-        ih = icon->getHeight();
-    }
-    if (!label.empty()) {
-        th = font->getFontHeight();
-    }
     if (isSelected()) {
         dc.setForeground(myList->getSelBackColor());
     } else {
@@ -94,7 +87,7 @@ MFXListItem::draw(const FXList* myList, FXDC& dc, FXint xx, FXint yy, FXint ww, 
     }
     xx += SIDE_SPACING / 2;
     if (icon) {
-        dc.drawIcon(icon, xx, yy + (hh - ih) / 2);
+        dc.drawIcon(icon, xx, yy + (hh - 16) / 2);
         xx += ICON_SPACING + icon->getWidth();
     }
     if (!label.empty()) {
@@ -106,7 +99,7 @@ MFXListItem::draw(const FXList* myList, FXDC& dc, FXint xx, FXint yy, FXint ww, 
         } else {
             dc.setForeground(myList->getTextColor());
         }
-        dc.drawText(xx, yy + (hh - th) / 2 + font->getFontAscent(), label);
+        dc.drawText(xx, yy + (hh - 16) / 2 + font->getFontAscent(), label);
     }
 }
 
@@ -295,8 +288,8 @@ MFXIconComboBox::setText(FXString text) {
 void
 MFXIconComboBox::setNumVisible(FXint nvis) {
     myList->setNumVisible(nvis);
-    // set height manually (due icons)
-    myList->setHeight((nvis + 1) * ICON_HEIGHT);
+    // set height manually (margin top + ICON_HEIGHT + margin bot)
+    myList->setHeight(nvis * (16 + 4));
 }
 
 

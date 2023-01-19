@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -278,6 +278,9 @@ struct GUIVisualizationCandidateColorSettings {
 
     /// @brief color for selected conflict candidate element (Usually selected using ctrl+click)
     static const RGBColor conflict;
+
+    /// @brief color for invalid elements
+    static const RGBColor invalid;
 };
 
 /// @brief struct for connection settings
@@ -747,6 +750,8 @@ public:
 
     /// @brief key for coloring by edgeData
     std::string edgeData;
+    /// @brief id for coloring by live edgeData
+    std::string edgeDataID;
 
     /// @brief threshold below which edge data value should not be rendered
     bool edgeValueHideCheck;
@@ -789,6 +794,9 @@ public:
 
     /// @brief Whether vehicle length shall be scaled with length/geometry factor
     bool scaleLength;
+
+    /// @brief Whether to draw reversed vehicles in their reversed state
+    bool drawReversed;
 
     /// @brief Set whether parking related information should be shown
     bool showParkingInfo;
@@ -940,6 +948,17 @@ public:
 
     /// @brief whether 3D TLS models should be generated automatically
     bool generate3DTLSModels;
+
+    /// @brief whether to draw the head up display items
+    bool show3DHeadUpDisplay;
+
+    /// @brief 3D material light components
+    RGBColor ambient3DLight;
+    RGBColor diffuse3DLight;
+
+    /// @brief sky background color
+    RGBColor skyColor;
+
     /// @}
 
 
@@ -976,6 +995,9 @@ public:
     /// @brief flag to force draw for rectangle selection (see drawForRectangleSelection)
     bool forceDrawForRectangleSelection;
 
+    /// @brief flag for disable dotted contours in NETEDIT
+    bool disableDottedContours;
+
     // Setting bundles for optional drawing geometry point indices
     GUIVisualizationTextSettings geometryIndices;
 
@@ -1000,8 +1022,10 @@ public:
     static const std::string SCHEME_NAME_SELECTION;
     static const std::string SCHEME_NAME_TYPE;
     static const std::string SCHEME_NAME_PERMISSION_CODE;
+    static const std::string SCHEME_NAME_EDGEDATA_LIVE;
 
     static const double MISSING_DATA;
+    static RGBColor COL_MISSING_DATA;
 
     /// @brief color settings
     GUIVisualizationColorSettings colorSettings;

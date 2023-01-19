@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2017-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -603,7 +603,7 @@ Helper::buildStopParameters(const std::string& edgeOrStoppingPlaceID,
         }
     } else {
         if (startPos == INVALID_DOUBLE_VALUE) {
-            startPos = pos - POSITION_EPS;
+            startPos = MAX2(0.0, pos - POSITION_EPS);
         }
         if (startPos < 0.) {
             throw TraCIException("Position on lane must not be negative.");
@@ -814,21 +814,21 @@ Helper::collectObjectsInRange(int domain, const PositionVector& shape, double ra
     const float cmax[2] = {(float) b.xmax(), (float) b.ymax()};
     switch (domain) {
         case libsumo::CMD_GET_BUSSTOP_VARIABLE:
-            for (const auto& stop: MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_BUS_STOP)) {
+            for (const auto& stop : MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_BUS_STOP)) {
                 if (shape.distance2D(stop.second->getCenterPos()) <= range) {
                     into.insert(stop.second);
                 }
             }
             break;
         case libsumo::CMD_GET_CHARGINGSTATION_VARIABLE:
-            for (const auto& stop: MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_CHARGING_STATION)) {
+            for (const auto& stop : MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_CHARGING_STATION)) {
                 if (shape.distance2D(stop.second->getCenterPos()) <= range) {
                     into.insert(stop.second);
                 }
             }
             break;
         case libsumo::CMD_GET_CALIBRATOR_VARIABLE:
-            for (const auto& calib: MSCalibrator::getInstances()) {
+            for (const auto& calib : MSCalibrator::getInstances()) {
                 if (shape.distance2D(calib.second->getLane()->getShape()[0]) <= range) {
                     into.insert(calib.second);
                 }
@@ -844,7 +844,7 @@ Helper::collectObjectsInRange(int domain, const PositionVector& shape, double ra
             LaneArea::getTree()->Search(cmin, cmax, Named::StoringVisitor(into));
             break;
         case libsumo::CMD_GET_PARKINGAREA_VARIABLE: {
-            for (const auto& stop: MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_PARKING_AREA)) {
+            for (const auto& stop : MSNet::getInstance()->getStoppingPlaces(SUMO_TAG_PARKING_AREA)) {
                 if (shape.distance2D(stop.second->getCenterPos()) <= range) {
                     into.insert(stop.second);
                 }
@@ -1696,6 +1696,19 @@ Helper::findCloserLane(const MSEdge* edge, const Position& pos, SUMOVehicleClass
             bestDistance = dist;
             *lane = candidateLane;
             newBest = true;
+        }
+    }
+    if (edge->isInternal() && edge->getNumLanes() > 1) {
+        // there is a parallel internal edge that isn't returned by getInternalFollowingEdge but is also usable for the same route
+        for (const MSLane* const l : edge->getLanes()) {
+            if (l->getIndex() == 0) {
+                continue;
+            }
+            for (const MSLink* const link : l->getLinkCont()) {
+                if (link->isInternalJunctionLink()) {
+                    findCloserLane(&link->getViaLane()->getEdge(), pos, vClass, bestDistance, lane);
+                }
+            }
         }
     }
     return newBest;

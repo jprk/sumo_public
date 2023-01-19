@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,22 +35,25 @@
 #include <netedit/changes/GNEChange_DataInterval.h>
 #include <netedit/changes/GNEChange_GenericData.h>
 #include <netedit/changes/GNEChange_DemandElement.h>
-#include <netedit/changes/GNEChange_Additional.h>
+#include <netedit/changes/GNEChange_MeanData.h>
 #include <netedit/changes/GNEChange_Edge.h>
 #include <netedit/changes/GNEChange_Junction.h>
 #include <netedit/changes/GNEChange_Lane.h>
 #include <netedit/dialogs/GNEFixAdditionalElements.h>
 #include <netedit/dialogs/GNEFixDemandElements.h>
 #include <netedit/elements/GNEGeneralHandler.h>
+#include <netedit/elements/data/GNEDataHandler.h>
 #include <netedit/elements/data/GNEDataInterval.h>
 #include <netedit/elements/network/GNEConnection.h>
 #include <netedit/elements/network/GNECrossing.h>
 #include <netedit/elements/network/GNEEdgeType.h>
 #include <netedit/elements/network/GNELaneType.h>
+#include <netedit/elements/data/GNEMeanData.h>
 #include <netedit/frames/common/GNEInspectorFrame.h>
 #include <netwrite/NWFrame.h>
 #include <netwrite/NWWriter_SUMO.h>
 #include <netwrite/NWWriter_XML.h>
+#include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/div/GUIParameterTableWindow.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
 #include <utils/gui/globjects/GUIGlObjectStorage.h>
@@ -82,20 +85,10 @@ const std::map<SumoXMLAttr, std::string> GNENet::EMPTY_HEADER;
 
 GNENet::GNENet(NBNetBuilder* netBuilder) :
     GUIGlObject(GLO_NETWORK, "", nullptr),
-    myViewNet(nullptr),
     myNetBuilder(netBuilder),
     myAttributeCarriers(new GNENetHelper::AttributeCarriers(this)),
-    myPathManager(new GNEPathManager(this)),
-    myJunctionIDCounter(0),
-    myEdgeIDCounter(0),
-    myNeedRecompute(true),
-    myNetSaved(true),
-    myAdditionalsSaved(true),
-    myTLSProgramsSaved(true),
-    myDemandElementsSaved(true),
-    myDataElementsSaved(true),
-    myUpdateGeometryEnabled(true),
-    myUpdateDataEnabled(true) {
+    mySavingStatus(new GNENetHelper::SavingStatus()),
+    myPathManager(new GNEPathManager(this)) { // TODO a little dangerous to use "this" here, it makes access to the net and the netBuilder
     // set net in gIDStorage
     GUIGlObjectStorage::gIDStorage.setNetObject(this);
     // Write GL debug information
@@ -115,6 +108,8 @@ GNENet::~GNENet() {
     delete myPathManager;
     // delete AttributeCarriers
     delete myAttributeCarriers;
+    // delete saving status
+    delete mySavingStatus;
     // show extra information for tests
     WRITE_DEBUG("Deleting net builder in GNENet destructor");
     delete myNetBuilder;
@@ -124,6 +119,12 @@ GNENet::~GNENet() {
 GNENetHelper::AttributeCarriers*
 GNENet::getAttributeCarriers() const {
     return myAttributeCarriers;
+}
+
+
+GNENetHelper::SavingStatus*
+GNENet::getSavingStatus() const {
+    return mySavingStatus;
 }
 
 
@@ -157,6 +158,9 @@ GNENet::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
     buildPopupHeader(ret, app);
     buildCenterPopupEntry(ret);
     buildPositionCopyEntry(ret, app);
+    if (GeoConvHelper::getFinal().usingGeoProjection()) {
+        GUIDesigns::buildFXMenuCommand(ret, "Copy view geo-boundary to clipboard", nullptr, ret, MID_COPY_VIEW_GEOBOUNDARY);
+    }
     return ret;
 }
 
@@ -174,12 +178,6 @@ GNENet::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
 void
 GNENet::drawGL(const GUIVisualizationSettings& /*s*/) const {
     // nothing to drawn
-}
-
-
-double
-GNENet::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 
@@ -213,7 +211,7 @@ GNENet::addZValueInBoundary(const double z) {
 GNEJunction*
 GNENet::createJunction(const Position& pos, GNEUndoList* undoList) {
     // get junction prefix
-    const std::string junctionPrefix = OptionsCont::getOptions().getString("node-prefix");
+    const std::string junctionPrefix = OptionsCont::getOptions().getString("prefix") + OptionsCont::getOptions().getString("node-prefix");
     // generate new ID
     while (myAttributeCarriers->getJunctions().count(junctionPrefix + toString(myJunctionIDCounter)) != 0) {
         myJunctionIDCounter++;
@@ -230,7 +228,7 @@ GNEEdge*
 GNENet::createEdge(GNEJunction* src, GNEJunction* dest, GNEEdge* edgeTemplate, GNEUndoList* undoList,
                    const std::string& suggestedName, bool wasSplit, bool allowDuplicateGeom, bool recomputeConnections) {
     // get edge prefix
-    const std::string edgePrefix = OptionsCont::getOptions().getString("edge-prefix");
+    const std::string edgePrefix = OptionsCont::getOptions().getString("prefix") + OptionsCont::getOptions().getString("edge-prefix");
     // get edge infix
     std::string edgeInfix = OptionsCont::getOptions().getString("edge-infix");
     // prevent duplicate edge (same geometry)
@@ -242,16 +240,16 @@ GNENet::createEdge(GNEJunction* src, GNEJunction* dest, GNEEdge* edgeTemplate, G
         }
     }
     // check if exist opposite edge
-    const GNEEdge* oppositeEdge = myAttributeCarriers->retrieveEdge(dest, src, false);
+    const auto oppositeEdges = myAttributeCarriers->retrieveEdges(dest, src);
     // declare edge id
     std::string edgeID;
     // update id
-    if (oppositeEdge) {
+    if (oppositeEdges.size() > 0) {
         // avoid ids with "--..."
-        if ((oppositeEdge->getID().size() > 1) && (oppositeEdge->getID().front() == '-')) {
-            edgeID = oppositeEdge->getID().substr(1);
+        if ((oppositeEdges.front()->getID().size() > 1) && (oppositeEdges.front()->getID().front() == '-')) {
+            edgeID = oppositeEdges.front()->getID().substr(1);
         } else {
-            edgeID = "-" + oppositeEdge->getID();
+            edgeID = "-" + oppositeEdges.front()->getID();
         }
         // check if already exist an edge with edgeID
         if (myAttributeCarriers->getEdges().count(edgeID) > 0) {
@@ -293,11 +291,11 @@ GNENet::createEdge(GNEJunction* src, GNEJunction* dest, GNEEdge* edgeTemplate, G
         edge = new GNEEdge(this, nbe, wasSplit);
     } else {
         // default if no template is given
-        const OptionsCont& oc = OptionsCont::getOptions();
-        double defaultSpeed = oc.getFloat("default.speed");
-        const std::string defaultType = oc.getString("default.type");
-        const int defaultNrLanes = oc.getInt("default.lanenumber");
-        const int defaultPriority = oc.getInt("default.priority");
+        const auto& neteditOptions = OptionsCont::getOptions();
+        double defaultSpeed = neteditOptions.getFloat("default.speed");
+        const std::string defaultType = neteditOptions.getString("default.type");
+        const int defaultNrLanes = neteditOptions.getInt("default.lanenumber");
+        const int defaultPriority = neteditOptions.getInt("default.priority");
         const double defaultWidth = NBEdge::UNSPECIFIED_WIDTH;
         const double defaultOffset = NBEdge::UNSPECIFIED_OFFSET;
         const LaneSpreadFunction spread = LaneSpreadFunction::RIGHT;
@@ -323,7 +321,7 @@ GNENet::createEdge(GNEJunction* src, GNEJunction* dest, GNEEdge* edgeTemplate, G
 }
 
 
-void 
+void
 GNENet::deleteNetworkElement(GNENetworkElement* networkElement, GNEUndoList* undoList) {
     if (networkElement->getTagProperty().getTag() == SUMO_TAG_JUNCTION) {
         // get junction (note: could be already removed if is a child, then hardfail=false)
@@ -726,6 +724,15 @@ GNENet::deleteGenericData(GNEGenericData* genericData, GNEUndoList* undoList) {
 
 
 void
+GNENet::deleteMeanData(GNEMeanData* meanData, GNEUndoList* undoList) {
+    undoList->begin(GUIIcon::MODEDELETE, "delete " + meanData->getTagStr());
+    // remove mean data
+    undoList->add(new GNEChange_MeanData(meanData, false), true);
+    undoList->end();
+}
+
+
+void
 GNENet::duplicateLane(GNELane* lane, GNEUndoList* undoList, bool recomputeConnections) {
     undoList->begin(GUIIcon::LANE, "duplicate " + toString(SUMO_TAG_LANE));
     GNEEdge* edge = lane->getParentEdge();
@@ -790,10 +797,10 @@ GNENet::addRestrictedLane(SUMOVehicleClass vclass, GNEEdge* edge, int index, GNE
         return false;
     }
     if (index < 0) {
+        // for pedestrians and greenVerge, always index 0
+        index = 0;
         // guess index from vclass
-        if (vclass == SVC_PEDESTRIAN) {
-            index = 0;
-        } else if (vclass == SVC_BICYCLE) {
+        if (vclass == SVC_BICYCLE) {
             // add bikelanes to the left of an existing sidewalk
             index = edge->getLanes()[0]->isRestricted(SVC_PEDESTRIAN) ? 1 : 0;
         } else if (vclass == SVC_BUS) {
@@ -1087,11 +1094,11 @@ void
 GNENet::createRoundabout(GNEJunction* junction, GNEUndoList* undoList) {
     undoList->begin(GUIIcon::JUNCTION, "create roundabout");
     // reset shape end from incoming edges
-    for (const auto &incomingEdge : junction->getGNEIncomingEdges()) {
+    for (const auto& incomingEdge : junction->getGNEIncomingEdges()) {
         incomingEdge->setAttribute(GNE_ATTR_SHAPE_END, "", undoList);
     }
     // reset shape start from outgoing edges
-    for (const auto &outgoingEdge : junction->getGNEOutgoingEdges()) {
+    for (const auto& outgoingEdge : junction->getGNEOutgoingEdges()) {
         outgoingEdge->setAttribute(GNE_ATTR_SHAPE_START, "", undoList);
     }
     junction->getNBNode()->updateSurroundingGeometry();
@@ -1118,7 +1125,7 @@ GNENet::createRoundabout(GNEJunction* junction, GNEUndoList* undoList) {
             newJunction = newJunctions.back();
         }
         //std::cout << " edge=" << edge->getID() << " prevOpposite=" << Named::getIDSecure(prevOpposite) << " newJunction=" << Named::getIDSecure(newJunction) << "\n";
-        prevOpposite = edge->getOppositeEdge();
+        prevOpposite = edge->getOppositeEdges().size() > 0 ? edge->getOppositeEdges().front() : nullptr;
         const double geomLength = edge->getNBEdge()->getGeometry().length2D();
         const double splitOffset = (edge->getToJunction() == junction
                                     ? MAX2(POSITION_EPS, geomLength - radius)
@@ -1169,21 +1176,16 @@ GNENet::checkJunctionPosition(const Position& pos) {
 
 
 void
-GNENet::requireSaveNet(bool value) {
-    myNetSaved = !value;
-}
-
-
-bool
-GNENet::isNetSaved() const {
-    return myNetSaved;
-}
-
-
-void
-GNENet::saveNetwork(OptionsCont& oc) {
+GNENet::saveNetwork() {
+    auto& neteditOptions = OptionsCont::getOptions();
+    auto& sumoOptions = myViewNet->getViewParent()->getGNEAppWindows()->getSUMOOptions();
+    // set output file in SUMO and NETEDIT options
+    neteditOptions.resetWritable();
+    neteditOptions.set("output-file", neteditOptions.getString("net-file"));
+    sumoOptions.resetWritable();
+    sumoOptions.set("net-file", neteditOptions.getString("net-file"));
     // compute without volatile options and update network
-    computeAndUpdate(oc, false);
+    computeAndUpdate(neteditOptions, false);
     // clear typeContainer
     myNetBuilder->getTypeCont().clearTypes();
     // now update typeContainer with edgeTypes
@@ -1198,23 +1200,28 @@ GNENet::saveNetwork(OptionsCont& oc) {
         }
     }
     // write network
-    NWFrame::writeNetwork(oc, *myNetBuilder);
-    myNetSaved = true;
+    NWFrame::writeNetwork(neteditOptions, *myNetBuilder);
+    // reset output file
+    sumoOptions.resetWritable();
+    neteditOptions.resetDefault("output-file");
+    // mark network as saved
+    mySavingStatus->networkSaved();
 }
 
 
 void
-GNENet::savePlain(OptionsCont& oc, const std::string& prefix) {
+GNENet::savePlain(const std::string& prefix) {
+    auto& neteditOptions = OptionsCont::getOptions();
     // compute without volatile options
-    computeAndUpdate(oc, false);
-    NWWriter_XML::writeNetwork(oc, prefix, *myNetBuilder);
+    computeAndUpdate(neteditOptions, false);
+    NWWriter_XML::writeNetwork(neteditOptions, prefix, *myNetBuilder);
 }
 
 
 void
-GNENet::saveJoined(OptionsCont& oc, const std::string& filename) {
+GNENet::saveJoined(const std::string& filename) {
     // compute without volatile options
-    computeAndUpdate(oc, false);
+    computeAndUpdate(OptionsCont::getOptions(), false);
     NWWriter_XML::writeJoinedJunctions(filename, myNetBuilder->getNodeCont());
 }
 
@@ -1259,64 +1266,91 @@ GNENet::removeGLObjectFromGrid(GNEAttributeCarrier* AC) {
 
 
 void
-GNENet::computeNetwork(GNEApplicationWindow* window, bool force, bool volatileOptions, std::string additionalPath, std::string demandPath, std::string dataPath) {
+GNENet::computeNetwork(GNEApplicationWindow* window, bool force, bool volatileOptions) {
     if (!myNeedRecompute) {
         if (force) {
             if (volatileOptions) {
-                window->setStatusBarText("Forced computing junctions with volatile options ...");
+                window->setStatusBarText(TL("Forced computing junctions with volatile options ..."));
             } else {
-                window->setStatusBarText("Forced computing junctions ...");
+                window->setStatusBarText(TL("Forced computing junctions ..."));
             }
         } else {
             return;
         }
     } else {
         if (volatileOptions) {
-            window->setStatusBarText("Computing junctions with volatile options ...");
+            window->setStatusBarText(TL("Computing junctions with volatile options ..."));
         } else {
-            window->setStatusBarText("Computing junctions  ...");
+            window->setStatusBarText(TL("Computing junctions ..."));
         }
     }
+    // start recomputing
+    window->getApp()->beginWaitCursor();
     // save current number of lanes for every edge if recomputing is with volatile options
     if (volatileOptions) {
-        for (auto it : myAttributeCarriers->getEdges()) {
-            myEdgesAndNumberOfLanes[it.second->getID()] = (int)it.second->getLanes().size();
+        for (const auto& edge : myAttributeCarriers->getEdges()) {
+            myEdgesAndNumberOfLanes[edge.second->getID()] = (int)edge.second->getLanes().size();
         }
     }
     // compute and update
-    OptionsCont& oc = OptionsCont::getOptions();
-    computeAndUpdate(oc, volatileOptions);
+    auto& neteditOptions = OptionsCont::getOptions();
+    computeAndUpdate(neteditOptions, volatileOptions);
     // load additionals if was recomputed with volatile options
-    if (additionalPath != "") {
+    if (volatileOptions && OptionsCont::getOptions().getString("additional-files").size() > 0) {
         // Create additional handler
-        GNEGeneralHandler generalHandler(this, additionalPath, false, false);
+        GNEGeneralHandler generalHandler(this, OptionsCont::getOptions().getString("additional-files"), false, true);
         // Run parser
         if (!generalHandler.parse()) {
-            WRITE_MESSAGE("Loading of " + additionalPath + " failed.");
+            WRITE_ERROR(TL("Loading of additional file failed: ") + OptionsCont::getOptions().getString("additional-files"));
+        } else {
+            WRITE_MESSAGE(TL("Loading of additional file sucessfully: ") + OptionsCont::getOptions().getString("additional-files"));
         }
-        // clear myEdgesAndNumberOfLanes after reload additionals
-        myEdgesAndNumberOfLanes.clear();
     }
     // load demand elements if was recomputed with volatile options
-    if (demandPath != "") {
+    if (volatileOptions && OptionsCont::getOptions().getString("route-files").size() > 0) {
         // Create general handler
-        GNEGeneralHandler handler(this, demandPath, false, false);
+        GNEGeneralHandler generalHandler(this, OptionsCont::getOptions().getString("route-files"), false, true);
         // Run parser
-        if (!handler.parse()) {
-            WRITE_MESSAGE("Loading of " + demandPath + " failed.");
+        if (!generalHandler.parse()) {
+            WRITE_ERROR(TL("Loading of route file failed: ") + OptionsCont::getOptions().getString("route-files"));
+        } else {
+            WRITE_MESSAGE(TL("Loading of route file sucessfully: ") + OptionsCont::getOptions().getString("route-files"));
         }
-        // clear myEdgesAndNumberOfLanes after reload demandElements
-        myEdgesAndNumberOfLanes.clear();
     }
-    UNUSED_PARAMETER(dataPath);
+    // load datas if was recomputed with volatile options
+    if (volatileOptions && OptionsCont::getOptions().getString("data-files").size() > 0) {
+        // Create data handler
+        GNEDataHandler dataHandler(this, OptionsCont::getOptions().getString("data-files"), false, true);
+        // Run parser
+        if (!dataHandler.parse()) {
+            WRITE_ERROR(TL("Loading of data file failed: ") + OptionsCont::getOptions().getString("data-files"));
+        } else {
+            WRITE_MESSAGE(TL("Loading of data file sucessfully: ") + OptionsCont::getOptions().getString("data-files"));
+        }
+    }
+    // load meanDatas if was recomputed with volatile options
+    if (volatileOptions && OptionsCont::getOptions().getString("meandata-files").size() > 0) {
+        // Create meanData handler
+        GNEGeneralHandler generalHandler(this, OptionsCont::getOptions().getString("meandata-files"), false, true);
+        // Run parser
+        if (!generalHandler.parse()) {
+            WRITE_ERROR(TL("Loading of meandata file failed: ") + OptionsCont::getOptions().getString("meandata-files"));
+        } else {
+            WRITE_MESSAGE(TL("Loading of meandata file sucessfully: ") + OptionsCont::getOptions().getString("meandata-files"));
+        }
+    }
+    // clear myEdgesAndNumberOfLanes after reload additionals
+    myEdgesAndNumberOfLanes.clear();
+    // end recomputing
     window->getApp()->endWaitCursor();
-    window->setStatusBarText("Finished computing junctions.");
+    // update status bar
+    window->setStatusBarText(TL("Finished computing junctions."));
 }
 
 
 void
 GNENet::computeDemandElements(GNEApplicationWindow* window) {
-    window->setStatusBarText("Computing demand elements ...");
+    window->setStatusBarText(TL("Computing demand elements ..."));
     // if we aren't in Demand mode, update path calculator
     if (!myViewNet->getEditModes().isCurrentSupermodeDemand() &&
             !myPathManager->getPathCalculator()->isPathCalculatorUpdated())  {
@@ -1330,27 +1364,27 @@ GNENet::computeDemandElements(GNEApplicationWindow* window) {
             demandElement->computePathElement();
         }
     }
-    window->setStatusBarText("Finished computing demand elements.");
+    window->setStatusBarText(TL("Finished computing demand elements."));
 }
 
 
 void
 GNENet::computeDataElements(GNEApplicationWindow* window) {
-    window->setStatusBarText("Computing data elements ...");
+    window->setStatusBarText(TL("Computing data elements ..."));
     // iterate over all demand elements and compute
     for (const auto& genericDataTag : myAttributeCarriers->getGenericDatas()) {
         for (const auto& genericData : genericDataTag.second) {
             genericData->computePathElement();
         }
     }
-    window->setStatusBarText("Finished computing data elements.");
+    window->setStatusBarText(TL("Finished computing data elements."));
 }
 
 
 void
 GNENet::computeJunction(GNEJunction* junction) {
     // recompute tl-logics
-    OptionsCont& oc = OptionsCont::getOptions();
+    auto& neteditOptions = OptionsCont::getOptions();
     NBTrafficLightLogicCont& tllCont = getTLLogicCont();
     // iterate over traffic lights definitions. Make a copy because invalid
     // definitions will be removed (and would otherwise destroy the iterator)
@@ -1358,7 +1392,7 @@ GNENet::computeJunction(GNEJunction* junction) {
     for (auto it : tlsDefs) {
         it->setParticipantsInformation();
         it->setTLControllingInformation();
-        tllCont.computeSingleLogic(oc, it);
+        tllCont.computeSingleLogic(neteditOptions, it);
     }
 
     // @todo compute connections etc...
@@ -1968,6 +2002,19 @@ GNENet::clearDataElements(GNEUndoList* undoList) {
 
 
 void
+GNENet::clearMeanDataElements(GNEUndoList* undoList) {
+    undoList->begin(GUIIcon::MODEADDITIONAL, "clear meanData elements");
+    // clear meanDatas
+    for (const auto& meanDataMap : myAttributeCarriers->getMeanDatas()) {
+        while (meanDataMap.second.size() > 0) {
+            deleteMeanData(*meanDataMap.second.begin(), undoList);
+        }
+    }
+    undoList->end();
+}
+
+
+void
 GNENet::changeEdgeEndpoints(GNEEdge* edge, const std::string& newSource, const std::string& newDest) {
     NBNode* from = myAttributeCarriers->retrieveJunction(newSource)->getNBNode();
     NBNode* to = myAttributeCarriers->retrieveJunction(newDest)->getNBNode();
@@ -2007,169 +2054,96 @@ GNENet::removeExplicitTurnaround(std::string id) {
 
 
 void
-GNENet::requireSaveAdditionals(bool value) {
-    myAdditionalsSaved = !value;
-    if (myViewNet != nullptr) {
-        if (myAdditionalsSaved) {
-            myViewNet->getViewParent()->getGNEAppWindows()->disableSaveAdditionalsMenu();
-        } else {
-            myViewNet->getViewParent()->getGNEAppWindows()->enableSaveAdditionalsMenu();
+GNENet::saveAdditionals() {
+    // obtain invalid additionals depending of number of their parent lanes
+    std::vector<GNEAdditional*> invalidSingleLaneAdditionals;
+    std::vector<GNEAdditional*> invalidMultiLaneAdditionals;
+    // iterate over additionals and obtain invalids
+    for (const auto& additionalPair : myAttributeCarriers->getAdditionals()) {
+        for (const auto& addditional : additionalPair.second) {
+            // check if has to be fixed
+            if (addditional->getTagProperty().hasAttribute(SUMO_ATTR_LANE) && !addditional->isAdditionalValid()) {
+                invalidSingleLaneAdditionals.push_back(addditional);
+            } else if (addditional->getTagProperty().hasAttribute(SUMO_ATTR_LANES) && !addditional->isAdditionalValid()) {
+                invalidMultiLaneAdditionals.push_back(addditional);
+            }
         }
     }
-}
-
-
-void
-GNENet::saveAdditionals(const std::string& filename) {
-    if (filename.size() > 0) {
-        // obtain invalid additionals depending of number of their parent lanes
-        std::vector<GNEAdditional*> invalidSingleLaneAdditionals;
-        std::vector<GNEAdditional*> invalidMultiLaneAdditionals;
-        // iterate over additionals and obtain invalids
-        for (const auto& additionalPair : myAttributeCarriers->getAdditionals()) {
-            for (const auto& addditional : additionalPair.second) {
-                // check if has to be fixed
-                if (addditional->getTagProperty().hasAttribute(SUMO_ATTR_LANE) && !addditional->isAdditionalValid()) {
-                    invalidSingleLaneAdditionals.push_back(addditional);
-                } else if (addditional->getTagProperty().hasAttribute(SUMO_ATTR_LANES) && !addditional->isAdditionalValid()) {
-                    invalidMultiLaneAdditionals.push_back(addditional);
-                }
-            }
-        }
-        // if there are invalid StoppingPlaces or detectors, open GNEFixAdditionalElements
-        if (invalidSingleLaneAdditionals.size() > 0 || invalidMultiLaneAdditionals.size() > 0) {
-            // 0 -> Canceled Saving, with or without selecting invalid stopping places and E2
-            // 1 -> Invalid stoppingPlaces and E2 fixed, friendlyPos enabled, or saved with invalid positions
-            GNEFixAdditionalElements fixAdditionalElementsDialog(myViewNet, invalidSingleLaneAdditionals, invalidMultiLaneAdditionals);
-            if (fixAdditionalElementsDialog.execute() == 0) {
-                // show debug information
-                WRITE_DEBUG("Additionals saving aborted");
-            } else {
-                saveAdditionalsConfirmed(filename);
-                // change value of flag
-                myAdditionalsSaved = true;
-                // show debug information
-                WRITE_DEBUG("Additionals saved after dialog");
-            }
-            // update view
-            myViewNet->updateViewNet();
-            // set focus again in net
-            myViewNet->setFocus();
-        } else {
-            saveAdditionalsConfirmed(filename);
-            // change value of flag
-            myAdditionalsSaved = true;
+    // if there are invalid StoppingPlaces or detectors, open GNEFixAdditionalElements
+    if (invalidSingleLaneAdditionals.size() > 0 || invalidMultiLaneAdditionals.size() > 0) {
+        // 0 -> Canceled Saving, with or without selecting invalid stopping places and E2
+        // 1 -> Invalid stoppingPlaces and E2 fixed, friendlyPos enabled, or saved with invalid positions
+        GNEFixAdditionalElements fixAdditionalElementsDialog(myViewNet, invalidSingleLaneAdditionals, invalidMultiLaneAdditionals);
+        if (fixAdditionalElementsDialog.execute() == 0) {
             // show debug information
-            WRITE_DEBUG("Additionals saved");
-        }
-    }
-}
-
-
-bool
-GNENet::isAdditionalsSaved() const {
-    return myAdditionalsSaved;
-}
-
-
-void
-GNENet::requireSaveDemandElements(bool value) {
-    myDemandElementsSaved = !value;
-    if (myViewNet != nullptr) {
-        if (myDemandElementsSaved) {
-            myViewNet->getViewParent()->getGNEAppWindows()->disableSaveDemandElementsMenu();
+            WRITE_DEBUG("Additionals saving aborted");
         } else {
-            myViewNet->getViewParent()->getGNEAppWindows()->enableSaveDemandElementsMenu();
-        }
-    }
-}
-
-
-void
-GNENet::saveDemandElements(const std::string& filename) {
-    if (filename.size() > 0) {
-        // first recompute demand elements
-        computeDemandElements(myViewNet->getViewParent()->getGNEAppWindows());
-        // obtain invalid demandElements depending of number of their parent lanes
-        std::vector<GNEDemandElement*> invalidSingleLaneDemandElements;
-        // iterate over demandElements and obtain invalids
-        for (const auto& demandElementSet : myAttributeCarriers->getDemandElements()) {
-            for (const auto& demandElement : demandElementSet.second) {
-                // compute before check if demand element is valid
-                demandElement->computePathElement();
-                // check if has to be fixed
-                if (demandElement->isDemandElementValid() != GNEDemandElement::Problem::OK) {
-                    invalidSingleLaneDemandElements.push_back(demandElement);
-                }
-            }
-        }
-        // if there are invalid demand elements, open GNEFixDemandElements
-        if (invalidSingleLaneDemandElements.size() > 0) {
-            // 0 -> Canceled Saving, with or without selecting invalid demand elements
-            // 1 -> Invalid demand elements fixed, friendlyPos enabled, or saved with invalid positions
-            GNEFixDemandElements fixDemandElementsDialog(myViewNet, invalidSingleLaneDemandElements);
-            if (fixDemandElementsDialog.execute() == 0) {
-                // show debug information
-                WRITE_DEBUG("demand elements saving aborted");
-            } else {
-                saveDemandElementsConfirmed(filename);
-                // change value of flag
-                myDemandElementsSaved = true;
-                // show debug information
-                WRITE_DEBUG("demand elements saved after dialog");
-            }
-            // update view
-            myViewNet->updateViewNet();
-            // set focus again in net
-            myViewNet->setFocus();
-        } else {
-            saveDemandElementsConfirmed(filename);
-            // change value of flag
-            myDemandElementsSaved = true;
+            saveAdditionalsConfirmed();
             // show debug information
-            WRITE_DEBUG("demand elements saved");
+            WRITE_DEBUG("Additionals saved after dialog");
         }
-    }
-}
-
-
-bool
-GNENet::isDemandElementsSaved() const {
-    return myDemandElementsSaved;
-}
-
-
-void
-GNENet::requireSaveDataElements(bool value) {
-    myDataElementsSaved = !value;
-    if (myViewNet != nullptr) {
-        if (myDataElementsSaved) {
-            myViewNet->getViewParent()->getGNEAppWindows()->disableSaveDataElementsMenu();
-        } else {
-            myViewNet->getViewParent()->getGNEAppWindows()->enableSaveDataElementsMenu();
-        }
-    }
-}
-
-
-void
-GNENet::saveDataElements(const std::string& filename) {
-    if (filename.size() > 0) {
-        // first recompute data sets
-        computeDataElements(myViewNet->getViewParent()->getGNEAppWindows());
-        // save data elements
-        saveDataElementsConfirmed(filename);
-        // change value of flag
-        myDataElementsSaved = true;
+        // update view
+        myViewNet->updateViewNet();
+        // set focus again in net
+        myViewNet->setFocus();
+    } else {
+        saveAdditionalsConfirmed();
         // show debug information
-        WRITE_DEBUG("data sets saved");
+        WRITE_DEBUG("Additionals saved");
     }
 }
 
 
-bool
-GNENet::isDataElementsSaved() const {
-    return myDataElementsSaved;
+void
+GNENet::saveDemandElements() {
+    // first recompute demand elements
+    computeDemandElements(myViewNet->getViewParent()->getGNEAppWindows());
+    // obtain invalid demandElements depending of number of their parent lanes
+    std::vector<GNEDemandElement*> invalidSingleLaneDemandElements;
+    // iterate over demandElements and obtain invalids
+    for (const auto& demandElementSet : myAttributeCarriers->getDemandElements()) {
+        for (const auto& demandElement : demandElementSet.second) {
+            // compute before check if demand element is valid
+            demandElement->computePathElement();
+            // check if has to be fixed
+            if (demandElement->isDemandElementValid() != GNEDemandElement::Problem::OK) {
+                invalidSingleLaneDemandElements.push_back(demandElement);
+            }
+        }
+    }
+    // if there are invalid demand elements, open GNEFixDemandElements
+    if (invalidSingleLaneDemandElements.size() > 0) {
+        // 0 -> Canceled Saving, with or without selecting invalid demand elements
+        // 1 -> Invalid demand elements fixed, friendlyPos enabled, or saved with invalid positions
+        GNEFixDemandElements fixDemandElementsDialog(myViewNet, invalidSingleLaneDemandElements);
+        if (fixDemandElementsDialog.execute() == 0) {
+            // show debug information
+            WRITE_DEBUG("demand elements saving aborted");
+        } else {
+            saveDemandElementsConfirmed();
+            // show debug information
+            WRITE_DEBUG("demand elements saved after dialog");
+        }
+        // update view
+        myViewNet->updateViewNet();
+        // set focus again in net
+        myViewNet->setFocus();
+    } else {
+        saveDemandElementsConfirmed();
+        // show debug information
+        WRITE_DEBUG("demand elements saved");
+    }
+}
+
+
+void
+GNENet::saveDataElements() {
+    // first recompute data sets
+    computeDataElements(myViewNet->getViewParent()->getGNEAppWindows());
+    // save data elements
+    saveDataElementsConfirmed();
+    // show debug information
+    WRITE_DEBUG("data sets saved");
 }
 
 
@@ -2208,8 +2182,16 @@ GNENet::getDataSetIntervalMaximumEnd() const {
 
 
 void
-GNENet::saveAdditionalsConfirmed(const std::string& filename) {
-    OutputDevice& device = OutputDevice::getDevice(filename);
+GNENet::saveMeanDatas() {
+    saveMeanDatasConfirmed();
+    // show debug information
+    WRITE_DEBUG("MeanDatas saved");
+}
+
+
+void
+GNENet::saveAdditionalsConfirmed() {
+    OutputDevice& device = OutputDevice::getDevice(OptionsCont::getOptions().getString("additional-files"));
     // open header
     device.writeXMLHeader("additional", "additional_file.xsd", EMPTY_HEADER, false);
     // write vTypes with additional childrens (due calibrators)
@@ -2256,12 +2238,14 @@ GNENet::saveAdditionalsConfirmed(const std::string& filename) {
     writeAdditionalByType(device, {SUMO_TAG_OVERHEAD_WIRE_CLAMP});
     // close device
     device.close();
+    // mark additionals as saved
+    mySavingStatus->additionalsSaved();
 }
 
 
 void
-GNENet::saveDemandElementsConfirmed(const std::string& filename) {
-    OutputDevice& device = OutputDevice::getDevice(filename);
+GNENet::saveDemandElementsConfirmed() {
+    OutputDevice& device = OutputDevice::getDevice(OptionsCont::getOptions().getString("route-files"));
     // open header
     device.writeXMLHeader("routes", "routes_file.xsd", EMPTY_HEADER, false);
     // first  write all vTypeDistributions (and their vTypes)
@@ -2293,12 +2277,14 @@ GNENet::saveDemandElementsConfirmed(const std::string& filename) {
     }
     // close device
     device.close();
+    // mark demand elements as saved
+    mySavingStatus->demandElementsSaved();
 }
 
 
 void
-GNENet::saveDataElementsConfirmed(const std::string& filename) {
-    OutputDevice& device = OutputDevice::getDevice(filename);
+GNENet::saveDataElementsConfirmed() {
+    OutputDevice& device = OutputDevice::getDevice(OptionsCont::getOptions().getString("data-files"));
     device.writeXMLHeader("data", "datamode_file.xsd", EMPTY_HEADER, false);
     // write all data sets
     for (const auto& dataSet : myAttributeCarriers->getDataSets()) {
@@ -2306,6 +2292,26 @@ GNENet::saveDataElementsConfirmed(const std::string& filename) {
     }
     // close device
     device.close();
+    // mark data element as saved
+    mySavingStatus->dataElementsSaved();
+}
+
+
+void
+GNENet::saveMeanDatasConfirmed() {
+    OutputDevice& device = OutputDevice::getDevice(OptionsCont::getOptions().getString("meandata-files"));
+    // open header
+    device.writeXMLHeader("additional", "additional_file.xsd", EMPTY_HEADER, false);
+    // MeanDataEdges
+    writeMeanDataEdgeComment(device);
+    writeMeanDatas(device, SUMO_TAG_MEANDATA_EDGE);
+    // MeanDataLanes
+    writeMeanDataLaneComment(device);
+    writeMeanDatas(device, SUMO_TAG_MEANDATA_LANE);
+    // close device
+    device.close();
+    // mark mean datas as saved
+    mySavingStatus->meanDatasSaved();
 }
 
 
@@ -2386,6 +2392,21 @@ GNENet::writeVTypes(OutputDevice& device, const bool additionalFile) const {
     }
 }
 
+
+void
+GNENet::writeMeanDatas(OutputDevice& device, SumoXMLTag tag) const {
+    std::map<std::string, GNEMeanData*> sortedMeanDatas;
+    for (const auto& meanData : myAttributeCarriers->getMeanDatas().at(tag)) {
+        if (sortedMeanDatas.count(meanData->getID()) == 0) {
+            sortedMeanDatas[meanData->getID()] = meanData;
+        } else {
+            throw ProcessError("Duplicated ID");
+        }
+    }
+    for (const auto& additional : sortedMeanDatas) {
+        additional.second->writeMeanData(device);
+    }
+}
 
 bool
 GNENet::writeVTypeComment(OutputDevice& device, const bool additionalFile) const {
@@ -2529,13 +2550,23 @@ GNENet::writeWireComment(OutputDevice& device) const {
 }
 
 
-void
-GNENet::requireSaveTLSPrograms() {
-    if (myTLSProgramsSaved == true) {
-        WRITE_DEBUG("TLSPrograms has to be saved");
+bool
+GNENet::writeMeanDataEdgeComment(OutputDevice& device) const {
+    if (myAttributeCarriers->getMeanDatas().at(SUMO_TAG_MEANDATA_EDGE).size() > 0) {
+        device << ("    <!-- MeanDataEdges -->\n");
+        return true;
     }
-    myTLSProgramsSaved = false;
-    myViewNet->getViewParent()->getGNEAppWindows()->enableSaveTLSProgramsMenu();
+    return false;
+}
+
+
+bool
+GNENet::writeMeanDataLaneComment(OutputDevice& device) const {
+    if (myAttributeCarriers->getMeanDatas().at(SUMO_TAG_MEANDATA_LANE).size() > 0) {
+        device << ("    <!-- MeanDataLanes -->\n");
+        return true;
+    }
+    return false;
 }
 
 
@@ -2547,8 +2578,8 @@ GNENet::saveTLSPrograms(const std::string& filename) {
     // write traffic lights using NWWriter
     NWWriter_SUMO::writeTrafficLights(device, getTLLogicCont());
     device.close();
-    // change flag to true
-    myTLSProgramsSaved = true;
+    // change save status
+    mySavingStatus->TLSSaved();
     // show debug information
     WRITE_DEBUG("TLSPrograms saved");
 }
@@ -2687,7 +2718,7 @@ GNENet::initGNEConnections() {
 
 
 void
-GNENet::computeAndUpdate(OptionsCont& oc, bool volatileOptions) {
+GNENet::computeAndUpdate(OptionsCont& neteditOptions, bool volatileOptions) {
     // make sure we only add turn arounds to edges which currently exist within the network
     std::set<std::string> liveExplicitTurnarounds;
     for (const auto& explicitTurnarounds : myExplicitTurnarounds) {
@@ -2706,13 +2737,13 @@ GNENet::computeAndUpdate(OptionsCont& oc, bool volatileOptions) {
         myGrid.removeAdditionalGLObject(it.second);
     }
     // compute using NetBuilder
-    myNetBuilder->compute(oc, liveExplicitTurnarounds, volatileOptions);
+    myNetBuilder->compute(neteditOptions, liveExplicitTurnarounds, volatileOptions);
     // remap ids if necessary
-    if (oc.getBool("numerical-ids") || oc.isSet("reserved-ids")) {
+    if (neteditOptions.getBool("numerical-ids") || neteditOptions.isSet("reserved-ids")) {
         myAttributeCarriers->remapJunctionAndEdgeIds();
     }
     // update rtree if necessary
-    if (!oc.getBool("offset.disable-normalization")) {
+    if (!neteditOptions.getBool("offset.disable-normalization")) {
         for (const auto& edge : myAttributeCarriers->getEdges()) {
             // refresh edge geometry
             edge.second->updateGeometry();

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -199,6 +199,9 @@ MSFrame::fillOptions() {
     oc.addSynonyme("summary-output", "summary");
     oc.addDescription("summary-output", "Output", "Save aggregated vehicle departure info into FILE");
 
+    oc.doRegister("summary-output.period", new Option_String("-1", "TIME"));
+    oc.addDescription("summary-output.period", "Output", "Save summary-output with the given period");
+
     oc.doRegister("person-summary-output", new Option_FileName());
     oc.addDescription("person-summary-output", "Output", "Save aggregated person counts into FILE");
 
@@ -293,6 +296,11 @@ MSFrame::fillOptions() {
 
     oc.doRegister("collision-output", new Option_FileName());
     oc.addDescription("collision-output", "Output", "Write collision information into FILE");
+
+    oc.doRegister("edgedata-output", new Option_FileName());
+    oc.addDescription("edgedata-output", "Output", "Write aggregated traffic statistics for all edges into FILE");
+    oc.doRegister("lanedata-output", new Option_FileName());
+    oc.addDescription("lanedata-output", "Output", "Write aggregated traffic statistics for all lanes into FILE");
 
     oc.doRegister("statistic-output", new Option_FileName());
     oc.addSynonyme("statistic-output", "statistics-output");
@@ -446,7 +454,7 @@ MSFrame::fillOptions() {
     oc.addDescription("tls.actuated.show-detectors", "Processing", "Sets default visibility for actuation detectors");
 
     oc.doRegister("tls.actuated.jam-threshold", new Option_Float(-1));
-    oc.addDescription("tls.actuated.jam-threshold", "Processing", "Sets default jam-treshold parameter for all actuation detectors");
+    oc.addDescription("tls.actuated.jam-threshold", "Processing", "Sets default jam-threshold parameter for all actuation detectors");
 
     oc.doRegister("tls.actuated.detector-length", new Option_Float(0));
     oc.addDescription("tls.actuated.detector-length", "Processing", "Sets default detector length parameter for all actuation detectors");
@@ -489,7 +497,7 @@ MSFrame::fillOptions() {
     oc.addDescription("emergencydecel.warning-threshold", "Processing", "Sets the fraction of emergency decel capability that must be used to trigger a warning.");
 
     oc.doRegister("parking.maneuver", new Option_Bool(false));
-    oc.addDescription("parking.maneuver", "Processing", "Whether parking simulation includes manoeuvering time and associated lane blocking");
+    oc.addDescription("parking.maneuver", "Processing", "Whether parking simulation includes maneuvering time and associated lane blocking");
 
     oc.doRegister("use-stop-ended", new Option_Bool(false));
     oc.addDescription("use-stop-ended", "Processing", "Override stop until times with stop ended times when given");

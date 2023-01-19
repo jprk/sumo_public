@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -120,7 +120,7 @@ GNEVehicleFrame::HelpCreation::updateHelpCreation() {
 // GNEVehicleFrame - methods
 // ---------------------------------------------------------------------------
 
-GNEVehicleFrame::GNEVehicleFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNEVehicleFrame::GNEVehicleFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Vehicles"),
     myRouteHandler("", viewNet->getNet(), true, false),
     myVehicleBaseObject(new CommonXMLStructure::SumoBaseObject(nullptr)) {
@@ -141,7 +141,7 @@ GNEVehicleFrame::GNEVehicleFrame(GNEViewParent *viewParent, GNEViewNet* viewNet)
     myHelpCreation = new HelpCreation(this);
 
     // create legend label
-    myPathLegend = new GNEM_PathLegend(this);
+    myPathLegend = new GNEPathLegendModule(this);
 }
 
 
@@ -248,9 +248,9 @@ GNEVehicleFrame::tagSelected() {
         myPathCreator->showPathCreatorModule(myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag(), false, false);
         // check if show path legend
         if ((myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != SUMO_TAG_VEHICLE) &&
-            (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_FLOW_ROUTE) &&
-            (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_TRIP_JUNCTIONS) &&
-            (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_FLOW_JUNCTIONS)) {
+                (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_FLOW_ROUTE) &&
+                (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_TRIP_JUNCTIONS) &&
+                (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().getTag() != GNE_TAG_FLOW_JUNCTIONS)) {
             myPathLegend->showPathLegendModule();
         } else {
             myPathLegend->hidePathLegendModule();

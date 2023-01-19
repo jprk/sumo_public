@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -34,26 +34,26 @@
 
 GNEMultiEntryExitDetector::GNEMultiEntryExitDetector(GNENet* net) :
     GNEAdditional("", net, GLO_E3DETECTOR, SUMO_TAG_ENTRY_EXIT_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E3ENTRY), "", {}, {}, {}, {}, {}, {}),
-    myPeriod(0),
-    myFilename(""),
-    myTimeThreshold(0),
-    mySpeedThreshold(0) {
+              myPeriod(0),
+              myFilename(""),
+              myTimeThreshold(0),
+mySpeedThreshold(0) {
     // reset default values
     resetDefaultValues();
 }
 
 
 GNEMultiEntryExitDetector::GNEMultiEntryExitDetector(const std::string& id, GNENet* net, const Position pos, const SUMOTime freq, const std::string& filename,
-                             const std::vector<std::string>& vehicleTypes, const std::string& name, SUMOTime timeThreshold, double speedThreshold,
-                             const Parameterised::Map& parameters) :
+        const std::vector<std::string>& vehicleTypes, const std::string& name, SUMOTime timeThreshold, double speedThreshold,
+        const Parameterised::Map& parameters) :
     GNEAdditional(id, net, GLO_E3DETECTOR, SUMO_TAG_ENTRY_EXIT_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E3EXIT), name, {}, {}, {}, {}, {}, {}),
-    Parameterised(parameters),
-    myPosition(pos),
-    myPeriod(freq),
-    myFilename(filename),
-    myVehicleTypes(vehicleTypes),
-    myTimeThreshold(timeThreshold),
-    mySpeedThreshold(speedThreshold) {
+Parameterised(parameters),
+myPosition(pos),
+myPeriod(freq),
+myFilename(filename),
+myVehicleTypes(vehicleTypes),
+myTimeThreshold(timeThreshold),
+mySpeedThreshold(speedThreshold) {
     // update centering boundary without updating grid
     updateCenteringBoundary(false);
 }

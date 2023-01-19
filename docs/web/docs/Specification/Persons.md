@@ -115,7 +115,7 @@ definitions.
 
 | Attribute  | Type     | Range                              | Default | Remark                                            |
 | ---------- | -------- | ---------------------------------- | ------- | ------------------------------------------------- |
-| **lines**  | list     | valid line or vehicle ids or *ANY* | \-      | list of vehicle alternatives to take for the ride |
+| lines  | list     | valid line or vehicle ids or *ANY* | ANY      | list of vehicle alternatives to take for the ride |
 | from       | string   | valid edge ids                     | \-      | id of the start edge (optional, if it is a subsequent movement or [starts in a vehicle](Persons.md#starting_the_simulation_in_a_vehicle)) |
 | to         | string   | valid edge ids                     | \-      | id of the destination edge (optional, if a busStop or other stopping place is given)  |
 | arrivalPos | float(m) |                                    | end of edge  | arrival position on the destination edge          |
@@ -135,7 +135,7 @@ the following conditions are met
   given in the list defined by the 'lines' attribute of the ride OR
   the lines attribute contains 'ANY' and the vehicle stops at the
   destination 'busStop' of the ride (or at the destination edge if no destination busStop is defined).
-- the vehicle has a triggered stop and the person is position within
+- the vehicle has a triggered stop and the person position is within
   the range of `startpos,endPos` of the stop.
 - the vehicle has a timed stop and the person is waiting within 10m of
   the vehicle position
@@ -148,6 +148,9 @@ arrival position. If an arrival position is given nevertheless it has to
 be inside the range of the stop.
 
 The positions of persons in a vehicle depend on the 'guiShape' parameter of the vehicle as well as it's dimensions. The offset between the front of the vehicle and the first passenger placement can be configured by adding `<param key="frontSeatPos" value="3.14"/>`to the vType definition of the vehicle.
+
+!!! note
+    up to version 1.15.0 attribute 'lines' was mandatory.
 
 ## Walks
 
@@ -215,6 +218,8 @@ vehicle is at most 10 metres. It does not check whether the vehicle has
 the aspired destination on the current route. The first time the vehicle
 stops (on a well defined stop) at the destination edge, the ride is
 finished and the person proceeds with the next step in the plan.
+
+If option **--time-to-teleport.ride** is set, persons will be teleported to their ride destination after the specified time rather than waiting until the end of the simulation (or until all active vehicles have left the simulation).
 
 ## Walking
 
@@ -385,11 +390,29 @@ persons:
 - [netstate-dump](../Simulation/Output/RawDump.md)
 - [aggregated simulation statistics](../Simulation/Output/index.md#aggregated_traffic_measures)
 
+# Devices
+
+Person-devices are used to model and configure different aspects such
+as output (person-device.fcd) or behavior (person-device.rerouting).
+
+The following device names are supported and can be used for the
+placeholder `<DEVICENAME>` below:
+
+- [btreiver](../Simulation/Bluetooth.md)
+- [btsender](../Simulation/Bluetooth.md)
+- [rerouting](../Demand/Automatic_Routing.md)
+- [fcd](../Simulation/Output/FCDOutput.md)
+
+Assignment of devices via simulation options works the same [as for vehicles](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#assignment_by_global_options) except for the fact that all options are prefixed with
+**--person-device.DEVICENAME** instead of **--device.DEVICENAME**.
+
+Assignment of devices via `<vType>` or `<person>`-parameters works in the same way [as it does for vehicles](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#assignment_by_generic_parameters).
+
+
 # Planned features
 
 The following features are not yet implemented.
 
-- state saving and loading, see #2792
 - [Simulation routing for
   persons](../Demand/Automatic_Routing.md)
   (person-device.rerouting)

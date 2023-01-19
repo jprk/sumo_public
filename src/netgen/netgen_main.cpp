@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -63,7 +63,7 @@ fillOptions() {
     oc.addCallExample("--spider [spider-network options] -o <OUTPUTFILE>", "create spider net");
     oc.addCallExample("--rand [random-network options] -o <OUTPUTFILE>", "create random net");
 
-    oc.setAdditionalHelpMessage(" Either \"--grid\", \"--spider\" or \"--rand\" must be supplied.\n  In dependance to these switches other options are used.");
+    oc.setAdditionalHelpMessage(" Either \"--grid\", \"--spider\" or \"--rand\" must be supplied.\n  In dependence to these switches other options are used.");
 
     // insert options sub-topics
     SystemFrame::addConfigurationOptions(oc); // this subtopic is filled here, too
@@ -87,7 +87,7 @@ fillOptions() {
     NWFrame::fillOptions(true);
     oc.doRegister("default-junction-type", 'j', new Option_String());
     oc.addSynonyme("default-junction-type", "junctions");
-    oc.addDescription("default-junction-type", "Building Defaults", "[traffic_light|priority|right_before_left|traffic_light_right_on_red|priority_stop|allway_stop|...] Determines junction type (see wiki/Networks/PlainXML#Node_types)");
+    oc.addDescription("default-junction-type", "Building Defaults", "[traffic_light|priority|right_before_left|left_before_right|traffic_light_right_on_red|priority_stop|allway_stop|...] Determines junction type (see wiki/Networks/PlainXML#Node_types)");
     RandHelper::insertRandOptions();
 
     oc.doRegister("tls.discard-simple", new Option_Bool(false));
@@ -225,10 +225,8 @@ buildNetwork(NBNetBuilder& nb) {
 
 int
 main(int argc, char** argv) {
-    MsgHandler::setupI18n();
     OptionsCont& oc = OptionsCont::getOptions();
-    // give some application descriptions
-    oc.setApplicationDescription("Synthetic network generator for the microscopic, multi-modal traffic simulation SUMO.");
+    oc.setApplicationDescription(TL("Synthetic network generator for the microscopic, multi-modal traffic simulation SUMO."));
     oc.setApplicationName("netgenerate", "Eclipse SUMO netgenerate Version " VERSION_STRING);
     int ret = 0;
     try {
@@ -253,7 +251,7 @@ main(int argc, char** argv) {
         NBNetBuilder nb;
         nb.applyOptions(oc);
         if (oc.isSet("type-files")) {
-            NIXMLTypesHandler* handler = new NIXMLTypesHandler(nb.getTypeCont());
+            NIXMLTypesHandler handler(nb.getTypeCont());
             NITypeLoader::load(handler, oc.getStringVector("type-files"), "types");
         }
         // build the netgen-network description

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -44,6 +44,7 @@
 #include "NBEdgeCont.h"
 #include "NBNodeCont.h"
 #include "NBPTLineCont.h"
+#include "NBPTStop.h"
 #include "NBHelpers.h"
 #include "NBCont.h"
 #include "NBTrafficLightLogicCont.h"
@@ -160,14 +161,18 @@ NBEdgeCont::applyOptions(OptionsCont& oc) {
 
 void
 NBEdgeCont::clear() {
-    for (EdgeCont::iterator i = myEdges.begin(); i != myEdges.end(); i++) {
-        delete ((*i).second);
+    for (const auto& i : myEdges) {
+        delete i.second;
     }
     myEdges.clear();
-    for (EdgeCont::iterator i = myExtractedEdges.begin(); i != myExtractedEdges.end(); i++) {
-        delete ((*i).second);
+    for (const auto& i : myExtractedEdges) {
+        delete i.second;
     }
     myExtractedEdges.clear();
+    for (NBEdge* const e : myEdgeCemetery) {
+        delete e;
+    }
+    myEdgeCemetery.clear();
 }
 
 
@@ -410,7 +415,15 @@ NBEdgeCont::erase(NBDistrictCont& dc, NBEdge* edge) {
 void
 NBEdgeCont::extract(NBDistrictCont& dc, NBEdge* edge, bool remember) {
     if (remember) {
-        myExtractedEdges[edge->getID()] = edge;
+        const auto& prevExtracted = myExtractedEdges.find(edge->getID());
+        if (prevExtracted != myExtractedEdges.end()) {
+            if (edge != prevExtracted->second) {
+                myEdgeCemetery.insert(prevExtracted->second);
+                prevExtracted->second = edge;
+            }
+        } else {
+            myExtractedEdges[edge->getID()] = edge;
+        }
     }
     myEdges.erase(edge->getID());
     edge->myFrom->removeEdge(edge);
@@ -442,17 +455,16 @@ NBEdgeCont::rename(NBEdge* edge, const std::string& newID) {
 void
 NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
                           NBNodeCont& nc, NBDistrictCont& dc, NBTrafficLightLogicCont& tlc) {
-    if (splits.size() == 0) {
+    if (splits.empty()) {
         return;
     }
     const std::string origID = e->getID();
-    std::vector<Split>::iterator i;
     sort(splits.begin(), splits.end(), split_sorter());
-    int noLanesMax = e->getNumLanes();
+    int maxNumLanes = e->getNumLanes();
     // compute the node positions and sort the lanes
-    for (i = splits.begin(); i != splits.end(); ++i) {
-        sort((*i).lanes.begin(), (*i).lanes.end());
-        noLanesMax = MAX2(noLanesMax, (int)(*i).lanes.size());
+    for (Split& split : splits) {
+        sort(split.lanes.begin(), split.lanes.end());
+        maxNumLanes = MAX2(maxNumLanes, (int)split.lanes.size());
     }
     // split the edge
     std::vector<int> currLanes;
@@ -469,15 +481,14 @@ NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
 
     std::string firstID = "";
     double seen = 0;
-    for (i = splits.begin(); i != splits.end(); ++i) {
-        const Split& exp = *i;
+    for (const Split& exp : splits) {
         assert(exp.lanes.size() != 0);
         if (exp.pos > 0 && e->getGeometry().length() + seen > exp.pos && exp.pos > seen) {
             nc.insert(exp.node);
             nc.markAsSplit(exp.node);
             //  split the edge
-            std::string idBefore = exp.idBefore == "" ? e->getID() : exp.idBefore;
-            std::string idAfter = exp.idAfter == "" ? exp.nameID : exp.idAfter;
+            const std::string idBefore = exp.idBefore == "" ? e->getID() : exp.idBefore;
+            const std::string idAfter = exp.idAfter == "" ? exp.nameID : exp.idAfter;
             if (firstID == "") {
                 firstID = idBefore;
             }
@@ -485,6 +496,7 @@ NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
                                     idBefore, idAfter, e->getNumLanes(), (int) exp.lanes.size(), exp.speed);
             if (!ok) {
                 WRITE_WARNING("Error on parsing a split (edge '" + origID + "').");
+                return;
             }
             seen = exp.pos;
             std::vector<int> newLanes = exp.lanes;
@@ -505,7 +517,7 @@ NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
                 pe->addLane2LaneConnection(pe->getNumLanes() - 1, ne, leftMostN - l - rightMostN, NBEdge::Lane2LaneInfoType::VALIDATED, true);
             }
             //  all other connected
-            for (int l = 0; l < noLanesMax; ++l) {
+            for (int l = 0; l < maxNumLanes; ++l) {
                 if (find(currLanes.begin(), currLanes.end(), l) == currLanes.end()) {
                     continue;
                 }
@@ -554,21 +566,20 @@ NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
         start.offsetFactor = splits.front().offsetFactor;
         splits.insert(splits.begin(), start);
     }
-    i = splits.begin();
     if (e != nullptr) {
-        for (; i != splits.end(); ++i) {
-            int maxLeft = (*i).lanes.back();
-            double offset = (*i).offset;
-            if (maxLeft < noLanesMax) {
+        for (const Split& split : splits) {
+            int maxLeft = split.lanes.back();
+            double offset = split.offset;
+            if (maxLeft < maxNumLanes) {
                 if (e->getLaneSpreadFunction() == LaneSpreadFunction::RIGHT) {
-                    offset += (*i).offsetFactor * SUMO_const_laneWidth * (noLanesMax - 1 - maxLeft);
+                    offset += split.offsetFactor * SUMO_const_laneWidth * (maxNumLanes - 1 - maxLeft);
                 } else {
-                    offset += (*i).offsetFactor * SUMO_const_halfLaneWidth * (noLanesMax - 1 - maxLeft);
+                    offset += split.offsetFactor * SUMO_const_halfLaneWidth * (maxNumLanes - 1 - maxLeft);
                 }
             }
-            int maxRight = (*i).lanes.front();
+            int maxRight = split.lanes.front();
             if (maxRight > 0 && e->getLaneSpreadFunction() == LaneSpreadFunction::CENTER) {
-                offset -= (*i).offsetFactor * SUMO_const_halfLaneWidth * maxRight;
+                offset -= split.offsetFactor * SUMO_const_halfLaneWidth * maxRight;
             }
             //std::cout << " processSplits " << origID << " splitOffset=" << (*i).offset << " offset=" << offset << "\n";
             if (offset != 0) {
@@ -621,6 +632,14 @@ NBEdgeCont::splitAt(NBDistrictCont& dc,
                     int noLanesFirstEdge, int noLanesSecondEdge,
                     const double speed, const double friction,
                     const int changedLeft) {
+    if (firstEdgeName != edge->getID() && myEdges.count(firstEdgeName) != 0) {
+        WRITE_ERROR("Could not insert edge '" + firstEdgeName + "' before split of edge '" + edge->getID() + "'.");
+        return false;
+    }
+    if (secondEdgeName == firstEdgeName || (secondEdgeName != edge->getID() && myEdges.count(secondEdgeName) != 0)) {
+        WRITE_ERROR("Could not insert edge '" + secondEdgeName + "' after split of edge '" + edge->getID() + "'.");
+        return false;
+    }
     // there must be at least some overlap between first and second edge
     assert(changedLeft > -((int)noLanesFirstEdge));
     assert(changedLeft < (int)noLanesSecondEdge);
@@ -650,13 +669,11 @@ NBEdgeCont::splitAt(NBDistrictCont& dc,
     edge->myFrom->replaceOutgoing(edge, one, 0);
     edge->myTo->replaceIncoming(edge, two, 0);
     // patch tls
-    std::set<NBTrafficLightDefinition*> fromTLS = edge->myFrom->getControllingTLS();
-    for (std::set<NBTrafficLightDefinition*>::iterator i = fromTLS.begin(); i != fromTLS.end(); ++i) {
-        (*i)->replaceRemoved(edge, -1, one, -1, false);
+    for (NBTrafficLightDefinition* const tld : edge->myFrom->getControllingTLS()) {
+        tld->replaceRemoved(edge, -1, one, -1, false);
     }
-    std::set<NBTrafficLightDefinition*> toTLS = edge->myTo->getControllingTLS();
-    for (std::set<NBTrafficLightDefinition*>::iterator i = toTLS.begin(); i != toTLS.end(); ++i) {
-        (*i)->replaceRemoved(edge, -1, two, -1, true);
+    for (NBTrafficLightDefinition* const tld : edge->myTo->getControllingTLS()) {
+        tld->replaceRemoved(edge, -1, two, -1, true);
     }
     // the edge is now occuring twice in both nodes...
     //  clean up
@@ -688,12 +705,8 @@ NBEdgeCont::splitAt(NBDistrictCont& dc,
     patchRoundabouts(edge, one, two, myGuessedRoundabouts);
     const std::string oldID = edge->getID();
     extract(dc, edge, true);
-    if (!insert(one, true)) {
-        WRITE_ERROR("Could not insert edge '" + one->getID() + "' before split of edge '" + oldID + "'");
-    }
-    if (!insert(two, true)) {
-        WRITE_ERROR("Could not insert edge '" + two->getID() + "' after split of edge '" + oldID + "'");
-    }
+    insert(one, true);  // duplicate id check happened earlier
+    insert(two, true);  // duplicate id check happened earlier
     myEdgesSplit[edge] = {one, two};
     return true;
 }
@@ -1255,7 +1268,8 @@ NBEdgeCont::guessRoundabouts() {
 #endif
             visited.insert(e);
             const EdgeVector& edges = e->getToNode()->getEdges();
-            if (e->getToNode()->getType() == SumoXMLNodeType::RIGHT_BEFORE_LEFT && !e->getToNode()->typeWasGuessed()) {
+            if ((e->getToNode()->getType() == SumoXMLNodeType::RIGHT_BEFORE_LEFT || e->getToNode()->getType() == SumoXMLNodeType::LEFT_BEFORE_RIGHT)
+                    && !e->getToNode()->typeWasGuessed()) {
                 doLoop = false;
 #ifdef DEBUG_GUESS_ROUNDABOUT
                 if (gDebugFlag1) {
@@ -1541,6 +1555,9 @@ NBEdgeCont::generateStreetSigns() {
             case SumoXMLNodeType::RIGHT_BEFORE_LEFT:
                 e->addSign(NBSign(NBSign::SIGN_TYPE_RIGHT_BEFORE_LEFT, offset));
                 break;
+            case SumoXMLNodeType::LEFT_BEFORE_RIGHT:
+                e->addSign(NBSign(NBSign::SIGN_TYPE_LEFT_BEFORE_RIGHT, offset));
+                break;
             default:
                 break;
         }
@@ -1591,6 +1608,18 @@ NBEdgeCont::updateAllChangeRestrictions(SVCPermissions ignoring) {
 }
 
 
+void
+NBEdgeCont::addPrefix(const std::string& prefix) {
+    // make a copy of node containers
+    const auto nodeContainerCopy = myEdges;
+    myEdges.clear();
+    for (const auto& node : nodeContainerCopy) {
+        node.second->setID(prefix + node.second->getID());
+        myEdges[node.second->getID()] = node.second;
+    }
+}
+
+
 int
 NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& prefix, NBPTStopCont& sc) {
     bool startGiven = !OptionsCont::getOptions().isDefault("numerical-ids.edge-start");
@@ -1627,7 +1656,7 @@ NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& pref
         }
     }
 
-    std::map<std::string, std::vector<NBPTStop*> > stopsOnEdge;
+    std::map<std::string, std::vector<std::shared_ptr<NBPTStop> > > stopsOnEdge;
     for (const auto& item : sc.getStops()) {
         stopsOnEdge[item.second->getEdgeId()].push_back(item.second);
     }
@@ -1643,7 +1672,7 @@ NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& pref
         }
         edge->setID(idSupplier.getNext());
         myEdges[edge->getID()] = edge;
-        for (NBPTStop* stop : stopsOnEdge[origID]) {
+        for (std::shared_ptr<NBPTStop> stop : stopsOnEdge[origID]) {
             stop->setEdgeId(prefix + edge->getID(), *this);
         }
     }
@@ -1739,26 +1768,26 @@ int
 NBEdgeCont::joinTramEdges(NBDistrictCont& dc, NBPTStopCont& sc, NBPTLineCont& lc, double maxDist) {
     // this is different from joinSimilarEdges because there don't need to be
     // shared nodes and tram edges may be split
-    std::set<NBEdge*> tramEdges;
-    std::set<NBEdge*> targetEdges;
+    std::vector<NBEdge*> tramEdges;
+    std::vector<NBEdge*> targetEdges;
     for (auto item : myEdges) {
         SVCPermissions permissions = item.second->getPermissions();
         if (isTram(permissions)) {
             if (item.second->getNumLanes() == 1) {
-                tramEdges.insert(item.second);
+                tramEdges.push_back(item.second);
             } else {
                 WRITE_WARNINGF(TL("Not joining tram edge '%' with % lanes."), item.second->getID(), item.second->getNumLanes());
             }
         } else if ((permissions & (SVC_PASSENGER | SVC_BUS)) != 0) {
-            targetEdges.insert(item.second);
+            targetEdges.push_back(item.second);
         }
     }
-    if (tramEdges.size() == 0 || targetEdges.size() == 0) {
+    if (tramEdges.empty() || targetEdges.empty()) {
         return 0;
     }
     int numJoined = 0;
     NamedRTree tramTree;
-    for (NBEdge* edge : tramEdges) {
+    for (NBEdge* const edge : tramEdges) {
         const Boundary& bound = edge->getGeometry().getBoxBoundary();
         float min[2] = { static_cast<float>(bound.xmin()), static_cast<float>(bound.ymin()) };
         float max[2] = { static_cast<float>(bound.xmax()), static_cast<float>(bound.ymax()) };

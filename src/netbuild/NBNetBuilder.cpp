@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,14 +26,6 @@
 
 #include <string>
 #include <fstream>
-#include "NBNetBuilder.h"
-#include "NBNodeCont.h"
-#include "NBEdgeCont.h"
-#include "NBTrafficLightLogicCont.h"
-#include "NBDistrictCont.h"
-#include "NBDistrict.h"
-#include "NBRequest.h"
-#include "NBTypeCont.h"
 #include <utils/options/OptionsCont.h>
 #include <utils/common/MsgHandler.h>
 #include <utils/common/UtilExceptions.h>
@@ -46,6 +38,15 @@
 #include "NBAlgorithms_Ramps.h"
 #include "NBAlgorithms_Railway.h"
 #include "NBHeightMapper.h"
+#include "NBNodeCont.h"
+#include "NBEdgeCont.h"
+#include "NBPTStop.h"
+#include "NBTrafficLightLogicCont.h"
+#include "NBDistrictCont.h"
+#include "NBDistrict.h"
+#include "NBRequest.h"
+#include "NBTypeCont.h"
+#include "NBNetBuilder.h"
 
 
 // ===========================================================================
@@ -95,7 +96,7 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
     }
     if (mayAddOrRemove && oc.exists("keep-edges.components") && oc.getInt("keep-edges.components") > 0) {
         before = PROGRESS_BEGIN_TIME_MESSAGE("Finding largest components");
-        const bool hasStops = oc.exists("ptstop-output") && oc.isSet("ptstop-output") && myPTStopCont.size() > 0;
+        const bool hasStops = oc.exists("ptstop-output") && oc.isSet("ptstop-output") && !myPTStopCont.getStops().empty();
         myNodeCont.removeComponents(myDistrictCont, myEdgeCont, oc.getInt("keep-edges.components"), hasStops);
         PROGRESS_TIME_MESSAGE(before);
     }
@@ -345,7 +346,6 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         }
     }
     // guess bike lanes
-    int addedLanes = 0;
     if (mayAddOrRemove && ((oc.getBool("bikelanes.guess") || oc.getBool("bikelanes.guess.from-permissions")))) {
         const int bikelanes = myEdgeCont.guessSpecialLanes(SVC_BICYCLE, oc.getFloat("default.bikelane-width"),
                               oc.getFloat("bikelanes.guess.min-speed"),
@@ -354,7 +354,6 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
                               "bikelanes.guess.exclude",
                               myTLLCont);
         WRITE_MESSAGE("Guessed " + toString(bikelanes) + " bike lanes.");
-        addedLanes += bikelanes;
     }
 
     // guess sidewalks
@@ -366,16 +365,17 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
                               "sidewalks.guess.exclude",
                               myTLLCont);
         WRITE_MESSAGE("Guessed " + toString(sidewalks) + " sidewalks.");
-        addedLanes += sidewalks;
     }
     // check whether any not previously setable connections may be set now
     myEdgeCont.recheckPostProcessConnections();
 
     // remap ids if wished
-    int numChangedEdges = myEdgeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myPTStopCont);
-    int numChangedNodes = myNodeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myTLLCont);
-    if (numChangedEdges + numChangedNodes > 0) {
-        WRITE_MESSAGE("Remapped " + toString(numChangedEdges) + " edge IDs and " + toString(numChangedNodes) + " node IDs.");
+    if (mayAddOrRemove) {
+        int numChangedEdges = myEdgeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myPTStopCont);
+        int numChangedNodes = myNodeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myTLLCont);
+        if (numChangedEdges + numChangedNodes > 0) {
+            WRITE_MESSAGE("Remapped " + toString(numChangedEdges) + " edge IDs and " + toString(numChangedNodes) + " node IDs.");
+        }
     }
 
     //
@@ -691,8 +691,8 @@ NBNetBuilder::moveToOrigin(GeoConvHelper& geoConvHelper, bool lefthand) {
     for (std::map<std::string, NBDistrict*>::const_iterator i = myDistrictCont.begin(); i != myDistrictCont.end(); ++i) {
         (*i).second->reshiftPosition(x, y);
     }
-    for (std::map<std::string, NBPTStop*>::const_iterator i = myPTStopCont.begin(); i != myPTStopCont.end(); ++i) {
-        (*i).second->reshiftPosition(x, y);
+    for (const auto& stopIt : myPTStopCont.getStops()) {
+        stopIt.second->reshiftPosition(x, y);
     }
     geoConvHelper.moveConvertedBy(x, y);
     PROGRESS_TIME_MESSAGE(before);
@@ -711,8 +711,8 @@ NBNetBuilder::mirrorX() {
     for (std::map<std::string, NBDistrict*>::const_iterator i = myDistrictCont.begin(); i != myDistrictCont.end(); ++i) {
         (*i).second->mirrorX();
     }
-    for (std::map<std::string, NBPTStop*>::const_iterator i = myPTStopCont.begin(); i != myPTStopCont.end(); ++i) {
-        (*i).second->mirrorX();
+    for (const auto& stopIt : myPTStopCont.getStops()) {
+        stopIt.second->mirrorX();
     }
 }
 

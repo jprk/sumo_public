@@ -175,6 +175,7 @@ always use the latest version of SUMO.
   may allow us to diagnose the problem at a single glance). When sending screenshots of sumo-gui, please include the whole screen so the application version and simulation time are visible.
 - the complete input files for reproducing the error (i.e. a .sumocfg
   and all files referenced therein) in a zip-archive.
+- if your use case involves [TraCI](TraCI.md), please reduce your script to the bare minimum that is needed to show the problem. Then either include the script itself or [generate a log of all traci commands](TraCI/Interfacing_TraCI_from_Python.md#generating_a_log_of_all_traci_commands) and include this.
 - Please remove
   unnecessary inputs (i.e. only 2 vehicles instead of 2000) and try to
   find the minimum input example which still shows the problem. This includes
@@ -900,6 +901,13 @@ There are several reasons why a counter-lane-change-deadlock can happen:
   This may be caused by invalid lane-to-lane connections. Check the
   connections in [sumo-gui](sumo-gui.md) by activating
   *Junctions-\>show lane to lane connections* in the [gui settings dialog](sumo-gui.md#changing_the_appearancevisualisation_of_the_simulation).
+
+### Why do the vehicles not use all available lanes?
+
+  The main reason is usually that only the lanes they use allow them to continue their route. You should check the downstream junction
+  whether the connections are correct. If the number of lanes is reduced without further streets being involved
+  (not a proper junction) make sure to use the [zipper type](Networks/PlainXML.md#node_types). If you want to change the way vehicles behave
+  for the whole scenario, lower their [lcStrategic](Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#lane-changing_models) value.
 
 ### How do I get high flows/vehicle densities?
 

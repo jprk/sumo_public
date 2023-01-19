@@ -110,6 +110,7 @@ configuration:
 | **--vtk-output** {{DT_FILE}} | Save complete vehicle positions inclusive speed values in the VTK Format (usage: /path/out will produce /path/out_$TIMESTEP$.vtp files) |
 | **--amitran-output** {{DT_FILE}} | Save the vehicle trajectories in the Amitran format |
 | **--summary-output** {{DT_FILE}} | Save aggregated vehicle departure info into FILE |
+| **--summary-output.period** {{DT_TIME}} | Save summary-output with the given period; *default:* **-1** |
 | **--person-summary-output** {{DT_FILE}} | Save aggregated person counts into FILE |
 | **--tripinfo-output** {{DT_FILE}} | Save single vehicle trip info into FILE |
 | **--tripinfo-output.write-unfinished** {{DT_BOOL}} | Write tripinfo output for vehicles which have not arrived at simulation end; *default:* **false** |
@@ -139,6 +140,8 @@ configuration:
 | **--stop-output** {{DT_FILE}} | Record stops and loading/unloading of passenger and containers for all vehicles into FILE |
 | **--stop-output.write-unfinished** {{DT_BOOL}} | Write stop output for stops which have not ended at simulation end; *default:* **false** |
 | **--collision-output** {{DT_FILE}} | Write collision information into FILE |
+| **--edgedata-output** {{DT_FILE}} | Write aggregated traffic statistics for all edges into FILE |
+| **--lanedata-output** {{DT_FILE}} | Write aggregated traffic statistics for all lanes into FILE |
 | **--statistic-output** {{DT_FILE}} | Write overall statistics into FILE |
 | **--save-state.times** {{DT_STR[]}} | Use TIME[] as times at which a network state written |
 | **--save-state.period** {{DT_TIME}} | save state repeatedly after TIME period; *default:* **-1** |
@@ -199,7 +202,7 @@ configuration:
 | **--lanechange.overtake-right** {{DT_BOOL}} | Whether overtaking on the right on motorways is permitted; *default:* **false** |
 | **--tls.all-off** {{DT_BOOL}} | Switches off all traffic lights.; *default:* **false** |
 | **--tls.actuated.show-detectors** {{DT_BOOL}} | Sets default visibility for actuation detectors; *default:* **false** |
-| **--tls.actuated.jam-threshold** {{DT_FLOAT}} | Sets default jam-treshold parameter for all actuation detectors; *default:* **-1** |
+| **--tls.actuated.jam-threshold** {{DT_FLOAT}} | Sets default jam-threshold parameter for all actuation detectors; *default:* **-1** |
 | **--tls.actuated.detector-length** {{DT_FLOAT}} | Sets default detector length parameter for all actuation detectors; *default:* **0** |
 | **--tls.delay_based.detector-range** {{DT_FLOAT}} | Sets default range for detecting delayed vehicles; *default:* **100** |
 | **--tls.yellow.min-decel** {{DT_FLOAT}} | Minimum deceleration when braking at yellow; *default:* **3** |
@@ -213,7 +216,7 @@ configuration:
 | **--overhead-wire.recuperation** {{DT_BOOL}} | Enable recuperation from the vehicle equipped with elecHybrid device into the ovrehead wire.; *default:* **true** |
 | **--overhead-wire.substation-current-limits** {{DT_BOOL}} | Enable current limits of traction substation during solving the overhead wire electrical circuit.; *default:* **true** |
 | **--emergencydecel.warning-threshold** {{DT_FLOAT}} | Sets the fraction of emergency decel capability that must be used to trigger a warning.; *default:* **1** |
-| **--parking.maneuver** {{DT_BOOL}} | Whether parking simulation includes manoeuvering time and associated lane blocking; *default:* **false** |
+| **--parking.maneuver** {{DT_BOOL}} | Whether parking simulation includes maneuvering time and associated lane blocking; *default:* **false** |
 | **--use-stop-ended** {{DT_BOOL}} | Override stop until times with stop ended times when given; *default:* **false** |
 | **--pedestrian.model** {{DT_STR}} | Select among pedestrian models ['nonInteracting', 'striping', 'remote']; *default:* **striping** |
 | **--pedestrian.striping.stripe-width** {{DT_FLOAT}} | Width of parallel stripes for segmenting a sidewalk (meters) for use with model 'striping'; *default:* **0.64** |
@@ -286,6 +289,7 @@ configuration:
 | **-l** {{DT_FILE}}<br> **--log** {{DT_FILE}} | Writes all messages to FILE (implies verbose) |
 | **--message-log** {{DT_FILE}} | Writes all non-error messages to FILE (implies verbose) |
 | **--error-log** {{DT_FILE}} | Writes all warnings and errors to FILE |
+| **--language** {{DT_STR}} | Language to use in messages; *default:* **C** |
 | **--duration-log.disable** {{DT_BOOL}} | Disable performance reports for individual simulation steps; *default:* **false** |
 | **-t** {{DT_BOOL}}<br> **--duration-log.statistics** {{DT_BOOL}} | Enable statistics on vehicle trips; *default:* **false** |
 | **--no-step-log** {{DT_BOOL}} | Disable console output of current simulation step; *default:* **false** |
@@ -318,6 +322,12 @@ configuration:
 | **--device.btsender.probability** {{DT_FLOAT}} | The probability for a vehicle to have a 'btsender' device; *default:* **-1** |
 | **--device.btsender.explicit** {{DT_STR[]}} | Assign a 'btsender' device to named vehicles |
 | **--device.btsender.deterministic** {{DT_BOOL}} | The 'btsender' devices are set deterministic using a fraction of 1000; *default:* **false** |
+| **--person-device.btsender.probability** {{DT_FLOAT}} | The probability for a person to have a 'btsender' device; *default:* **-1** |
+| **--person-device.btsender.explicit** {{DT_STR[]}} | Assign a 'btsender' device to named persons |
+| **--person-device.btsender.deterministic** {{DT_BOOL}} | The 'btsender' devices are set deterministic using a fraction of 1000; *default:* **false** |
+| **--person-device.btreceiver.probability** {{DT_FLOAT}} | The probability for a person to have a 'btreceiver' device; *default:* **-1** |
+| **--person-device.btreceiver.explicit** {{DT_STR[]}} | Assign a 'btreceiver' device to named persons |
+| **--person-device.btreceiver.deterministic** {{DT_BOOL}} | The 'btreceiver' devices are set deterministic using a fraction of 1000; *default:* **false** |
 
 ### Battery
 

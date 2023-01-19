@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -221,6 +221,10 @@ NBNodeShapeComputer::computeNodeShapeDefault(bool simpleContinuation) {
                               geomsCCW[*i].nearest_offset_to_point2D(p),
                               geomsCW[*i].nearest_offset_to_point2D(p));
             if (dist < 0) {
+                if (isRailway((*i)->getPermissions())) {
+                    // better not mess up bidi geometries
+                    return PositionVector();
+                }
                 // ok, we have the problem that even the extrapolated geometry
                 //  does not reach the point
                 // in this case, the geometry has to be extenden... too bad ...

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -57,6 +57,9 @@ NWFrame::fillOptions(bool forNetgen) {
     oc.addSynonyme("plain-output-prefix", "plain-output");
     oc.addSynonyme("plain-output-prefix", "plain");
     oc.addDescription("plain-output-prefix", "Output", "Prefix of files to write plain xml nodes, edges and connections to");
+
+    oc.doRegister("plain-output.lanes", new Option_Bool(false));
+    oc.addDescription("plain-output.lanes", "Output", "Write all lanes and their attributes even when they are not customized");
 
     oc.doRegister("junctions.join-output", new Option_FileName());
     oc.addDescription("junctions.join-output", "Output",
@@ -118,6 +121,14 @@ NWFrame::fillOptions(bool forNetgen) {
     // register opendrive options
     oc.doRegister("opendrive-output.straight-threshold", new Option_Float(0.00000001)); // matching the angular output precision in NWWriter_OpenDrive
     oc.addDescription("opendrive-output.straight-threshold", "Output", "Builds parameterized curves whenever the angular change  between straight segments exceeds FLOAT degrees");
+
+    if (!forNetgen) {
+        oc.doRegister("opendrive-output.lefthand-left", new Option_Bool(false));
+        oc.addDescription("opendrive-output.lefthand-left", "Output", "Write lanes in lefthand networks on the left side (positive indices)");
+
+        oc.doRegister("opendrive-output.shape-match-dist", new Option_Float(-1));
+        oc.addDescription("opendrive-output.shape-match-dist", "Output", "Match loaded shapes to the closest edge within FLOAT and export as road objects");
+    }
 }
 
 

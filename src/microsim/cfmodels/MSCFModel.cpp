@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -160,6 +160,28 @@ MSCFModel::freeSpeed(const double currentSpeed, const double decel, const double
         }
     }
 }
+
+
+double
+MSCFModel::getSecureGap(const MSVehicle* const veh, const MSVehicle* const /*pred*/, const double speed, const double leaderSpeed, const double leaderMaxDecel) const {
+    // The solution approach leaderBrakeGap >= followerBrakeGap is not
+    // secure when the follower can brake harder than the leader because the paths may still cross.
+    // As a workaround we use a value of leaderDecel which errs on the side of caution
+    const double maxDecel = MAX2(myDecel, leaderMaxDecel);
+    const double bgLeader = brakeGap(leaderSpeed, maxDecel, 0);
+    double secureGap = MAX2(0.0, brakeGap(speed, myDecel, myHeadwayTime) - bgLeader);
+    if (MSGlobals::gComputeLC && veh->getAcceleration() < -NUMERICAL_EPS) {
+        // vehicle can react instantly in the next step
+        // we only apply 'myHeadWayTime' to avoid sudden braking after lane change
+        // thus we can reduce the required brakeGap if the vehicle is braking anyway
+        // (but we shouldn't assume continued emergency deceleration)
+        const double secureGapDecel = MAX2(0.0, brakeGap(speed, MIN2(-veh->getAcceleration(), myDecel), 0) - bgLeader);
+        // the secureGapDecel doesn't leave room for lcAssertive behavior
+        secureGap = MIN2(secureGap, secureGapDecel / veh->getLaneChangeModel().getSafetyFactor());
+    }
+    return secureGap;
+}
+
 
 double
 MSCFModel::finalizeSpeed(MSVehicle* const veh, double vPos) const {
@@ -402,22 +424,25 @@ MSCFModel::distAfterTime(double t, double speed, const double accel) const {
     }
 }
 
+
 SUMOTime
 MSCFModel::getMinimalArrivalTime(double dist, double currentSpeed, double arrivalSpeed) const {
+    if (dist <= 0.) {
+        return 0;
+    }
     // will either drive as fast as possible and decelerate as late as possible
     // or accelerate as fast as possible and then hold that speed
     const double accel = (arrivalSpeed >= currentSpeed) ? getMaxAccel() : -getMaxDecel();
-    const double accelTime = (arrivalSpeed - currentSpeed) / accel;
+    const double accelTime = accel == 0. ? 0. : (arrivalSpeed - currentSpeed) / accel;
     const double accelWay = accelTime * (arrivalSpeed + currentSpeed) * 0.5;
     if (dist >= accelWay) {
         const double nonAccelWay = dist - accelWay;
         const double nonAccelSpeed = MAX3(currentSpeed, arrivalSpeed, SUMO_const_haltingSpeed);
         return TIME2STEPS(accelTime + nonAccelWay / nonAccelSpeed);
-    } else {
-        // find time x so that
-        // x * (currentSpeed + currentSpeed + x * accel) * 0.5 = dist
-        return TIME2STEPS((currentSpeed + -1 * sqrt(currentSpeed * currentSpeed + 2 * accel * dist)) * (-1 / accel));
     }
+    // find time x so that
+    // x * (currentSpeed + currentSpeed + x * accel) * 0.5 = dist
+    return TIME2STEPS(-(currentSpeed - sqrt(currentSpeed * currentSpeed + 2 * accel * dist)) / accel);
 }
 
 

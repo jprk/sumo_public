@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -74,33 +74,33 @@ GNECreateEdgeFrame::EdgeTypeSelector::EdgeTypeSelector(GNECreateEdgeFrame* creat
     myCurrentIndex(0) {
     // default edge radio button
     myUseDefaultEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Create default edge"),
-        this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
+            this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
     // checkboxes
     myNoPedestriansCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Disallow for pedestrians"),
-        this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
+            this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     myAddSidewalkCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Add Sidewalk"),
-        this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
+            this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     // use custom edge radio button
     myUseCustomEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Use edgeType/template"),
-        this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
+                                            this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
     // edge types combo box
-    myEdgeTypesComboBox = new FXComboBox(getCollapsableFrame(), GUIDesignComboBoxNCol, 
-        this, MID_GNE_CREATEEDGEFRAME_SELECTTEMPLATE, GUIDesignComboBoxAttribute);
+    myEdgeTypesComboBox = new FXComboBox(getCollapsableFrame(), GUIDesignComboBoxNCol,
+                                         this, MID_GNE_CREATEEDGEFRAME_SELECTTEMPLATE, GUIDesignComboBoxAttribute);
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameButtons = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create new edge type button
     myAddEdgeTypeButton = new FXButton(horizontalFrameButtons, TL("Add\t\tAdd edge type"), GUIIconSubSys::getIcon(GUIIcon::ADD),
-        this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
+                                       this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
     // create delete edge type button
     myDeleteEdgeTypeButton = new FXButton(horizontalFrameButtons, TL("Delete\t\tDelete edge type"), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
-        this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
+                                          this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
     // create delete edge type button
     myCreateFromTemplate = new FXButton(getCollapsableFrame(), TL("Create from template\t\tCreate edgeType from template"), GUIIconSubSys::getIcon(GUIIcon::EDGE),
-        this, MID_GNE_CREATEEDGEFRAME_CREATEFROMTEMPLATE, GUIDesignButton);
+                                        this, MID_GNE_CREATEEDGEFRAME_CREATEFROMTEMPLATE, GUIDesignButton);
     // by default, create custom edge
     myUseDefaultEdgeType->setCheck(TRUE);
     // check if enable disable pedestrians
-    for (const auto &junction : createEdgeFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getJunctions()) {
+    for (const auto& junction : createEdgeFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getJunctions()) {
         if (junction.second->getNBNode()->getCrossings().size() > 0) {
             enableCheckBoxDisablePedestrians();
         }
@@ -222,7 +222,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::useDefaultEdgeType() const {
 }
 
 
-void 
+void
 GNECreateEdgeFrame::EdgeTypeSelector::enableCheckBoxDisablePedestrians() {
     myNoPedestriansCheckButton->setCheck(TRUE);
 }
@@ -244,13 +244,13 @@ GNECreateEdgeFrame::EdgeTypeSelector::getEdgeTypeSelected() const {
 }
 
 
-bool 
+bool
 GNECreateEdgeFrame::EdgeTypeSelector::isNoPedestriansEnabled() const {
     return (myNoPedestriansCheckButton->getCheck() == TRUE);
 }
 
 
-bool 
+bool
 GNECreateEdgeFrame::EdgeTypeSelector::isAddSidewalkEnabled() const {
     return (myAddSidewalkCheckButton->getCheck() == TRUE);
 }
@@ -377,7 +377,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::onCmdCreateFromTemplate(FXObject*, FXSelec
 }
 
 
-long 
+long
 GNECreateEdgeFrame::EdgeTypeSelector::onUpdAddSideWalk(FXObject*, FXSelector, void*) {
     if (myAddSidewalkCheckButton->getCheck() == TRUE) {
         myNoPedestriansCheckButton->setCheck(TRUE);
@@ -458,7 +458,7 @@ GNECreateEdgeFrame::LaneTypeSelector::showLaneTypeSelector() {
 
 void
 GNECreateEdgeFrame::LaneTypeSelector::hideLaneTypeSelector() {
-    // hide attributes creator modul
+    // hide attributes creator module
     myCreateEdgeFrameParent->myLaneTypeAttributes->hideAttributesCreatorModule();
     // hide
     hide();
@@ -638,7 +638,7 @@ GNECreateEdgeFrame::Legend::~Legend() {}
 // GNECreateEdgeFrame - methods
 // ---------------------------------------------------------------------------
 
-GNECreateEdgeFrame::GNECreateEdgeFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNECreateEdgeFrame::GNECreateEdgeFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Create Edge"),
     myObjectsUnderSnappedCursor(viewNet),
     myCreateEdgeSource(nullptr) {
@@ -712,7 +712,7 @@ GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewN
                         newEdge->copyEdgeType(myEdgeTypeSelector->getEdgeTypeSelected(), myViewNet->getUndoList());
                     }
                     // create another edge, if create opposite edge is enabled
-                    if (oppositeEdge && (myViewNet->getNet()->getAttributeCarriers()->retrieveEdge(junction, myCreateEdgeSource, false) == nullptr)) {
+                    if (oppositeEdge && (myViewNet->getNet()->getAttributeCarriers()->retrieveEdges(junction, myCreateEdgeSource).size() == 0)) {
                         GNEEdge* newOppositeEdge = myViewNet->getNet()->createEdge(junction, myCreateEdgeSource, nullptr,
                                                    myViewNet->getUndoList(), "-" + newEdge->getNBEdge()->getID());
                         // set parameters
@@ -832,8 +832,8 @@ GNECreateEdgeFrame::setUseEdgeTemplate() {
 void
 GNECreateEdgeFrame::disablePedestrians(GNEEdge* edge) const {
     // iterate over lanes
-    for (const auto &lane : edge->getLanes()) {
-        // avoid sidelwalks
+    for (const auto& lane : edge->getLanes()) {
+        // avoid sidewalks
         if (lane->getAttribute(SUMO_ATTR_ALLOW) != "pedestrian") {
             // extract disallow list
             std::vector<std::string> disallowList = GNEAttributeCarrier::parse<std::vector<std::string> >(lane->getAttribute(SUMO_ATTR_DISALLOW));
@@ -852,7 +852,7 @@ void
 GNECreateEdgeFrame::addSidewalk(GNEEdge* edge) const {
     bool sidewalkFound = false;
     // iterate over lanes
-    for (const auto &lane : edge->getLanes()) {
+    for (const auto& lane : edge->getLanes()) {
         // check if there is already a SideWalk
         if (lane->getAttribute(SUMO_ATTR_ALLOW) == "pedestrian") {
             sidewalkFound = true;
@@ -862,7 +862,7 @@ GNECreateEdgeFrame::addSidewalk(GNEEdge* edge) const {
     if (!sidewalkFound) {
         // update num lanes
         edge->setAttribute(SUMO_ATTR_NUMLANES, toString(edge->getLanes().size() + 1), myViewNet->getUndoList());
-        // set last lane allow atribute
+        // set last lane allow attribute
         edge->getLanes().front()->setAttribute(SUMO_ATTR_ALLOW, "pedestrian", myViewNet->getUndoList());
     }
 }

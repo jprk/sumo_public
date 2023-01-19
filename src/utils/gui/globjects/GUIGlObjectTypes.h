@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -57,8 +57,10 @@ enum GUIGlObjectType {
     GLO_CROSSING = 7,
     /// @brief a tl-logic
     GLO_TLLOGIC = 8,
-    /// @brief an edge_type
-    GLO_TYPE = 9,
+    /// @brief an edgeType
+    GLO_EDGETYPE = 9,
+    /// @brief a laneType
+    GLO_LANETYPE = 10,
 
     /// @}
 
@@ -250,20 +252,23 @@ enum GUIGlObjectType {
     /// @brief text element (used in NETEDIT)
     GLO_TEXTNAME = 1010,
 
-    /// @brief dotted contour front element (used in NETEDIT)
-    GLO_DOTTEDCONTOUR_FRONT = 1020,
+    /// @brief geometry point (used in NETEDIT)
+    GLO_GEOMETRYPOINT = 1020,
+
+    /// @brief front element (used in NETEDIT)
+    GLO_FRONTELEMENT = 1030,
 
     /// @brief dotted contour inspected element (used in NETEDIT)
-    GLO_DOTTEDCONTOUR_INSPECTED = 1030,
+    GLO_DOTTEDCONTOUR_INSPECTED = 1040,
 
     /// @brief temporal shape (used in NETEDIT)
-    GLO_TEMPORALSHAPE = 1040,
+    GLO_TEMPORALSHAPE = 1050,
 
     /// @brief rectangle selection shape (used in NETEDIT)
-    GLO_RECTANGLESELECTION = 1050,
+    GLO_RECTANGLESELECTION = 1060,
 
     /// @brief test element (used in NETEDIT)
-    GLO_TESTELEMENT = 1060,
+    GLO_TESTELEMENT = 1070,
 
     /// @}
 

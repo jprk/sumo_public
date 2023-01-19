@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -31,6 +31,8 @@
 #include <microsim/MSLane.h>
 #include <microsim/MSEdge.h>
 #include <microsim/MSVehicle.h>
+#include <microsim/transportables/MSTransportable.h>
+#include <microsim/transportables/MSTransportableControl.h>
 #include <microsim/MSEventControl.h>
 #include "MSDevice_Tripinfo.h"
 #include "MSDevice_BTreceiver.h"
@@ -41,6 +43,7 @@
 // static members
 // ===========================================================================
 bool MSDevice_BTreceiver::myWasInitialised = false;
+bool MSDevice_BTreceiver::myHasPersons = true;
 double MSDevice_BTreceiver::myRange = -1.;
 double MSDevice_BTreceiver::myOffTime = -1.;
 SumoRNG MSDevice_BTreceiver::sRecognitionRNG("btreceiver");
@@ -53,8 +56,9 @@ std::map<std::string, MSDevice_BTreceiver::VehicleInformation*> MSDevice_BTrecei
 // ---------------------------------------------------------------------------
 // static initialisation methods
 // ---------------------------------------------------------------------------
+
 void
-MSDevice_BTreceiver::insertOptions(OptionsCont& oc) {
+MSVehicleDevice_BTreceiver::insertOptions(OptionsCont& oc) {
     insertDefaultAssignmentOptions("btreceiver", "Communication", oc);
 
     oc.doRegister("device.btreceiver.range", new Option_Float(300));
@@ -67,15 +71,39 @@ MSDevice_BTreceiver::insertOptions(OptionsCont& oc) {
     oc.addDescription("device.btreceiver.offtime", "Communication", "The offtime used for calculating detection probability (in seconds)");
 
     myWasInitialised = false;
+    myHasPersons = false;
 }
 
 
 void
-MSDevice_BTreceiver::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into) {
+MSVehicleDevice_BTreceiver::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into) {
     OptionsCont& oc = OptionsCont::getOptions();
     if (equippedByDefaultAssignmentOptions(oc, "btreceiver", v, false)) {
-        MSDevice_BTreceiver* device = new MSDevice_BTreceiver(v, "btreceiver_" + v.getID());
+        MSVehicleDevice_BTreceiver* device = new MSVehicleDevice_BTreceiver(v, "btreceiver_" + v.getID());
         into.push_back(device);
+        if (!myWasInitialised) {
+            new BTreceiverUpdate();
+            myWasInitialised = true;
+            myRange = oc.getFloat("device.btreceiver.range");
+            myOffTime = oc.getFloat("device.btreceiver.offtime");
+            sRecognitionRNG.seed(oc.getInt("seed"));
+        }
+    }
+}
+
+void
+MSTransportableDevice_BTreceiver::insertOptions(OptionsCont& oc) {
+    insertDefaultAssignmentOptions("btreceiver", "Communication", oc, true);
+}
+
+
+void
+MSTransportableDevice_BTreceiver::buildDevices(MSTransportable& t, std::vector<MSTransportableDevice*>& into) {
+    OptionsCont& oc = OptionsCont::getOptions();
+    if (equippedByDefaultAssignmentOptions(oc, "btreceiver", t, false, true)) {
+        MSTransportableDevice_BTreceiver* device = new MSTransportableDevice_BTreceiver(t, "btreceiver_" + t.getID());
+        into.push_back(device);
+        myHasPersons = true;
         if (!myWasInitialised) {
             new BTreceiverUpdate();
             myWasInitialised = true;
@@ -96,13 +124,13 @@ MSDevice_BTreceiver::BTreceiverUpdate::BTreceiverUpdate() {
 
 
 MSDevice_BTreceiver::BTreceiverUpdate::~BTreceiverUpdate() {
-    for (std::map<std::string, MSDevice_BTsender::VehicleInformation*>::const_iterator i = MSDevice_BTsender::sVehicles.begin(); i != MSDevice_BTsender::sVehicles.end(); ++i) {
-        (*i).second->amOnNet = false;
-        (*i).second->haveArrived = true;
+    for (const auto& vehicleInfo : MSDevice_BTsender::sVehicles) {
+        vehicleInfo.second->amOnNet = false;
+        vehicleInfo.second->haveArrived = true;
     }
-    for (std::map<std::string, MSDevice_BTreceiver::VehicleInformation*>::const_iterator i = MSDevice_BTreceiver::sVehicles.begin(); i != MSDevice_BTreceiver::sVehicles.end(); ++i) {
-        (*i).second->amOnNet = false;
-        (*i).second->haveArrived = true;
+    for (const auto& vehicleInfo : MSDevice_BTreceiver::sVehicles) {
+        vehicleInfo.second->amOnNet = false;
+        vehicleInfo.second->haveArrived = true;
     }
     execute(MSNet::getInstance()->getCurrentTimeStep());
 }
@@ -110,6 +138,30 @@ MSDevice_BTreceiver::BTreceiverUpdate::~BTreceiverUpdate() {
 
 SUMOTime
 MSDevice_BTreceiver::BTreceiverUpdate::execute(SUMOTime /*currentTime*/) {
+    // loop over equipped persons to update their positions
+    if (myHasPersons && MSNet::getInstance()->hasPersons()) {  // the check whether the net has persons is only important in the final cleanup
+        MSTransportableControl& c = MSNet::getInstance()->getPersonControl();
+        for (MSTransportableControl::constVehIt i = c.loadedBegin(); i != c.loadedEnd(); ++i) {
+            MSTransportable* t = i->second;
+            if (t->getCurrentStageType() != MSStageType::WAITING_FOR_DEPART) {
+                MSDevice_BTsender* snd = dynamic_cast<MSDevice_BTsender*>(t->getDevice(typeid(MSTransportableDevice_BTsender)));
+                MSDevice_BTreceiver* rec = dynamic_cast<MSDevice_BTreceiver*>(t->getDevice(typeid(MSTransportableDevice_BTreceiver)));
+                if (snd) {
+                    snd->notifyMove(*t, t->getPositionOnLane(), t->getPositionOnLane(), t->getSpeed());
+                    if (MSDevice_BTsender::sVehicles[t->getID()]->route.back() != t->getEdge()) {
+                        MSDevice_BTsender::sVehicles[t->getID()]->route.push_back(t->getEdge());
+                    }
+                }
+                if (rec) {
+                    rec->notifyMove(*t, t->getPositionOnLane(), t->getPositionOnLane(), t->getSpeed());
+                    if (sVehicles[t->getID()]->route.back() != t->getEdge()) {
+                        sVehicles[t->getID()]->route.push_back(t->getEdge());
+                    }
+                }
+            }
+        }
+    }
+
     // build rtree with senders
     NamedRTree rt;
     for (std::map<std::string, MSDevice_BTsender::VehicleInformation*>::const_iterator i = MSDevice_BTsender::sVehicles.begin(); i != MSDevice_BTsender::sVehicles.end(); ++i) {
@@ -281,35 +333,6 @@ MSDevice_BTreceiver::BTreceiverUpdate::leaveRange(VehicleInformation& receiverIn
 }
 
 
-double
-MSDevice_BTreceiver::inquiryDelaySlots(const int backoffLimit) {
-    const int phaseOffset = RandHelper::rand(2047, &sRecognitionRNG);
-    const bool interlaced = RandHelper::rand(&sRecognitionRNG) < 0.7;
-    const double delaySlots = RandHelper::rand(&sRecognitionRNG) * 15;
-    const int backoff = RandHelper::rand(backoffLimit, &sRecognitionRNG);
-    if (interlaced) {
-        return RandHelper::rand(&sRecognitionRNG) * 31 + backoff;
-    }
-    if (RandHelper::rand(31, &sRecognitionRNG) < 16) {
-        // correct train for f0
-        return delaySlots + backoff;
-    }
-    if (RandHelper::rand(30, &sRecognitionRNG) < 16) {
-        // correct train for f1
-        return 2048 - phaseOffset + delaySlots + backoff;
-    }
-    if (RandHelper::rand(29, &sRecognitionRNG) < 16) {
-        // f2 is in train A but has overlap with both trains
-        if (2 * 2048 - phaseOffset + backoff < 4096) {
-            return 2 * 2048 - phaseOffset + delaySlots + backoff;
-        }
-        // the following is wrong but should only happen in about 3% of the non-interlaced cases
-        return 2 * 2048 - phaseOffset + delaySlots + backoff;
-    }
-    return 2 * 2048 + delaySlots + backoff;
-}
-
-
 void
 MSDevice_BTreceiver::BTreceiverUpdate::addRecognitionPoint(const double tEnd, const MSDevice_BTsender::VehicleState& receiverState,
         const MSDevice_BTsender::VehicleState& senderState,
@@ -367,22 +390,15 @@ MSDevice_BTreceiver::BTreceiverUpdate::writeOutput(const std::string& id, const 
 }
 
 
-
-
 // ---------------------------------------------------------------------------
 // MSDevice_BTreceiver-methods
 // ---------------------------------------------------------------------------
-MSDevice_BTreceiver::MSDevice_BTreceiver(SUMOVehicle& holder, const std::string& id)
-    : MSVehicleDevice(holder, id) {
-}
-
-
 MSDevice_BTreceiver::~MSDevice_BTreceiver() {
 }
 
 
 bool
-MSDevice_BTreceiver::notifyEnter(SUMOTrafficObject& veh, Notification reason, const MSLane* /* enteredLane */) {
+MSDevice_BTreceiver::notifyEnter(SUMOTrafficObject& veh, MSMoveReminder::Notification reason, const MSLane* /* enteredLane */) {
     if (reason == MSMoveReminder::NOTIFICATION_DEPARTED && sVehicles.find(veh.getID()) == sVehicles.end()) {
         sVehicles[veh.getID()] = new VehicleInformation(veh.getID(), myRange);
         sVehicles[veh.getID()]->route.push_back(veh.getEdge());
@@ -393,9 +409,8 @@ MSDevice_BTreceiver::notifyEnter(SUMOTrafficObject& veh, Notification reason, co
     if (reason == MSMoveReminder::NOTIFICATION_TELEPORT || reason == MSMoveReminder::NOTIFICATION_JUNCTION) {
         sVehicles[veh.getID()]->route.push_back(veh.getEdge());
     }
-    const std::string location = MSGlobals::gUseMesoSim ? veh.getEdge()->getID() : static_cast<MSVehicle&>(veh).getLane()->getID();
-    const MSBaseVehicle& v = static_cast<MSBaseVehicle&>(veh);
-    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(veh.getSpeed(), veh.getPosition(), location, veh.getPositionOnLane(), v.getRoutePosition()));
+    const std::string location = MSDevice_BTsender::getLocation(veh);
+    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(veh.getSpeed(), veh.getPosition(), location, veh.getPositionOnLane(), veh.getRoutePosition()));
     return true;
 }
 
@@ -406,15 +421,14 @@ MSDevice_BTreceiver::notifyMove(SUMOTrafficObject& veh, double /* oldPos */, dou
         WRITE_WARNING("btreceiver: Can not update position of vehicle '" + veh.getID() + "' which is not on the road.");
         return true;
     }
-    const std::string location = MSGlobals::gUseMesoSim ? veh.getEdge()->getID() : static_cast<MSVehicle&>(veh).getLane()->getID();
-    const MSBaseVehicle& v = static_cast<MSBaseVehicle&>(veh);
-    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(newSpeed, veh.getPosition(), location, newPos, v.getRoutePosition()));
+    const std::string location = MSDevice_BTsender::getLocation(veh);
+    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(newSpeed, veh.getPosition(), location, newPos, veh.getRoutePosition()));
     return true;
 }
 
 
 bool
-MSDevice_BTreceiver::notifyLeave(SUMOTrafficObject& veh, double /* lastPos */, Notification reason, const MSLane* /* enteredLane */) {
+MSDevice_BTreceiver::notifyLeave(SUMOTrafficObject& veh, double /* lastPos */, MSMoveReminder::Notification reason, const MSLane* /* enteredLane */) {
     if (reason < MSMoveReminder::NOTIFICATION_TELEPORT) {
         return true;
     }
@@ -422,9 +436,8 @@ MSDevice_BTreceiver::notifyLeave(SUMOTrafficObject& veh, double /* lastPos */, N
         WRITE_WARNING("btreceiver: Can not update position of vehicle '" + veh.getID() + "' which is not on the road.");
         return true;
     }
-    const std::string location = MSGlobals::gUseMesoSim ? veh.getEdge()->getID() : static_cast<MSVehicle&>(veh).getLane()->getID();
-    const MSBaseVehicle& v = static_cast<MSBaseVehicle&>(veh);
-    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(veh.getSpeed(), veh.getPosition(), location, veh.getPositionOnLane(), v.getRoutePosition()));
+    const std::string location = MSDevice_BTsender::getLocation(veh);
+    sVehicles[veh.getID()]->updates.push_back(MSDevice_BTsender::VehicleState(veh.getSpeed(), veh.getPosition(), location, veh.getPositionOnLane(), veh.getRoutePosition()));
     if (reason == MSMoveReminder::NOTIFICATION_TELEPORT) {
         sVehicles[veh.getID()]->amOnNet = false;
     }
@@ -433,6 +446,35 @@ MSDevice_BTreceiver::notifyLeave(SUMOTrafficObject& veh, double /* lastPos */, N
         sVehicles[veh.getID()]->haveArrived = true;
     }
     return true;
+}
+
+
+double
+MSDevice_BTreceiver::inquiryDelaySlots(const int backoffLimit) {
+    const int phaseOffset = RandHelper::rand(2047, &sRecognitionRNG);
+    const bool interlaced = RandHelper::rand(&sRecognitionRNG) < 0.7;
+    const double delaySlots = RandHelper::rand(&sRecognitionRNG) * 15;
+    const int backoff = RandHelper::rand(backoffLimit, &sRecognitionRNG);
+    if (interlaced) {
+        return RandHelper::rand(&sRecognitionRNG) * 31 + backoff;
+    }
+    if (RandHelper::rand(31, &sRecognitionRNG) < 16) {
+        // correct train for f0
+        return delaySlots + backoff;
+    }
+    if (RandHelper::rand(30, &sRecognitionRNG) < 16) {
+        // correct train for f1
+        return 2048 - phaseOffset + delaySlots + backoff;
+    }
+    if (RandHelper::rand(29, &sRecognitionRNG) < 16) {
+        // f2 is in train A but has overlap with both trains
+        if (2 * 2048 - phaseOffset + backoff < 4096) {
+            return 2 * 2048 - phaseOffset + delaySlots + backoff;
+        }
+        // the following is wrong but should only happen in about 3% of the non-interlaced cases
+        return 2 * 2048 - phaseOffset + delaySlots + backoff;
+    }
+    return 2 * 2048 + delaySlots + backoff;
 }
 
 

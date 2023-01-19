@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2011-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2011-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -23,6 +23,7 @@ import sys
 import subprocess
 import gzip
 import io
+import warnings
 try:
     from urllib.request import urlopen
 except ImportError:
@@ -45,7 +46,7 @@ def call(executable, args):
     optParser = OptionParser()
     pullOptions(executable, optParser)
     cmd = [executable]
-    for option, value in args.__dict__.iteritems():
+    for option, value in args.__dict__.items():
         o = "--" + option.replace("_", "-")
         opt = optParser.get_option(o)
         if opt is not None and value is not None and opt.default != value:
@@ -179,11 +180,27 @@ def _laneID2edgeID(laneID):
 
 
 def open(fileOrURL, tryGZip=True, mode="rb"):
+    warnings.warn("sumolib.open is deprecated, due to the name clash and strange signature! Use openz instead.")
+    return openz(fileOrURL, mode, tryGZip=tryGZip)
+
+
+def openz(fileOrURL, mode="r", **kwargs):
+    """
+    Opens transparently files, URLs and gzipped files for reading and writing.
+    Also enforces UTF8 on text output / input.
+    Should be compatible with python 2 and 3.
+    """
     try:
-        if fileOrURL.startswith("http"):
+        if fileOrURL.startswith("http://") or fileOrURL.startswith("https://"):
             return io.BytesIO(urlopen(fileOrURL).read())
-        if tryGZip:
+        if fileOrURL.endswith(".gz") and "w" in mode:
+            if "b" in mode:
+                return gzip.open(fileOrURL, mode="w")
+            return gzip.open(fileOrURL, mode="wt", encoding="utf8")
+        if kwargs.get("tryGZip", True) and "r" in mode:
             return gzip.open(fileOrURL)
     finally:
         pass
-    return io.open(fileOrURL, mode=mode)
+    if "b" in mode:
+        return io.open(fileOrURL, mode=mode)
+    return io.open(fileOrURL, mode=mode, encoding="utf8")

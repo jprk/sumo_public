@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -23,6 +23,7 @@
 #include <utils/emissions/PollutantsInterface.h>
 #include <utils/geom/GeomConvHelper.h>
 #include <utils/gui/div/GUIGlobalSelection.h>
+#include <utils/gui/images/VClassIcons.h>
 #include <utils/options/OptionsCont.h>
 
 #include "GNEAttributeCarrier.h"
@@ -167,12 +168,7 @@ GNEAttributeCarrier::parse(const std::string& string) {
 
 template<> SUMOTime
 GNEAttributeCarrier::parse(const std::string& string) {
-    SUMOTime time = string2time(string);
-    if (time < 0) {
-        throw TimeFormatException("SUMOTIME cannot be negative");
-    } else {
-        return time;
-    }
+    return string2time(string);
 }
 
 
@@ -304,18 +300,36 @@ GNEAttributeCarrier::parse(const std::string& string) {
 }
 
 
+template<> std::vector<SumoXMLAttr>
+GNEAttributeCarrier::parse(const std::string& value) {
+    // Declare string vector
+    std::vector<std::string> attributesStr = GNEAttributeCarrier::parse<std::vector<std::string> > (value);
+    std::vector<SumoXMLAttr> attributes;
+    // Iterate over lanes IDs, retrieve Lanes and add it into parsedLanes
+    for (const auto& attributeStr : attributesStr) {
+        if (SUMOXMLDefinitions::Tags.hasString(attributeStr)) {
+            attributes.push_back(static_cast<SumoXMLAttr>(SUMOXMLDefinitions::Attrs.get(attributeStr)));
+        } else {
+            throw InvalidArgument("Error parsing attributes. Attribute '" + attributeStr + "'  doesn't exist");
+        }
+    }
+    return attributes;
+}
+
+
 template<> std::vector<GNEEdge*>
 GNEAttributeCarrier::parse(GNENet* net, const std::string& value) {
     // Declare string vector
     std::vector<std::string> edgeIds = GNEAttributeCarrier::parse<std::vector<std::string> > (value);
     std::vector<GNEEdge*> parsedEdges;
     // Iterate over edges IDs, retrieve Edges and add it into parsedEdges
-    for (const auto& i : edgeIds) {
-        GNEEdge* retrievedEdge = net->getAttributeCarriers()->retrieveEdge(i, false);
+    for (const auto& edgeID : edgeIds) {
+        GNEEdge* retrievedEdge = net->getAttributeCarriers()->retrieveEdge(edgeID, false);
         if (retrievedEdge) {
-            parsedEdges.push_back(net->getAttributeCarriers()->retrieveEdge(i));
+            parsedEdges.push_back(net->getAttributeCarriers()->retrieveEdge(edgeID));
         } else {
-            throw FormatException("Error parsing parameter " + toString(SUMO_ATTR_EDGES) + ". " + toString(SUMO_TAG_EDGE) + " '" + i + "' doesn't exist");
+            throw FormatException("Error parsing parameter " + toString(SUMO_ATTR_EDGES) + ". " +
+                                  toString(SUMO_TAG_EDGE) + " '" + edgeID + "' doesn't exist");
         }
     }
     return parsedEdges;
@@ -328,12 +342,13 @@ GNEAttributeCarrier::parse(GNENet* net, const std::string& value) {
     std::vector<std::string> laneIds = GNEAttributeCarrier::parse<std::vector<std::string> > (value);
     std::vector<GNELane*> parsedLanes;
     // Iterate over lanes IDs, retrieve Lanes and add it into parsedLanes
-    for (const auto& i : laneIds) {
-        GNELane* retrievedLane = net->getAttributeCarriers()->retrieveLane(i, false);
+    for (const auto& laneID : laneIds) {
+        GNELane* retrievedLane = net->getAttributeCarriers()->retrieveLane(laneID, false);
         if (retrievedLane) {
-            parsedLanes.push_back(net->getAttributeCarriers()->retrieveLane(i));
+            parsedLanes.push_back(net->getAttributeCarriers()->retrieveLane(laneID));
         } else {
-            throw FormatException("Error parsing parameter " + toString(SUMO_ATTR_LANES) + ". " + toString(SUMO_TAG_LANE) + " '" + i + "'  doesn't exist");
+            throw FormatException("Error parsing parameter " + toString(SUMO_ATTR_LANES) + ". " +
+                                  toString(SUMO_TAG_LANE) + " '" + laneID + "'  doesn't exist");
         }
     }
     return parsedLanes;
@@ -389,69 +404,6 @@ GNEAttributeCarrier::lanesConsecutives(const std::vector<GNELane*>& lanes) {
         return true;
     } else {
         return false;
-    }
-}
-
-
-FXIcon*
-GNEAttributeCarrier::getVClassIcon(const SUMOVehicleClass vc) {
-    switch (vc) {
-        case SVC_IGNORING:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_IGNORING);
-        case SVC_PRIVATE:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_PRIVATE);
-        case SVC_EMERGENCY:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_EMERGENCY);
-        case SVC_AUTHORITY:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_AUTHORITY);
-        case SVC_ARMY:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_ARMY);
-        case SVC_VIP:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_VIP);
-        case SVC_PEDESTRIAN:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_PEDESTRIAN);
-        case SVC_PASSENGER:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_PASSENGER);
-        case SVC_HOV:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_HOV);
-        case SVC_TAXI:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_TAXI);
-        case SVC_BUS:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_BUS);
-        case SVC_COACH:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_COACH);
-        case SVC_DELIVERY:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_DELIVERY);
-        case SVC_TRUCK:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_TRUCK);
-        case SVC_TRAILER:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_TRAILER);
-        case SVC_MOTORCYCLE:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_MOTORCYCLE);
-        case SVC_MOPED:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_MOPED);
-        case SVC_BICYCLE:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_BICYCLE);
-        case SVC_E_VEHICLE:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_EVEHICLE);
-        case SVC_TRAM:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_TRAM);
-        case SVC_RAIL_URBAN:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_RAIL_URBAN);
-        case SVC_RAIL:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_RAIL);
-        case SVC_RAIL_ELECTRIC:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_RAIL_ELECTRIC);
-        case SVC_RAIL_FAST:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_RAIL_FAST);
-        case SVC_SHIP:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_SHIP);
-        case SVC_CUSTOM1:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_CUSTOM1);
-        case SVC_CUSTOM2:
-            return GUIIconSubSys::getIcon(GUIIcon::VCLASS_SMALL_CUSTOM2);
-        default:
-            throw ProcessError("Invalid vClass");
     }
 }
 
@@ -644,7 +596,7 @@ GNEAttributeCarrier::getACIcon() const {
     }
     // special case for vClass icons
     if (myTagProperty.vClassIcon()) {
-        return getVClassIcon(SumoVehicleClassStrings.get(getAttribute(SUMO_ATTR_VCLASS)));
+        return VClassIcons::getVClassIcon(SumoVehicleClassStrings.get(getAttribute(SUMO_ATTR_VCLASS)));
     } else {
         return GUIIconSubSys::getIcon(myTagProperty.getGUIIcon());
     }
@@ -825,6 +777,14 @@ GNEAttributeCarrier::getTagPropertiesByType(const int tagPropertyCategory) {
             }
         }
     }
+    if (tagPropertyCategory & GNETagProperties::MEANDATA) {
+        // fill generic data tags
+        for (const auto& tagProperty : myTagProperties) {
+            if (tagProperty.second.isMeanData()) {
+                allowedTags.push_back(tagProperty.second);
+            }
+        }
+    }
     if (tagPropertyCategory & GNETagProperties::CONTAINER) {
         // fill container tags
         for (const auto& tagProperty : myTagProperties) {
@@ -926,7 +886,7 @@ GNEAttributeCarrier::fillNetworkElements() {
     // declare empty GNEAttributeProperties
     GNEAttributeProperties attrProperty;
     // obtain Node Types except SumoXMLNodeType::DEAD_END_DEPRECATED
-    const OptionsCont& oc = OptionsCont::getOptions();
+    const auto& neteditOptions = OptionsCont::getOptions();
     std::vector<std::string> nodeTypes = SUMOXMLDefinitions::NodeTypes.getStrings();
     nodeTypes.erase(std::find(nodeTypes.begin(), nodeTypes.end(), toString(SumoXMLNodeType::DEAD_END_DEPRECATED)));
     nodeTypes.erase(std::find(nodeTypes.begin(), nodeTypes.end(), toString(SumoXMLNodeType::DEAD_END)));
@@ -959,7 +919,7 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TYPE,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "An optional type for the node");
-        attrProperty.setDiscreteValues(nodeTypes);
+        attrProperty.setDiscreteValues(nodeTypes, true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_SHAPE,
@@ -983,14 +943,14 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "How to compute right of way rules at this node",
                                               SUMOXMLDefinitions::RightOfWayValues.getString(RightOfWay::DEFAULT));
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::RightOfWayValues.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::RightOfWayValues.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRINGE,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "Whether this junction is at the fringe of the network",
                                               SUMOXMLDefinitions::FringeTypeValues.getString(FringeType::DEFAULT));
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::FringeTypeValues.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::FringeTypeValues.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_NAME,
@@ -1001,7 +961,7 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TLTYPE,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "An optional type for the traffic light algorithm");
-        attrProperty.setDiscreteValues(TLTypes);
+        attrProperty.setDiscreteValues(TLTypes, true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TLLAYOUT,
@@ -1010,7 +970,7 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty.setDiscreteValues({toString(TrafficLightLayout::DEFAULT),
                                         toString(TrafficLightLayout::OPPOSITES),
                                         toString(TrafficLightLayout::INCOMING),
-                                        toString(TrafficLightLayout::ALTERNATE_ONEWAY)});
+                                        toString(TrafficLightLayout::ALTERNATE_ONEWAY)}, true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TLID,
@@ -1034,13 +994,13 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_NUMLANES,
                                               GNEAttributeProperties::INT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The number of lanes of the edge",
-                                              toString(oc.getInt("default.lanenumber")));
+                                              toString(neteditOptions.getInt("default.lanenumber")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_SPEED,
                                               GNEAttributeProperties::FLOAT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The maximum speed allowed on the edge in m/s",
-                                              toString(oc.getFloat("default.speed")));
+                                              toString(neteditOptions.getFloat("default.speed")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_ALLOW,
@@ -1058,13 +1018,13 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The spreadType defines how to compute the lane geometry from the edge geometry (used for visualization)",
                                               SUMOXMLDefinitions::LaneSpreadFunctions.getString(LaneSpreadFunction::RIGHT));
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneSpreadFunctions.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneSpreadFunctions.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_PRIORITY,
                                               GNEAttributeProperties::INT | GNEAttributeProperties::DEFAULTVALUE,
                                               "The priority of the edge",
-                                              toString(oc.getInt("default.priority")));
+                                              toString(neteditOptions.getInt("default.priority")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_WIDTH,
@@ -1072,19 +1032,16 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               "Lane width for all lanes of this edge in meters (used for visualization)",
                                               "-1");
         myTagProperties[currentTag].addAttribute(attrProperty);
-        /*
-                implement in #9725
 
-                attrProperty = GNEAttributeProperties(SUMO_ATTR_SIDEWALKWIDTH,
-                                                      GNEAttributeProperties::FLOAT,
-                                                      "The width of the sidewalk that should be added as an additional lane");
-                myTagProperties[currentTag].addAttribute(attrProperty);
+        attrProperty = GNEAttributeProperties(SUMO_ATTR_SIDEWALKWIDTH,
+                                              GNEAttributeProperties::FLOAT,
+                                              "The width of the sidewalk that should be added as an additional lane");
+        myTagProperties[currentTag].addAttribute(attrProperty);
 
-                attrProperty = GNEAttributeProperties(SUMO_ATTR_BIKELANEWIDTH,
-                                                      GNEAttributeProperties::FLOAT,
-                                                      "The width of the bike lane that should be added as an additional lane");
-                myTagProperties[currentTag].addAttribute(attrProperty);
-        */
+        attrProperty = GNEAttributeProperties(SUMO_ATTR_BIKELANEWIDTH,
+                                              GNEAttributeProperties::FLOAT,
+                                              "The width of the bike lane that should be added as an additional lane");
+        myTagProperties[currentTag].addAttribute(attrProperty);
     }
     currentTag = SUMO_TAG_LANETYPE;
     {
@@ -1097,7 +1054,7 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_SPEED,
                                               GNEAttributeProperties::FLOAT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The maximum speed allowed on the lane in m/s",
-                                              toString(oc.getFloat("default.speed")));
+                                              toString(neteditOptions.getFloat("default.speed")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_ALLOW,
@@ -1143,19 +1100,19 @@ GNEAttributeCarrier::fillNetworkElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_SPEED,
                                               GNEAttributeProperties::FLOAT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The maximum speed allowed on the edge in m/s",
-                                              toString(oc.getFloat("default.speed")));
+                                              toString(neteditOptions.getFloat("default.speed")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_PRIORITY,
                                               GNEAttributeProperties::INT | GNEAttributeProperties::DEFAULTVALUE,
                                               "The priority of the edge",
-                                              toString(oc.getInt("default.priority")));
+                                              toString(neteditOptions.getInt("default.priority")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_NUMLANES,
                                               GNEAttributeProperties::INT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The number of lanes of the edge",
-                                              toString(oc.getInt("default.lanenumber")));
+                                              toString(neteditOptions.getInt("default.lanenumber")));
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TYPE,
@@ -1188,7 +1145,7 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "The spreadType defines how to compute the lane geometry from the edge geometry (used for visualization)",
                                               SUMOXMLDefinitions::LaneSpreadFunctions.getString(LaneSpreadFunction::RIGHT));
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneSpreadFunctions.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneSpreadFunctions.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_NAME,
@@ -1239,7 +1196,7 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Specifies, for which vehicle classes the stopOffset does NOT apply.",
                                               "");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), false);
         myTagProperties[currentTag].addAttribute(attrProperty);
     }
     currentTag = SUMO_TAG_LANE;
@@ -1309,14 +1266,14 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Permit changing left only for to the given vehicle classes",
                                               "all");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_CHANGE_RIGHT,
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Permit changing right only for to the given vehicle classes",
                                               "all");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_TYPE,
@@ -1334,7 +1291,7 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Specifies, for which vehicle classes the stopOffset does NOT apply.",
                                               "");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), false);
         myTagProperties[currentTag].addAttribute(attrProperty);
     }
     currentTag = SUMO_TAG_CROSSING;
@@ -1516,14 +1473,14 @@ GNEAttributeCarrier::fillNetworkElements() {
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Permit changing left only for to the given vehicle classes",
                                               "all");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_CHANGE_RIGHT,
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::LIST | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::VCLASSES,
                                               "Permit changing right only for to the given vehicle classes",
                                               "all");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_INDIRECT,
@@ -1600,7 +1557,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -1664,7 +1621,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -1720,7 +1677,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -1762,7 +1719,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -1825,7 +1782,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -1908,7 +1865,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2019,7 +1976,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2100,7 +2057,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2180,7 +2137,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2259,7 +2216,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2286,7 +2243,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -2333,7 +2290,7 @@ GNEAttributeCarrier::fillAdditionalElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -3000,7 +2957,7 @@ GNEAttributeCarrier::fillShapeElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -3307,7 +3264,7 @@ GNEAttributeCarrier::fillWireElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -3443,11 +3400,13 @@ GNEAttributeCarrier::fillDemandElements() {
                                               "The id of VehicleType distribution");
         myTagProperties[currentTag].addAttribute(attrProperty);
 
+        /* Disabled until next release
         attrProperty = GNEAttributeProperties(SUMO_ATTR_DETERMINISTIC,
                                               GNEAttributeProperties::INT | GNEAttributeProperties::DEFAULTVALUE,
                                               "makes number of assigned cars exact for any multiples of N",
                                               "-1");
         myTagProperties[currentTag].addAttribute(attrProperty);
+        */
     }
     currentTag = SUMO_TAG_VTYPE;
     {
@@ -3472,7 +3431,7 @@ GNEAttributeCarrier::fillDemandElements() {
                                               GNEAttributeProperties::VCLASS | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                               "An abstract vehicle class",
                                               "passenger");
-        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleClassStrings.getStrings(), false);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_COLOR,
@@ -3510,13 +3469,13 @@ GNEAttributeCarrier::fillDemandElements() {
         attrProperty = GNEAttributeProperties(SUMO_ATTR_EMISSIONCLASS,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::EXTENDED,
                                               "An abstract emission class");
-        attrProperty.setDiscreteValues(PollutantsInterface::getAllClassesStr());
+        attrProperty.setDiscreteValues(PollutantsInterface::getAllClassesStr(), false);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_GUISHAPE,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::EXTENDED,
                                               "How this vehicle is rendered");
-        attrProperty.setDiscreteValues(SumoVehicleShapeStrings.getStrings());
+        attrProperty.setDiscreteValues(SumoVehicleShapeStrings.getStrings(), false);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_WIDTH,
@@ -3540,14 +3499,14 @@ GNEAttributeCarrier::fillDemandElements() {
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
                                               "The model used for changing lanes",
                                               "default");
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneChangeModels.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::LaneChangeModels.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_CAR_FOLLOW_MODEL,
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
                                               "The model used for car following",
                                               "Krauss");
-        attrProperty.setDiscreteValues(SUMOXMLDefinitions::CarFollowModels.getStrings());
+        attrProperty.setDiscreteValues(SUMOXMLDefinitions::CarFollowModels.getStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_PERSON_CAPACITY,
@@ -3576,7 +3535,7 @@ GNEAttributeCarrier::fillDemandElements() {
                                               GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
                                               "The preferred lateral alignment when using the sublane-model",
                                               "center");
-        attrProperty.setDiscreteValues(SUMOVTypeParameter::getLatAlignmentStrings());
+        attrProperty.setDiscreteValues(SUMOVTypeParameter::getLatAlignmentStrings(), true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_MINGAP_LAT,
@@ -4013,7 +3972,7 @@ GNEAttributeCarrier::fillStopElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -4125,7 +4084,7 @@ GNEAttributeCarrier::fillWaypointElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -4480,7 +4439,7 @@ GNEAttributeCarrier::fillContainerStopElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -4522,6 +4481,7 @@ GNEAttributeCarrier::fillContainerStopElements() {
                                               GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::ACTIVATABLE | GNEAttributeProperties::DEFAULTVALUE,
                                               "Minimum duration for stopping",
                                               "60");
+        attrProperty.setDefaultActivated(true);
         myTagProperties[currentTag].addAttribute(attrProperty);
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_UNTIL,
@@ -4849,7 +4809,7 @@ GNEAttributeCarrier::fillStopPersonElements() {
 
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FRIENDLY_POS,
                                               GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
-                                              "If set, no error will be reported if element is placed behind the lane.\n" 
+                                              "If set, no error will be reported if element is placed behind the lane.\n"
                                               "Instead, it will be placed 0.1 meters from the lanes end or at position 0.1,\n"
                                               "if the position was negative and larger than the lanes length after multiplication with - 1",
                                               "0");
@@ -5038,9 +4998,9 @@ GNEAttributeCarrier::fillCommonFlowAttributes(SumoXMLTag currentTag, SumoXMLAttr
 
     attrProperty = GNEAttributeProperties(GNE_ATTR_POISSON,
                                           GNEAttributeProperties::STRING | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::FLOWDEFINITION,
-                                          "Insert " + toString(currentTag) + "s spaciated using a poisson distribution\n"
+                                          "Insert " + toString(currentTag) + "expected vehicles per second with poisson distributed insertion rate\n"
                                           "(not together with period or vehsPerHour or probability)",
-                                          "2");
+                                          "0.5");
     myTagProperties[currentTag].addAttribute(attrProperty);
 }
 
@@ -5180,7 +5140,7 @@ GNEAttributeCarrier::fillCarFollowingModelAttributes(SumoXMLTag currentTag) {
 
     attrProperty = GNEAttributeProperties(SUMO_ATTR_CF_EIDM_T_ACC_MAX,
                                           GNEAttributeProperties::FLOAT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
-                                          "EIDM Time parameter untill vehicle reaches amax after startup/driveoff [s]",
+                                          "EIDM Time parameter until vehicle reaches amax after startup/driveoff [s]",
                                           "1.20");
     myTagProperties[currentTag].addAttribute(attrProperty);
 
@@ -5279,7 +5239,7 @@ GNEAttributeCarrier::fillCarFollowingModelAttributes(SumoXMLTag currentTag) {
                                           GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
                                           "Train Types",
                                           "NGT400");
-    attrProperty.setDiscreteValues(SUMOXMLDefinitions::TrainTypes.getStrings());
+    attrProperty.setDiscreteValues(SUMOXMLDefinitions::TrainTypes.getStrings(), true);
     myTagProperties[currentTag].addAttribute(attrProperty);
 }
 
@@ -5437,7 +5397,7 @@ GNEAttributeCarrier::fillLaneChangingModelAttributes(SumoXMLTag currentTag) {
 
     attrProperty = GNEAttributeProperties(SUMO_ATTR_LCA_SPEEDGAINRIGHT,
                                           GNEAttributeProperties::FLOAT | GNEAttributeProperties::POSITIVE | GNEAttributeProperties::DEFAULTVALUE | GNEAttributeProperties::EXTENDED,
-                                          "Factor for configuring the treshold asymmetry when changing to the left or to the right for speed gain.",
+                                          "Factor for configuring the threshold asymmetry when changing to the left or to the right for speed gain.",
                                           "0.1");
     myTagProperties[currentTag].addAttribute(attrProperty);
 
@@ -5571,7 +5531,7 @@ GNEAttributeCarrier::fillCommonStopAttributes(SumoXMLTag currentTag, const bool 
                                           GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                           "Whether a person or container or bth may end the stop",
                                           "false");
-    attrProperty.setDiscreteValues({"false", "person", "container", "join"});
+    attrProperty.setDiscreteValues({"false", "person", "container", "join"}, true);
     myTagProperties[currentTag].addAttribute(attrProperty);
 
     attrProperty = GNEAttributeProperties(SUMO_ATTR_EXPECTED,
@@ -5588,7 +5548,7 @@ GNEAttributeCarrier::fillCommonStopAttributes(SumoXMLTag currentTag, const bool 
                                           GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
                                           "Whether the vehicle stops on the road or beside",
                                           "false");
-    attrProperty.setDiscreteValues({"true", "false", "opportunistic"});
+    attrProperty.setDiscreteValues({"true", "false", "opportunistic"}, true);
     myTagProperties[currentTag].addAttribute(attrProperty);
 
     attrProperty = GNEAttributeProperties(SUMO_ATTR_ACTTYPE,
@@ -5619,6 +5579,12 @@ GNEAttributeCarrier::fillCommonStopAttributes(SumoXMLTag currentTag, const bool 
                                               "false");
         myTagProperties[currentTag].addAttribute(attrProperty);
     }
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_JUMP,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "transfer time if there shall be a jump from this stop to the next route edge",
+                                          "-1");
+    myTagProperties[currentTag].addAttribute(attrProperty);
 }
 
 
@@ -5671,13 +5637,13 @@ GNEAttributeCarrier::fillDataElements() {
         myTagProperties[currentTag].addAttribute(attrProperty);
     }
     // fill edge data element
-    currentTag = SUMO_TAG_MEANDATA_EDGE;
+    currentTag = GNE_TAG_EDGEREL_SINGLE;
     {
         // set values of tag
         myTagProperties[currentTag] = GNETagProperties(currentTag,
                                       GNETagProperties::DATAELEMENT | GNETagProperties::GENERICDATA,
-                                      GNETagProperties::CHILD,
-                                      GUIIcon::EDGEDATA, currentTag, {SUMO_TAG_DATAINTERVAL});
+                                      0,
+                                      GUIIcon::EDGEDATA, currentTag);
 
         // set values of attributes
         attrProperty = GNEAttributeProperties(SUMO_ATTR_ID,
@@ -5690,8 +5656,8 @@ GNEAttributeCarrier::fillDataElements() {
         // set values of tag
         myTagProperties[currentTag] = GNETagProperties(currentTag,
                                       GNETagProperties::DATAELEMENT | GNETagProperties::GENERICDATA,
-                                      GNETagProperties::CHILD,
-                                      GUIIcon::EDGERELDATA, currentTag, {SUMO_TAG_DATAINTERVAL});
+                                      0,
+                                      GUIIcon::EDGERELDATA, currentTag);
 
         // set values of attributes
         attrProperty = GNEAttributeProperties(SUMO_ATTR_FROM,
@@ -5723,6 +5689,128 @@ GNEAttributeCarrier::fillDataElements() {
                                               "The name of the TAZ the " + toString(currentTag) + " ends at");
         myTagProperties[currentTag].addAttribute(attrProperty);
     }
+    currentTag = SUMO_TAG_MEANDATA_EDGE;
+    {
+        // set values of tag
+        myTagProperties[currentTag] = GNETagProperties(currentTag,
+                                      GNETagProperties::DATAELEMENT | GNETagProperties::MEANDATA,
+                                      GNETagProperties::NOTDRAWABLE | GNETagProperties::NOPARAMETERS | GNETagProperties::NOTSELECTABLE,
+                                      GUIIcon::MEANDATAEDGE, currentTag);
+
+        // set values of attributes
+        fillCommonMeanDataAttributes(currentTag);
+
+    }
+    currentTag = SUMO_TAG_MEANDATA_LANE;
+    {
+        // set values of tag
+        myTagProperties[currentTag] = GNETagProperties(currentTag,
+                                      GNETagProperties::DATAELEMENT | GNETagProperties::MEANDATA,
+                                      GNETagProperties::NOTDRAWABLE | GNETagProperties::NOPARAMETERS | GNETagProperties::NOTSELECTABLE,
+                                      GUIIcon::MEANDATALANE, currentTag);
+
+        // set values of attributes
+        fillCommonMeanDataAttributes(currentTag);
+    }
+}
+
+
+void
+GNEAttributeCarrier::fillCommonMeanDataAttributes(SumoXMLTag currentTag) {
+    GNEAttributeProperties attrProperty;
+    // fill all meanData attributes
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_ID,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::UNIQUE,
+                                          "The id of this set of measurements");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_FILE,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::FILENAME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The path to the output file. The path may be relative");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_PERIOD,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The aggregation period the values the detector collects shall be summed up");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_BEGIN,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The time to start writing. If not given, the simulation's begin is used.");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_END,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The time to end writing. If not given the simulation's end is used.");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_EXCLUDE_EMPTY,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::DISCRETE | GNEAttributeProperties::DEFAULTVALUE,
+                                          "If set to true, edges/lanes which were not use by a vehicle during this period will not be written",
+                                          "default");
+    attrProperty.setDiscreteValues({"true", "false", "default"}, true);
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_WITH_INTERNAL,
+                                          GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
+                                          "If set, junction internal edges/lanes will be written as well",
+                                          "0");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_MAX_TRAVELTIME,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The maximum traveltime in seconds to write if only very small movements occur",
+                                          "100000");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_MIN_SAMPLES,
+                                          GNEAttributeProperties::SUMOTIME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "Consider an edge/lane unused if it has at most this many sampled seconds",
+                                          "0");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_HALTING_SPEED_THRESHOLD,
+                                          GNEAttributeProperties::FLOAT | GNEAttributeProperties::DEFAULTVALUE,
+                                          "The maximum speed to consider a vehicle halting;",
+                                          "0.1");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_VTYPES,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::LIST | GNEAttributeProperties::DEFAULTVALUE,
+                                          "space separated list of vehicle type ids to consider");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_TRACK_VEHICLES,
+                                          GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
+                                          "whether aggregation should be performed over all vehicles that entered the edge/lane in the aggregation interval",
+                                          "1");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_DETECT_PERSONS,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::LIST | GNEAttributeProperties::DEFAULTVALUE,
+                                          "Whether pedestrians shall be recorded instead of vehicles. Allowed value is walk");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_WRITE_ATTRIBUTES,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::LIST | GNEAttributeProperties::DEFAULTVALUE,
+                                          "List of attribute names that shall be written");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_EDGES,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::LIST | GNEAttributeProperties::DEFAULTVALUE,
+                                          "Restrict output to the given list of edge ids");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_EDGESFILE,
+                                          GNEAttributeProperties::STRING | GNEAttributeProperties::FILENAME | GNEAttributeProperties::DEFAULTVALUE,
+                                          "Restrict output to the given the list of edges given in file");
+    myTagProperties[currentTag].addAttribute(attrProperty);
+
+    attrProperty = GNEAttributeProperties(SUMO_ATTR_AGGREGATE,
+                                          GNEAttributeProperties::BOOL | GNEAttributeProperties::DEFAULTVALUE,
+                                          "Whether the traffic statistic of all edges shall be aggregated into a single value",
+                                          "0");
+    myTagProperties[currentTag].addAttribute(attrProperty);
 }
 
 /****************************************************************************/

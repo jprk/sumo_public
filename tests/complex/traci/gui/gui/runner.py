@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2008-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -30,8 +30,12 @@ sys.path.append(os.path.join(SUMO_HOME, "tools"))
 import traci  # noqa
 import sumolib  # noqa
 
-traci.start([sumolib.checkBinary('sumo-gui')] +
-            "-S -Q -c sumo.sumocfg --window-size 500,500 --window-pos 50,50".split(),
+traci.start([sumolib.checkBinary('sumo-gui'),
+             "-S", "-Q",
+             "-c", "sumo.sumocfg",
+             "--delay", "1",
+             "--window-size", "500,500",
+             "--window-pos", "50,50"],
             stdout=sys.stdout)
 for step in range(3):
     print("step", step)

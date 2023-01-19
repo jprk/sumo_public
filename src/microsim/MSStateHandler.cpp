@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -203,7 +203,7 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
                 RandHelper::loadState(attrs.getString(SUMO_ATTR_RNG_DEVICE), MSDevice::getEquipmentRNG());
             }
             if (attrs.hasAttribute(SUMO_ATTR_RNG_DEVICE_BT)) {
-                RandHelper::loadState(attrs.getString(SUMO_ATTR_RNG_DEVICE_BT), MSDevice_BTreceiver::getEquipmentRNG());
+                RandHelper::loadState(attrs.getString(SUMO_ATTR_RNG_DEVICE_BT), MSVehicleDevice_BTreceiver::getEquipmentRNG());
             }
             if (attrs.hasAttribute(SUMO_ATTR_RNG_DRIVERSTATE)) {
                 RandHelper::loadState(attrs.getString(SUMO_ATTR_RNG_DRIVERSTATE), OUProcess::getRNG());
@@ -370,11 +370,11 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             break;
         }
         case SUMO_TAG_PREDECESSOR: // intended fall-through
-        case SUMO_TAG_INSERTION_PREDECESSOR:
-        case SUMO_TAG_FOE_INSERTION:
-        case SUMO_TAG_INSERTION_ORDER:
+        case SUMO_TAG_INSERTION_PREDECESSOR: // intended fall-through
+        case SUMO_TAG_FOE_INSERTION: // intended fall-through
+        case SUMO_TAG_INSERTION_ORDER: // intended fall-through
         case SUMO_TAG_BIDI_PREDECESSOR:
-            NLHandler::addPredecessorConstraint(element, attrs, myConstrainedSignal);
+            myLastParameterised = NLHandler::addPredecessorConstraint(element, attrs, myConstrainedSignal);
             break;
         case SUMO_TAG_TLLOGIC: {
             bool ok;

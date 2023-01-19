@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -312,9 +312,9 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                     [2] .... tail resistor pos/neg_tail_vehID
                 */
 
-                // pos_veh_node and veh_elem shoud be NULL
+                // pos_veh_node and veh_elem should be NULL
                 if (pos_veh_node != nullptr || veh_elem != nullptr) {
-                    WRITE_WARNING(TL("pos_veh_node or neg_veh_node or veh_elem is not NULL (and they shoud be at the beginning of adding elecHybrid to the circuit)"));
+                    WRITE_WARNING(TL("pos_veh_node or neg_veh_node or veh_elem is not NULL (and they should be at the beginning of adding elecHybrid to the circuit)"));
                 }
 
                 // create pos and veh_elem
@@ -599,7 +599,7 @@ MSDevice_ElecHybrid::deleteVehicleFromCircuit(SUMOVehicle& veh) {
             if (veh_elem == nullptr || veh_pos_tail_elem == nullptr || pos_veh_node == nullptr) {
                 WRITE_ERROR("During deleting vehicle '" + veh.getID() + "' from circuit some init previous Nodes or Elements was not assigned.");
             }
-            //check if pos_veh_node has 3 elements - they shoud be: veh_elem, veh_pos_tail_elem and an overhead line resistor element "ahead" of vehicle.
+            //check if pos_veh_node has 3 elements - they should be: veh_elem, veh_pos_tail_elem and an overhead line resistor element "ahead" of vehicle.
             if (pos_veh_node->getElements()->size() != 3) {
                 WRITE_ERROR("During deleting vehicle '" + veh.getID() + "' from circuit the size of element-vector of pNode or nNode was not 3. It should be 3 by Jakub's opinion.");
             }
@@ -634,7 +634,7 @@ MSDevice_ElecHybrid::deleteVehicleFromCircuit(SUMOVehicle& veh) {
 
             //erase pos_veh_node
             myPreviousOverheadWireSegment->getCircuit()->eraseNode(pos_veh_node);
-            //modify id of other elements (the id of erasing element shoud be the greatest)
+            //modify id of other elements (the id of erasing element should be the greatest)
             int lastId = myPreviousOverheadWireSegment->getCircuit()->getLastId() - 1;
             if (pos_veh_node->getId() != lastId) {
                 Node* node_last = myPreviousOverheadWireSegment->getCircuit()->getNode(lastId);

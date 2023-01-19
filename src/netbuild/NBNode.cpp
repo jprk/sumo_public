@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -70,7 +70,7 @@
 //#define DEBUG_PED_STRUCTURES
 //#define DEBUG_EDGE_SORTING
 //#define DEBUGCOND true
-#define DEBUG_NODE_ID "C"
+#define DEBUG_NODE_ID ""
 #define DEBUGCOND (getID() == DEBUG_NODE_ID)
 #define DEBUGCOND2(obj) ((obj != 0 && (obj)->getID() == DEBUG_NODE_ID))
 
@@ -97,6 +97,7 @@ NBNode::ApproachingDivider::ApproachingDivider(
     const EdgeVector& approaching, NBEdge* currentOutgoing) :
     myApproaching(approaching),
     myCurrentOutgoing(currentOutgoing),
+    myNumStraight(0),
     myIsBikeEdge(currentOutgoing->getPermissions() == SVC_BICYCLE) {
     // collect lanes which are expliclity targeted
     std::set<int> approachedLanes;
@@ -105,6 +106,10 @@ NBNode::ApproachingDivider::ApproachingDivider(
             if (con.toEdge == myCurrentOutgoing) {
                 approachedLanes.insert(con.toLane);
             }
+        }
+        myDirections.push_back(approachingEdge->getToNode()->getDirection(approachingEdge, currentOutgoing));
+        if (myDirections.back() == LinkDirection::STRAIGHT) {
+            myNumStraight++;
         }
     }
     // compute the indices of lanes that should be targeted (excluding pedestrian
@@ -149,22 +154,42 @@ NBNode::ApproachingDivider::execute(const int src, const int dest) {
     }
 
 #endif
-    std::deque<int>* approachedLanes = spread(approachingLanes, dest);
+    int numConnections = (int)approachingLanes.size();
+    double factor = 1;
+    const bool rightOnRed = incomingEdge->getToNode()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED;
+    if (myNumStraight == 1 && myDirections[src] == LinkDirection::STRAIGHT && (
+                // we do not want to destroy ramp-like assignments where the
+                // on-connection-per-lane rule avoids conflicts
+                // - at a traffic light the phases are seperated so there is no conflict anyway
+                (incomingEdge->getToNode()->isTLControlled() && !rightOnRed)
+                // - there are no incoming edges to the right
+                || src == 0
+                // - a minor straight road is likely in conflict anyway
+                || (incomingEdge->getJunctionPriority(incomingEdge->getToNode()) == NBEdge::MINOR_ROAD && !rightOnRed))) {
+        numConnections = (int)myAvailableLanes.size();
+        factor = (double)approachingLanes.size() / (double)numConnections;
+        if (factor > 0.5) {
+            factor = 1;
+        }
+    }
+    std::deque<int>* approachedLanes = spread(numConnections, dest);
     assert(approachedLanes->size() <= myAvailableLanes.size());
     // set lanes
+    const int maxFrom = (int)approachingLanes.size() - 1;
     for (int i = 0; i < (int)approachedLanes->size(); i++) {
-        assert((int)approachingLanes.size() > i);
+        // distribute i evenly on approaching lanes in case we are building more
+        // connections than there are lanes
+        int fromLane = approachingLanes[MIN2((int)(i * factor), maxFrom)];
         int approached = myAvailableLanes[(*approachedLanes)[i]];
-        incomingEdge->setConnection(approachingLanes[i], myCurrentOutgoing, approached, NBEdge::Lane2LaneInfoType::COMPUTED);
+        incomingEdge->setConnection(fromLane, myCurrentOutgoing, approached, NBEdge::Lane2LaneInfoType::COMPUTED);
     }
     delete approachedLanes;
 }
 
 
 std::deque<int>*
-NBNode::ApproachingDivider::spread(const std::vector<int>& approachingLanes, int dest) const {
+NBNode::ApproachingDivider::spread(int numLanes, int dest) const {
     std::deque<int>* ret = new std::deque<int>();
-    const int numLanes = (int)approachingLanes.size();
     // when only one lane is approached, we check, whether the double-value
     //  is assigned more to the left or right lane
     if (numLanes == 1) {
@@ -877,7 +902,9 @@ NBNode::needsCont(const NBEdge* fromE, const NBEdge* otherFromE,
     const NBEdge* toE = c.toEdge;
     const NBEdge* otherToE = otherC.toEdge;
 
-    if (myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT || myType == SumoXMLNodeType::ALLWAY_STOP) {
+    if (myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT
+            || myType == SumoXMLNodeType::LEFT_BEFORE_RIGHT
+            || myType == SumoXMLNodeType::ALLWAY_STOP) {
         return false;
     }
     LinkDirection d1 = getDirection(fromE, toE);
@@ -1061,6 +1088,22 @@ NBNode::hasConflict() const {
     }
 }
 
+
+bool
+NBNode::hasConflict(const NBEdge* e) const {
+    if (myRequest == nullptr) {
+        return false;
+    }
+    for (const auto& con : e->getConnections()) {
+        const int index = getConnectionIndex(e, con);
+        if (myRequest->hasConflictAtLink(index)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 void
 NBNode::updateSurroundingGeometry() {
     NBTurningDirectionsComputer::computeTurnDirectionsForNode(this, false);
@@ -1147,6 +1190,9 @@ NBNode::computeLanes2Lanes() {
             const int outOffset2 = outOffset + addedRight + in->getNumLanes() - inOffset;
             for (int i = 0; i < addedLeft; ++i) {
                 in->setConnection(inLeftMost, out, outOffset2 + i, NBEdge::Lane2LaneInfoType::COMPUTED);
+            }
+            if (out->getSpecialLane(SVC_BICYCLE) >= 0) {
+                recheckVClassConnections(out);
             }
             return;
         }
@@ -1287,6 +1333,9 @@ NBNode::computeLanes2Lanes() {
                 in->setConnection(i + inOffset - outOffset, out, i, NBEdge::Lane2LaneInfoType::COMPUTED);
             }
             //std::cout << " special case f at node=" << getID() << " inOffset=" << inOffset << " outOffset=" << outOffset << "\n";
+            if (out->getSpecialLane(SVC_BICYCLE) >= 0) {
+                recheckVClassConnections(out);
+            }
             return;
         }
     }
@@ -1431,14 +1480,33 @@ NBNode::recheckVClassConnections(NBEdge* currentOutgoing) {
                         for (int toLane = 0; toLane < currentOutgoing->getNumLanes(); ++toLane) {
                             const SVCPermissions satisfied = incoming->getPermissions(fromLane) & currentOutgoing->getPermissions(toLane) & unsatisfied;
                             if (satisfied != 0 && !incoming->getLaneStruct(fromLane).connectionsDone) {
-                                bool mayUseSameDestination = unsatisfied == SVC_TRAM;
-                                incoming->setConnection((int)fromLane, currentOutgoing, toLane, NBEdge::Lane2LaneInfoType::COMPUTED, mayUseSameDestination);
+                                if (incoming->hasConnectionTo(currentOutgoing, toLane)
+                                        && unsatisfied == SVC_TRAM
+                                        && incoming->getPermissions(fromLane) == currentOutgoing->getPermissions(toLane)) {
+                                    // avoid double tram connection by shifting an existing connection
+                                    for (auto con : incoming->getConnections()) {
+                                        if (con.toEdge == currentOutgoing && con.toLane == toLane) {
 #ifdef DEBUG_CONNECTION_GUESSING
-                                if (DEBUGCOND) {
-                                    std::cout << "  new connection from=" << fromLane << " to=" << currentOutgoing->getID() << "_" << toLane << " satisfies=" << getVehicleClassNames(satisfied) << "\n";
-                                }
+                                            if (DEBUGCOND) {
+                                                std::cout << "  shifting connection from=" << con.fromLane << " to=" << currentOutgoing->getID() << "_" << toLane << ": newFromLane=" << fromLane << " satisfies=" << getVehicleClassNames(satisfied) << "\n";
+                                            }
 #endif
-                                unsatisfied &= ~satisfied;
+                                            incoming->getConnectionRef(con.fromLane, con.toEdge, toLane).fromLane = fromLane;
+                                            unsatisfied &= ~satisfied;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    // other modes (i.e. bus) can fix lane permissions NBPTLineCont::fixPermissions but do not wish to create parallel tram tracks here
+                                    bool mayUseSameDestination = unsatisfied == SVC_TRAM;
+                                    incoming->setConnection((int)fromLane, currentOutgoing, toLane, NBEdge::Lane2LaneInfoType::COMPUTED, mayUseSameDestination);
+#ifdef DEBUG_CONNECTION_GUESSING
+                                    if (DEBUGCOND) {
+                                        std::cout << "  new connection from=" << fromLane << " to=" << currentOutgoing->getID() << "_" << toLane << " satisfies=" << getVehicleClassNames(satisfied) << "\n";
+                                    }
+#endif
+                                    unsatisfied &= ~satisfied;
+                                }
                             }
                         }
                     }
@@ -1506,8 +1574,8 @@ NBNode::recheckVClassConnections(NBEdge* currentOutgoing) {
 
 void
 NBNode::getReduction(const NBEdge* in, const NBEdge* out, int& inOffset, int& outOffset, int& reduction) const {
-    inOffset = MAX2(0, in->getFirstNonPedestrianLaneIndex(FORWARD, true));
-    outOffset = MAX2(0, out->getFirstNonPedestrianLaneIndex(FORWARD, true));
+    inOffset = MAX2(0, in->getFirstNonPedestrianNonBicycleLaneIndex(FORWARD, true));
+    outOffset = MAX2(0, out->getFirstNonPedestrianNonBicycleLaneIndex(FORWARD, true));
     reduction = (in->getNumLanes() - inOffset) - (out->getNumLanes() - outOffset);
 }
 
@@ -1533,7 +1601,7 @@ NBNode::addedLanesRight(NBEdge* out, int addedLanes) const {
     int outLanesStraight = 0;
     for (NBEdge* succ : to->getOutgoingEdges()) {
         if (out->isConnectedTo(succ)) {
-            const int outOffset = MAX2(0, succ->getFirstNonPedestrianLaneIndex(FORWARD, true));
+            const int outOffset = MAX2(0, succ->getFirstNonPedestrianNonBicycleLaneIndex(FORWARD, true));
             const int usableLanes = succ->getNumLanes() - outOffset;
             LinkDirection dir = to->getDirection(out, succ);
             if (dir == LinkDirection::STRAIGHT) {
@@ -1545,7 +1613,7 @@ NBNode::addedLanesRight(NBEdge* out, int addedLanes) const {
             }
         }
     }
-    const int outOffset = MAX2(0, out->getFirstNonPedestrianLaneIndex(FORWARD, true));
+    const int outOffset = MAX2(0, out->getFirstNonPedestrianNonBicycleLaneIndex(FORWARD, true));
     const int usableLanes = out->getNumLanes() - outOffset;
     int addedTurnLanes = MIN3(
                              addedLanes,
@@ -1624,7 +1692,7 @@ NBNode::replaceOutgoing(const EdgeVector& which, NBEdge* by) {
         replaceOutgoing(*i, by, laneOff);
         laneOff += (*i)->getNumLanes();
     }
-    // removed double occurences
+    // removed double occurrences
     removeDoubleEdges();
     // check whether this node belongs to a district and the edges
     //  must here be also remapped
@@ -1656,7 +1724,7 @@ NBNode::replaceIncoming(const EdgeVector& which, NBEdge* by) {
         replaceIncoming(*i, by, laneOff);
         laneOff += (*i)->getNumLanes();
     }
-    // removed double occurences
+    // removed double occurrences
     removeDoubleEdges();
     // check whether this node belongs to a district and the edges
     //  must here be also remapped
@@ -1961,7 +2029,7 @@ NBNode::rightTurnConflict(const NBEdge* from, const NBEdge* to, int fromLane,
         if (d1 == LinkDirection::LEFT || d1 == LinkDirection::PARTLEFT) {
             // check for leftTurnConflicht
             flip = !flip;
-            if (d2 == LinkDirection::RIGHT || d1 == LinkDirection::PARTRIGHT) {
+            if (d2 == LinkDirection::RIGHT || d2 == LinkDirection::PARTRIGHT) {
                 // assume that the left-turning bicycle goes straight at first
                 // and thus gets precedence over a right turning vehicle
                 return false;
@@ -2222,6 +2290,16 @@ NBNode::isStraighter(const NBEdge* const incoming, const double angle, const SVC
     return false;
 }
 
+EdgeVector
+NBNode::getPassengerEdges(bool incoming) const {
+    EdgeVector result;
+    for (NBEdge* e : (incoming ? myIncomingEdges : myOutgoingEdges)) {
+        if ((e->getPermissions() & SVC_PASSENGER) != 0) {
+            result.push_back(e);
+        }
+    }
+    return result;
+}
 
 LinkDirection
 NBNode::getDirection(const NBEdge* const incoming, const NBEdge* const outgoing, bool leftHand) const {
@@ -2234,6 +2312,9 @@ NBNode::getDirection(const NBEdge* const incoming, const NBEdge* const outgoing,
     }
     // turning direction
     if (incoming->isTurningDirectionAt(outgoing)) {
+        if (isExplicitRailNoBidi(incoming, outgoing)) {
+            return LinkDirection::STRAIGHT;
+        }
         return leftHand ? LinkDirection::TURN_LEFTHAND : LinkDirection::TURN;
     }
     // get the angle between incoming/outgoing at the junction
@@ -2274,6 +2355,9 @@ NBNode::getDirection(const NBEdge* const incoming, const NBEdge* const outgoing,
     } else {
         // check whether any other edge goes further to the left
         if (angle < -170 && incoming->getGeometry().reverse() == outgoing->getGeometry()) {
+            if (isExplicitRailNoBidi(incoming, outgoing)) {
+                return LinkDirection::STRAIGHT;
+            }
             return leftHand ? LinkDirection::TURN_LEFTHAND : LinkDirection::TURN;
         } else if (angle < -90) {
             return LinkDirection::LEFT;
@@ -2288,29 +2372,45 @@ NBNode::getDirection(const NBEdge* const incoming, const NBEdge* const outgoing,
 }
 
 
+bool
+NBNode::isExplicitRailNoBidi(const NBEdge* incoming, const NBEdge* outgoing) {
+    // assume explicit connections at sharp turn-arounds are either for reversal or due to a geometry glitch
+    // (but should not have been guessed)
+    // @note this function is also called from NBAlgorithms when there aren't any connections ready
+    return (incoming->getStep() >= NBEdge::EdgeBuildingStep::LANES2LANES_RECHECK
+            && isRailway(incoming->getPermissions())
+            && isRailway(outgoing->getPermissions())
+            && incoming->getBidiEdge() != outgoing);
+}
+
+
 LinkState
-NBNode::getLinkState(const NBEdge* incoming, NBEdge* outgoing, int fromlane, int toLane,
+NBNode::getLinkState(const NBEdge* incoming, const NBEdge* outgoing, int fromLane, int toLane,
                      bool mayDefinitelyPass, const std::string& tlID) const {
     if (myType == SumoXMLNodeType::RAIL_CROSSING && isRailway(incoming->getPermissions())) {
         return LINKSTATE_MAJOR; // the trains must run on time
     }
     if (tlID != "") {
-        return mustBrake(incoming, outgoing, fromlane, toLane, true) ? LINKSTATE_TL_OFF_BLINKING : LINKSTATE_TL_OFF_NOSIGNAL;
+        if (getRightOfWay() == RightOfWay::ALLWAYSTOP) {
+            return LINKSTATE_ALLWAY_STOP;
+        }
+        return mustBrake(incoming, outgoing, fromLane, toLane, true) ? LINKSTATE_TL_OFF_BLINKING : LINKSTATE_TL_OFF_NOSIGNAL;
     }
     if (outgoing == nullptr) { // always off
         return LINKSTATE_TL_OFF_NOSIGNAL;
     }
-    if (myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT && mustBrake(incoming, outgoing, fromlane, toLane, true)) {
+    if ((myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT || myType == SumoXMLNodeType::LEFT_BEFORE_RIGHT)
+            && mustBrake(incoming, outgoing, fromLane, toLane, true)) {
         return LINKSTATE_EQUAL; // all the same
     }
     if (myType == SumoXMLNodeType::ALLWAY_STOP) {
         return LINKSTATE_ALLWAY_STOP; // all drive, first one to arrive may drive first
     }
-    if (myType == SumoXMLNodeType::ZIPPER && mustBrake(incoming, outgoing, fromlane, toLane, false)) {
+    if (myType == SumoXMLNodeType::ZIPPER && zipperConflict(incoming, outgoing, fromLane, toLane)) {
         return LINKSTATE_ZIPPER;
     }
     if (!mayDefinitelyPass
-            && mustBrake(incoming, outgoing, fromlane, toLane, true)
+            && mustBrake(incoming, outgoing, fromLane, toLane, true)
             // legacy mode
             && (!incoming->isInsideTLS() || getDirection(incoming, outgoing) != LinkDirection::STRAIGHT)
             // avoid linkstate minor at pure railway nodes
@@ -2320,6 +2420,23 @@ NBNode::getLinkState(const NBEdge* incoming, NBEdge* outgoing, int fromlane, int
     // traffic lights are not regarded here
     return LINKSTATE_MAJOR;
 }
+
+
+bool
+NBNode::zipperConflict(const NBEdge* incoming, const NBEdge* outgoing, int fromLane, int toLane) const {
+    if (mustBrake(incoming, outgoing, fromLane, toLane, false)) {
+        // there should be another connection with the same target (not just some intersecting trajectories)
+        for (const NBEdge* in : getIncomingEdges()) {
+            for (const NBEdge::Connection& c : in->getConnections()) {
+                if ((in != incoming || c.fromLane != fromLane) && c.toEdge == outgoing && c.toLane == toLane) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 
 bool
 NBNode::checkIsRemovable() const {
@@ -2371,7 +2488,7 @@ NBNode::checkIsRemovableReporting(std::string& reason) const {
             if (myIncomingEdges[0]->getGeometry() == myIncomingEdges[1]->getGeometry() &&
                     myOutgoingEdges[0]->getGeometry() == myOutgoingEdges[1]->getGeometry()) {
                 return ((myIncomingEdges[0]->expandableBy(myOutgoingEdges[0], reason) &&
-                            myIncomingEdges[1]->expandableBy(myOutgoingEdges[1], reason))
+                         myIncomingEdges[1]->expandableBy(myOutgoingEdges[1], reason))
                         || (myIncomingEdges[0]->expandableBy(myOutgoingEdges[1], reason) &&
                             myIncomingEdges[1]->expandableBy(myOutgoingEdges[0], reason)));
             }
@@ -2604,7 +2721,7 @@ NBNode::guessCrossings() {
 
 
 int
-NBNode::checkCrossing(EdgeVector candidates) {
+NBNode::checkCrossing(EdgeVector candidates, bool checkOnly) {
     if (gDebugFlag1) {
         std::cout << "checkCrossing candidates=" << toString(candidates) << "\n";
     }
@@ -2635,9 +2752,11 @@ NBNode::checkCrossing(EdgeVector candidates) {
             prevAngle = angle;
         }
         if (candidates.size() == 1 || getType() == SumoXMLNodeType::RAIL_CROSSING) {
-            addCrossing(candidates, NBEdge::UNSPECIFIED_WIDTH, isTLControlled());
-            if (gDebugFlag1) {
-                std::cout << "adding crossing: " << toString(candidates) << "\n";
+            if (!checkOnly) {
+                addCrossing(candidates, NBEdge::UNSPECIFIED_WIDTH, isTLControlled());
+                if (gDebugFlag1) {
+                    std::cout << "adding crossing: " << toString(candidates) << "\n";
+                }
             }
             return 1;
         } else {
@@ -2678,15 +2797,17 @@ NBNode::checkCrossing(EdgeVector candidates) {
                     }
                     if (fabs(NBHelpers::relAngle(prevAngle, angle)) > SPLIT_CROSSING_ANGLE_THRESHOLD
                             || (intermediateWidth > SPLIT_CROSSING_WIDTH_THRESHOLD)) {
-                        return checkCrossing(EdgeVector(candidates.begin(), it))
-                               + checkCrossing(EdgeVector(it, candidates.end()));
+                        return checkCrossing(EdgeVector(candidates.begin(), it), checkOnly)
+                               + checkCrossing(EdgeVector(it, candidates.end()), checkOnly);
                     }
                 }
                 prevAngle = angle;
             }
-            addCrossing(candidates, NBEdge::UNSPECIFIED_WIDTH, isTLControlled());
-            if (gDebugFlag1) {
-                std::cout << "adding crossing: " << toString(candidates) << "\n";
+            if (!checkOnly) {
+                addCrossing(candidates, NBEdge::UNSPECIFIED_WIDTH, isTLControlled());
+                if (gDebugFlag1) {
+                    std::cout << "adding crossing: " << toString(candidates) << "\n";
+                }
             }
             return 1;
         }
@@ -3007,7 +3128,7 @@ NBNode::buildWalkingAreas(int cornerDetail, double joinMinDist) {
                     || crossingBetween(edge, prevEdge)
                     || alreadyConnectedPaths(edge, prevEdge, joinMinDist)
                     || crossesFringe(edge, prevEdge)
-                    ) {
+               ) {
                 waIndices.push_back(std::make_pair(start, i - start));
                 if ((l.permissions & SVC_PEDESTRIAN) != 0) {
                     start = i;
@@ -3117,6 +3238,11 @@ NBNode::buildWalkingAreas(int cornerDetail, double joinMinDist) {
                                    getID(), c->id, c->prevWalkingArea, wa.id);
                     c->valid = false;
                 }
+                if (c->valid && std::find(wa.prevCrossings.begin(), wa.prevCrossings.end(), c->id) != wa.prevCrossings.end()) {
+                    WRITE_WARNINGF(TL("Invalid pedestrian topology at junction '%'; crossing '%' starts and ends at walkingarea '%'."),
+                                   getID(), c->id, wa.id);
+                    c->valid = false;
+                }
                 c->prevWalkingArea = wa.id;
                 wa.nextCrossings.push_back(c->id);
                 if ((int)c->edges.size() < wa.minNextCrossingEdges) {
@@ -3201,8 +3327,11 @@ NBNode::buildWalkingAreas(int cornerDetail, double joinMinDist) {
                 continue;
             }
         }
-        // build smooth inner curve (optional)
-        if (cornerDetail > 0) {
+        if (count == (int)normalizedLanes.size()) {
+            // junction is covered by the whole walkingarea
+            wa.shape = myPoly;
+        } else if (cornerDetail > 0) {
+            // build smooth inner curve (optional)
             int smoothEnd = end;
             int smoothPrev = prev;
             // extend to green verge
@@ -3430,8 +3559,8 @@ NBNode::alreadyConnectedPaths(const NBEdge* e1, const NBEdge* e2, double dist) c
 bool
 NBNode::crossesFringe(const NBEdge* e1, const NBEdge* e2) const {
     return myFringeType != FringeType::DEFAULT
-        && myIncomingEdges.size() == 1 && myOutgoingEdges.size() == 1
-        && (e1->isTurningDirectionAt(e2) || e2->isTurningDirectionAt(e1));
+           && myIncomingEdges.size() == 1 && myOutgoingEdges.size() == 1
+           && (e1->isTurningDirectionAt(e2) || e2->isTurningDirectionAt(e1));
 }
 
 
@@ -3502,7 +3631,7 @@ NBNode::geometryLike(const EdgeVector& incoming, const EdgeVector& outgoing) con
 
 void
 NBNode::setRoundabout() {
-    if (myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT) {
+    if (myType == SumoXMLNodeType::RIGHT_BEFORE_LEFT || myType == SumoXMLNodeType::LEFT_BEFORE_RIGHT) {
         myType = SumoXMLNodeType::PRIORITY;
     }
 }

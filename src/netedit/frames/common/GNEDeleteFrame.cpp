@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -273,7 +273,7 @@ GNEDeleteFrame::ProtectElements::protectGenericDatas() const {
 // method definitions
 // ===========================================================================
 
-GNEDeleteFrame::GNEDeleteFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNEDeleteFrame::GNEDeleteFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Delete") {
     // create delete options modul
     myDeleteOptions = new DeleteOptions(this);
@@ -367,8 +367,8 @@ GNEDeleteFrame::removeAttributeCarrier(const GNEViewNetHelper::ObjectsUnderCurso
     if (objectsUnderCursor.getClickedGLObjects().size() > 1) {
         std::vector<GUIGlObject*> filteredGLObjects;
         // filter objects
-        for (const auto &glObject : objectsUnderCursor.getClickedGLObjects()) {
-            if(glObject->isGLObjectLocked()) {
+        for (const auto& glObject : objectsUnderCursor.getClickedGLObjects()) {
+            if (glObject->isGLObjectLocked()) {
                 continue;
             }
             filteredGLObjects.push_back(glObject);
@@ -382,8 +382,8 @@ GNEDeleteFrame::removeAttributeCarrier(const GNEViewNetHelper::ObjectsUnderCurso
         } else if (filteredGLObjects.size() > 0) {
             filteredGLObjects.front()->deleteGLObject();
         }
-    } else if ((objectsUnderCursor.getClickedGLObjects().size() > 0) && 
-        !objectsUnderCursor.getClickedGLObjects().front()->isGLObjectLocked()) {
+    } else if ((objectsUnderCursor.getClickedGLObjects().size() > 0) &&
+               !objectsUnderCursor.getClickedGLObjects().front()->isGLObjectLocked()) {
         objectsUnderCursor.getClickedGLObjects().front()->deleteGLObject();
     }
     // enable update geometry

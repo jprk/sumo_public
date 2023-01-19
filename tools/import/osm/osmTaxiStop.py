@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2020-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2020-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -86,11 +86,11 @@ def main(options):
                                 break
                 if bestLane:
                     pos = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(point, bestLane.getShape())
-                    endPos = min(lane.getLength(), max(length, pos + length / 2))
+                    endPos = min(bestLane.getLength(), max(length, pos + length / 2))
                     nameAttr = 'name="%s" ' % name if name else ""
                     stopID = "%s_%s" % (options.type, count)
                     print(u'    <%s id="%s" %slane="%s" startPos="%.2f" endPos="%.2f"/>' %
-                          (options.type, stopID, nameAttr, bestLane.getID(), endPos - length, endPos),
+                          (options.type, stopID, nameAttr, bestLane.getID(), max(0, endPos - length), endPos),
                           file=output)
                     if fleet_out:
                         places += int(length / VEHICLE_LENGTH) * [stopID]

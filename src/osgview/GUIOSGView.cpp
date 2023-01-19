@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 #ifdef HAVE_OSG
 
 #include <cmath>
+#include <fxkeys.h>
 #include <iostream>
 #include <limits>
 #include <utility>
@@ -50,8 +51,11 @@
 #include <utils/common/StringUtils.h>
 #include <utils/foxtools/MFXCheckableButton.h>
 #include <utils/foxtools/MFXImageHelper.h>
+#include <utils/geom/GeoConvHelper.h>
 #include <utils/geom/PositionVector.h>
 #include <utils/gui/div/GLHelper.h>
+#include <utils/gui/div/GUIDesigns.h>
+#include <utils/gui/div/GUIGlobalSelection.h>
 #include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/globjects/GUIGlObjectStorage.h>
 #include <utils/gui/images/GUIIconSubSys.h>
@@ -62,8 +66,6 @@
 #include <utils/gui/windows/GUIDialog_ViewSettings.h>
 #include <utils/gui/windows/GUIPerspectiveChanger.h>
 #include <utils/gui/windows/GUISUMOAbstractView.h>
-#include <utils/gui/div/GUIGlobalSelection.h>
-#include <utils/geom/GeoConvHelper.h>
 
 #include "GUIOSGBuilder.h"
 #include "GUIOSGPerspectiveChanger.h"
@@ -134,28 +136,18 @@ GUIOSGView::GUIOSGView(
     GUINet& net, FXGLVisual* glVis,
     FXGLCanvas* share) :
     GUISUMOAbstractView(p, app, parent, net.getVisualisationSpeedUp(), glVis, share),
-    myTracked(0), myCameraManipulator(new SUMOTerrainManipulator()), myLastUpdate(-1),
+    myTracked(0), myCameraManipulator(new GUIOSGManipulator()), myLastUpdate(-1),
     myOSGNormalizedCursorX(0.), myOSGNormalizedCursorY(0.) {
 
-    //FXGLVisual* glVisual=new FXGLVisual(getApp(),VISUAL_DOUBLEBUFFER|VISUAL_STEREO);
-
-    //m_gwFox = new GraphicsWindowFOX(this, glVisual, NULL, NULL, LAYOUT_FILL_X|LAYOUT_FILL_Y, x, y, w, h );
-
     if (myChanger != nullptr) {
-        delete(myChanger);
+        delete (myChanger);
     }
-    myChanger = new GUIOSGPerspectiveChanger(*this, *myGrid);
 
     int w = getWidth();
     int h = getHeight();
     myAdapter = new FXOSGAdapter(this, new FXCursor(parent->getApp(), CURSOR_CROSS));
-
     myViewer = new osgViewer::Viewer();
-    myViewer->getCamera()->setGraphicsContext(myAdapter);
-    myViewer->getCamera()->setViewport(0, 0, w, h);
-    myViewer->getCamera()->setNearFarRatio(0.005);
-    myViewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
-    myViewer->addEventHandler(new PickHandler(this));
+    myChanger = new GUIOSGPerspectiveChanger(*this, *myGrid);
 
     const char* sumoPath = getenv("SUMO_HOME");
     if (sumoPath != 0) {
@@ -175,20 +167,48 @@ GUIOSGView::GUIOSGView(
     if (myGreenLight == 0 || myYellowLight == 0 || myRedLight == 0 || myRedYellowLight == 0 || myPoleBase == 0) {
         WRITE_ERROR(TL("Could not load traffic light files."));
     }
+
+    // calculate camera frustum to scale the ground plane all across
+    double left, right, bottom, top, zNear, zFar;
+    myViewer->getCamera()->getProjectionMatrixAsFrustum(left, right, bottom, top, zNear, zFar);
     myRoot = GUIOSGBuilder::buildOSGScene(myGreenLight, myYellowLight, myRedLight, myRedYellowLight, myPoleBase);
+    myPlane = new osg::MatrixTransform();
+    myPlane->setCullCallback(new ExcludeFromNearFarComputationCallback());
+    myPlane->addChild(GUIOSGBuilder::buildPlane((zFar - zNear)));
+    myPlane->addUpdateCallback(new PlaneMoverCallback(myViewer->getCamera()));
+    myRoot->addChild(myPlane);
+
+    // adjust the main light
+    adoptViewSettings();
+
     // add the stats handler
-    myViewer->addEventHandler(new osgViewer::StatsHandler());
+    osgViewer::StatsHandler* statsHandler = new osgViewer::StatsHandler();
+    statsHandler->setKeyEventTogglesOnScreenStats(osgGA::GUIEventAdapter::KEY_I);
+    myViewer->addEventHandler(statsHandler);
     myViewer->setSceneData(myRoot);
     myViewer->setCameraManipulator(myCameraManipulator);
+
+    myViewer->setKeyEventSetsDone(0);
+    myViewer->getCamera()->setGraphicsContext(myAdapter);
+    myViewer->getCamera()->setViewport(0, 0, w, h);
+    myViewer->getCamera()->setNearFarRatio(0.005); // does not work together with setUpDepthPartitionForCamera
+    myViewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
+    myViewer->addEventHandler(new PickHandler(this));
 
     osg::Vec3d lookFrom, lookAt, up;
     myCameraManipulator->getHomePosition(lookFrom, lookAt, up);
     lookFrom = lookAt + osg::Z_AXIS;
+    up = osg::Y_AXIS;
     myCameraManipulator->setHomePosition(lookFrom, lookAt, up);
     myViewer->home();
     recenterView();
-
+    myViewer->home();
     getApp()->addChore(this, MID_CHORE);
+
+    osg::ref_ptr<osg::Camera> hudCamera = myCameraManipulator->getHUD();
+    hudCamera->setGraphicsContext(myAdapter);
+    hudCamera->setViewport(0, 0, w, h);
+    myViewer->addSlave(hudCamera, false);
 }
 
 
@@ -198,12 +218,41 @@ GUIOSGView::~GUIOSGView() {
     myViewer = 0;
     myRoot = 0;
     myAdapter = 0;
+    myCameraManipulator = 0;
+    myGreenLight = 0;
+    myYellowLight = 0;
+    myRedLight = 0;
+    myRedYellowLight = 0;
+    myPoleBase = 0;
 }
 
 
 void
-GUIOSGView::initChanger(const Boundary& viewPort) {
-    myChanger = new GUIOSGPerspectiveChanger(*this, viewPort);
+GUIOSGView::adoptViewSettings() {
+    // lighting
+    osg::Light* globalLight = myViewer->getLight();
+    globalLight->setAmbient(toOSGColorVector(myVisualizationSettings->ambient3DLight));
+    globalLight->setDiffuse(toOSGColorVector(myVisualizationSettings->diffuse3DLight));
+    myViewer->getCamera()->setClearColor(toOSGColorVector(myVisualizationSettings->skyColor));
+
+    // ground color
+    osg::Geode* planeGeode = dynamic_cast<osg::Geode*>(myPlane->getChild(0));
+    osg::Geometry* planeGeom = dynamic_cast<osg::Geometry*>(planeGeode->getChild(0));
+    osg::Vec4ubArray* colors = dynamic_cast<osg::Vec4ubArray*>(planeGeom->getColorArray());
+    (*colors)[0].set(myVisualizationSettings->backgroundColor.red(),
+                     myVisualizationSettings->backgroundColor.green(),
+                     myVisualizationSettings->backgroundColor.blue(),
+                     myVisualizationSettings->backgroundColor.alpha());
+    planeGeom->setColorArray(colors);
+
+    // show/hide OSG nodes
+    unsigned int cullMask = 0xFFFFFFFF;
+    cullMask ^= (-int(myVisualizationSettings->show3DTLSDomes) ^ cullMask) & (1UL << NODESET_TLSDOMES);
+    cullMask ^= (-int(myVisualizationSettings->show3DTLSLinkMarkers) ^ cullMask) & (1UL << NODESET_TLSLINKMARKERS);
+    cullMask ^= (-int(myVisualizationSettings->generate3DTLSModels) ^ cullMask) & (1UL << NODESET_TLSMODELS);
+    myViewer->getCamera()->setCullMask(cullMask);
+    unsigned int hudCullMask = (myVisualizationSettings->show3DHeadUpDisplay) ? 0xFFFFFFFF : 0;
+    myCameraManipulator->getHUD()->setCullMask(hudCullMask);
 }
 
 
@@ -242,48 +291,62 @@ GUIOSGView::buildViewToolBars(GUIGlChildWindow* v) {
     // for junctions
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Junction\tLocate a junction within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEJUNCTION), v, MID_LOCATEJUNCTION,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEJUNCTION), v, MID_HOTKEY_SHIFT_J_LOCATEJUNCTION,
+                 GUIDesignButtonPopup);
     // for edges
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Street\tLocate a street within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEEDGE), v, MID_LOCATEEDGE,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEEDGE), v, MID_HOTKEY_SHIFT_E_LOCATEEDGE,
+                 GUIDesignButtonPopup);
     // for vehicles
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Vehicle\tLocate a vehicle within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEVEHICLE), v, MID_LOCATEVEHICLE,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEVEHICLE), v, MID_HOTKEY_SHIFT_V_LOCATEVEHICLE,
+                 GUIDesignButtonPopup);
     // for persons
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Person\tLocate a person within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON), v, MID_LOCATEPERSON,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON), v, MID_HOTKEY_SHIFT_P_LOCATEPERSON,
+                 GUIDesignButtonPopup);
     // for containers
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Container\tLocate a container within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER), v, MID_LOCATECONTAINER,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER), v, MID_HOTKEY_SHIFT_C_LOCATECONTAINER,
+                 GUIDesignButtonPopup);
     // for tls
     new FXButton(v->getLocatorPopup(),
                  "\tLocate TLS\tLocate a tls within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATETLS), v, MID_LOCATETLS,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATETLS), v, MID_HOTKEY_SHIFT_T_LOCATETLS,
+                 GUIDesignButtonPopup);
     // for additional stuff
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Additional\tLocate an additional structure within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEADD), v, MID_LOCATEADD,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEADD), v, MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL,
+                 GUIDesignButtonPopup);
     // for pois
     new FXButton(v->getLocatorPopup(),
                  "\tLocate POI\tLocate a POI within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI), v, MID_LOCATEPOI,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI), v, MID_HOTKEY_SHIFT_O_LOCATEPOI,
+                 GUIDesignButtonPopup);
     // for polygons
     new FXButton(v->getLocatorPopup(),
                  "\tLocate Polygon\tLocate a Polygon within the network.",
-                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPOLY), v, MID_LOCATEPOLY,
-                 ICON_ABOVE_TEXT | FRAME_THICK | FRAME_RAISED);
+                 GUIIconSubSys::getIcon(GUIIcon::LOCATEPOLY), v, MID_HOTKEY_SHIFT_L_LOCATEPOLY,
+                 GUIDesignButtonPopup);
+}
+
+
+void
+GUIOSGView::resize(int w, int h) {
+    GUISUMOAbstractView::resize(w, h);
+    myCameraManipulator->updateHUDPosition(w, h);
+}
+
+
+void
+GUIOSGView::position(int x, int y, int w, int h) {
+    GUISUMOAbstractView::position(x, y, w, h);
+    myCameraManipulator->updateHUDPosition(w, h);
 }
 
 
@@ -371,8 +434,7 @@ GUIOSGView::onPaint(FXObject*, FXSelector, void*) {
                     myRoot->addChild(myVehicles[veh].pos);
                     myVehicles[veh].pos->setName("vehicle:" + veh->getID());
                     veh->setNode(myVehicles[veh].pos);
-                }
-                else {
+                } else {
                     itVeh->second.active = true;
                 }
                 osg::PositionAttitudeTransform* n = myVehicles[veh].pos;
@@ -380,8 +442,8 @@ GUIOSGView::onPaint(FXObject*, FXSelector, void*) {
                 const double dir = veh->getAngle() + M_PI / 2.;
                 const double slope = -veh->getSlope();
                 n->setAttitude(osg::Quat(osg::DegreesToRadians(slope), osg::Vec3(1, 0, 0),
-                    0, osg::Vec3(0, 1, 0),
-                    dir, osg::Vec3(0, 0, 1)));
+                                         0, osg::Vec3(0, 1, 0),
+                                         dir, osg::Vec3(0, 0, 1)));
                 /*
                 osg::ref_ptr<osg::AnimationPath> path = new osg::AnimationPath;
                 // path->setLoopMode( osg::AnimationPath::NO_LOOPING );
@@ -429,7 +491,7 @@ GUIOSGView::onPaint(FXObject*, FXSelector, void*) {
         lookFrom[2] = lookAt[2] + 10.;
         osg::Matrix m;
         m.makeLookAt(lookFrom, lookAt, osg::Z_AXIS);
-        myCameraManipulator->setByInverseMatrix(m);
+        myViewer->getCameraManipulator()->setByInverseMatrix(m);
     }
 
     // reset active flag
@@ -449,8 +511,7 @@ GUIOSGView::onPaint(FXObject*, FXSelector, void*) {
             if (itPers == myPersons.end()) {
                 myPersons[person] = GUIOSGBuilder::buildMovable(person->getVehicleType());
                 myRoot->addChild(myPersons[person].pos);
-            }
-            else {
+            } else {
                 itPers->second.active = true;
             }
             osg::PositionAttitudeTransform* n = myPersons[person].pos;
@@ -470,12 +531,6 @@ GUIOSGView::onPaint(FXObject*, FXSelector, void*) {
             ++person;
         }
     }
-    //// show/hide OSG nodes
-    unsigned int cullMask = 0xFFFFFFFF;
-    cullMask ^= (-myVisualizationSettings->show3DTLSDomes ^ cullMask) & (1UL << NODESET_TLSDOMES);
-    cullMask ^= (-myVisualizationSettings->show3DTLSLinkMarkers ^ cullMask) & (1UL << NODESET_TLSLINKMARKERS);
-    cullMask ^= (-myVisualizationSettings->generate3DTLSModels ^ cullMask) & (1UL << NODESET_TLSMODELS);
-    myViewer->getCamera()->setCullMask(cullMask);
 
     if (myAdapter->makeCurrent()) {
         myViewer->frame();
@@ -511,7 +566,7 @@ GUIOSGView::removeTransportable(MSTransportable* t) {
 
 void GUIOSGView::updateViewportValues() {
     osg::Vec3d lookFrom, lookAt, up;
-    myCameraManipulator->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
+    myViewer->getCameraManipulator()->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
     myViewportChooser->setValues(Position(lookFrom[0], lookFrom[1], lookFrom[2]),
                                  Position(lookAt[0], lookAt[1], lookAt[2]), calculateRotation(lookFrom, lookAt, up));
 }
@@ -521,7 +576,7 @@ void
 GUIOSGView::showViewportEditor() {
     getViewportEditor(); // make sure it exists;
     osg::Vec3d lookFrom, lookAt, up;
-    myCameraManipulator->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
+    myViewer->getCameraManipulator()->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
     Position from(lookFrom[0], lookFrom[1], lookFrom[2]), at(lookAt[0], lookAt[1], lookAt[2]);
     myViewportChooser->setOldValues(from, at, calculateRotation(lookFrom, lookAt, up));
     myViewportChooser->setZoomValue(100);
@@ -559,17 +614,15 @@ GUIOSGView::setViewportFromToRot(const Position& lookFrom, const Position& lookA
     double zoom = (myViewportChooser != nullptr) ? myViewportChooser->getZoomValue() : 100.;
     lookFromOSG = lookFromOSG + viewAxis * (100. - zoom);
     lookAtOSG = lookFromOSG - viewAxis;
-    myCameraManipulator->setVerticalAxisFixed(true);
     myViewer->getCameraManipulator()->setHomePosition(lookFromOSG, lookAtOSG, up);
     myViewer->home();
-    myCameraManipulator->setVerticalAxisFixed(false);
 }
 
 
 void
 GUIOSGView::copyViewportTo(GUISUMOAbstractView* view) {
     osg::Vec3d lookFrom, lookAt, up;
-    myCameraManipulator->getHomePosition(lookFrom, lookAt, up);
+    myViewer->getCameraManipulator()->getHomePosition(lookFrom, lookAt, up);
     view->setViewportFromToRot(Position(lookFrom[0], lookFrom[1], lookFrom[2]),
                                Position(lookAt[0], lookAt[1], lookAt[2]), 0);
 }
@@ -600,7 +653,7 @@ GUIOSGView::startTrack(int id) {
             lookFrom[2] = lookAt[2] + 10.;
             osg::Matrix m;
             m.makeLookAt(lookFrom, lookAt, osg::Z_AXIS);
-            myCameraManipulator->setByInverseMatrix(m);
+            myViewer->getCameraManipulator()->setByInverseMatrix(m);
         }
     }
 }
@@ -665,11 +718,12 @@ GUIOSGView::getCurrentTimeStep() const {
 
 long GUIOSGView::onConfigure(FXObject* sender, FXSelector sel, void* ptr) {
     // update the window dimensions, in case the window has been resized.
-    int width = getWidth();
-    int height = getHeight();
-    if (width > 0 && height > 0) {
-        myAdapter->getEventQueue()->windowResize(0, 0, width, height);
-        myAdapter->resized(0, 0, width, height);
+    const int w = getWidth();
+    const int h = getHeight();
+    if (w > 0 && h > 0) {
+        myAdapter->getEventQueue()->windowResize(0, 0, w, h);
+        myAdapter->resized(0, 0, w, h);
+        myCameraManipulator->updateHUDPosition(w, h);
     }
     return FXGLCanvas::onConfigure(sender, sel, ptr);
 }
@@ -678,7 +732,10 @@ long GUIOSGView::onConfigure(FXObject* sender, FXSelector sel, void* ptr) {
 long GUIOSGView::onKeyPress(FXObject* sender, FXSelector sel, void* ptr) {
     int key = ((FXEvent*)ptr)->code;
     myAdapter->getEventQueue()->keyPress(key);
-
+    // leave key handling for some cases to OSG
+    if (key == FX::KEY_f || key == FX::KEY_Left || key == FX::KEY_Right || key == FX::KEY_Up || key == FX::KEY_Down) {
+        return 1;
+    }
     return FXGLCanvas::onKeyPress(sender, sel, ptr);
 }
 
@@ -686,7 +743,10 @@ long GUIOSGView::onKeyPress(FXObject* sender, FXSelector sel, void* ptr) {
 long GUIOSGView::onKeyRelease(FXObject* sender, FXSelector sel, void* ptr) {
     int key = ((FXEvent*)ptr)->code;
     myAdapter->getEventQueue()->keyRelease(key);
-
+    // leave key handling for some cases to OSG
+    if (key == FX::KEY_f || key == FX::KEY_Left || key == FX::KEY_Right || key == FX::KEY_Up || key == FX::KEY_Down) {
+        return 1;
+    }
     return FXGLCanvas::onKeyRelease(sender, sel, ptr);
 }
 
@@ -725,6 +785,7 @@ long GUIOSGView::onMiddleBtnPress(FXObject* sender, FXSelector sel, void* ptr) {
 long GUIOSGView::onMiddleBtnRelease(FXObject* sender, FXSelector sel, void* ptr) {
     FXEvent* event = (FXEvent*)ptr;
     myAdapter->getEventQueue()->mouseButtonRelease((float)event->click_x, (float)event->click_y, 2);
+    myChanger->onMiddleBtnRelease(ptr);
     return FXGLCanvas::onMiddleBtnRelease(sender, sel, ptr);
 }
 
@@ -829,6 +890,13 @@ GUIOSGView::onCmdShowReachability(FXObject* menu, FXSelector selector, void*) {
 }
 
 
+long
+GUIOSGView::onVisualizationChange(FXObject*, FXSelector, void*) {
+    adoptViewSettings();
+    return 1;
+}
+
+
 void
 GUIOSGView::setWindowCursorPosition(float x, float y) {
     myOSGNormalizedCursorX = x;
@@ -877,7 +945,7 @@ bool
 GUIOSGView::getPositionAtCursor(float xNorm, float yNorm, Position& pos) const {
     // only reasonable if view axis points to the ground (not parallel to the ground or in the sky)
     osg::Vec3d lookFrom, lookAt, up, viewAxis;
-    myCameraManipulator->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
+    myViewer->getCameraManipulator()->getInverseMatrix().getLookAt(lookFrom, lookAt, up);
     if ((lookAt - lookFrom).z() >= 0.) {
         // looking to the sky makes position at ground pointless
         return false;
@@ -940,7 +1008,7 @@ GUIOSGView::getLaneUnderCursor() {
 void
 GUIOSGView::zoom2Pos(Position& camera, Position& lookAt, double zoom) {
     osg::Vec3d lookFromOSG, lookAtOSG, viewAxis, up;
-    myCameraManipulator->getInverseMatrix().getLookAt(lookFromOSG, lookAtOSG, up);
+    myViewer->getCameraManipulator()->getInverseMatrix().getLookAt(lookFromOSG, lookAtOSG, up);
     lookFromOSG[0] = camera.x();
     lookFromOSG[1] = camera.y();
     lookFromOSG[2] = camera.z();
@@ -956,6 +1024,12 @@ GUIOSGView::zoom2Pos(Position& camera, Position& lookAt, double zoom) {
 
     myViewer->getCameraManipulator()->setHomePosition(cameraUpdate, lookAtUpdate, up);
     myViewer->home();
+}
+
+
+osg::Vec4d
+GUIOSGView::toOSGColorVector(RGBColor c, bool useAlpha) {
+    return osg::Vec4d(c.red() / 255., c.green() / 255., c.blue() / 255., (useAlpha) ? c.alpha() / 255. : 1.);
 }
 
 
@@ -1033,7 +1107,7 @@ GUIOSGView::PickHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActi
             if (myParent->makeCurrent()) {
                 std::vector<GUIGlObject*> objects = myParent->getGUIGlObjectsUnderCursor();
                 if (objects.size() > 0) {
-                    myParent->openObjectDialog(objects);                   
+                    myParent->openObjectDialog(objects);
                 }
                 myParent->makeNonCurrent();
             }

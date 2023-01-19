@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2011-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2011-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -402,7 +402,9 @@ def parse_fast(xmlfile, element_name, attrnames, warn=False, optional=False, enc
     """
     Parses the given attrnames from all elements with element_name
     @Note: The element must be on its own line and the attributes must appear in
-    the given order.
+    the given order. If you set "optional", missing attributes will be set to None.
+    Make sure that you list all (potential) attributes (even the ones you are not interested in)
+    in this case. You can only leave out attributes at the end.
     @Example: parse_fast('plain.edg.xml', 'edge', ['id', 'speed'])
     """
     Record, reprog = _createRecordAndPattern(element_name, attrnames, warn, optional)

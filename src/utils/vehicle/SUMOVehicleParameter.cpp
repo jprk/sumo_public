@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -288,6 +288,12 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev, const bool close, const boo
     }
     if ((parametersSet & STOP_ONDEMAND_SET) != 0) {
         dev.writeAttr(SUMO_ATTR_ONDEMAND, onDemand);
+    }
+    if ((parametersSet & STOP_JUMP_SET) != 0 && jump >= 0) {
+        dev.writeAttr(SUMO_ATTR_JUMP, time2string(jump));
+    }
+    if (collision) {
+        dev.writeAttr(SUMO_ATTR_COLLISION, collision);
     }
     // only write friendly position if is true
     if (friendlyPos == true) {

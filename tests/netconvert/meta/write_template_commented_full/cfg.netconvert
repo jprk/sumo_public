@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-10-04 15:37:06 by Eclipse SUMO netconvert Version v1_14_1+1425-e57389e
+<!-- generated on 2023-01-12 13:09:30 by Eclipse SUMO netconvert Version v1_15_0+1595-d32acb9
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
@@ -111,6 +111,9 @@
         <!-- Prefix of files to write plain xml nodes, edges and connections to -->
         <plain-output-prefix value="" synonymes="p plain plain-output" type="FILE"/>
 
+        <!-- Write all lanes and their attributes even when they are not customized -->
+        <plain-output.lanes value="false" type="BOOL"/>
+
         <!-- Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins -->
         <junctions.join-output value="" type="FILE"/>
 
@@ -161,6 +164,12 @@
 
         <!-- Builds parameterized curves whenever the angular change  between straight segments exceeds FLOAT degrees -->
         <opendrive-output.straight-threshold value="1e-08" type="FLOAT"/>
+
+        <!-- Write lanes in lefthand networks on the left side (positive indices) -->
+        <opendrive-output.lefthand-left value="false" type="BOOL"/>
+
+        <!-- Match loaded shapes to the closest edge within FLOAT and export as road objects -->
+        <opendrive-output.shape-match-dist value="-1" type="FLOAT"/>
 
     </output>
 
@@ -435,6 +444,9 @@
         <!-- Distance for interpreting nodes as signal locations -->
         <tls.guess-signals.dist value="25" type="FLOAT"/>
 
+        <!-- Number of uncontrolled entry edges to accept and still consider the central node as a traffic light -->
+        <tls.guess-signals.slack value="0" type="INT"/>
+
         <!-- Use INT as cycle duration -->
         <tls.cycle.time value="90" type="INT"/>
 
@@ -506,6 +518,9 @@
 
         <!-- Assign a distinct tls link index to every connection -->
         <tls.ungroup-signals value="false" type="BOOL"/>
+
+        <!-- rebuild all traffic light plans in the network -->
+        <tls.rebuild value="false" type="BOOL"/>
 
     </tls_building>
 
@@ -599,6 +614,9 @@
     <junctions>
         <!-- Allow building right-before-left junctions when the incoming edge speeds are below FLOAT (m/s) -->
         <junctions.right-before-left.speed-threshold value="13.6111" type="FLOAT"/>
+
+        <!-- Build left-before-right junctions instead of right-before-left junctions -->
+        <junctions.left-before-right value="false" type="BOOL"/>
 
         <!-- Omits internal links -->
         <no-internal-links value="false" type="BOOL"/>
@@ -798,11 +816,14 @@
         <!-- Import lane-specific access restrictions -->
         <osm.lane-access value="false" type="BOOL"/>
 
-        <!-- Check additional attributes to fix directions and permissions on bike paths -->
-        <osm.bike-access value="false" type="BOOL"/>
+        <!-- Import bike lanes and fix directions and permissions on bike paths -->
+        <osm.bike-access value="false" synonymes="osm.bike-lanes" type="BOOL"/>
 
         <!-- Import sidewalks -->
         <osm.sidewalks value="false" type="BOOL"/>
+
+        <!-- Import crossings -->
+        <osm.crossings value="false" type="BOOL"/>
 
         <!-- Import turning arrows from OSM to help with connection building -->
         <osm.turn-lanes value="false" type="BOOL"/>
@@ -980,6 +1001,9 @@
 
         <!-- Writes all warnings and errors to FILE -->
         <error-log value="" type="FILE"/>
+
+        <!-- Language to use in messages -->
+        <language value="C" type="STR"/>
 
         <!-- Continue on broken input -->
         <ignore-errors value="false" synonymes="dismiss-loading-errors" type="BOOL"/>

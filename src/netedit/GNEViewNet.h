@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -54,13 +54,12 @@ public:
      * @param[in] app main windows
      * @param[in] viewParent viewParent of this viewNet
      * @param[in] net traffic net
-     * @param[in] newNet check if we're creating a new net, or loading an existent
      * @param[in] undoList pointer to UndoList module
      * @param[in] glVis a reference to GLVisuals
      * @param[in] share a reference to FXCanvas
      */
     GNEViewNet(FXComposite* tmpParent, FXComposite* actualParent, GUIMainWindow& app,
-               GNEViewParent* viewParent, GNENet* net, const bool newNet, GNEUndoList* undoList,
+               GNEViewParent* viewParent, GNENet* net, GNEUndoList* undoList,
                FXGLVisual* glVis, FXGLCanvas* share);
 
     /// @brief destructor
@@ -83,6 +82,9 @@ public:
 
     /// @brief get objects under cursor
     const GNEViewNetHelper::ObjectsUnderCursor& getObjectsUnderCursor() const;
+
+    /// @brief Update objects under cursor in the given position
+    void updateObjectsUnderCursor(const Position& pos);
 
     /// @brief get move multiple element values
     const GNEViewNetHelper::MoveMultipleElementValues& getMoveMultipleElementValues() const;
@@ -114,10 +116,10 @@ public:
     void openObjectDialogAtCursor(const FXEvent* ev);
 
     /// @brief open delete dialog at cursor
-    void openDeleteDialogAtCursor(const std::vector<GUIGlObject*> &GLObjects);
+    void openDeleteDialogAtCursor(const std::vector<GUIGlObject*>& GLObjects);
 
     /// @brief open select dialog at cursor
-    void openSelectDialogAtCursor(const std::vector<GUIGlObject*> &GLObjects);
+    void openSelectDialogAtCursor(const std::vector<GUIGlObject*>& GLObjects);
 
     // save visualization settings
     void saveVisualizationSettings() const;
@@ -555,6 +557,9 @@ public:
 
     /// @brief check if we're selecting junctions in TLS mode
     bool selectingJunctionsTLSMode() const;
+
+    /// @brief get variable used to save elements
+    GNEViewNetHelper::SaveElements& getSaveElements();
 
 protected:
     /// @brief FOX needs this

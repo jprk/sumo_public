@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -49,6 +49,12 @@ class modes:
         # create edge
         chainMode = '5'
         twoWayMode = '6'
+        # TLS mode
+        applyAllPhases = '5'
+        # move mode
+        mergingJunction = '5'
+        showBubbles = '6'
+        moveElevation = '7'
 
     class demand:
         grid = '1'
@@ -60,9 +66,18 @@ class modes:
         lockPerson = '7'
         showContainerPlans = '8'
         lockContainer = '9'
+        showNonInspected = '10'
+        showOverlappedRoutes = '11'
 
     class data:
         junctionShape = '1'
+        showAdditionals = '2'
+        showShapes = '3'
+        showDemandElements = '4'
+        TAZRelDrawingMode = '5'
+        TAZFill = '6'
+        TAZRelOnlyFrom = '7'
+        TAZRelOnlyTo = '8'
 
 
 class frames:
@@ -131,9 +146,24 @@ class junction:
         fringe = 7
         name = 9
         tlType = 10
-        tlLayout = 11
-        tl = 12
+        tlLayout = 12
+        tl = 14
         parameters = 17
+
+    class contextualMenu:
+        addTLS = 0
+        addJoinedTLS = 0
+        resetEdgeEndPoints = 0
+        setCustomJunctionShape = 0
+        resetJunctionShape = 0
+        replaceJunctionByGeometryPoint = 0
+        splitJunction = 0
+        splitJunctionAndReconnect = 0
+        converToRoundAbout = 0
+        clearConnections = 0
+        resetConnections = 0
+
+    contextualMenuTLS = 10
 
 # edge
 
@@ -144,11 +174,10 @@ class edge:
         speed = 8
         allowButton = 9
         allow = 10
-        disallowButton = 11
-        disallow = 12
-        spreadType = 13
-        priority = 15
-        width = 16
+        disallow = 11
+        spreadType = 12
+        priority = 14
+        width = 15
 
     class createLane:
         add = 22
@@ -156,9 +185,8 @@ class edge:
         speed = 24
         allowButton = 25
         allow = 26
-        disallowButton = 27
-        disallow = 28
-        width = 29
+        disallow = 27
+        width = 28
 
     class inspect:
         id = 1
@@ -212,6 +240,23 @@ class edge:
         copy = 34
         clear = 35
 
+    class contextualMenu:
+        splitEdge = 1
+        splitEdgeBothDirection = 2
+        setGeometryPoint = 2
+        restoreGeometryPoint = 3
+        reverseEdge = 4
+        addReverseDirection = 5
+        addReverseDirectionDisconnected = 6
+        resetLenght = 7
+        straighteen = 8
+        smooth = 9
+        straighteenElevation = 10
+        smoothElevation = 11
+
+    contextualMenuEdgeA = 10
+    contextualMenuEdgeB = 11
+
 # lane
 
 
@@ -220,41 +265,57 @@ class lane:
         speed = 1
         allowButton = 2
         allow = 3
-        disallowButton = 4
-        disallow = 5
-        width = 6
-        endOffset = 7
-        acceleration = 8
-        customShape = 9
-        opposite = 10
-        changeLeftButton = 11
-        changeLeft = 12
-        changeRightButton = 13
-        changeRight = 14
-        type = 15
-        stopOffset = 16
-        stopOffsetExceptionButton = 17
-        stopOffsetException = 18
-        parameters = 21
+        disallow = 4
+        width = 5
+        endOffset = 6
+        acceleration = 7
+        customShape = 8
+        opposite = 9
+        changeLeftButton = 10
+        changeLeft = 11
+        changeRightButton = 12
+        changeRight = 13
+        type = 14
+        stopOffset = 15
+        stopOffsetExceptionButton = 16
+        stopOffsetException = 17
+        parameters = 20
 
     class inspectSelection:
         speed = 1
         allowButton = 2
         allow = 3
-        disallowButton = 4
-        disallow = 5
-        width = 6
-        endOffset = 7
-        acceleration = 8
-        changeLeftButton = 9
-        changeLeft = 10
-        changeRightButton = 11
-        changeRight = 12
-        type = 13
-        stopOffset = 14
-        stopOffsetExceptionButton = 15
-        stopOffsetException = 16
-        parameters = 19
+        disallow = 4
+        width = 5
+        endOffset = 6
+        acceleration = 7
+        changeLeftButton = 8
+        changeLeft = 9
+        changeRightButton = 10
+        changeRight = 11
+        type = 12
+        stopOffset = 13
+        stopOffsetExceptionButton = 14
+        stopOffsetException = 15
+        parameters = 18
+
+    class contextualMenu:
+        duplicateLane = 1
+        setCustomLaneShape = 2
+        resetCustomLaneShape = 3
+        resetOppositeLaneShape = 4
+        addRestrictedLane = 3
+        removeRestrictedLane = 4
+        transformRestrictedLane = 4
+
+    class restrictedLanes:
+        sidewalk = 1
+        bikelane = 2
+        buslane = 3
+        greenvergeFront = 4
+        greenvergeBack = 4
+
+    contextualMenuLane = 11
 
 # connection
 
@@ -268,18 +329,17 @@ class connection:
         visibility = 5
         allowButton = 6
         allow = 7
-        disallowButton = 8
-        disallow = 9
-        speed = 10
-        length = 11
-        customShape = 12
-        changeLeftButton = 13
-        changeLeft = 14
-        changeRightButton = 15
-        changeRight = 16
-        indirect = 17
-        type = 18
-        parameters = 21
+        disallow = 8
+        speed = 9
+        length = 10
+        customShape = 11
+        changeLeftButton = 12
+        changeLeft = 13
+        changeRightButton = 14
+        changeRight = 15
+        indirect = 16
+        type = 17
+        parameters = 20
 
     class inspectTLS:
         passC = 1
@@ -291,18 +351,17 @@ class connection:
         linkIndex2 = 7
         allowButton = 8
         allow = 9
-        disallowButton = 10
-        disallow = 11
-        speed = 12
-        length = 13
-        customShape = 14
-        changeLeftButton = 15
-        changeLeft = 16
-        changeRightButton = 17
-        changeRight = 18
-        indirect = 19
-        type = 20
-        parameters = 23
+        disallow = 10
+        speed = 11
+        length = 12
+        customShape = 13
+        changeLeftButton = 14
+        changeLeft = 15
+        changeRightButton = 16
+        changeRight = 17
+        indirect = 18
+        type = 19
+        parameters = 22
 
     class inspectSelection:
         passC = 1
@@ -312,17 +371,16 @@ class connection:
         visibility = 5
         allowButton = 6
         allow = 7
-        disallowButton = 8
-        disallow = 9
-        speed = 10
-        length = 11
-        changeLeftButton = 12
-        changeLeft = 13
-        changeRightButton = 14
-        changeRight = 15
-        indirect = 16
-        type = 17
-        parameters = 20
+        disallow = 8
+        speed = 9
+        length = 10
+        changeLeftButton = 11
+        changeLeft = 12
+        changeRightButton = 13
+        changeRight = 14
+        indirect = 15
+        type = 16
+        parameters = 19
 
     class inspectSelectionTLS:
         passC = 1
@@ -334,17 +392,16 @@ class connection:
         linkIndex2 = 7
         allowButton = 8
         allow = 9
-        disallowButton = 10
-        disallow = 11
-        speed = 12
-        length = 13
-        changeLeftButton = 14
-        changeLeft = 15
-        changeRightButton = 16
-        changeRight = 17
-        indirect = 18
-        type = 19
-        parameters = 22
+        disallow = 10
+        speed = 11
+        length = 12
+        changeLeftButton = 13
+        changeLeft = 14
+        changeRightButton = 15
+        changeRight = 16
+        indirect = 17
+        type = 18
+        parameters = 21
 
     saveConnections = 4
 
@@ -482,71 +539,71 @@ class TLS:
             parameters = 15
 
         class staticPhase:
-            dur = 18 + (0 * 24) + 0
-            state = 18 + (1 * 24) + 1
-            nxt = 18 + (2 * 24) + 2
-            name = 18 + (3 * 24) + 3
-            addButton = 18 + (4 * 24) + 4
-            deleteButton = 18 + (5 * 24) + 5
-            moveUp = 18 + (6 * 24) + 6
-            moveDown = 18 + (7 * 24) + 7
-            cleanStates = 18 + (8 * 24) + 1
-            groupSignal = 18 + (8 * 24) + 2
-            addStates = 18 + (8 * 24) + 3
-            ungroupSignal = 18 + (8 * 24) + 4
+            dur = 18 + (0 * 2)
+            state = 18 + (1 * 2)
+            nxt = 18 + (2 * 2)
+            name = 18 + (3 * 2)
+            addButton = 18 + (5 * 2)
+            deleteButton = 18 + (6 * 2)
+            moveUp = 18 + (7 * 2)
+            moveDown = 18 + (8 * 2)
+            cleanStates = 18 + (8 * 2) + 1
+            groupSignal = 18 + (8 * 2) + 2
+            addStates = 18 + (8 * 2) + 3
+            ungroupSignal = 18 + (8 * 2) + 4
 
         class actuatedPhase:
-            dur = 19 + (0 * 24) + 0
-            minD = 19 + (1 * 24) + 1
-            maxD = 19 + (2 * 24) + 2
-            state = 19 + (3 * 24) + 3
-            earlyEnd = 19 + (4 * 24) + 4
-            latestEnd = 19 + (5 * 24) + 5
-            nxt = 19 + (6 * 24) + 6
-            name = 19 + (7 * 24) + 7
-            addButton = 19 + (8 * 24) + 8
-            deleteButton = 19 + (9 * 24) + 9
-            moveUp = 19 + (10 * 24) + 10
-            moveDown = 19 + (11 * 24) + 11
-            cleanStates = 19 + (12 * 24) + 1
-            groupSignal = 19 + (12 * 24) + 2
-            addStates = 19 + (12 * 24) + 3
-            ungroupSignal = 19 + (12 * 24) + 4
+            dur = 19 + (0 * 2)
+            minD = 19 + (1 * 2)
+            maxD = 19 + (2 * 2)
+            state = 19 + (3 * 2)
+            earlyEnd = 19 + (4 * 2)
+            latestEnd = 19 + (5 * 2)
+            nxt = 19 + (6 * 2)
+            name = 19 + (7 * 2)
+            addButton = 19 + (9 * 2)
+            deleteButton = 19 + (10 * 2)
+            moveUp = 19 + (11 * 2)
+            moveDown = 19 + (12 * 2)
+            cleanStates = 19 + (12 * 2) + 1
+            groupSignal = 19 + (12 * 2) + 2
+            addStates = 19 + (12 * 2) + 3
+            ungroupSignal = 19 + (12 * 2) + 4
 
         class delayBasedPhase:
-            dur = 19 + (0 * 24) + 0
-            minD = 19 + (1 * 24) + 1
-            maxD = 19 + (2 * 24) + 2
-            state = 19 + (3 * 24) + 3
-            nxt = 19 + (4 * 24) + 4
-            name = 19 + (5 * 24) + 5
-            addButton = 19 + (6 * 24) + 6
-            deleteButton = 19 + (7 * 24) + 7
-            moveUp = 19 + (8 * 24) + 8
-            moveDown = 19 + (9 * 24) + 9
-            cleanStates = 19 + (10 * 24) + 1
-            groupSignal = 19 + (10 * 24) + 2
-            addStates = 19 + (10 * 24) + 3
-            ungroupSignal = 19 + (10 * 24) + 4
+            dur = 19 + (0 * 2)
+            minD = 19 + (1 * 2)
+            maxD = 19 + (2 * 2)
+            state = 19 + (3 * 2)
+            nxt = 19 + (4 * 2)
+            name = 19 + (5 * 2)
+            addButton = 19 + (7 * 2)
+            deleteButton = 19 + (8 * 2)
+            moveUp = 19 + (9 * 2)
+            moveDown = 19 + (10 * 2)
+            cleanStates = 19 + (10 * 2) + 1
+            groupSignal = 19 + (10 * 2) + 2
+            addStates = 19 + (10 * 2) + 3
+            ungroupSignal = 19 + (10 * 2) + 4
 
         class NEMAPhase:
-            dur = 19 + (0 * 6) + 0
-            minD = 19 + (1 * 6) + 1
-            maxD = 19 + (2 * 6) + 2
-            state = 19 + (3 * 6) + 3
-            vehext = 19 + (4 * 6) + 4
-            yellow = 19 + (5 * 6) + 5
-            red = 19 + (6 * 6) + 0
-            nxt = 19 + (7 * 6) + 1
-            name = 19 + (8 * 6) + 2
-            addButton = 19 + (9 * 6) + 3
-            deleteButton = 19 + (10 * 6) + 4
-            moveUp = 19 + (11 * 6) + 5
-            moveDown = 19 + (12 * 6) + 0
-            cleanStates = 19 + (13 * 6) + 1
-            groupSignal = 19 + (13 * 6) + 2
-            addStates = 19 + (13 * 6) + 3
-            ungroupSignal = 19 + (13 * 6) + 4
+            dur = 19 + (0 * 2)
+            minD = 19 + (1 * 2)
+            maxD = 19 + (2 * 2)
+            state = 19 + (3 * 2)
+            vehext = 19 + (4 * 2)
+            yellow = 19 + (5 * 2)
+            red = 19 + (6 * 2)
+            nxt = 19 + (7 * 2)
+            name = 19 + (8 * 2)
+            addButton = 19 + (10 * 2)
+            deleteButton = 19 + (11 * 2)
+            moveUp = 19 + (12 * 2)
+            moveDown = 19 + (13 * 2)
+            cleanStates = 19 + (13 * 2) + 1
+            groupSignal = 19 + (13 * 2) + 2
+            addStates = 19 + (13 * 2) + 3
+            ungroupSignal = 19 + (13 * 2) + 4
 
     create = 3
     createOverlapped = 4
@@ -1352,6 +1409,9 @@ class TAZ:
 
 
 class type:
+
+    color = 6
+
     class buttons:
         create = 2
         delete = 3
@@ -1451,7 +1511,7 @@ class route:
 # trip (from-to edges)
 
 
-class tripFromToEdge:
+class trip:
     class create:
         type = 5
         id = 8
@@ -1513,6 +1573,15 @@ class tripFromToEdge:
         insertionChecks = 15
         depart = 16
         parameters = 19
+
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlow = 3
+        routeFlowEmbedded = 4
+        flow = 5
+
+    transformTo = 9
 
 # trip (from-to junctions)
 
@@ -1578,6 +1647,16 @@ class tripFromToJunction:
         insertionChecks = 15
         depart = 16
         parameters = 19
+
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlow = 3
+        routeFlowEmbedded = 4
+        trip = 5
+        flow = 6
+
+    transformTo = 9
 
 # vehicle (over route)
 
@@ -1645,6 +1724,15 @@ class vehicle:
         depart = 16
         parameters = 19
 
+    class transform:
+        vehicleEmbedded = 1
+        routeFlow = 2
+        routeFlowEmbedded = 3
+        trip = 4
+        flow = 5
+
+    transformTo = 9
+
 # vehicle (embedded route)
 
 
@@ -1710,10 +1798,19 @@ class vehicleEmbedded:
         depart = 16
         parameters = 19
 
+    class transform:
+        vehicle = 1
+        routeFlow = 2
+        routeFlowEmbedded = 3
+        trip = 4
+        flow = 5
+
+    transformTo = 9
+
 # flow (from-to edges)
 
 
-class flowFromToEdge:
+class flow:
     class create:
         type = 5
         id = 8
@@ -1791,6 +1888,14 @@ class flowFromToEdge:
         spacingOption = 24
         parameters = 24
 
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlow = 3
+        routeFlowEmbedded = 4
+        trip = 5
+
+    transformTo = 9
 
 # flow (from-to junctions)
 
@@ -1872,10 +1977,20 @@ class flowJunction:
         spacingOption = 24
         parameters = 24
 
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlow = 3
+        routeFlowEmbedded = 4
+        trip = 5
+        flow = 6
+
+    transformTo = 9
+
 # flow (over route)
 
 
-class routeflow:
+class routeFlow:
     class create:
         type = 5
         id = 8
@@ -1952,6 +2067,15 @@ class routeflow:
         terminateOption = 23
         spacingOption = 24
         parameters = 24
+
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlowEmbedded = 3
+        trip = 4
+        flow = 5
+
+    transformTo = 9
 
 # flow (embedded route)
 
@@ -2033,10 +2157,19 @@ class flowEmbedded:
         spacingOption = 24
         parameters = 24
 
-# stop (over busStop/containerStop/chargingStation)
+    class transform:
+        vehicle = 1
+        vehicleEmbedded = 2
+        routeFlow = 3
+        trip = 4
+        flow = 5
+
+    transformTo = 9
+
+# stop over bus stop
 
 
-class stop:
+class stopBusStop:
     class create:
         durationEnable = 8
         duration = 9
@@ -2051,7 +2184,7 @@ class stop:
         actType = 17
         tripID = 18
         line = 19
-        onDemad = 20
+        onDemand = 20
 
     class inspect:
         durationEnable = 1
@@ -2067,7 +2200,7 @@ class stop:
         actType = 10
         tripID = 11
         line = 12
-        onDemad = 13
+        onDemand = 13
 
     class inspectSelection:
         durationEnable = 1
@@ -2083,9 +2216,113 @@ class stop:
         actType = 13
         tripID = 14
         line = 15
-        onDemad = 16
+        onDemand = 16
 
-# stop (over parkings)
+# stop over container stop
+
+
+class stopContainerStop:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 9
+        until = 10
+        extensionEnable = 10
+        extension = 11
+        triggered = 12
+        expected = 14
+        permitted = 14
+        parking = 15
+        actType = 17
+        tripID = 18
+        line = 19
+        onDemand = 20
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 2
+        until = 3
+        extensionEnable = 3
+        extension = 4
+        triggered = 5
+        expected = 7
+        permitted = 7
+        parking = 8
+        actType = 10
+        tripID = 11
+        line = 12
+        onDemand = 13
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        extensionEnable = 5
+        extension = 6
+        triggered = 7
+        expected = 9
+        permitted = 10
+        parking = 11
+        actType = 13
+        tripID = 14
+        line = 15
+        onDemand = 16
+
+# stop over charging station
+
+
+class stopChargingStation:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 9
+        until = 10
+        extensionEnable = 10
+        extension = 11
+        triggered = 12
+        expected = 14
+        permitted = 14
+        parking = 15
+        actType = 17
+        tripID = 18
+        line = 19
+        onDemand = 20
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 2
+        until = 3
+        extensionEnable = 3
+        extension = 4
+        triggered = 5
+        expected = 7
+        permitted = 7
+        parking = 8
+        actType = 10
+        tripID = 11
+        line = 12
+        onDemand = 13
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        extensionEnable = 5
+        extension = 6
+        triggered = 7
+        expected = 9
+        permitted = 10
+        parking = 11
+        actType = 13
+        tripID = 14
+        line = 15
+        onDemand = 16
+
+# stop over parkings
 
 
 class stopParking:
@@ -2102,7 +2339,7 @@ class stopParking:
         actType = 15
         tripID = 16
         line = 17
-        onDemad = 18
+        onDemand = 18
 
     class inspect:
         durationEnable = 1
@@ -2117,7 +2354,7 @@ class stopParking:
         actType = 8
         tripID = 9
         line = 10
-        onDemad = 11
+        onDemand = 11
 
     class inspectSelection:
         durationEnable = 1
@@ -2132,9 +2369,9 @@ class stopParking:
         actType = 11
         tripID = 12
         line = 13
-        onDemad = 14
+        onDemand = 14
 
-# stop (over lane)
+# stop over lane
 
 
 class stopLane:
@@ -2154,7 +2391,7 @@ class stopLane:
         actType = 19
         tripID = 20
         line = 21
-        onDemad = 22
+        onDemand = 22
 
     class inspect:
         lane = 1
@@ -2175,7 +2412,7 @@ class stopLane:
         actType = 15
         tripID = 16
         line = 17
-        onDemad = 18
+        onDemand = 18
 
     class inspectSelection:
         friendlyPos = 1
@@ -2193,12 +2430,12 @@ class stopLane:
         actType = 15
         tripID = 16
         line = 17
-        onDemad = 18
+        onDemand = 18
 
-# waypoint (over busStop/containerStop/chargingStation)
+# waypoint over bus stops
 
 
-class waypoint:
+class waypointBusStop:
     class create:
         durationEnable = 8
         duration = 9
@@ -2247,7 +2484,111 @@ class waypoint:
         line = 15
         speed = 16
 
-# waypoint (over parkings)
+# waypoint over container stops
+
+
+class waypointContainerStop:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 9
+        until = 10
+        extensionEnable = 10
+        extension = 11
+        triggered = 12
+        expected = 14
+        permitted = 14
+        parking = 15
+        actType = 17
+        tripID = 18
+        line = 19
+        speed = 20
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 2
+        until = 3
+        extensionEnable = 3
+        extension = 4
+        triggered = 5
+        expected = 7
+        permitted = 7
+        parking = 8
+        actType = 10
+        tripID = 11
+        line = 12
+        speed = 13
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        extensionEnable = 5
+        extension = 6
+        triggered = 7
+        expected = 9
+        permitted = 10
+        parking = 11
+        actType = 13
+        tripID = 14
+        line = 15
+        speed = 16
+
+# waypoint over charging stations
+
+
+class waypointChargingStation:
+    class create:
+        durationEnable = 8
+        duration = 9
+        untilEnable = 9
+        until = 10
+        extensionEnable = 10
+        extension = 11
+        triggered = 12
+        expected = 14
+        permitted = 14
+        parking = 15
+        actType = 17
+        tripID = 18
+        line = 19
+        speed = 20
+
+    class inspect:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 2
+        until = 3
+        extensionEnable = 3
+        extension = 4
+        triggered = 5
+        expected = 7
+        permitted = 7
+        parking = 8
+        actType = 10
+        tripID = 11
+        line = 12
+        speed = 13
+
+    class inspectSelection:
+        durationEnable = 1
+        duration = 2
+        untilEnable = 3
+        until = 4
+        extensionEnable = 5
+        extension = 6
+        triggered = 7
+        expected = 9
+        permitted = 10
+        parking = 11
+        actType = 13
+        tripID = 14
+        line = 15
+        speed = 16
+
+# waypoint over parkings
 
 
 class waypointParking:
@@ -2386,6 +2727,8 @@ class person:
         depart = 5
         parameters = 8
 
+    transformTo = 8
+
 
 class personFlow:
     class create:
@@ -2427,6 +2770,8 @@ class personFlow:
         terminateOption = 12
         spacingOption = 13
         parameters = 15
+
+    transformTo = 8
 
 # PersonPlans
 
@@ -2623,7 +2968,7 @@ class container:
 
     class inspect:
         id = 1
-        type = 2
+        typeButton = 2
         type = 3
         colorButton = 4
         color = 5
@@ -2636,6 +2981,8 @@ class container:
         color = 3
         depart = 4
         parameters = 7
+
+    transformTo = 8
 
 
 class containerFlow:
@@ -2675,6 +3022,8 @@ class containerFlow:
         terminateOption = 11
         spacingOption = 12
         parameters = 14
+
+    transformTo = 8
 
 # ContainerPlans
 
@@ -2785,7 +3134,7 @@ class containerStopEdge:
         actType = 6
 
 
-class containerStopBusStop:
+class containerStopContainerStop:
     class create:
         durationEnable = 8
         duration = 9

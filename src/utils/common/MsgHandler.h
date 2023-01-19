@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2003-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2003-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -103,7 +103,7 @@ public:
     static void removeRetrieverFromAllInstances(OutputDevice* out);
 
     ///@brief set up gettext stuff
-    static void setupI18n(const std::string& locale="");
+    static void setupI18n(const std::string& locale = "");
 
     ///@brief init output options
     static void initOutputOptions();
@@ -252,7 +252,7 @@ private:
 
     /** @brief Flag to enable or disable debug GL Functions
      *
-     * This value is used to show more internal information throught warning messages about certain operations
+     * This value is used to show more internal information through warning messages about certain operations
      */
     static bool myWriteDebugMessages;
     static bool myWriteDebugGLMessages;

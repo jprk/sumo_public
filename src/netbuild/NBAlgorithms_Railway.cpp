@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -34,6 +34,7 @@
 #include "NBEdgeCont.h"
 #include "NBNode.h"
 #include "NBEdge.h"
+#include "NBPTStop.h"
 #include "NBVehicle.h"
 #include "NBAlgorithms_Railway.h"
 
@@ -832,24 +833,24 @@ NBRailwayTopologyAnalyzer::addBidiEdgesBetweenSwitches(NBEdgeCont& ec) {
 std::set<NBPTLine*>
 NBRailwayTopologyAnalyzer::findBidiCandidates(NBPTLineCont& lc) {
     std::set<NBPTLine*>  result;
-    std::set<std::pair<NBPTStop*, NBPTStop*> > visited;
+    std::set<std::pair<std::shared_ptr<NBPTStop>, std::shared_ptr<NBPTStop> > > visited;
     for (const auto& item : lc.getLines()) {
-        const std::vector<NBPTStop*>& stops = item.second->getStops();
+        const std::vector<std::shared_ptr<NBPTStop> >& stops = item.second->getStops();
         if (stops.size() > 1) {
             for (auto it = stops.begin(); it + 1 != stops.end(); ++it) {
-                NBPTStop* fromStop = *it;
-                NBPTStop* toStop = *(it + 1);
+                std::shared_ptr<NBPTStop> fromStop = *it;
+                std::shared_ptr<NBPTStop> toStop = *(it + 1);
                 visited.insert({fromStop, toStop});
             }
         }
     }
     for (const auto& item : lc.getLines()) {
-        const std::vector<NBPTStop*>& stops = item.second->getStops();
+        const std::vector<std::shared_ptr<NBPTStop> >& stops = item.second->getStops();
         if (stops.size() > 1) {
             for (auto it = stops.begin(); it + 1 != stops.end(); ++it) {
-                NBPTStop* fromStop = *it;
-                NBPTStop* toStop = *(it + 1);
-                std::pair<NBPTStop*, NBPTStop*> reverseTrip({toStop, fromStop});
+                std::shared_ptr<NBPTStop> fromStop = *it;
+                std::shared_ptr<NBPTStop> toStop = *(it + 1);
+                std::pair<std::shared_ptr<NBPTStop>, std::shared_ptr<NBPTStop> > reverseTrip({toStop, fromStop});
                 if (visited.count(reverseTrip)) {
                     result.insert(item.second);
                     break;
@@ -1016,14 +1017,14 @@ NBRailwayTopologyAnalyzer::addBidiEdgesForStops(NBEdgeCont& ec, NBPTLineCont& lc
                                     }
                                 }
                             } else if (isStop && needBidi) {
-                                NBPTStop* fs = sc.get(fromStop);
-                                NBPTStop* fromReverse = sc.getReverseStop(fs, ec);
+                                std::shared_ptr<NBPTStop> fs = sc.get(fromStop);
+                                std::shared_ptr<NBPTStop> fromReverse = sc.getReverseStop(fs, ec);
                                 if (fromReverse) {
                                     sc.insert(fromReverse);
                                     fs->setBidiStop(fromReverse);
                                 }
-                                NBPTStop* ts = sc.get(toStop);
-                                NBPTStop* toReverse = sc.getReverseStop(ts, ec);
+                                std::shared_ptr<NBPTStop> ts = sc.get(toStop);
+                                std::shared_ptr<NBPTStop> toReverse = sc.getReverseStop(ts, ec);
                                 if (toReverse) {
                                     sc.insert(toReverse);
                                     ts->setBidiStop(toReverse);

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2008-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -210,7 +210,7 @@ PCLoaderOSM::loadIfSet(OptionsCont& oc, PCPolyContainer& toFill, PCTypeMap& tm) 
                     }
                     if (length > mergeRelationsThreshold) {
                         WRITE_WARNINGF(TL("Could not import polygon from relation '%' (name:% reason: found gap of %m to way '%')\n Total length of remaining ways: %m."),
-                                rel->id, e->name, minDist, minEdge->id, length);
+                                       rel->id, e->name, minDist, minEdge->id, length);
                         ok = false;
                     }
                     break;

@@ -1,5 +1,5 @@
-Eclipse SUMO sumo Version v1_14_1+1544-909a280
- Copyright (C) 2001-2022 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO sumo Version v1_15_0+1315-6cce7c5914f
+ Copyright (C) 2001-2023 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 A microscopic, multi-modal traffic simulation.
 
 Usage: sumo [OPTION]*
@@ -105,6 +105,8 @@ Output Options:
                                         Amitran format
   --summary-output FILE                Save aggregated vehicle departure info
                                         into FILE
+  --summary-output.period TIME         Save summary-output with the given
+                                        period
   --person-summary-output FILE         Save aggregated person counts into FILE
   --tripinfo-output FILE               Save single vehicle trip info into FILE
   --tripinfo-output.write-unfinished   Write tripinfo output for vehicles which
@@ -152,6 +154,10 @@ Output Options:
   --stop-output.write-unfinished       Write stop output for stops which have
                                         not ended at simulation end
   --collision-output FILE              Write collision information into FILE
+  --edgedata-output FILE               Write aggregated traffic statistics for
+                                        all edges into FILE
+  --lanedata-output FILE               Write aggregated traffic statistics for
+                                        all lanes into FILE
   --statistic-output FILE              Write overall statistics into FILE
   --save-state.times STR[]             Use TIME[] as times at which a network
                                         state written
@@ -266,7 +272,7 @@ Processing Options:
   --tls.all-off                        Switches off all traffic lights.
   --tls.actuated.show-detectors        Sets default visibility for actuation
                                         detectors
-  --tls.actuated.jam-threshold FLOAT   Sets default jam-treshold parameter for
+  --tls.actuated.jam-threshold FLOAT   Sets default jam-threshold parameter for
                                         all actuation detectors
   --tls.actuated.detector-length FLOAT  Sets default detector length parameter
                                         for all actuation detectors
@@ -312,7 +318,7 @@ Processing Options:
                                         decel capability that must be used to
                                         trigger a warning.
   --parking.maneuver                   Whether parking simulation includes
-                                        manoeuvering time and associated lane
+                                        maneuvering time and associated lane
                                         blocking
   --use-stop-ended                     Override stop until times with stop
                                         ended times when given
@@ -459,6 +465,7 @@ Report Options:
   --message-log FILE                   Writes all non-error messages to FILE
                                         (implies verbose)
   --error-log FILE                     Writes all warnings and errors to FILE
+  --language STR                       Language to use in messages
   --duration-log.disable               Disable performance reports for
                                         individual simulation steps
   -t, --duration-log.statistics        Enable statistics on vehicle trips
@@ -502,6 +509,18 @@ Communication Options:
   --device.btsender.explicit STR[]     Assign a 'btsender' device to named
                                         vehicles
   --device.btsender.deterministic      The 'btsender' devices are set
+                                        deterministic using a fraction of 1000
+  --person-device.btsender.probability FLOAT  The probability for a person to
+                                        have a 'btsender' device
+  --person-device.btsender.explicit STR[]  Assign a 'btsender' device to named
+                                        persons
+  --person-device.btsender.deterministic  The 'btsender' devices are set
+                                        deterministic using a fraction of 1000
+  --person-device.btreceiver.probability FLOAT  The probability for a person to
+                                        have a 'btreceiver' device
+  --person-device.btreceiver.explicit STR[]  Assign a 'btreceiver' device to
+                                        named persons
+  --person-device.btreceiver.deterministic  The 'btreceiver' devices are set
                                         deterministic using a fraction of 1000
 
 Battery Options:
@@ -825,6 +844,8 @@ GUI Only Options:
                                         position
   --tracker-interval TIME              The aggregation period for value tracker
                                         windows
+  --osg-view                           Start with an OpenSceneGraph view
+                                        instead of the regular 2D view
   --gui-testing                        Enable overlay for screen recognition
   --gui-testing-debug                  Enable output messages during
                                         GUI-Testing

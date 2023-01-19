@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -34,7 +34,7 @@
 
 
 // ===========================================================================
-// static defintions
+// static definitions
 // ===========================================================================
 const double GNEDemandElement::myPersonPlanArrivalPositionDiameter = SUMO_const_halfLaneWidth;
 
@@ -46,32 +46,30 @@ const double GNEDemandElement::myPersonPlanArrivalPositionDiameter = SUMO_const_
 // GNEDemandElement - methods
 // ---------------------------------------------------------------------------
 
-GNEDemandElement::GNEDemandElement(const std::string& id, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon *icon, const int options,
+GNEDemandElement::GNEDemandElement(const std::string& id, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon* icon, const int options,
                                    const std::vector<GNEJunction*>& junctionParents,
                                    const std::vector<GNEEdge*>& edgeParents,
                                    const std::vector<GNELane*>& laneParents,
                                    const std::vector<GNEAdditional*>& additionalParents,
                                    const std::vector<GNEDemandElement*>& demandElementParents,
                                    const std::vector<GNEGenericData*>& genericDataParents) :
-    GUIGlObject(type, id, icon),
+    GNEPathManager::PathElement(type, id, icon, options),
     GNEHierarchicalElement(net, tag, junctionParents, edgeParents, laneParents, additionalParents, demandElementParents, genericDataParents),
-    GNEPathManager::PathElement(this, options),
     myStackedLabelNumber(0) {
     // check if is template
     myIsTemplate = (id == "");
 }
 
 
-GNEDemandElement::GNEDemandElement(GNEDemandElement* demandElementParent, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon *icon, const int options,
+GNEDemandElement::GNEDemandElement(GNEDemandElement* demandElementParent, GNENet* net, GUIGlObjectType type, SumoXMLTag tag, FXIcon* icon, const int options,
                                    const std::vector<GNEJunction*>& junctionParents,
                                    const std::vector<GNEEdge*>& edgeParents,
                                    const std::vector<GNELane*>& laneParents,
                                    const std::vector<GNEAdditional*>& additionalParents,
                                    const std::vector<GNEDemandElement*>& demandElementParents,
                                    const std::vector<GNEGenericData*>& genericDataParents) :
-    GUIGlObject(type, demandElementParent->getID(), icon),
+    GNEPathManager::PathElement(type, demandElementParent->getID(), icon, options),
     GNEHierarchicalElement(net, tag, junctionParents, edgeParents, laneParents, additionalParents, demandElementParents, genericDataParents),
-    GNEPathManager::PathElement(this, options),
     myStackedLabelNumber(0) {
 }
 
@@ -130,22 +128,6 @@ GNEDemandElement::getNextChildDemandElement(const GNEDemandElement* demandElemen
     } else {
         return *(it + 1);
     }
-}
-
-
-std::vector<GNEEdge*>
-GNEDemandElement::getViaEdges() const {
-    std::vector<GNEEdge*> middleEdges;
-    // there are only middle edges if there is more than two edges
-    if (getParentEdges().size() > 2) {
-        // reserve middleEdges
-        middleEdges.reserve(getParentEdges().size() - 2);
-        // iterate over second and previous last parent edge
-        for (auto i = (getParentEdges().begin() + 1); i != (getParentEdges().end() - 1); i++) {
-            middleEdges.push_back(*i);
-        }
-    }
-    return middleEdges;
 }
 
 
@@ -223,7 +205,7 @@ GNEDemandElement::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
 }
 
 
-bool 
+bool
 GNEDemandElement::isGLObjectLocked() {
     if (myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand()) {
         return myNet->getViewNet()->getLockManager().isObjectLocked(getType(), isAttributeCarrierSelected());
@@ -239,7 +221,7 @@ GNEDemandElement::markAsFrontElement() {
 }
 
 
-void 
+void
 GNEDemandElement::deleteGLObject() {
     // we need an special checks due hierarchies
     if (myTagProperty.isPersonPlan() || myTagProperty.isContainerPlan()) {
@@ -260,7 +242,7 @@ GNEDemandElement::deleteGLObject() {
 }
 
 
-void 
+void
 GNEDemandElement::selectGLObject() {
     if (isAttributeCarrierSelected()) {
         unselectAttributeCarrier();
@@ -429,34 +411,22 @@ GNEDemandElement::getBeginPosition(const double pedestrianDepartPos) const {
 
 std::vector<GNEDemandElement*>
 GNEDemandElement::getInvalidStops() const {
-    // get stops
-    std::vector<GNEDemandElement*> stops;
-    for (const auto& stop : getChildDemandElements()) {
-        if (stop->getTagProperty().getTag() == SUMO_TAG_STOP_LANE) {
-            stops.push_back(stop);
-        }
-    }
-    // check stops
-    if (stops.empty()) {
-        return stops;
-    } else {
-        // get sorted stops
-        std::vector<const GNEDemandElement*> sortedStops;
-        // continue depending of route
-        if (getTagProperty().getTag() == SUMO_TAG_ROUTE) {
-            sortedStops = getSortedStops(getParentEdges());
-        } else if (getChildDemandElements().front()->getTagProperty().getTag() == GNE_TAG_ROUTE_EMBEDDED) {
-            sortedStops = getSortedStops(getChildDemandElements().front()->getParentEdges());
-        }
-        // iterate over sortedStops
-        for (const auto& sortedStop : sortedStops) {
-            const auto it = std::find(stops.begin(), stops.end(), sortedStop);
-            if (it != stops.end()) {
-                stops.erase(it);
+    if (myTagProperty.isStop() || myTagProperty.isWaypoint()) {
+        // get stops
+        std::vector<GNEDemandElement*> invalidStops;
+        // get edge stop index
+        const auto edgeStopIndex = getEdgeStopIndex();
+        // take all stops/waypoints with index = -1
+        for (const auto& edgeStop : edgeStopIndex) {
+            if (edgeStop.stopIndex == -1) {
+                for (const auto& stop : edgeStop.stops) {
+                    invalidStops.push_back(stop);
+                }
             }
         }
-        // return stops not found in sortedStops
-        return stops;
+        return invalidStops;
+    } else {
+        return {};
     }
 }
 
@@ -547,7 +517,7 @@ GNEDemandElement::drawPersonPlanPartial(const bool drawPlan, const GUIVisualizat
     // get person parent
     const GNEDemandElement* personParent = getParentDemandElements().front();
     // check if draw person plan element can be drawn
-    if (drawPlan && myNet->getPathManager()->getPathDraw()->drawPathGeometry(dottedElement, lane, myTagProperty.getTag())) {
+    if ((personPlanColor.alpha() != 0) && drawPlan && myNet->getPathManager()->getPathDraw()->drawPathGeometry(dottedElement, lane, myTagProperty.getTag())) {
         // get inspected attribute carriers
         const auto& inspectedACs = myNet->getViewNet()->getInspectedAttributeCarriers();
         // get inspected person plan
@@ -686,7 +656,7 @@ GNEDemandElement::drawPersonPlanPartial(const bool drawPlan, const GUIVisualizat
     // get inspected and front flags
     const bool dottedElement = myNet->getViewNet()->isAttributeCarrierInspected(this) || (myNet->getViewNet()->getFrontAttributeCarrier() == this);
     // check if draw person plan elements can be drawn
-    if (drawPlan && myNet->getPathManager()->getPathDraw()->drawPathGeometry(false, fromLane, toLane, myTagProperty.getTag())) {
+    if ((personPlanColor.alpha() != 0) && drawPlan && myNet->getPathManager()->getPathDraw()->drawPathGeometry(false, fromLane, toLane, myTagProperty.getTag())) {
         // get inspected attribute carriers
         const auto& inspectedACs = myNet->getViewNet()->getInspectedAttributeCarriers();
         // get person parent
@@ -786,11 +756,11 @@ GNEDemandElement::isPersonPlanValid() const {
         if ((previousChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
             if (previousChild->getParentJunctions().back() != getParentJunctions().front()) {
                 return Problem::DISCONNECTED_PLAN;
-            } 
+            }
         } else if (previousEdge && (getParentJunctions().size() > 0)) {
             if (previousEdge->getToJunction() != getParentJunctions().front()) {
                 return Problem::DISCONNECTED_PLAN;
-            } 
+            }
         } else if (previousEdge != firstEdge) {
             return Problem::DISCONNECTED_PLAN;
         }
@@ -833,7 +803,7 @@ GNEDemandElement::isPersonPlanValid() const {
         } else if (lastEdge && (nextChild->getParentJunctions().size() > 0)) {
             if (lastEdge->getToJunction() != nextChild->getParentJunctions().front()) {
                 return Problem::DISCONNECTED_PLAN;
-            } 
+            }
         } else if (nextEdge != lastEdge) {
             return Problem::DISCONNECTED_PLAN;
         }
@@ -873,7 +843,7 @@ GNEDemandElement::getPersonPlanProblem() const {
         }
         // compare elements
         if ((previousChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
-            return ("Junction '" + previousChild->getParentJunctions().back()->getID() + 
+            return ("Junction '" + previousChild->getParentJunctions().back()->getID() +
                     "' is not consecutive with junction '" + getParentJunctions().front()->getID() + "'");
         } else if (previousEdge && (getParentJunctions().size() > 0)) {
             return ("edge '" + previousEdge->getID() + "' is not consecutive with junction '" + getParentJunctions().front()->getID() + "'");
@@ -909,7 +879,7 @@ GNEDemandElement::getPersonPlanProblem() const {
         }
         // compare elements
         if ((nextChild->getParentJunctions().size() > 0) && (getParentJunctions().size() > 0)) {
-            return ("Junction '" + nextChild->getParentJunctions().front()->getID() + 
+            return ("Junction '" + nextChild->getParentJunctions().front()->getID() +
                     "' is not consecutive with junction '" + getParentJunctions().back()->getID() + "'");
         } else if (nextEdge && (getParentJunctions().size() > 0)) {
             return ("edge '" + nextEdge->getID() + "' is not consecutive with junction '" + getParentJunctions().back()->getID() + "'");
@@ -939,6 +909,54 @@ GNEDemandElement::drawJunctionLine(const GNEDemandElement* element) const {
     GLHelper::setColor(RGBColor::RED);
     // draw line
     GLHelper::drawBoxLine(posA, rot, len, 0.25);
+    // pop draw matrix
+    GLHelper::popMatrix();
+}
+
+
+void
+GNEDemandElement::drawStackLabel(const std::string& element, const Position& position, const double rotation, const double width, const double length, const double exaggeration) const {
+    // declare contour width
+    const double contourWidth = (0.05 * exaggeration);
+    // Push matrix
+    GLHelper::pushMatrix();
+    // Traslate to  top
+    glTranslated(position.x(), position.y(), GLO_ROUTE + getType() + 0.1 + GLO_PERSONFLOW);
+    glRotated(rotation, 0, 0, -1);
+    glTranslated((width * exaggeration * 0.5) + (0.35 * exaggeration), 0, 0);
+    // draw external box
+    GLHelper::setColor(RGBColor::GREY);
+    GLHelper::drawBoxLine(Position(), 0, (length * exaggeration), 0.3 * exaggeration);
+    // draw internal box
+    glTranslated(0, 0, 0.1);
+    GLHelper::setColor(RGBColor(0, 128, 0));
+    GLHelper::drawBoxLine(Position(0, -contourWidth), Position(0, -contourWidth), 0, (length * exaggeration) - (contourWidth * 2), (0.3 * exaggeration) - contourWidth);
+    // draw stack label
+    GLHelper::drawText(element + "s stacked: " + toString(myStackedLabelNumber), Position(0, length * exaggeration * -0.5), (.1 * exaggeration), (0.6 * exaggeration), RGBColor::WHITE, 90, 0, -1);
+    // pop draw matrix
+    GLHelper::popMatrix();
+}
+
+
+void
+GNEDemandElement::drawFlowLabel(const Position& position, const double rotation, const double width, const double length, const double exaggeration) const {
+    // declare contour width
+    const double contourWidth = (0.05 * exaggeration);
+    // Push matrix
+    GLHelper::pushMatrix();
+    // Traslate to  bot
+    glTranslated(position.x(), position.y(), GLO_ROUTE + getType() + 0.1 + GLO_PERSONFLOW);
+    glRotated(rotation, 0, 0, -1);
+    glTranslated(-1 * ((width * 0.5 * exaggeration) + (0.35 * exaggeration)), 0, 0);
+    // draw external box
+    GLHelper::setColor(RGBColor::GREY);
+    GLHelper::drawBoxLine(Position(), Position(), 0, (length * exaggeration), 0.3 * exaggeration);
+    // draw internal box
+    glTranslated(0, 0, 0.1);
+    GLHelper::setColor(RGBColor::CYAN);
+    GLHelper::drawBoxLine(Position(0, -contourWidth), Position(0, -contourWidth), 0, (length * exaggeration) - (contourWidth * 2), (0.3 * exaggeration) - contourWidth);
+    // draw stack label
+    GLHelper::drawText("Flow", Position(0, length * exaggeration * -0.5), (.1 * exaggeration), (0.6 * exaggeration), RGBColor::BLACK, 90, 0, -1);
     // pop draw matrix
     GLHelper::popMatrix();
 }
@@ -980,21 +998,6 @@ GNEDemandElement::replaceFirstParentEdge(const std::string& value) {
     parentEdges[0] = myNet->getAttributeCarriers()->retrieveEdge(value);
     // replace parent edges
     replaceParentElements(this, parentEdges);
-}
-
-
-void
-GNEDemandElement::replaceMiddleParentEdges(const std::string& value, const bool updateChildReferences) {
-    std::vector<GNEEdge*> middleEdges = parse<std::vector<GNEEdge*> >(getNet(), value);
-    middleEdges.insert(middleEdges.begin(), getParentEdges().front());
-    middleEdges.push_back(getParentEdges().back());
-    // check if we have to update references in all childs, or simply update parent edges vector
-    if (updateChildReferences) {
-        // replace parent edges
-        replaceParentElements(this, middleEdges);
-    } else {
-        myHierarchicalContainer.setParents<std::vector<GNEEdge*> >(middleEdges);
-    }
 }
 
 
@@ -1042,57 +1045,102 @@ GNEDemandElement::checkChildDemandElementRestriction() const {
 }
 
 
-GNEDemandElement::SortedStops::SortedStops(GNEEdge* edge_) :
-    edge(edge_) {
-}
-
-
-void
-GNEDemandElement::SortedStops::addStop(const GNEDemandElement* stop) {
-    // create first pair
-    auto posIndexPair = std::make_pair(stop->getAttributeDouble(SUMO_ATTR_ENDPOS), stop->getAttributeDouble(SUMO_ATTR_INDEX));
-    myStops.push_back(std::make_pair(posIndexPair, stop));
-    // sort stops
-    std::sort(myStops.begin(), myStops.end());
-}
-
-
-std::vector<const GNEDemandElement*>
-GNEDemandElement::getSortedStops(const std::vector<GNEEdge*>& edges) const {
-    std::vector<GNEDemandElement*> stops;
-    // get stops
-    for (const auto& stop : getChildDemandElements()) {
-        if (stop->getTagProperty().isStop()) {
-            stops.push_back(stop);
+std::vector<GNEDemandElement::EdgeStopIndex>
+GNEDemandElement::getEdgeStopIndex() const {
+    std::vector<GNEDemandElement::EdgeStopIndex> edgeStopIndex;
+    // first check that this stop has parent
+    if (getParentDemandElements().size() > 0) {
+        // get path edges depending of parent
+        std::vector<GNEEdge*> pathEdges;
+        // get parent demand element
+        const auto parent = getParentDemandElements().front();
+        // continue depending of parent
+        if (parent->getTagProperty().hasAttribute(SUMO_ATTR_EDGES)) {
+            pathEdges = parent->getParentEdges();
+        } else if (parent->getTagProperty().hasAttribute(SUMO_ATTR_ROUTE)) {
+            // get route edges
+            if (parent->getParentDemandElements().size() > 1) {
+                pathEdges = parent->getParentDemandElements().at(1)->getParentEdges();
+            }
+        } else if (parent->getTagProperty().hasEmbeddedRoute()) {
+            // get embedded route edges
+            pathEdges = parent->getChildDemandElements().front()->getParentEdges();
+        } else {
+            // get last parent edge
+            const auto lastEdge = parent->getParentEdges().back();
+            bool stop = false;
+            const auto& pathElementSegments = myNet->getPathManager()->getPathElementSegments(parent);
+            // extract all edges from pathElement parent
+            for (auto it = pathElementSegments.begin(); (it != pathElementSegments.end()) && !stop; it++) {
+                if ((*it)->getLane()) {
+                    pathEdges.push_back((*it)->getLane()->getParentEdge());
+                    // stop if path correspond to last edge
+                    if (pathEdges.back() == lastEdge) {
+                        stop = true;
+                    }
+                }
+            }
         }
-    }
-    // create SortedStops
-    std::vector<SortedStops> sortedStops;
-    for (const auto& edge : edges) {
-        sortedStops.push_back(SortedStops(edge));
-    }
-    // iterate over all stops and insert it in sortedStops
-    for (const auto& stop : stops) {
-        bool stopLoop = false;
-        // iterate over sortedStops
-        for (auto it = sortedStops.begin(); (it != sortedStops.end()) && !stopLoop; it++) {
-            if ((stop->getParentAdditionals().size() > 0) && (stop->getParentAdditionals().front()->getParentLanes().front()->getParentEdge() == it->edge)) {
-                it->addStop(stop);
-                stopLoop = true;
-            } else if ((stop->getParentLanes().size() > 0) && (stop->getParentLanes().front()->getParentEdge() == it->edge)) {
-                it->addStop(stop);
-                stopLoop = true;
+        // get all parent's stops and waypoints sorted by position
+        for (const auto& demandElement : parent->getChildDemandElements()) {
+            if (demandElement->getTagProperty().isStop() || demandElement->getTagProperty().isWaypoint()) {
+                // get stop/waypoint edge
+                GNEEdge* edge = nullptr;
+                if (demandElement->getParentAdditionals().size() > 0) {
+                    edge = demandElement->getParentAdditionals().front()->getParentLanes().front()->getParentEdge();
+                } else {
+                    edge = demandElement->getParentLanes().front()->getParentEdge();
+                }
+                // check if add a new edgeStopIndex or update last
+                if ((edgeStopIndex.size() > 0) && (edgeStopIndex.back().edge == edge)) {
+                    edgeStopIndex.back().stops.push_back(demandElement);
+                } else {
+                    edgeStopIndex.push_back(EdgeStopIndex(edge, demandElement));
+                }
+            }
+        }
+        // declare index for current stop
+        int currentEdgeStopIndex = 0;
+        for (int i = 0; (i < (int)pathEdges.size()) && (currentEdgeStopIndex < (int)edgeStopIndex.size()); i++) {
+            // check if current edge stop index is in the path
+            if (edgeStopIndex[currentEdgeStopIndex].edge == pathEdges.at(i)) {
+                edgeStopIndex[currentEdgeStopIndex].stopIndex = i;
+                currentEdgeStopIndex++;
+            } else {
+                // check if edge exist in the rest of the path
+                bool next = false;
+                for (int j = (i + 1); j < (int)pathEdges.size(); j++) {
+                    if (edgeStopIndex[currentEdgeStopIndex].edge == pathEdges.at(j)) {
+                        next = true;
+                    }
+                }
+                if (!next) {
+                    // ignore current stops (because is out of path)
+                    currentEdgeStopIndex++;
+                }
             }
         }
     }
-    // finally return sorted stops
-    std::vector<const GNEDemandElement*> solution;
-    for (const auto& sortedStop : sortedStops) {
-        for (const auto& stop : sortedStop.myStops) {
-            solution.push_back(stop.second);
+    // sort stops by position
+    for (auto& edgeStop : edgeStopIndex) {
+        if (edgeStop.stops.size() > 1) {
+            // copy all stops to a map to sort it by endPos
+            std::map<double, std::vector<GNEDemandElement*> > sortedStops;
+            for (const auto& stop : edgeStop.stops) {
+                if (sortedStops.count(stop->getAttributeDouble(SUMO_ATTR_ENDPOS)) == 0) {
+                    sortedStops[stop->getAttributeDouble(SUMO_ATTR_ENDPOS)] = {stop};
+                } else {
+                    sortedStops[stop->getAttributeDouble(SUMO_ATTR_ENDPOS)].push_back(stop);
+                }
+            }
+            // update stops with sorted stops
+            edgeStop.stops.clear();
+            for (const auto& sortedStop : sortedStops) {
+                edgeStop.stops.insert(edgeStop.stops.end(), sortedStop.second.begin(), sortedStop.second.end());
+            }
         }
     }
-    return solution;
+    return edgeStopIndex;
 }
 
 

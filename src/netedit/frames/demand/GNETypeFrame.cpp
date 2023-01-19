@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -420,7 +420,7 @@ GNETypeFrame::VTypeDistributions::VTypeDistributions(GNETypeFrame* typeFramePare
 }
 
 
-GNETypeFrame::VTypeDistributions::~VTypeDistributions () {}
+GNETypeFrame::VTypeDistributions::~VTypeDistributions() {}
 
 
 GNETypeFrame*
@@ -460,7 +460,7 @@ GNETypeFrame::VTypeDistributions::onCmdOpenDialog(FXObject*, FXSelector, void*) 
 // GNETypeFrame - methods
 // ---------------------------------------------------------------------------
 
-GNETypeFrame::GNETypeFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNETypeFrame::GNETypeFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Types") {
 
     // create module for edit vehicle types (Create, copy, etc.)
@@ -508,7 +508,7 @@ GNETypeFrame::getTypeSelector() const {
 
 
 void
-GNETypeFrame::attributeUpdated() {
+GNETypeFrame::attributeUpdated(SumoXMLAttr /*attribute*/) {
     // after changing an attribute myTypeSelector, we need to update the list of typeSelector, because ID could be changed
     myTypeSelector->refreshTypeSelectorIDs();
     //... and typeEditor (due reset)
@@ -520,7 +520,7 @@ void
 GNETypeFrame::attributesEditorExtendedDialogOpened() {
     // open vehicle type dialog
     if (myTypeSelector->getCurrentType()) {
-        GNEVehicleTypeDialog(myTypeSelector->getCurrentType(), true);
+        GNEVehicleTypeDialog(myTypeSelector->getCurrentType(), true);  // NOSONAR, constructor returns after dialog has been closed
         // set myCurrentType as inspected element
         myTypeAttributesEditor->getFrameParent()->getViewNet()->setInspectedAttributeCarriers({myTypeSelector->getCurrentType()});
         // call "showAttributeEditorModule" to refresh attribute list

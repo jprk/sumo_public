@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -30,12 +30,14 @@
 #include <utils/gui/globjects/GUIPolygon.h>
 #include <utils/gui/globjects/GUIPointOfInterest.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
+#include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/div/GUIParameterTableWindow.h>
 #include <utils/gui/div/GUIGlobalSelection.h>
 #include <utils/gui/globjects/GUIShapeContainer.h>
 #include <utils/xml/XMLSubSys.h>
 #include <utils/common/StringUtils.h>
 #include <utils/common/RGBColor.h>
+#include <utils/iodevices/OutputDevice.h>
 #include <utils/gui/div/GLObjectValuePassConnector.h>
 #include <microsim/MSNet.h>
 #include <microsim/MSEdgeWeightsStorage.h>
@@ -429,6 +431,9 @@ GUINet::getPopUpMenu(GUIMainWindow& app,
     buildCenterPopupEntry(ret);
     buildShowParamsPopupEntry(ret);
     buildPositionCopyEntry(ret, app);
+    if (GeoConvHelper::getFinal().usingGeoProjection()) {
+        GUIDesigns::buildFXMenuCommand(ret, "Copy view geo-boundary to clipboard", nullptr, ret, MID_COPY_VIEW_GEOBOUNDARY);
+    }
     return ret;
 }
 
@@ -491,18 +496,18 @@ GUINet::getParameterWindow(GUIMainWindow& app,
                 */
         ret->mkItem("updates per second", true, new FunctionBinding<GUINet, double>(this, &GUINet::getUPS));
         ret->mkItem("avg. updates per second", true, new FunctionBinding<GUINet, double>(this, &GUINet::getMeanUPS));
-        if (OptionsCont::getOptions().getBool("duration-log.statistics")) {
-            ret->mkItem("avg. trip length [m]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgRouteLength));
-            ret->mkItem("avg. trip duration [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgDuration));
-            ret->mkItem("avg. trip waiting time [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWaitingTime));
-            ret->mkItem("avg. trip time loss [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgTimeLoss));
-            ret->mkItem("avg. trip depart delay [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgDepartDelay));
-            ret->mkItem("avg. trip speed [m/s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgTripSpeed));
-            if (myPersonControl != nullptr) {
-                ret->mkItem("avg. walk length [m]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkRouteLength));
-                ret->mkItem("avg. walk duration [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkDuration));
-                ret->mkItem("avg. walk time loss [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkTimeLoss));
-            }
+    }
+    if (OptionsCont::getOptions().isSet("tripinfo-output") || OptionsCont::getOptions().getBool("duration-log.statistics")) {
+        ret->mkItem("avg. trip length [m]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgRouteLength));
+        ret->mkItem("avg. trip duration [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgDuration));
+        ret->mkItem("avg. trip waiting time [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWaitingTime));
+        ret->mkItem("avg. trip time loss [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgTimeLoss));
+        ret->mkItem("avg. trip depart delay [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgDepartDelay));
+        ret->mkItem("avg. trip speed [m/s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgTripSpeed));
+        if (myPersonControl != nullptr) {
+            ret->mkItem("avg. walk length [m]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkRouteLength));
+            ret->mkItem("avg. walk duration [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkDuration));
+            ret->mkItem("avg. walk time loss [s]", true, new FunctionBinding<GUINet, double>(this, &GUINet::getAvgWalkTimeLoss));
         }
     }
     ret->mkItem("nodes [#]", false, (int)getJunctionIDs(false).size());
@@ -525,12 +530,6 @@ GUINet::drawGL(const GUIVisualizationSettings& /*s*/) const {
 Boundary
 GUINet::getCenteringBoundary() const {
     return getBoundary();
-}
-
-
-double
-GUINet::getExaggeration(const GUIVisualizationSettings& /*s*/) const {
-    return 1;
 }
 
 
@@ -578,6 +577,18 @@ GUINet::getEdgeData(const MSEdge* edge, const std::string& attr) {
         } else {
             return GUIVisualizationSettings::MISSING_DATA;
         }
+    } else {
+        return GUIVisualizationSettings::MISSING_DATA;
+    }
+}
+
+
+double
+GUINet::getMeanData(const MSLane* lane, const std::string& id, const std::string& attr) {
+    auto item = myDetectorControl->getMeanData().find(id);
+    if (item != myDetectorControl->getMeanData().end() && !item->second.empty()) {
+        SumoXMLAttr a = (SumoXMLAttr)SUMOXMLDefinitions::Attrs.get(attr);
+        return item->second.front()->getAttributeValue(lane, a, GUIVisualizationSettings::MISSING_DATA);
     } else {
         return GUIVisualizationSettings::MISSING_DATA;
     }
@@ -687,6 +698,29 @@ GUINet::getEdgeDataAttrs() const {
     return result;
 }
 
+
+std::vector<std::string>
+GUINet::getMeanDataIDs() const {
+    std::vector<std::string> result;
+
+    for (auto item : myDetectorControl->getMeanData()) {
+        result.push_back(item.first);
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
+std::vector<std::string>
+GUINet::getMeanDataAttrs(const std::string& meanDataID) const {
+    auto item = myDetectorControl->getMeanData().find(meanDataID);
+    if (item != myDetectorControl->getMeanData().end() && !item->second.empty()) {
+        return item->second.front()->getAttributeNames();
+    } else {
+        return std::vector<std::string>();
+    }
+}
+
+
 bool
 GUINet::isSelected(const MSTrafficLightLogic* tll) const {
     const auto it = myLogics2Wrapper.find(const_cast<MSTrafficLightLogic*>(tll));
@@ -713,6 +747,13 @@ GUINet::addHotkey(int key, Command* press, Command* release) {
     } catch (ProcessError&) { }
 }
 
+void
+GUINet::flushOutputsAtEnd() {
+    myDetectorControl->close(SIMSTEP);
+    OutputDevice::flushAll();
+    // update tracker windows
+    guiSimulationStep();
+}
 
 #ifdef HAVE_OSG
 void

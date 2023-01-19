@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2007-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2007-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -359,10 +359,10 @@ TraCIServer::TraCIServer(const SUMOTime begin, const int port, const int numClie
 
 
 TraCIServer::~TraCIServer() {
-    for (myCurrentSocket = mySockets.begin(); myCurrentSocket != mySockets.end(); ++myCurrentSocket) {
-        delete myCurrentSocket->second;
+    for (const auto& socket : mySockets) {
+        delete socket.second;
     }
-    cleanup();
+    // there is no point in calling cleanup() here, it does not free any pointers and will only modify members which get deleted anyway
 }
 
 
@@ -441,14 +441,7 @@ TraCIServer::checkClientOrdering() {
         std::cout << "  Socket " << myCurrentSocket->second->socket << ":" << std::endl;
 #endif
 //        bool clientUnordered = true;
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4127) // do not warn about constant conditional expression
-#endif
         while (true) {
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
             myInputStorage.reset();
             myCurrentSocket->second->socket->receiveExact(myInputStorage);
             int commandStart, commandLength;
@@ -776,26 +769,8 @@ TraCIServer::removeCurrentSocket() {
     std::cout << "       Removing socket " << myCurrentSocket->second->socket
               << " (order " << myCurrentSocket->first << ")" << std::endl;
 #endif
-
-    if (mySockets.size() == 1) {
-        // Last client has disconnected
-        delete myCurrentSocket->second->socket;
-        mySockets.clear();
-        myCurrentSocket = mySockets.end();
-        return myCurrentSocket;
-    }
-
-    const int currOrder = myCurrentSocket->first;
-    delete myCurrentSocket->second->socket;
-    myCurrentSocket++;
-    if (myCurrentSocket != mySockets.end()) {
-        const int nextOrder = myCurrentSocket->first;
-        mySockets.erase(currOrder);
-        myCurrentSocket = mySockets.find(nextOrder);
-    } else {
-        mySockets.erase(currOrder);
-        myCurrentSocket = mySockets.end();
-    }
+    delete myCurrentSocket->second;
+    myCurrentSocket = mySockets.erase(myCurrentSocket);
     return myCurrentSocket;
 }
 
@@ -1291,7 +1266,10 @@ TraCIServer::addObjectVariableSubscription(const int commandId, const bool hasCo
     const SUMOTime end = endTime == libsumo::INVALID_DOUBLE_VALUE || endTime > STEPS2TIME(SUMOTime_MAX) ? SUMOTime_MAX : TIME2STEPS(endTime);
     const std::string id = myInputStorage.readString();
     const int domain = hasContext ? myInputStorage.readUnsignedByte() : 0;
-    const double range = hasContext ? myInputStorage.readDouble() : 0.;
+    double range = hasContext ? myInputStorage.readDouble() : 0.;
+    if (commandId == libsumo::CMD_SUBSCRIBE_SIM_CONTEXT) {
+        range = std::numeric_limits<double>::max();
+    }
     const int num = myInputStorage.readUnsignedByte();
     std::vector<int> variables;
     std::vector<std::shared_ptr<tcpip::Storage> > parameters;

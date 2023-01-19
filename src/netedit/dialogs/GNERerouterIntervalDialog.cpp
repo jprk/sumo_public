@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,7 +17,6 @@
 ///
 // Dialog for edit rerouter intervals
 /****************************************************************************/
-#include <config.h>
 
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <utils/gui/div/GUIDesigns.h>
@@ -177,13 +176,15 @@ GNERerouterIntervalDialog::GNERerouterIntervalDialog(GNEAdditional* rerouterInte
     }
 
     // disable add routeProbReroute Button and change label if the rerouter has multiple edges (random routes can only work from one edge)
-    if (rerouterInterval->getParentAdditionals().at(0)->getChildEdges().size() > 1) {
+    // for whatever reason, sonar complains in the next line that parkingAreaRerouteLabel may leak, but fox does the cleanup
+    if (rerouterInterval->getParentAdditionals().at(0)->getChildEdges().size() > 1) {  // NOSONAR
         myAddRouteProbReroute->disable();
         routeProbRerouteLabel->setText(TL("Rerouter has more than one edge"));
     }
 
     // update tables
-    updateClosingLaneReroutesTable();
+    // for whatever reason, sonar complains in the next line that routeProbRerouteLabel may leak, but fox does the cleanup
+    updateClosingLaneReroutesTable();  // NOSONAR
     updateClosingReroutesTable();
     updateDestProbReroutesTable();
     updateRouteProbReroutesTable();

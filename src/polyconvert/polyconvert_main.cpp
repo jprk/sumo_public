@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2005-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -228,9 +228,8 @@ fillOptions() {
 
 int
 main(int argc, char** argv) {
-    MsgHandler::setupI18n();
     OptionsCont& oc = OptionsCont::getOptions();
-    oc.setApplicationDescription("Importer of polygons and POIs for the microscopic, multi-modal traffic simulation SUMO.");
+    oc.setApplicationDescription(TL("Importer of polygons and POIs for the microscopic, multi-modal traffic simulation SUMO."));
     oc.setApplicationName("polyconvert", "Eclipse SUMO polyconvert Version " VERSION_STRING);
     int ret = 0;
     try {
@@ -288,12 +287,12 @@ main(int argc, char** argv) {
             bool ok = true;
             // !!! no proper error handling
             Boundary offsets = GeomConvHelper::parseBoundaryReporting(
-                    oc.getString("prune.in-net.offsets"), "--prune.on-net.offsets", nullptr, ok, true, true);
+                                   oc.getString("prune.in-net.offsets"), "--prune.on-net.offsets", nullptr, ok, true, true);
             pruningBoundary.setOffsets(
-                                  pruningBoundary.xmin() - offsets.xmin(),
-                                  pruningBoundary.ymin() - offsets.ymin(),
-                                  pruningBoundary.xmax() + offsets.xmax(),
-                                  pruningBoundary.ymax() + offsets.ymax());
+                pruningBoundary.xmin() - offsets.xmin(),
+                pruningBoundary.ymin() - offsets.ymin(),
+                pruningBoundary.xmax() + offsets.xmax(),
+                pruningBoundary.ymax() + offsets.ymax());
             prune = true;
         }
         if (oc.isSet("prune.boundary")) {

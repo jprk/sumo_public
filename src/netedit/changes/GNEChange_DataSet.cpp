@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -44,7 +44,7 @@ GNEChange_DataSet::~GNEChange_DataSet() {
     assert(myDataSet);
     myDataSet->decRef("GNEChange_DataSet");
     if (myDataSet->unreferenced() &&
-        myDataSet->getNet()->getAttributeCarriers()->retrieveDataSet(myDataSet, false)) {
+            myDataSet->getNet()->getAttributeCarriers()->retrieveDataSet(myDataSet, false)) {
         // show extra information for tests
         WRITE_DEBUG("Deleting unreferenced " + myDataSet->getTagStr() + " '" + myDataSet->getID() + "'");
         // make sure that element isn't in net before removing
@@ -69,7 +69,7 @@ GNEChange_DataSet::undo() {
         myDataSet->getNet()->getAttributeCarriers()->insertDataSet(myDataSet);
     }
     // require always save elements
-    myDataSet->getNet()->requireSaveDataElements(true);
+    myDataSet->getNet()->getSavingStatus()->requireSaveDataElements();
 }
 
 
@@ -87,7 +87,7 @@ GNEChange_DataSet::redo() {
         myDataSet->getNet()->getAttributeCarriers()->deleteDataSet(myDataSet);
     }
     // require always save elements
-    myDataSet->getNet()->requireSaveDataElements(true);
+    myDataSet->getNet()->getSavingStatus()->requireSaveDataElements();
 }
 
 

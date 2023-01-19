@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -154,7 +154,7 @@ GNERouteHandler::buildRoute(const CommonXMLStructure::SumoBaseObject* /*sumoBase
     // check conditions
     if (!checkDuplicatedDemandElement(SUMO_TAG_ROUTE, id)) {
         writeError("There is another " + toString(SUMO_TAG_ROUTE) + " with the same ID='" + id + "'.");
-    } else {
+    } else if (edges.size() > 0) {
         // create GNERoute
         GNEDemandElement* route = new GNERoute(myNet, id, vClass, edges, color, repeat, cycleTime, routeParameters);
         if (myAllowUndoRedo) {
@@ -223,7 +223,7 @@ GNERouteHandler::buildEmbeddedRoute(const CommonXMLStructure::SumoBaseObject* su
 
 void
 GNERouteHandler::buildRouteDistribution(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const std::string& /*id*/) {
-    // unsuported
+    // unsupported
     writeError("NETEDIT doesn't support route distributions");
 }
 
@@ -303,12 +303,11 @@ GNERouteHandler::buildFlowOverRoute(const CommonXMLStructure::SumoBaseObject* /*
 
 
 void
-GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
-                           const std::string& fromEdgeID, const std::string& toEdgeID, const std::vector<std::string>& viaIDs) {
+GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const SUMOVehicleParameter& vehicleParameters,
+                           const std::string& fromEdgeID, const std::string& toEdgeID) {
     // parse edges
     const auto fromEdge = parseEdge(SUMO_TAG_TRIP, fromEdgeID);
     const auto toEdge = parseEdge(SUMO_TAG_TRIP, toEdgeID);
-    const auto via = parseEdges(SUMO_TAG_TRIP, viaIDs);
     // check if exist another vehicle with the same ID (note: Vehicles, Flows and Trips share namespace)
     if (fromEdge && toEdge && !isVehicleIdDuplicated(vehicleParameters.id)) {
         // obtain  vtypes
@@ -320,12 +319,12 @@ GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
         } else if (vehicleParameters.wasSet(VEHPARS_DEPARTSPEED_SET) && (vehicleParameters.departSpeedProcedure == DepartSpeedDefinition::GIVEN) && (vType->getAttributeDouble(SUMO_ATTR_MAXSPEED) < vehicleParameters.departSpeed)) {
             writeError("Invalid " + toString(SUMO_ATTR_DEPARTSPEED) + " used in " + toString(vehicleParameters.tag) + " '" + vehicleParameters.id + "'. " + toString(vehicleParameters.departSpeed) + " is greater than vType" + toString(SUMO_ATTR_MAXSPEED));
         } else {
-            // add "via" edges in vehicleParameters
-            for (const auto& viaEdge : via) {
-                vehicleParameters.via.push_back(viaEdge->getID());
+            // check if update via attribute
+            if (sumoBaseObject && sumoBaseObject->hasStringListAttribute(SUMO_ATTR_VIA)) {
+                vehicleParameters.via = sumoBaseObject->getStringListAttribute(SUMO_ATTR_VIA);
             }
             // create trip or flow using tripParameters
-            GNEDemandElement* trip = new GNEVehicle(SUMO_TAG_TRIP, myNet, vType, fromEdge, toEdge, via, vehicleParameters);
+            GNEDemandElement* trip = new GNEVehicle(SUMO_TAG_TRIP, myNet, vType, fromEdge, toEdge, vehicleParameters);
             if (myAllowUndoRedo) {
                 myNet->getViewNet()->getUndoList()->begin(trip->getTagProperty().getGUIIcon(), "add " + trip->getTagStr() + " '" + vehicleParameters.id + "'");
                 overwriteDemandElement();
@@ -339,9 +338,6 @@ GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
                 // add reference in all edges
                 fromEdge->addChildElement(trip);
                 toEdge->addChildElement(trip);
-                for (const auto& viaEdge : via) {
-                    viaEdge->addChildElement(trip);
-                }
             }
             // compute path
             trip->computePathElement();
@@ -351,8 +347,8 @@ GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
 
 
 void
-GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
-                           const std::string& fromJunctionID, const std::string& toJunctionID) {
+GNERouteHandler::buildTripJunctions(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
+                                    const std::string& fromJunctionID, const std::string& toJunctionID) {
     // parse junctions
     const auto fromJunction = parseJunction(SUMO_TAG_TRIP, fromJunctionID);
     const auto toJunction = parseJunction(SUMO_TAG_TRIP, toJunctionID);
@@ -390,12 +386,11 @@ GNERouteHandler::buildTrip(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
 }
 
 void
-GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
-                           const std::string& fromEdgeID, const std::string& toEdgeID, const std::vector<std::string>& viaIDs) {
+GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const SUMOVehicleParameter& vehicleParameters,
+                           const std::string& fromEdgeID, const std::string& toEdgeID) {
     // parse edges
     const auto fromEdge = parseEdge(SUMO_TAG_FLOW, fromEdgeID);
     const auto toEdge = parseEdge(SUMO_TAG_FLOW, toEdgeID);
-    const auto via = parseEdges(SUMO_TAG_FLOW, viaIDs);
     // check if exist another vehicle with the same ID (note: Vehicles, Flows and Trips share namespace)
     if (fromEdge && toEdge && !isVehicleIdDuplicated(vehicleParameters.id)) {
         // obtain  vtypes
@@ -407,12 +402,12 @@ GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
         } else if (vehicleParameters.wasSet(VEHPARS_DEPARTSPEED_SET) && (vehicleParameters.departSpeedProcedure == DepartSpeedDefinition::GIVEN) && (vType->getAttributeDouble(SUMO_ATTR_MAXSPEED) < vehicleParameters.departSpeed)) {
             writeError("Invalid " + toString(SUMO_ATTR_DEPARTSPEED) + " used in " + toString(vehicleParameters.tag) + " '" + vehicleParameters.id + "'. " + toString(vehicleParameters.departSpeed) + " is greater than vType" + toString(SUMO_ATTR_MAXSPEED));
         } else {
-            // add "via" edges in vehicleParameters
-            for (const auto& viaEdge : via) {
-                vehicleParameters.via.push_back(viaEdge->getID());
+            // check if update via attribute
+            if (sumoBaseObject && sumoBaseObject->hasStringListAttribute(SUMO_ATTR_VIA)) {
+                vehicleParameters.via = sumoBaseObject->getStringListAttribute(SUMO_ATTR_VIA);
             }
             // create trip or flow using tripParameters
-            GNEDemandElement* flow = new GNEVehicle(SUMO_TAG_FLOW, myNet, vType, fromEdge, toEdge, via, vehicleParameters);
+            GNEDemandElement* flow = new GNEVehicle(SUMO_TAG_FLOW, myNet, vType, fromEdge, toEdge, vehicleParameters);
             if (myAllowUndoRedo) {
                 myNet->getViewNet()->getUndoList()->begin(flow->getTagProperty().getGUIIcon(), "add " + flow->getTagStr() + " '" + vehicleParameters.id + "'");
                 overwriteDemandElement();
@@ -426,9 +421,6 @@ GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
                 // add reference in all edges
                 fromEdge->addChildElement(flow);
                 toEdge->addChildElement(flow);
-                for (const auto& viaEdge : via) {
-                    viaEdge->addChildElement(flow);
-                }
             }
             // compute path
             flow->computePathElement();
@@ -438,8 +430,8 @@ GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* /*sumoBaseO
 
 
 void
-GNERouteHandler::buildFlow(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
-                           const std::string& fromJunctionID, const std::string& toJunctionID) {
+GNERouteHandler::buildFlowJunctions(const CommonXMLStructure::SumoBaseObject* /*sumoBaseObject*/, const SUMOVehicleParameter& vehicleParameters,
+                                    const std::string& fromJunctionID, const std::string& toJunctionID) {
     // parse junctions
     const auto fromJunction = parseJunction(SUMO_TAG_TRIP, fromJunctionID);
     const auto toJunction = parseJunction(SUMO_TAG_TRIP, toJunctionID);
@@ -1502,7 +1494,7 @@ GNERouteHandler::transformToVehicle(GNEVehicle* originalVehicle, bool createEmbe
     const bool inspectAfterTransform = net->getViewNet()->isAttributeCarrierInspected(originalVehicle);
     // declare route handler
     GNERouteHandler routeHandler("", net, true, false);
-    // obtain vehicle parameters
+    // make a copy of the vehicle parameters
     SUMOVehicleParameter vehicleParameters = *originalVehicle;
     // obtain vClass
     const auto vClass = originalVehicle->getVClass();
@@ -1743,7 +1735,7 @@ GNERouteHandler::transformToTrip(GNEVehicle* originalVehicle) {
         // change tag in vehicle parameters
         vehicleParameters.tag = SUMO_TAG_TRIP;
         // create trip
-        routeHandler.buildTrip(nullptr, vehicleParameters, edges.front()->getID(), edges.back()->getID(), {});
+        routeHandler.buildTrip(nullptr, vehicleParameters, edges.front()->getID(), edges.back()->getID());
         // end undo-redo operation
         net->getViewNet()->getUndoList()->end();
         // check if inspect
@@ -1822,7 +1814,7 @@ GNERouteHandler::transformToFlow(GNEVehicle* originalVehicle) {
         // change tag in vehicle parameters
         vehicleParameters.tag = SUMO_TAG_FLOW;
         // create flow
-        routeHandler.buildFlow(nullptr, vehicleParameters, edges.front()->getID(), edges.back()->getID(), {});
+        routeHandler.buildFlow(nullptr, vehicleParameters, edges.front()->getID(), edges.back()->getID());
         // end undo-redo operation
         net->getViewNet()->getUndoList()->end();
         // check if inspect
@@ -2205,8 +2197,8 @@ GNERouteHandler::getPreviousPlanJunction(const bool /* person */, const CommonXM
 }
 
 
-bool 
-GNERouteHandler::checkDuplicatedDemandElement(const SumoXMLTag tag, const std::string &id) {
+bool
+GNERouteHandler::checkDuplicatedDemandElement(const SumoXMLTag tag, const std::string& id) {
     // retrieve demand element
     auto demandElement = myNet->getAttributeCarriers()->retrieveDemandElement(tag, id, false);
     // if demand exist, check if overwrite (delete)
@@ -2229,7 +2221,7 @@ GNERouteHandler::checkDuplicatedDemandElement(const SumoXMLTag tag, const std::s
 }
 
 
-void 
+void
 GNERouteHandler::overwriteDemandElement() {
     if (myDemandToOverwrite) {
         // remove element

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -47,7 +47,7 @@ class GUIGLObjectPopupMenu : public FXMenuPane {
     FXDECLARE(GUIGLObjectPopupMenu)
 
 public:
-    
+
     /// @name cursor dialog type
     enum class PopupType {
         ATTRIBUTES,
@@ -76,6 +76,9 @@ public:
     /// @brief Insert a sub-menu pane in this GUIGLObjectPopupMenu
     void insertMenuPaneChild(FXMenuPane* child);
 
+    // @brief remove popup menu from objects
+    void removePopupFromObject();
+
     /// @brief return the real owner of this popup
     GUISUMOAbstractView* getParentView();
 
@@ -101,6 +104,9 @@ public:
 
     /// @brief Called if the cursor geo-position shall be copied to clipboard
     long onCmdCopyCursorGeoPosition(FXObject*, FXSelector, void*);
+
+    /// @brief Called if the current geo-boundary shall be copied to clipboard
+    long onCmdCopyViewGeoBoundary(FXObject*, FXSelector, void*);
 
     /// @brief Called if the cursor geo-position shall be shown online
     long onCmdShowCursorGeoPositionOnline(FXObject*, FXSelector, void*);

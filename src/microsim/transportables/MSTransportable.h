@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -60,15 +60,15 @@ class MSTransportable : public SUMOTrafficObject {
 public:
     /// @name inherited from SUMOTrafficObject
     /// @{
-    bool isPerson() const {
+    inline bool isPerson() const {
         return myAmPerson;
     }
 
-    bool isContainer() const {
+    inline bool isContainer() const {
         return !myAmPerson;
     }
 
-    std::string getObjectType() {
+    inline std::string getObjectType() {
         return myAmPerson ? "Person" : "Container";
     }
 
@@ -76,7 +76,7 @@ public:
         return myNumericalID;
     }
 
-    bool isStopped() const {
+    inline bool isStopped() const {
         return getCurrentStageType() == MSStageType::WAITING;
     }
 

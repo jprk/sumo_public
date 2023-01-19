@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -252,6 +252,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::tags[] = {
     { "entrance",                       AGEN_TAG_ENTRANCE },
     { "parameters",                     AGEN_TAG_PARAM },
     // NETEDIT
+    { "edgeRelSingle",                  GNE_TAG_EDGEREL_SINGLE },
     { "internalLane",                   GNE_TAG_INTERNAL_LANE },
     { "poiLane",                        GNE_TAG_POILANE },
     { "poiGeo",                         GNE_TAG_POIGEO },
@@ -294,12 +295,6 @@ StringBijection<int>::Entry SUMOXMLDefinitions::tags[] = {
     { "stopContainer: edge",            GNE_TAG_STOPCONTAINER_EDGE },
     // root file
     { "rootFile",                       SUMO_TAG_ROOTFILE },
-    // SUMOConfig files
-    { "configuration",                  SUMO_TAG_CONFIGURATION },
-    { "net-file",                       SUMO_TAG_NETFILE },
-    { "additional-files",               SUMO_TAG_ADDITIONALFILES },
-    { "route-files",                    SUMO_TAG_ROUTEFILES },
-    { "data-files",                     SUMO_TAG_DATAFILES },
     // Last element
     { "",                               SUMO_TAG_NOTHING }  // -> must be the last one
 };
@@ -371,6 +366,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "vehicle",                SUMO_ATTR_VEHICLE },
     { "odometer",               SUMO_ATTR_ODOMETER },
     { "posLat",                 SUMO_ATTR_POSITION_LAT },
+    { "speedLat",               SUMO_ATTR_SPEED_LAT },
 
     // Edge
     { "id",                     SUMO_ATTR_ID },
@@ -490,7 +486,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "propulsionEfficiency",           SUMO_ATTR_PROPULSIONEFFICIENCY },
     { "recuperationEfficiency",         SUMO_ATTR_RECUPERATIONEFFICIENCY },
     { "recuperationEfficiencyByDecel",  SUMO_ATTR_RECUPERATIONEFFICIENCY_BY_DECELERATION },
-    { "stoppingTreshold",               SUMO_ATTR_STOPPINGTRESHOLD },
+    { "stoppingTreshold",               SUMO_ATTR_STOPPINGTHRESHOLD },
     // MSElecHybridExport
     { "overheadWireId",         SUMO_ATTR_OVERHEADWIREID },
     { "tractionSubstationId",   SUMO_ATTR_TRACTIONSUBSTATIONID },
@@ -767,6 +763,8 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "join",                   SUMO_ATTR_JOIN },
     { "intended",               SUMO_ATTR_INTENDED },
     { "onDemand",               SUMO_ATTR_ONDEMAND },
+    { "jump",                   SUMO_ATTR_JUMP },
+    { "collision",              SUMO_ATTR_COLLISION },
     { "value",                  SUMO_ATTR_VALUE },
     { "prohibitor",             SUMO_ATTR_PROHIBITOR },
     { "prohibited",             SUMO_ATTR_PROHIBITED },
@@ -940,6 +938,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "additional-files",   SUMO_ATTR_ADDITIONALFILES },
     { "route-files",        SUMO_ATTR_ROUTEFILES },
     { "data-files",         SUMO_ATTR_DATAFILES },
+    { "meandata-files",     SUMO_ATTR_MEANDATAFILES },
 
     // NETEDIT Attributes
     { "selected",                           GNE_ATTR_SELECTED },
@@ -963,6 +962,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "VTypeDist.",                         GNE_ATTR_VTYPE_DISTRIBUTION },
     { "poisson",                            GNE_ATTR_POISSON },
     { "stopIndex",                          GNE_ATTR_STOPINDEX },
+    { "pathStopIndex",                      GNE_ATTR_PATHSTOPINDEX },
 
     { "carriageLength",     SUMO_ATTR_CARRIAGE_LENGTH },
     { "locomotiveLength",   SUMO_ATTR_LOCOMOTIVE_LENGTH },
@@ -1014,6 +1014,7 @@ StringBijection<SumoXMLNodeType>::Entry SUMOXMLDefinitions::sumoNodeTypeValues[]
     {"priority",                    SumoXMLNodeType::PRIORITY},
     {"priority_stop",               SumoXMLNodeType::PRIORITY_STOP},
     {"right_before_left",           SumoXMLNodeType::RIGHT_BEFORE_LEFT},
+    {"left_before_right",           SumoXMLNodeType::LEFT_BEFORE_RIGHT},
     {"allway_stop",                 SumoXMLNodeType::ALLWAY_STOP},
     {"zipper",                      SumoXMLNodeType::ZIPPER},
     {"district",                    SumoXMLNodeType::DISTRICT},
@@ -1048,8 +1049,10 @@ StringBijection<ParkingType>::Entry SUMOXMLDefinitions::parkingTypeValues[] = {
 };
 
 StringBijection<RightOfWay>::Entry SUMOXMLDefinitions::rightOfWayValuesInitializer[] = {
-    {"edgePriority", RightOfWay::EDGEPRIORITY },
-    {"default",      RightOfWay::DEFAULT } // default (must be the last one)
+    {"edgePriority",  RightOfWay::EDGEPRIORITY }, // use only edge priority values
+    {"mixedPriority", RightOfWay::MIXEDPRIORITY }, // use the default behavior but encode this explicitly (only needed for overriding the NEMA fallback behavior)
+    {"allwayStop",    RightOfWay::ALLWAYSTOP }, // only used for setting the fall-back behavior of TLS-off
+    {"default",       RightOfWay::DEFAULT } // default (must be the last one)
 };
 
 StringBijection<FringeType>::Entry SUMOXMLDefinitions::fringeTypeValuesInitializer[] = {

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2022 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,7 +35,7 @@
 // GNEPersonFrame - methods
 // ---------------------------------------------------------------------------
 
-GNEPersonFrame::GNEPersonFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
+GNEPersonFrame::GNEPersonFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, "Persons"),
     myRouteHandler("", viewNet->getNet(), true, false),
     myPersonBaseObject(new CommonXMLStructure::SumoBaseObject(nullptr)) {
@@ -60,6 +60,9 @@ GNEPersonFrame::GNEPersonFrame(GNEViewParent *viewParent, GNEViewNet* viewNet) :
 
     // create GNEPathCreator Module
     myPathCreator = new GNEPathCreator(this);
+
+    // create legend label
+    myPathLegend = new GNEPathLegendModule(this);
 
     // limit path creator to pedestrians
     myPathCreator->setVClass(SVC_PEDESTRIAN);
@@ -183,12 +186,15 @@ GNEPersonFrame::tagSelected() {
                     }
                     // show edge path creator modul
                     myPathCreator->showPathCreatorModule(myPersonPlanTagSelector->getCurrentTemplateAC()->getTagProperty().getTag(), false, false);
+                    // show path legend
+                    myPathLegend->showPathLegendModule();
                 }
             } else {
                 // hide modules
                 myPersonPlanAttributes->hideAttributesCreatorModule();
                 myNeteditAttributes->hideNeteditAttributesModule();
                 myPathCreator->hidePathCreatorModule();
+                myPathLegend->hidePathLegendModule();
             }
         } else {
             // hide modules
@@ -197,6 +203,7 @@ GNEPersonFrame::tagSelected() {
             myPersonPlanAttributes->hideAttributesCreatorModule();
             myNeteditAttributes->hideNeteditAttributesModule();
             myPathCreator->hidePathCreatorModule();
+            myPathLegend->hidePathLegendModule();
         }
     } else {
         // hide all moduls if person isn't valid
@@ -206,6 +213,7 @@ GNEPersonFrame::tagSelected() {
         myPersonPlanAttributes->hideAttributesCreatorModule();
         myNeteditAttributes->hideNeteditAttributesModule();
         myPathCreator->hidePathCreatorModule();
+        myPathLegend->hidePathLegendModule();
     }
 }
 
@@ -235,6 +243,8 @@ GNEPersonFrame::demandElementSelected() {
             myNeteditAttributes->showNeteditAttributesModule(myPersonPlanTagSelector->getCurrentTemplateAC());
             // show edge path creator modul
             myPathCreator->showPathCreatorModule(myPersonPlanTagSelector->getCurrentTemplateAC()->getTagProperty().getTag(), false, false);
+            // show legend
+            myPathLegend->showPathLegendModule();
             // show warning if we have selected a vType oriented to containers or vehicles
             if (myTypeSelector->getCurrentDemandElement()->getVClass() == SVC_IGNORING) {
                 WRITE_WARNING(TL("VType with vClass == 'ignoring' is oriented to containers"));

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2022 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--gui-testing-debug-gl'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # force save additionals
 netedit.forceSaveAdditionals()
@@ -42,24 +42,22 @@ netedit.changeContainerPlan("tranship: edge->edge", False)
 
 # create route using two one
 netedit.leftClick(referencePosition, 274, 400)
+netedit.leftClick(referencePosition, 280, 60)
 
 # press enter to create route
 netedit.typeEnter()
 
-# go to container plan mode
+# go to containerStopContainerStop mode
 netedit.containerPlanMode()
 
 # select container
-netedit.leftClick(referencePosition, 80, 410)
+netedit.leftClick(referencePosition, 85, 412)
 
-# go to container plan mode
-netedit.changeContainerPlanMode("transport: edge->containerStop")
+# go to containerStopContainerStop mode
+netedit.changeContainerPlanMode("stopContainer: containerStop")
 
-# create transportEdgeContainerStop
-netedit.leftClick(referencePosition, 290, 20)
-
-# press enter to create route
-netedit.typeEnter()
+# create containerStopContainerStop
+netedit.leftClick(referencePosition, 170, 40)
 
 # Check undo redo
 netedit.undo(referencePosition, 2)
