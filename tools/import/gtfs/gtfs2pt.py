@@ -282,7 +282,7 @@ def map_stops(options, net, routes, rout):
                 route = routes[rid] = routeFixed
                 fixed.add(rid)
             p = typedNet.convertLonLat2XY(float(veh.x), float(veh.y))
-            if railType == "bus":
+            if railType in ("bus", "trolleybus"):
                 stopLength = options.bus_stop_length
             elif railType == "tram":
                 stopLength = options.tram_stop_length
@@ -305,9 +305,16 @@ def map_stops(options, net, routes, rout):
                     if stop not in stopDef:
                         stopDef.add(stop)
                         startPos = max(0, pos - stopLength)
-                        if railType == "bus":
+                        # TODO: Assume bus stop is equivalent to a trolleybus stop.
+                        if railType in ("bus", "trolleybus"):
+                            # It seems that for some networks the inner lanes are
+                            # the fist ones and for other networks the outer lanes are the
+                            # first ones ...
+                            # TODO: CHeck how "bus" and "trolleybus" work together.
+                            # TODO: A lane that allows "bus" shall probably also allow "trolleybus"
+                            # TODO: A separate allow for "trolleybus" is probably a nonsense
                             for rl in edge.getLanes():
-                                if rl.allows(railType):
+                                if rl.allows("bus") or rl.allows("trolleybus"):
                                     break
                             rout.write(u'    <busStop id="%s" lane="%s_%s" startPos="%.2f" endPos="%.2f"%s>\n%s' %
                                        (stop, origEdgeID, rl.getIndex(),
