@@ -139,7 +139,14 @@ GNEConsecutiveSelector::addLane(GNELane* lane) {
     // get mouse position
     const Position mousePos = myFrameParent->getViewNet()->snapToActiveGrid(myFrameParent->getViewNet()->getPositionInformation());
     // calculate lane offset
-    const double posOverLane = lane->getLaneShape().nearest_offset_to_point2D(mousePos);
+    double posOverLane = lane->getLaneShape().nearest_offset_to_point2D(mousePos);
+    // Lane offset is measured on a perpendicular lane and the computation may fail for mouse position near 
+    // the extremes od the lane shape.
+    if (posOverLane == GeomHelper::INVALID_OFFSET)
+    {
+        WRITE_WARNING(TL("Position offset could not be computed, position on lane set to zero."));
+        posOverLane = 0.0;
+    }
     // All checks ok, then add it in selected elements
     if (myLanePath.empty()) {
         myLanePath.push_back(std::make_pair(lane, posOverLane));
@@ -266,6 +273,11 @@ GNEConsecutiveSelector::drawTemporalConsecutiveLanePath(const GUIVisualizationSe
             }
             // adjust first and last shape
             shapes.front() = shapes.front().splitAt(myLanePath.front().second).second;
+            std::cout << "myLanePath: " << myLanePath.size()
+                << " elems, back(lane_id=" << myLanePath.back().first->getID() 
+                << ", name=" << myLanePath.back().first->getFullName()
+                << ").second=" << myLanePath.back().second
+                << std::endl;
             shapes.back() = shapes.back().splitAt(myLanePath.back().second).first;
         }
         // Add a draw matrix

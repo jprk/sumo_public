@@ -1538,12 +1538,18 @@ GNEAdditionalHandler::buildOverheadWire(const CommonXMLStructure::SumoBaseObject
         const auto tractionSubstation = myNet->getAttributeCarriers()->retrieveAdditional(SUMO_TAG_TRACTION_SUBSTATION, substationId, false);
         // check lanes
         if (lanes.size() > 0) {
+            // handle the case where neither endPos and friendlyPos have been specified
+            double modifiedEndPos = endPos;
+            if (endPos == INVALID_DOUBLE) {
+                // no endPos attribute in the overhead wire specificaion
+                modifiedEndPos = lanes.back()->getParentEdge()->getNBEdge()->getFinalLength();
+            }
             // calculate path
             if (!GNEAdditional::areLaneConsecutives(lanes)) {
                 writeError("Could not build " + toString(SUMO_TAG_OVERHEAD_WIRE_SECTION) + " with ID '" + id + "' in netedit; Lanes aren't consecutives.");
             } else if (!checkMultiLanePosition(
                            startPos, lanes.front()->getParentEdge()->getNBEdge()->getFinalLength(),
-                           endPos, lanes.back()->getParentEdge()->getNBEdge()->getFinalLength(), friendlyPos)) {
+                           modifiedEndPos, lanes.back()->getParentEdge()->getNBEdge()->getFinalLength(), friendlyPos)) {
                 writeErrorInvalidPosition(SUMO_TAG_OVERHEAD_WIRE_SECTION, id);
             } else if (tractionSubstation == nullptr) {
                 writeErrorInvalidParent(SUMO_TAG_OVERHEAD_WIRE_SECTION, SUMO_TAG_TRACTION_SUBSTATION);
