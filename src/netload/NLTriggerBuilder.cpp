@@ -233,9 +233,11 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
 
     MSTractionSubstation* substation = MSNet::getInstance()->findTractionSubstation(substationId);
     if (substation == nullptr) {
-        throw InvalidArgument("Traction substation '" + substationId + "' refereced by an <overheadWire> element '" + id + "' is not defined.");
+        throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
     } else if (substation->isAnySectionPreviouslyDefined()) {
-        throw InvalidArgument("Traction substation '" + substationId + "' refereced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
+        /// @todo if substation->isAnySectionPreviouslyDefined() && the old syntax of input xml is used, then error
+        WRITE_MESSAGE("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced more-times. This is allowed to enable constructing an overheadwire segment with not strictly consecutives lanes.");
+        /// throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
     }
 
     // process forbidden internal lanes
@@ -245,6 +247,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         MSLane* lane = MSLane::dictionary(laneID);
         if (lane != nullptr) {
             substation->addForbiddenLane(lane);
+            /// @todo: if isAnySectionPreviouslyDefined(), there could be a overheadwire segment over a newly added forbiddenInnerLane. Such the segment should be deleted.
         }
         else {
             throw InvalidArgument("Unknown forbidden lane '" + laneID + "' for <overheadWire> element '" + id + "' (traction substation '" + substationId + "')lk.");
@@ -269,12 +272,14 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     else {
         // New style overhead wire segment definition.
         // The connection points for the substation are listed using voltageSource="..." attribute
-        const std::vector<std::string>& constVoltageSources = attrs.get<std::vector<std::string>>(SUMO_ATTR_VOLTAGESOURCE, id.c_str(), ok);
+        const std::vector<std::string>& constVoltageSources = attrs.getOpt<std::vector<std::string>>(SUMO_ATTR_VOLTAGESOURCE, id.c_str(), ok);
         // @todo We need an editable version, is this an appropriate approach?
         std::vector<std::string> voltageSources(constVoltageSources);
-        if (!ok) {
+
+        // @todo if isAnySectionPreviouslyDefined(), then voltageSources can be empty or not defined
+        /*if (!ok) {
             throw InvalidArgument("The <overheadWire> element '" + id + "' does not specify substation connection points (voltageSource=\"...\" missing).");
-        }
+        }*/
         const bool friendlyPos = attrs.getOpt<bool>(SUMO_ATTR_FRIENDLY_POS, id.c_str(), ok, false);
         // Below we will need to check for the last iteration.
         auto lastlit = laneIDs.end();
@@ -427,6 +432,8 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     // ----- *** adding segments into the electric circuit*** -----
 
     // setting nullptr for substation (a fragment from old version of adding segments into the circuit)
+    // During adding segments into the circuit, we assume that each segment with defined traction substation pointer is already added into the circuit and thus has a corresponding pointer to its nodes
+    // for simplification, we are setting pointers to traction substation to nullptr now, since segments have not been already added. (During addition, the pointer is defeined again.) 
     for (const std::string& segmentID : segmentIDs) {
         MSOverheadWire* ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(segmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
         ovrhdSegment->setTractionSubstation(nullptr);
@@ -474,6 +481,8 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     } else if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
         // check that the electric circuit makes sense
+        // @todo Circuit should be checked after loading of all additional files. Not at this place.
+        // @todo Since we allow not to define a voltageSource in <overheadWire> definition, the circuit checking should also verify that at least one voltage source is in the circuit.
         segments[0]->getCircuit()->checkCircuit(substationId);
 #else
         WRITE_WARNING(TL("Cannot check circuit, overhead circuit solver support (Eigen) not compiled in."));
