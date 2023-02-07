@@ -233,9 +233,9 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
 
     MSTractionSubstation* substation = MSNet::getInstance()->findTractionSubstation(substationId);
     if (substation == nullptr) {
-        throw InvalidArgument("Traction substation '" + substationId + "' refereced by an <overheadWire> element '" + id + "' is not defined.");
+        throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
     } else if (substation->isAnySectionPreviouslyDefined()) {
-        throw InvalidArgument("Traction substation '" + substationId + "' refereced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
+        throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
     }
 
     // process forbidden internal lanes
@@ -279,7 +279,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         // Below we will need to check for the last iteration.
         auto lastlit = laneIDs.end();
         --lastlit;
-        // Need to create segments over the given lanes and assing segment ids derived from lane ids.
+        // Need to create segments over the given lanes and assign segment ids derived from lane ids.
         for (auto lit = laneIDs.begin(); lit != laneIDs.end(); lit++)
         {
             // Derive the overhead wire segment ID from the lane ID
@@ -319,7 +319,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
             auto it = std::find(voltageSources.begin(), voltageSources.end(), *lit);
             if (it != voltageSources.end())
             {
-                // Yes, the current lane is references as a voltage source
+                // Yes, the current lane is referenced as a voltage source
                 isVoltageSource = true;
                 // Remove the lane from the list of lanes with substation connection, the voltage sources list has to be empty at the end
                 voltageSources.erase(it);
