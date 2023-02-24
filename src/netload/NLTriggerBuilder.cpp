@@ -235,7 +235,6 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     if (substation == nullptr) {
         throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
     } else if (substation->isAnySectionPreviouslyDefined()) {
-        throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
         /// @todo if substation->isAnySectionPreviouslyDefined() && the old syntax of input xml is used, then error
         WRITE_MESSAGE("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced more-times. This is allowed to enable constructing an overheadwire segment with not strictly consecutives lanes.");
         /// throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
