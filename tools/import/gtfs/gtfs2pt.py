@@ -156,15 +156,21 @@ def splitNet(options):
                         edgeTypes.append("highway.%s|railway.tram" % hwType)
                     else:
                         edgeTypes.append("highway." + hwType)
-            edgeType = ",".join(filter(lambda t: t in seenTypes, edgeTypes))
+            # TODO: This eliminates edge types like "cycleway.lane|highway.secondary" even if "highway.secondary"
+            # is present in edgeTypes
+            # edgeType = ",".join(filter(lambda t: t in seenTypes, edgeTypes))
+            filteredSeenTypes = [s for s in seenTypes for e in edgeTypes if e in s]
+            edgeType = ",".join(filteredSeenTypes)
             if edgeType:
                 if (os.path.exists(netPrefix + ".net.xml") and
                         os.path.getmtime(netPrefix + ".net.xml") > os.path.getmtime(numIdNet)):
                     print("Reusing old", netPrefix + ".net.xml")
                 else:
-                    subprocess.call(netcCall + ["-s", numIdNet, "-o", netPrefix + ".net.xml",
-                                                "--dlr-navteq-output", netPrefix,
-                                                "--dismiss-vclasses", "--keep-edges.by-type", edgeType])
+                    callList = netcCall + ["-s", numIdNet, "-o", netPrefix + ".net.xml",
+                                           "--dlr-navteq-output", netPrefix,
+                                           "--dismiss-vclasses", "--keep-edges.by-type", edgeType]
+                    print("Calling '%s'" % " ".join(callList))
+                    subprocess.call(callList)
                 typedNets[mode] = (inp, netPrefix)
     return edgeMap, typedNets
 
@@ -268,8 +274,10 @@ def map_stops(options, net, routes, rout):
                 for routeEdgeID in route[1:]:
                     path, _ = typedNet.getShortestPath(typedNet.getEdge(routeFixed[-1]), typedNet.getEdge(routeEdgeID))
                     if path is None or len(path) > options.fill_gaps + 2:
-                        error = "no path found" if path is None else "path too long (%s)" % len(path)
+                        pathSpec = "path between %s and %s" % (routeFixed[-1], routeEdgeID)
+                        error = "no %s found" % pathSpec if path is None else "%s too long (%s)" % (pathSpec, len(path))
                         print("Warning! Disconnected route '%s', %s. Keeping longer part." % (rid, error))
+                        print(routeFixed)
                         if len(routeFixed) > len(route) // 2:
                             break
                         routeFixed = [routeEdgeID]

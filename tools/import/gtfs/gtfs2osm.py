@@ -56,7 +56,8 @@ GTFS2OSM_MODES = {
     # '5':  'cableTram',
     # '6':  'aerialLift',
     # '7':  'funicular',
-    '11': 'trolleybus',
+    '11': 'trolleybus',  # used in Pilsen
+    '800': 'trolleybus',  # used in Prague, as per Extended GTFS Route Types
     # https://developers.google.com/transit/gtfs/reference/extended-route-types
     '100':  'train',        # DB
     '109':  'train',  # S-Bahn
