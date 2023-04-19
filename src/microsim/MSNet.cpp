@@ -73,6 +73,7 @@
 #include <microsim/devices/MSDevice_Tripinfo.h>
 #include <microsim/devices/MSDevice_BTsender.h>
 #include <microsim/devices/MSDevice_SSM.h>
+#include <microsim/devices/MSDevice_Battery.h>
 #include <microsim/devices/MSDevice_ElecHybrid.h>
 #include <microsim/devices/MSDevice_ToC.h>
 #include <microsim/devices/MSDevice_Taxi.h>
@@ -1005,9 +1006,51 @@ MSNet::writeOutput() {
 
     // battery dumps
     if (OptionsCont::getOptions().isSet("battery-output")) {
-        MSBatteryExport::write(OutputDevice::getDeviceByOption("battery-output"), myStep,
-                               oc.getInt("battery-output.precision"));
-    }
+
+        if (oc.getBool("battery-output.aggregated")) {
+            // build a xml file with aggregated device.battery output
+            MSBatteryExport::writeAggregated(OutputDevice::getDeviceByOption("battery-output"), myStep,
+                oc.getInt("battery-output.precision"));
+        }
+        else {
+            // build a separate xml file for each vehicle equipped with device.battery
+            // RICE_TODO: Does this have to be placed here in MSNet.cpp ?
+            std::string output_file_name = OptionsCont::getOptions().getString("battery-output");
+            std::string base_file_name;
+            std::string ext = ".xml";
+            std::size_t dot_pos = output_file_name.find_last_of('.');
+            if (dot_pos != std::string::npos)
+            {
+                // the original file name has an extension
+                base_file_name = output_file_name.substr(0, dot_pos);
+                ext = output_file_name.substr(dot_pos);
+            }
+            else
+            {
+                // no extension, we will add ".xml"
+                base_file_name = output_file_name;
+            }
+
+            MSVehicleControl& vc = MSNet::getInstance()->getVehicleControl();
+            for (MSVehicleControl::constVehIt it = vc.loadedVehBegin(); it != vc.loadedVehEnd(); ++it) {
+                const SUMOVehicle* veh = it->second;
+                if (!veh->isOnRoad()) {
+                    continue;
+                }
+                // does the vehicle have a battery device installed?
+                if (static_cast<MSDevice_ElecHybrid*>(veh->getDevice(typeid(MSDevice_ElecHybrid))) != nullptr) {
+                    std::string vehID = veh->getID();
+                    std::size_t dot_pos = output_file_name.find_last_of('.');
+                    std::string vehicle_file_name = base_file_name + +"_" + vehID + ext;
+                    OutputDevice& dev = OutputDevice::getDevice(vehicle_file_name);
+                    std::map<SumoXMLAttr, std::string> attrs;
+                    attrs[SUMO_ATTR_VEHICLE] = vehID;
+                    attrs[SUMO_ATTR_MAXIMUMBATTERYCAPACITY] = toString(dynamic_cast<MSDevice_Battery*>(veh->getDevice(typeid(MSDevice_Battery)))->getMaximumBatteryCapacity());
+                    dev.writeXMLHeader("elecHybrid-export", "", attrs);
+                    MSElecHybridExport::write(dev, veh, myStep, oc.getInt("elechybrid-output.precision"));
+                }
+            }
+        }
 
     // elecHybrid dumps
     if (OptionsCont::getOptions().isSet("elechybrid-output")) {
