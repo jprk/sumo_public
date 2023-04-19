@@ -26,13 +26,10 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--new'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # Change to create mode
 netedit.createEdgeMode()
-
-# remove lane
-netedit.changeDefaultBoolValue(netedit.attrs.edge.createLane.remove)
 
 # add lane
 netedit.changeDefaultBoolValue(netedit.attrs.edge.createLane.add)
@@ -54,8 +51,8 @@ netedit.redo(referencePosition, 1)
 # rebuild network
 netedit.rebuildNetwork()
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

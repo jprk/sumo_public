@@ -94,18 +94,18 @@ class TLS:
 
 class Phase:
 
-    def __init__(self, duration, state, minDur=-1, maxDur=-1, next=None, name=""):
+    def __init__(self, duration, state, minDur=-1, maxDur=-1, next=tuple(), name=""):
         self.duration = duration
         self.state = state
         self.minDur = minDur  # minimum duration (only for actuated tls)
         self.maxDur = maxDur  # maximum duration (only for actuated tls)
-        self.next = [] if next is None else next
+        self.next = next
         self.name = name
 
     def __repr__(self):
-        name = "" if self.name == "" else ", name='%s'" % self.name
-        next = "" if len(self.next) == 0 else ", next='%s'" % self.next
-        return ("Phase(duration=%s, state='%s', minDur=%s, maxDur=%s%s%s" %
+        name = (", name='%s'" % self.name) if self.name else ""
+        next = (", next='%s'" % str(self.next)) if self.next else ""
+        return ("Phase(duration=%s, state='%s', minDur=%s, maxDur=%s%s%s)" %
                 (self.duration, self.state, self.minDur, self.maxDur, name, next))
 
 
@@ -618,6 +618,32 @@ class Net:
 
         return self.getOptimalPath(fromEdge, toEdge, True, maxCost, vClass, reversalPenalty,
                                    includeFromToCost, withInternal, ignoreDirection, fromPos, toPos)
+
+    def getReachable(self, source, vclass=None, useIncoming=False):
+        if vclass is not None and not source.allows(vclass):
+            raise RuntimeError("'{}' does not allow {}".format(source.getID(), vclass))
+        fringe = [source]
+        found = set()
+        found.add(source)
+        while len(fringe) > 0:
+            new_fringe = []
+            for e in fringe:
+                if vclass == "pedestrian":
+                    cands = chain(chain(*e.getIncoming().values()), chain(*e.getOutgoing().values()))
+                else:
+                    cands = chain(*(e.getIncoming().values() if useIncoming else e.getOutgoing().values()))
+                # print("\n".join(map(str, list(cands))))
+                for conn in cands:
+                    if vclass is None or (
+                            conn.getFromLane().allows(vclass)
+                            and conn.getToLane().allows(vclass)):
+                        for reachable in [conn.getTo(), conn.getFrom()]:
+                            if reachable not in found:
+                                # print("added %s via %s" % (reachable, conn))
+                                found.add(reachable)
+                                new_fringe.append(reachable)
+            fringe = new_fringe
+        return found
 
 
 class NetReader(handler.ContentHandler):

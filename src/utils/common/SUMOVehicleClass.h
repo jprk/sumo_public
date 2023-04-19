@@ -259,7 +259,7 @@ public:
     /// @brief get permissions
     SVCPermissions getPermissions() const;
 
-    /// @brief get exceptions (used in NETEDIT)
+    /// @brief get exceptions (used in netedit)
     std::string getExceptions() const;
 
     /// @brief get offset
@@ -268,7 +268,7 @@ public:
     /// @brief update permissions
     void setPermissions(const SVCPermissions permissions);
 
-    /// @brief set exceptions (used in NETEDIT)
+    /// @brief set exceptions (used in netedit)
     void setExceptions(const std::string permissions);
 
     /// @brief set offset
@@ -338,7 +338,7 @@ extern bool canParseVehicleClasses(const std::string& classes);
  * @param[in] allowedS Definition which classes are allowed
  * @param[in] disallowedS Definition which classes are not allowed
  */
-extern SVCPermissions parseVehicleClasses(const std::string& allowedS, const std::string& disallowedS, double networkVersion = NETWORK_VERSION);
+extern SVCPermissions parseVehicleClasses(const std::string& allowedS, const std::string& disallowedS, const MMVersion& networkVersion = NETWORK_VERSION);
 
 /** @brief Encodes the given vector of allowed class into a bitset
  * Unlike the methods which parse a string it gives immediately a warning output on deprecated vehicle classes.
@@ -431,6 +431,7 @@ extern const std::string DEFAULT_PEDTYPE_ID;
 extern const std::string DEFAULT_BIKETYPE_ID;
 extern const std::string DEFAULT_CONTAINERTYPE_ID;
 extern const std::string DEFAULT_TAXITYPE_ID;
+extern const std::string DEFAULT_RAILTYPE_ID;
 extern const std::set<std::string> DEFAULT_VTYPES;
 
 extern const double DEFAULT_VEH_PROB; // !!! does this belong here?

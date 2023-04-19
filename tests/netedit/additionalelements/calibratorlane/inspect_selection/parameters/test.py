@@ -37,17 +37,14 @@ netedit.selectionInvert()
 # go to inspect mode
 netedit.inspectMode()
 
-# inspect calibrator
-netedit.leftClick(referencePosition, 300, 100)
+# inspect calibratorLane
+netedit.leftClick(referencePosition, 514, 284)
 
 # check parameters
 netedit.checkParameters(referencePosition, netedit.attrs.calibrator.inspectSelection.parameters, True)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

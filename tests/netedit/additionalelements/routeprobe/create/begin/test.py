@@ -38,23 +38,20 @@ netedit.changeElement("routeProbe")
 netedit.changeDefaultValue(netedit.attrs.routeProbe.create.begin, "-11")
 
 # try to create routeProbe
-netedit.leftClick(referencePosition, 250, 235)
+netedit.leftClick(referencePosition, 315, 253)
 
 # set valid default begin
 netedit.changeDefaultValue(netedit.attrs.routeProbe.create.begin, "10.5")
 
 # create routeProbe (camera will be moved)
-netedit.leftClick(referencePosition, 260, 235)
+netedit.leftClick(referencePosition, 325, 253)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

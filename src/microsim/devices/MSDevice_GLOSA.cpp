@@ -46,13 +46,13 @@ MSDevice_GLOSA::insertOptions(OptionsCont& oc) {
     insertDefaultAssignmentOptions("glosa", "GLOSA Device", oc);
 
     oc.doRegister("device.glosa.range", new Option_Float(100.0));
-    oc.addDescription("device.glosa.range", "GLOSA Device", "The communication range to the traffic light");
+    oc.addDescription("device.glosa.range", "GLOSA Device", TL("The communication range to the traffic light"));
 
     oc.doRegister("device.glosa.max-speedfactor", new Option_Float(1.1));
-    oc.addDescription("device.glosa.max-speedfactor", "GLOSA Device", "The maximum speed factor when approaching a green light");
+    oc.addDescription("device.glosa.max-speedfactor", "GLOSA Device", TL("The maximum speed factor when approaching a green light"));
 
     oc.doRegister("device.glosa.min-speed", new Option_Float(5.0));
-    oc.addDescription("device.glosa.min-speed", "GLOSA Device", "Minimum speed when coasting towards a red light");
+    oc.addDescription("device.glosa.min-speed", "GLOSA Device", TL("Minimum speed when coasting towards a red light"));
 }
 
 
@@ -294,7 +294,7 @@ MSDevice_GLOSA::adaptSpeed(double distance, double timeToJunction, double timeTo
         const double root_argument = a * d * ((2.0 * d * (s - (w * t))) - ((v - w) * (v - w)) + (a * ((d * (t * t)) + (2.0 * (s - (t * v))))));
         if (root_argument < 0) {
 #ifdef DEBUG_GLOSA
-            WRITE_WARNINGF(TL("GLOSA error 1 root_argument=% s=% t=% v=%"), root_argument, s, t, v);
+            WRITE_WARNINGF("GLOSA error 1 root_argument=% s=% t=% v=%", root_argument, s, t, v);
 #endif
             return;
         }
@@ -302,7 +302,7 @@ MSDevice_GLOSA::adaptSpeed(double distance, double timeToJunction, double timeTo
         const double y = t - (w - x) / d;
         if (!(x >= u && x <= w && y > 0 && y < t)) {
 #ifdef DEBUG_GLOSA
-            WRITE_WARNINGF(TL("GLOSA error 2 x=% y=% s=% t=% v=%"), x, y, s, t, v);
+            WRITE_WARNINGF("GLOSA error 2 x=% y=% s=% t=% v=%", x, y, s, t, v);
 #endif
             return;
         }

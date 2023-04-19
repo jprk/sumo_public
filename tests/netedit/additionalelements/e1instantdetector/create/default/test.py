@@ -35,17 +35,14 @@ netedit.additionalMode()
 netedit.changeElement("instantInductionLoop")
 
 # create E1 with default parameters
-netedit.leftClick(referencePosition, 200, 245)
+netedit.leftClick(referencePosition, 405, 257)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

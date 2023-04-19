@@ -75,7 +75,7 @@ copy_test_path:weights.via.xml
 copy_test_path:ptlines.xml
 copy_test_path:input_edgedata.xml
 copy_test_path:summary.xml
-copy_test_path:config.txt
+copy_test_path:config_file.txt
 copy_test_path:input.toolcfg
 copy_test_path:input_sel.txt
 copy_test_path:matsim_plans.xml
@@ -121,17 +121,18 @@ routesA:outA.rou.xml
 routesB:outB.rou.xml
 tripinfos:004/tripinfo_004.xml
 additional:out.add.xml
+additional2:out2.add.xml
 diff_nod:diff.nod.xml
 diff_edg:diff.edg.xml
 diff_con:diff.con.xml
 diff_tll:diff.tll.xml
 diff_xml:diff.xml
-created_sel:created.sel.txt
-deleted_sel:deleted.sel.txt
-changed_sel:changed.sel.txt
-created_shapes:created.shape.xml
-deleted_shapes:deleted.shape.xml
-changed_shapes:changed.shape.xml
+created_sel:diff.created.sel.txt
+deleted_sel:diff.deleted.sel.txt
+changed_sel:diff.changed.sel.txt
+created_shapes:diff.created.shape.xml
+deleted_shapes:diff.deleted.shape.xml
+changed_shapes:diff.changed.shape.xml
 omnet:omnet.xml
 shawn:shawn.xml
 dri:test.dri
@@ -168,7 +169,9 @@ xmlstats:stats.xml
 xmlstats0:000/stats.xml
 xmlstats1:001/stats.xml
 xmlstats1:1.stats.xml
+xmlstats1:stats1.xml
 xmlstats2:2.stats.xml
+xmlstats2:stats2.xml
 xmlstats3:3.stats.xml
 osmimport:*/osm.net.xml.gz
 osmstops:*/osm_stops.add.xml
@@ -235,6 +238,7 @@ output:Cache: hits
 output:function .* called at .*
 output:function .* finished after .*
 output:optional arguments:{REPLACE options:}
+output:succeeded after .*{REPLACE succeeded after TIME}
 dualog:uration:.*ms
 dualog:uration:.*s
 dualog:Real time factor
@@ -275,6 +279,7 @@ errors:column ([0-9]*) \(line [0-9]*\){REPLACE column \1}
 errors:Scipy version [0-9]+\.[0-9]+\.[0-9]+{REPLACE Scipy}
 errors:OptimizeWarning
 errors:(file:)?/.*/tests/sumo/{REPLACE sumo/tests/sumo/}
+errors:/.*/tests/../tools/{REPLACE sumo/tools/}
 errors:.*statistics.py:[0-9]+{REPLACE statistics.py:}
 errors:.*[/\\]([a-zA-Z0-9]*).py", line [0-9]+{REPLACE \1.py}
 errors:unknown url type{REPLACE [Errno 2] No such file or directory}
@@ -287,6 +292,9 @@ errors:remaining_args \.\.\.
 errors:FutureWarning:{LINES 2}
 errors:\^\^\^
 errors:something strange happend{REPLACE something strange happened}
+errors:LinAlgWarning: Ill-conditioned matrix
+errors:= opt.linprog(
+errors:return sp.linalg.solve
 omnet:<!-- generated on
 shawn:<!-- generated on
 gpsdat:r[0-9]
@@ -297,11 +305,17 @@ xmlstats0:<!-- generated on{[->]}-->
 xmlstats1:<!-- generated on{[->]}-->
 xmlstats2:<!-- generated on{[->]}-->
 xmlstats3:<!-- generated on{[->]}-->
+xmlstats:<performance
+xmlstats0:<performance
+xmlstats1:<performance
+xmlstats2:<performance
+xmlstats3:<performance
 edgedata:<!-- generated on{[->]}-->
 od:<!-- generated on{[->]}-->
 net:<!--{[->]}-->
 tripinfos:<!--{[->]}-->
 additional:<!-- generated on{[->]}-->
+additional2:<!-- generated on{[->]}-->
 osmimport:<!--{[->]}-->
 osmstops:<!--{[->]}-->
 osmlines:<!--{[->]}-->
@@ -355,6 +369,9 @@ output:0.0101
 xml:0.0001
 csv:0.0101
 dualog:0.0101
+xmlstats:0.0101
+aggregatebattery:0.0101
+additional:0.0001
 
 [unordered_text]
 errors:ERROR:SCHEMA

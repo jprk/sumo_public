@@ -149,13 +149,13 @@ GNESelectorFrame::ModificationMode::ModificationMode(GNESelectorFrame* selectorF
     MFXGroupBoxModule(selectorFrameParent, TL("Modification Mode")),
     myModificationModeType(Operation::ADD) {
     // Create all options buttons
-    myAddRadioButton = new FXRadioButton(getCollapsableFrame(), TL("add\t\tSelected objects are added to the previous selection"),
+    myAddRadioButton = new FXRadioButton(getCollapsableFrame(), (TL("add") + std::string("\t\t") + TL("Selected objects are added to the previous selection")).c_str(),
                                          this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
-    myRemoveRadioButton = new FXRadioButton(getCollapsableFrame(), TL("remove\t\tSelected objects are removed from the previous selection"),
+    myRemoveRadioButton = new FXRadioButton(getCollapsableFrame(), (TL("remove") + std::string("\t\t") + TL("Selected objects are removed from the previous selection")).c_str(),
                                             this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
-    myKeepRadioButton = new FXRadioButton(getCollapsableFrame(), TL("keep\t\tRestrict previous selection by the current selection"),
+    myKeepRadioButton = new FXRadioButton(getCollapsableFrame(), (TL("keep") + std::string("\t\t") + TL("Restrict previous selection by the current selection")).c_str(),
                                           this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
-    myReplaceRadioButton = new FXRadioButton(getCollapsableFrame(), TL("replace\t\tReplace previous selection by the current selection"),
+    myReplaceRadioButton = new FXRadioButton(getCollapsableFrame(), (TL("replace") + std::string("\t\t") + TL("Replace previous selection by the current selection")).c_str(),
             this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
     myAddRadioButton->setCheck(true);
 }
@@ -248,44 +248,31 @@ GNESelectorFrame::SelectionOperation::SelectionOperation(GNESelectorFrame* selec
     FXVerticalFrame* col2 = new FXVerticalFrame(selectionButtons, LAYOUT_FILL_X, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // right button column
 
     // Create "Clear List" Button
-    new FXButton(col1, "Clear\t\tDeselect all objects (hotkey: ESC)", nullptr, this, MID_CHOOSEN_CLEAR, GUIDesignButton);
+    new FXButton(col1, (TL("Clear") + std::string("\t\t") + TL("Deselect all objects (hotkey: ESC)")).c_str(), nullptr, this, MID_CHOOSEN_CLEAR, GUIDesignButton);
     // Create "Invert" Button
-    new FXButton(col2, "Invert\t\tInvert selection status of all objects", nullptr, this, MID_CHOOSEN_INVERT, GUIDesignButton);
+    new FXButton(col2, (TL("Invert") + std::string("\t\t") + TL("Invert selection status of all objects")).c_str(), nullptr, this, MID_CHOOSEN_INVERT, GUIDesignButton);
     // Create "Save" Button
-    new FXButton(col1, "Save\t\tSave ids of currently selected objects to a file.", nullptr, this, MID_CHOOSEN_SAVE, GUIDesignButton);
+    new FXButton(col1, (TL("Save") + std::string("\t\t") + TL("Save ids of currently selected objects to a file.")).c_str(), nullptr, this, MID_CHOOSEN_SAVE, GUIDesignButton);
     // Create "Load" Button
-    new FXButton(col2, "Load\t\tLoad ids from a file according to the current modification mode.", nullptr, this, MID_CHOOSEN_LOAD, GUIDesignButton);
+    new FXButton(col2, (TL("Load") + std::string("\t\t") + TL("Load ids from a file according to the current modification mode.")).c_str(), nullptr, this, MID_CHOOSEN_LOAD, GUIDesignButton);
     // Create "Delete" Button
-    new FXButton(col1, "Delete\t\tDelete all selected objects (hotkey: DEL)", nullptr, this, MID_CHOOSEN_DELETE, GUIDesignButton);
+    new FXButton(col1, (TL("Delete") + std::string("\t\t") + TL("Delete all selected objects (hotkey: DEL)")).c_str(), nullptr, this, MID_CHOOSEN_DELETE, GUIDesignButton);
     // Create "reduce" Button
-    new FXButton(col2, "Reduce\t\tReduce network to current selection.", nullptr, this, MID_CHOOSEN_REDUCE, GUIDesignButton);
+    new FXButton(col2, (TL("Reduce") + std::string("\t\t") + TL("Reduce network to current selection.")).c_str(), nullptr, this, MID_CHOOSEN_REDUCE, GUIDesignButton);
 }
 
 
 GNESelectorFrame::SelectionOperation::~SelectionOperation() {}
 
 
-long
-GNESelectorFrame::SelectionOperation::onCmdLoad(FXObject*, FXSelector, void*) {
-    // get the new file name
-    FXFileDialog opendialog(getCollapsableFrame(), "Open List of Selected Items");
-    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN));
-    opendialog.setSelectMode(SELECTFILE_EXISTING);
-    opendialog.setPatternList("Selection files (*.txt)\nAll files (*)");
-    if (gCurrentFolder.length() != 0) {
-        opendialog.setDirectory(gCurrentFolder);
-    }
-    if (opendialog.execute()) {
-        std::vector<GNEAttributeCarrier*> loadedACs;
-        gCurrentFolder = opendialog.getDirectory();
-        std::string file = opendialog.getFilename().text();
-        std::ostringstream msg;
-        std::ifstream strm(file.c_str());
-        // check if file can be opened
-        if (!strm.good()) {
-            WRITE_ERROR("Could not open '" + file + "'.");
-            return 0;
-        }
+void
+GNESelectorFrame::SelectionOperation::loadFromFile(const std::string& file) const {
+    std::vector<GNEAttributeCarrier*> loadedACs;
+    std::ifstream strm(file.c_str());
+    // check if file can be opened
+    if (!strm.good()) {
+        WRITE_ERRORF(TL("Could not open '%'."), file);
+    } else {
         // convert all glObjects into GNEAttributeCarriers
         std::map<const std::string, GNEAttributeCarrier*> GLFUllNameAC;
         const auto GLObjects = GUIGlObjectStorage::gIDStorage.getAllGLObjects();
@@ -304,6 +291,9 @@ GNESelectorFrame::SelectionOperation::onCmdLoad(FXObject*, FXSelector, void*) {
             // check if line isn't empty
             if (line.length() != 0) {
                 // obtain AC from GLFUllNameAC
+                if (StringUtils::startsWith(line, "node:")) {
+                    line = StringUtils::replace(line, "node:", "junction:");
+                }
                 GNEAttributeCarrier* AC = GLFUllNameAC.count(line) > 0 ? GLFUllNameAC.at(line) : nullptr;
                 // check if AC exist, is selectable, and isn't locked
                 if (AC && AC->getTagProperty().isSelectable() && !mySelectorFrameParent->getViewNet()->getLockManager().isObjectLocked(AC->getGUIGlObject()->getType(), false)) {
@@ -322,8 +312,25 @@ GNESelectorFrame::SelectionOperation::onCmdLoad(FXObject*, FXSelector, void*) {
             mySelectorFrameParent->handleIDs(loadedACs);
             mySelectorFrameParent->myViewNet->getUndoList()->end();
         }
+        mySelectorFrameParent->myViewNet->updateViewNet();
     }
-    mySelectorFrameParent->myViewNet->updateViewNet();
+}
+
+
+long
+GNESelectorFrame::SelectionOperation::onCmdLoad(FXObject*, FXSelector, void*) {
+    // get the new file name
+    FXFileDialog opendialog(getCollapsableFrame(), TL("Open List of Selected Items"));
+    opendialog.setIcon(GUIIconSubSys::getIcon(GUIIcon::OPEN));
+    opendialog.setSelectMode(SELECTFILE_EXISTING);
+    opendialog.setPatternList("Selection files (*.txt)\nAll files (*)");
+    if (gCurrentFolder.length() != 0) {
+        opendialog.setDirectory(gCurrentFolder);
+    }
+    if (opendialog.execute()) {
+        gCurrentFolder = opendialog.getDirectory();
+        loadFromFile(opendialog.getFilename().text());
+    }
     return 1;
 }
 
@@ -1118,7 +1125,7 @@ GNESelectorFrame::SelectionHierarchy::SelectionHierarchy(GNESelectorFrame* selec
     myCurrentSelectedParent(Selection::ALL),
     myCurrentSelectedChild(Selection::ALL) {
     // create label for parents
-    new FXLabel(getCollapsableFrame(), "Select parents", nullptr, GUIDesignLabelThickCenter);
+    new FXLabel(getCollapsableFrame(), "Select parents", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     // Create FXComboBox for parent comboBox
     myParentsComboBox = new FXComboBox(getCollapsableFrame(), GUIDesignComboBoxNCol, this, MID_GNE_SELECT, GUIDesignComboBox);
     // create parent buttons
@@ -1128,7 +1135,7 @@ GNESelectorFrame::SelectionHierarchy::SelectionHierarchy(GNESelectorFrame* selec
     // Create "unselect" Button
     myUnselectParentsButton = new FXButton(parentButtons, TL("Unselect"), GUIIconSubSys::getIcon(GUIIcon::UNSELECT), this, MID_GNE_SELECTORFRAME_PARENTS, GUIDesignButton);
     // create label for parents
-    new FXLabel(getCollapsableFrame(), "Select children", nullptr, GUIDesignLabelThickCenter);
+    new FXLabel(getCollapsableFrame(), "Select children", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     // Create FXComboBox for parent comboBox
     myChildrenComboBox = new FXComboBox(getCollapsableFrame(), GUIDesignComboBoxNCol, this, MID_GNE_SELECT, GUIDesignComboBox);
     // create children buttons
@@ -1735,8 +1742,14 @@ GNESelectorFrame::getContentFrame() const {
 
 
 GNESelectorFrame::ModificationMode*
-GNESelectorFrame::getModificationModeModule() const {
+GNESelectorFrame::getModificationModeModul() const {
     return myModificationMode;
+}
+
+
+GNESelectorFrame::SelectionOperation*
+GNESelectorFrame::getSelectionOperationModul() const {
+    return mySelectionOperation;
 }
 
 

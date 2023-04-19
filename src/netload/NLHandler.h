@@ -124,7 +124,7 @@ public:
         return myHaveSeenMesoEdgeType;
     }
 
-    double networkVersion() const {
+    MMVersion networkVersion() const {
         return myNetworkVersion;
     }
 
@@ -256,6 +256,8 @@ private:
     /// adds a connection
     void addConnection(const SUMOSAXAttributes& attrs);
 
+    void addConflict(const SUMOSAXAttributes& attrs);
+
     virtual void openWAUT(const SUMOSAXAttributes& attrs);
     void addWAUTSwitch(const SUMOSAXAttributes& attrs);
     void addWAUTJunction(const SUMOSAXAttributes& attrs);
@@ -368,13 +370,16 @@ protected:
     bool myHaveSeenMesoEdgeType;
 
     /// @brief the loaded network version
-    double myNetworkVersion;
+    MMVersion myNetworkVersion;
 
     /// @brief whether the location element was already loadee
     bool myNetIsLoaded;
 
     /// @brief rail signal for which constraints are being loaded
     MSRailSignal* myConstrainedSignal;
+
+    /// @brief the link element for the connection currently being parsed
+    MSLink* myCurrentLink = nullptr;
 
     /// @brief temporary data for building the junction graph after network parsing is finished
     typedef std::map<std::string, std::pair<std::string, std::string> > JunctionGraph;

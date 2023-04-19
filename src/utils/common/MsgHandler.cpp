@@ -14,6 +14,7 @@
 /// @file    MsgHandler.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Michael Behrisch
+/// @author  Mirko Barthauer
 /// @date    Tue, 17 Jun 2003
 ///
 // Retrieves messages about the process and gives them further to output
@@ -146,6 +147,20 @@ MsgHandler::beginProcessMsg(std::string msg, bool addType) {
 
 
 void
+MsgHandler::endProcessMsg2(bool success, long duration) {
+    if (success) {
+        if (duration > -1) {
+            endProcessMsg(TLF("done (%ms).", toString(duration)));
+        } else {
+            endProcessMsg(TL("done."));
+        }
+    } else {
+        endProcessMsg(TL("failed."));
+    }
+}
+
+
+void
 MsgHandler::endProcessMsg(std::string msg) {
     // inform all other receivers
     for (auto i : myRetrievers) {
@@ -159,9 +174,6 @@ MsgHandler::endProcessMsg(std::string msg) {
 
 void
 MsgHandler::clear(bool resetInformed) {
-    if (resetInformed) {
-        myWasInformed = false;
-    }
     if (myAggregationThreshold >= 0) {
         for (const auto& i : myAggregationCount) {
             if (i.second > myAggregationThreshold) {
@@ -177,6 +189,9 @@ MsgHandler::clear(bool resetInformed) {
         }
         myInitialMessages.clear();
         myWasInformed = wasInformed;
+    }
+    if (resetInformed) {
+        myWasInformed = false;
     }
 }
 
@@ -235,7 +250,7 @@ MsgHandler::setupI18n(const std::string& locale) {
 #endif
     }
     if (!setlocale(LC_MESSAGES, "")) {
-        WRITE_WARNING("Could not set locale to '" + locale + "'.");
+        WRITE_WARNINGF(TL("Could not set locale to '%'."), locale);
     }
     const char* sumoPath = getenv("SUMO_HOME");
     if (sumoPath == nullptr) {

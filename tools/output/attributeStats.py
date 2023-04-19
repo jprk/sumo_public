@@ -31,33 +31,43 @@ if 'SUMO_HOME' in os.environ:
     sys.path.append(os.path.join(tools))
     import sumolib
     from sumolib.xml import _open, parse_fast
-    from sumolib.miscutils import Statistics
-    from sumolib.statistics import setPrecision
+    from sumolib.miscutils import Statistics, humanReadableTime
+    from sumolib.statistics import setPrecision, identity
 else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 
 
 def get_options():
-    optParser = sumolib.options.ArgumentParser()
-    optParser.add_option("datafiles", nargs="+", help="XML files to analyze")
-    optParser.add_option("-v", "--verbose", action="store_true",
-                         default=False, help="Give more output")
-    optParser.add_option("-e", "--element", help="element to analyze")
-    optParser.add_option("-a", "--attribute", help="attribute to analyze")
-    optParser.add_option("-i", "--id-attribute", dest="idAttr",
-                         default="id", help="attribute to identify data elements")
-    optParser.add_option("-b", "--binwidth", type=float,
-                         default=50, help="binning width of result histogram")
-    optParser.add_option("--hist-output", help="output file for histogram (gnuplot compatible)")
-    optParser.add_option("-o", "--full-output", help="output file for full data dump")
-    optParser.add_option("-x", "--xml-output", help="output statistic to xml file")
-    optParser.add_option("--xml-output.flat", action="store_true", dest="xmlFlat",
-                         default=False, help="legacy xml output")
-    optParser.add_option("-q", "--fast", action="store_true",
-                         default=False, help="use fast parser (does not track missing data)")
-    optParser.add_option("-p", "--precision", type=int,
-                         default=2, help="Set output precision")
-    options = optParser.parse_args()
+    op = sumolib.options.ArgumentParser()
+    op.add_argument("datafiles", nargs="+", category="input", type=op.data_file,
+                    help="XML files to analyze")
+    op.add_argument("-v", "--verbose", action="store_true", default=False,
+                    help="Give more output")
+    op.add_argument("-e", "--element", category="input",
+                    help="element to analyze")
+    op.add_argument("-a", "--attribute", category="input",
+                    help="attribute to analyze")
+    op.add_argument("-i", "--id-attribute", dest="idAttr", default="id", category="input",
+                    help="attribute to identify data elements")
+    op.add_argument("-b", "--binwidth", type=float, default=50, category="processing",
+                    help="binning width of result histogram")
+    op.add_argument("--hist-output", category="output",
+                    help="output file for histogram (gnuplot compatible)")
+    op.add_argument("-o", "--full-output", category="inoutputput",
+                    help="output file for full data dump")
+    op.add_argument("-x", "--xml-output", category="output", type=op.file,
+                    help="output statistic to xml file")
+    op.add_argument("--xml-output.flat", action="store_true", dest="xmlFlat", default=False, category="output",
+                    help="legacy xml output")
+    op.add_argument("-q", "--fast", action="store_true", default=False, category="processing",
+                    help="use fast parser (does not track missing data)")
+    op.add_argument("-p", "--precision", type=int, default=2, category="output",
+                    help="Set output precision")
+    op.add_argument("--abs", dest="abs", default=False, action="store_true",
+                    help="include statistics on absolute values")
+    op.add_argument("-H", "--human-readable-time", dest="hrTime", default=False, action="store_true", category="output",
+                    help="interpret values as times and write them as h:m:s")
+    options = op.parse_args()
 
     if options.attribute:
         options.attribute = options.attribute.split(',')
@@ -85,6 +95,7 @@ def main():
     allStats = dict()
     missingAttr = defaultdict(set)
     invalidType = defaultdict(set)
+    formatter = humanReadableTime if options.hrTime else identity
 
     if options.fast:
         assert(len(options.element) == 1)
@@ -124,7 +135,7 @@ def main():
                 if key not in allStats:
                     allStats[key] = Statistics("%s %s" % (tag, attr),
                                                histogram=options.binwidth > 0, scale=options.binwidth,
-                                               printDev=True)
+                                               printDev=True, abs=options.abs)
 
                 stats = allStats[key]
                 stats.add(val, elementID)
@@ -136,7 +147,7 @@ def main():
 
     histStyle = 1 if len(allStats) == 1 else 0
     for key in sorted(allStats.keys()):
-        print(allStats[key].toString(options.precision, histStyle=histStyle))
+        print(allStats[key].toString(options.precision, histStyle=histStyle, fmt=formatter))
 
     if missingAttr:
         for attr in sorted(missingAttr.keys()):
@@ -170,7 +181,7 @@ def main():
             sumolib.writeXMLHeader(f, "$Id$", "attributeStats")  # noqa
             if options.xmlFlat:
                 for key in sorted(allStats.keys()):
-                    f.write(allStats[key].toXML(options.precision))
+                    f.write(allStats[key].toXML(options.precision, fmt=formatter))
 
             else:
                 elemKeys = defaultdict(list)
@@ -181,7 +192,7 @@ def main():
                     for key in sorted(elemKeys[elem]):
                         attr = key[1]
                         stats = allStats[key]
-                        f.write(stats.toXML(options.precision, tag=attr, indent=8, label=''))
+                        f.write(stats.toXML(options.precision, tag=attr, indent=8, label='', fmt=formatter))
                     f.write('    </%s>\n' % elem)
             f.write('</attributeStats>\n')
 

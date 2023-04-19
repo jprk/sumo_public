@@ -156,6 +156,14 @@ python tools/generateStationEdges.py rail.net.xml stops.xml
  netconvert -s rail.net.xml -e stops.access.edg.xml -n stops.access.nod.xml --ptstop-files stops.xml -o railForPersons.net.xml --ptstop-output stopsWithAccess.xml
 ```
 
+# generateRerouters.py
+
+This script generates rerouter for closing a given list of roads. It will automatically identify where to place the notification signs to facilitate rerouting.
+
+```
+python tools/generateRerouters.py -n <net-file> -o <output-file> -x CLOSED_EDGE1,CLOSED_EDGE2
+```
+
 # generateContinuousRerouters.py
 
 This script generates rerouter definitions for a continuously running simulation. Rerouters are placed ahead of each intersection with routes leading up to the next intersection and configurable turning ratios. Vehicles that enter the simulation will circulate continuously (unless hitting a dead-end). Example:
@@ -211,7 +219,7 @@ However it can also be customized or created from scratch for a non OSM network.
 
 A minimal description for a bus line looks like this:
 
-```
+```xml
 <additional>
     <ptLine id="0" line="123" type="bus">
         <busStop id="stopA"/>
@@ -226,7 +234,7 @@ A minimal description for a bus line looks like this:
 The used busStops must be defined in an additional file and passed with option **-s** when running the tool.
 The resulting bus definition may look like this:
 
-```
+```xml
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <vType id="bus" vClass="bus"/>
     <route id="bus_123:0"" edges="110450334#1 110450334#2 338412122 391493949 391493947 391493950#0 391493950#1 391493952#0 391493952#1 391493952#2 391493954#0 391493954#1 391493954#2 391493954#3" >

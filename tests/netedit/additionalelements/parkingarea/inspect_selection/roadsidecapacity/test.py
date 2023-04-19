@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect parking areas
-netedit.leftClick(referencePosition, 150, 290)
+netedit.leftClick(referencePosition, 314, 348)
 
 # Change parameter RoadSideCapacity with a non valid value (dummy)
 netedit.modifyAttribute(netedit.attrs.parkingArea.inspectSelection.roadSideCapacity,
@@ -57,11 +57,8 @@ netedit.modifyAttribute(netedit.attrs.parkingArea.inspectSelection.roadSideCapac
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

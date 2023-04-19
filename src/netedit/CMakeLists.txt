@@ -3,6 +3,7 @@ add_subdirectory(changes)
 add_subdirectory(dialogs)
 add_subdirectory(frames)
 add_subdirectory(elements)
+add_subdirectory(tools)
 
 # create set with all main netedit source code files
 set(netedit_SRCS
@@ -47,12 +48,12 @@ set_target_properties(netedit PROPERTIES OUTPUT_NAME netedit${BINARY_SUFFIX})
 set_target_properties(netedit PROPERTIES OUTPUT_NAME_DEBUG netedit${BINARY_SUFFIX}D)
 
 # link all previously compiled libraries to netedit. Every library was compiled in their own folder using own CMakeList.txt
-target_link_libraries(netedit utils_gui_cursors utils_gui_shortcuts utils_foxtools foreign_eulerspiral
+target_link_libraries(netedit gui_dialogs utils_gui_cursors utils_gui_shortcuts utils_foxtools foreign_eulerspiral
         netedit_frames_common netedit_frames_network netedit_frames_demand netedit_frames_data netedit_frames 
         netedit_elements netedit_elements_network netedit_elements_additional netedit_elements_demand netedit_elements_data 
-        netedit_changes utils_gui_div utils_gui_settings utils_gui_images netedit_dialogs 
-        netedit_dialogs_tools utils_gui_windows utils_gui_globjects utils_gui_tracker utils_foxtools 
-        utils_vehicle utils_emissions foreign_phemlight foreign_phemlight_V5 ${netconvertlibs} ${FOX_LIBRARY} ${GL2PS_LIBRARIES})
+        netedit_changes utils_gui_div utils_gui_settings utils_gui_images netedit_dialogs_tools netedit_tools netedit_dialogs 
+        utils_gui_windows utils_gui_globjects utils_gui_tracker utils_foxtools utils_vehicle utils_emissions
+        foreign_phemlight foreign_phemlight_V5 ${netconvertlibs} ${FOX_LIBRARY} ${GL2PS_LIBRARIES})
 
 # if we're compiling using Visual Studio, add extra options
 if (MSVC)
@@ -88,14 +89,14 @@ set_property(TARGET generate-templates-h PROPERTY FOLDER "CMake")
 
 # for generating dependences we need a SUMO binary compiled, then add sumo as dependency of generate-templates-h.
 # this will compile SUMO BEFORE generate templates.h
-add_dependencies(generate-templates-h sumo)
+add_dependencies(generate-templates-h sumo netgenerate)
 
 # create CMake custom command that generates templates.h file (OUTPUT) giving as argument python executable (PYTHON_EXECUTABLE),
-# the python script <SUMO>/tools/build/templates.py (<SUMO/src/netedit>/../../tools/build/templates.py) and the output folder
-# <buildFolder/src/netedit/Release|Debug>../
+# the python script <SUMO>/tools/build/templates.py (<SUMO/src/netedit>/../../tools/build/templates.py) and the sumo binary
+# the LSAN_OPTIONS are only relevant for the clang build but should not hurt others
 add_custom_command(OUTPUT templates.h
-                   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/build/templates.py ${CMAKE_CURRENT_BINARY_DIR}/..
-                   DEPENDS sumo
+                   COMMAND ${CMAKE_COMMAND} -E env LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/../../build/clang_memleak_suppressions.txt ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/build/templates.py $<TARGET_FILE:sumo> $<TARGET_FILE:netgenerate>
+                   DEPENDS sumo netgenerate
                    )
 				   
 # Finally mark the generated templates.h as a generated file

@@ -151,16 +151,13 @@ const SVCPermissions SVCAll = 2 * (int)SUMOVehicleClass_MAX - 1; // all relevant
 const SVCPermissions SVC_UNSPECIFIED = -1;
 
 const std::string DEFAULT_VTYPE_ID("DEFAULT_VEHTYPE");
-
 const std::string DEFAULT_PEDTYPE_ID("DEFAULT_PEDTYPE");
-
 const std::string DEFAULT_BIKETYPE_ID("DEFAULT_BIKETYPE");
-
 const std::string DEFAULT_CONTAINERTYPE_ID("DEFAULT_CONTAINERTYPE");
-
 const std::string DEFAULT_TAXITYPE_ID("DEFAULT_TAXITYPE");
+const std::string DEFAULT_RAILTYPE_ID("DEFAULT_RAILTYPE");
 
-const std::set<std::string> DEFAULT_VTYPES({DEFAULT_VTYPE_ID, DEFAULT_PEDTYPE_ID, DEFAULT_BIKETYPE_ID, DEFAULT_CONTAINERTYPE_ID, DEFAULT_TAXITYPE_ID});
+const std::set<std::string> DEFAULT_VTYPES({DEFAULT_VTYPE_ID, DEFAULT_PEDTYPE_ID, DEFAULT_BIKETYPE_ID, DEFAULT_CONTAINERTYPE_ID, DEFAULT_TAXITYPE_ID, DEFAULT_RAILTYPE_ID});
 
 const double DEFAULT_VEH_PROB(1.);
 
@@ -341,7 +338,7 @@ parseVehicleClasses(const std::string& allowedS) {
         while (sta.hasNext()) {
             const std::string s = sta.next();
             if (!SumoVehicleClassStrings.hasString(s)) {
-                WRITE_ERROR("Unknown vehicle class '" + s + "' encountered.");
+                WRITE_ERRORF(TL("Unknown vehicle class '%' encountered."), s);
             } else {
                 const SUMOVehicleClass vc = getVehicleClassID(s);
                 const std::string& realName = SumoVehicleClassStrings.getString(vc);
@@ -378,7 +375,7 @@ canParseVehicleClasses(const std::string& classes) {
 
 
 SVCPermissions
-parseVehicleClasses(const std::string& allowedS, const std::string& disallowedS, double networkVersion) {
+parseVehicleClasses(const std::string& allowedS, const std::string& disallowedS, const MMVersion& networkVersion) {
     if (allowedS.size() == 0 && disallowedS.size() == 0) {
         return SVCAll;
     } else if (allowedS.size() > 0 && disallowedS.size() > 0) {
@@ -387,7 +384,7 @@ parseVehicleClasses(const std::string& allowedS, const std::string& disallowedS,
     } else if (allowedS.size() > 0) {
         return parseVehicleClasses(allowedS);
     } else {
-        return invertPermissions(parseVehicleClasses(disallowedS) | (networkVersion < 1.3 ? SVC_RAIL_FAST : 0));
+        return invertPermissions(parseVehicleClasses(disallowedS) | (networkVersion < MMVersion(1, 3) ? SVC_RAIL_FAST : 0));
     }
 }
 
@@ -408,7 +405,7 @@ parseVehicleClasses(const std::vector<std::string>& allowedS) {
         const SUMOVehicleClass vc = getVehicleClassID(*i);
         const std::string& realName = SumoVehicleClassStrings.getString(vc);
         if (realName != *i) {
-            WRITE_WARNING("The vehicle class '" + (*i) + "' is deprecated, use '" + realName + "' instead.");
+            WRITE_WARNINGF(TL("The vehicle class '%' is deprecated, use '%' instead."), (*i), realName);
         }
         result |= getVehicleClassID(*i);
     }

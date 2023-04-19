@@ -30,6 +30,15 @@
 #include "sumo_icon16.xpm"
 #include "sumo_logo.xpm"
 
+#include "netgenerate.xpm"
+#include "netedit_icon64.xpm"
+#include "netedit_icon16.xpm"
+
+#include "netgenerate_grid.xpm"
+#include "netgenerate_spider.xpm"
+#include "netgenerate_randomgrid.xpm"
+#include "netgenerate_random.xpm"
+
 #include "empty.xpm"
 #include "newnet.xpm"
 #include "play.xpm"
@@ -80,7 +89,16 @@
 #include "locate_poi.xpm"
 #include "locate_poly.xpm"
 
-#include "tool_netdiff.xpm"
+#include "tool_python.xpm"
+#include "tool_emissions.xpm"
+#include "tool_citybrain.xpm"
+#include "tool_gtfs.xpm"
+#include "tool_vissim.xpm"
+#include "tool_visum.xpm"
+#include "tool_import.xpm"
+#include "tool_output.xpm"
+#include "tool_turndefs.xpm"
+#include "tool_xml.xpm"
 
 #include "green_container.xpm"
 #include "yellow_container.xpm"
@@ -139,8 +157,6 @@
 #include "undo.xpm"
 #include "redo.xpm"
 #include "undolist.xpm"
-#include "netedit_icon64.xpm"
-#include "netedit_icon16.xpm"
 #include "lock.xpm"
 #include "unlock.xpm"
 #include "lock_selected.xpm"
@@ -150,6 +166,7 @@
 #include "collapse.xpm"
 #include "uncollapse.xpm"
 #include "extend.xpm"
+#include "current.xpm"
 
 #include "arrowup.xpm"
 #include "arrowdown.xpm"
@@ -446,6 +463,7 @@
 #include "warning.xpm"
 #include "danger.xpm"
 #include "sum.xpm"
+#include "back.xpm"
 
 #include "grid.xpm"
 #include "grid1.xpm"
@@ -456,6 +474,15 @@
 #include "googlesat.xpm"
 #include "osm.xpm"
 
+#include "languages/de.xpm"
+#include "languages/es.xpm"
+#include "languages/fr.xpm"
+#include "languages/it.xpm"
+#include "languages/en.xpm"
+#include "languages/hu.xpm"
+#include "languages/tr.xpm"
+#include "languages/zh.xpm"
+#include "languages/zht.xpm"
 
 // ===========================================================================
 // static member variable definitions
@@ -472,6 +499,16 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::SUMO] = new FXXPMIcon(a, sumo_icon64_xpm);
     myIcons[GUIIcon::SUMO_MINI] = new FXXPMIcon(a, sumo_icon16_xpm);
     myIcons[GUIIcon::SUMO_LOGO] = new FXXPMIcon(a, sumo_logo_xpm);
+
+    myIcons[GUIIcon::NETGENERATE] = new FXXPMIcon(a, netgenerate_xpm);
+    myIcons[GUIIcon::NETEDIT] = new FXXPMIcon(a, netedit_icon64_xpm);
+    myIcons[GUIIcon::NETEDIT_MINI] = new FXXPMIcon(a, netedit_icon16_xpm);
+
+    myIcons[GUIIcon::NETGENERATE_GRID] = new FXXPMIcon(a, netgenerate_grid_xpm);
+    myIcons[GUIIcon::NETGENERATE_SPIDER] = new FXXPMIcon(a, netgenerate_spider_xpm);
+    myIcons[GUIIcon::NETGENERATE_RANDOMGRID] = new FXXPMIcon(a, netgenerate_randomgrid_xpm);
+    myIcons[GUIIcon::NETGENERATE_RANDOM] = new FXXPMIcon(a, netgenerate_random_xpm);
+
     myIcons[GUIIcon::EMPTY] = new FXXPMIcon(a, empty_xpm);
     myIcons[GUIIcon::NEW_NET] = new FXXPMIcon(a, newnet_xpm);
     myIcons[GUIIcon::RELOAD] = new FXXPMIcon(a, reload_xpm);
@@ -542,7 +579,16 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::LOCATEPOI] = new FXXPMIcon(a, locate_poi_xpm);
     myIcons[GUIIcon::LOCATEPOLY] = new FXXPMIcon(a, locate_poly_xpm);
 
-    myIcons[GUIIcon::TOOL_NETDIFF] = new FXXPMIcon(a, tool_netdiff_xpm);
+    myIcons[GUIIcon::TOOL_PYTHON] = new FXXPMIcon(a, tool_python_xpm);
+    myIcons[GUIIcon::TOOL_EMISSIONS] = new FXXPMIcon(a, tool_emissions_xpm);
+    myIcons[GUIIcon::TOOL_CITYBRAIN] = new FXXPMIcon(a, tool_citybrain_xpm);
+    myIcons[GUIIcon::TOOL_GTFS] = new FXXPMIcon(a, tool_gtfs_xpm);
+    myIcons[GUIIcon::TOOL_VISSIM] = new FXXPMIcon(a, tool_vissim_xpm);
+    myIcons[GUIIcon::TOOL_VISUM] = new FXXPMIcon(a, tool_visum_xpm);
+    myIcons[GUIIcon::TOOL_IMPORT] = new FXXPMIcon(a, tool_import_xpm);
+    myIcons[GUIIcon::TOOL_OUTPUT] = new FXXPMIcon(a, tool_output_xpm);
+    myIcons[GUIIcon::TOOL_TURNDEFS] = new FXXPMIcon(a, tool_turndefs_xpm);
+    myIcons[GUIIcon::TOOL_XML] = new FXXPMIcon(a, tool_xml_xpm);
 
     myIcons[GUIIcon::GREENCONTAINER] = new FXXPMIcon(a, green_container_xpm);
     myIcons[GUIIcon::GREENEDGE] = new FXXPMIcon(a, green_edge_xpm);
@@ -595,8 +641,6 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::UNDO] = new FXXPMIcon(a, undo_xpm);
     myIcons[GUIIcon::REDO] = new FXXPMIcon(a, redo_xpm);
     myIcons[GUIIcon::UNDOLIST] = new FXXPMIcon(a, undolist_xpm);
-    myIcons[GUIIcon::NETEDIT] = new FXXPMIcon(a, netedit_icon64_xpm);
-    myIcons[GUIIcon::NETEDIT_MINI] = new FXXPMIcon(a, netedit_icon16_xpm);
     myIcons[GUIIcon::LOCK] = new FXXPMIcon(a, lock_xpm);
     myIcons[GUIIcon::UNLOCK] = new FXXPMIcon(a, unlock_xpm);
     myIcons[GUIIcon::LOCK_SELECTED] = new FXXPMIcon(a, lockselected_xpm);
@@ -611,6 +655,7 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::COLLAPSE] = new FXXPMIcon(a, collapse_xpm);
     myIcons[GUIIcon::UNCOLLAPSE] = new FXXPMIcon(a, uncollapse_xpm);
     myIcons[GUIIcon::EXTEND] = new FXXPMIcon(a, extend_xpm);
+    myIcons[GUIIcon::CURRENT] = new FXXPMIcon(a, current_xpm);
 
     myIcons[GUIIcon::COMMONMODE_CHECKBOX_TOGGLEGRID] = new FXXPMIcon(a, checkbox_grid_xpm);
     myIcons[GUIIcon::COMMONMODE_CHECKBOX_TOGGLEDRAWJUNCTIONSHAPE] = new FXXPMIcon(a, checkbox_drawjunctionshapes_xpm);
@@ -894,6 +939,7 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::WARNING] = new FXXPMIcon(a, warning_xpm);
     myIcons[GUIIcon::DANGER] = new FXXPMIcon(a, danger_xpm);
     myIcons[GUIIcon::SUM] = new FXXPMIcon(a, sum_xpm);
+    myIcons[GUIIcon::BACK] = new FXXPMIcon(a, back_xpm);
 
     myIcons[GUIIcon::GRID] = new FXXPMIcon(a, grid_xpm);
     myIcons[GUIIcon::GRID1] = new FXXPMIcon(a, grid1_xpm);
@@ -903,6 +949,16 @@ GUIIconSubSys::GUIIconSubSys(FXApp* a) {
     myIcons[GUIIcon::GEOHACK] = new FXXPMIcon(a, geohack_xpm);
     myIcons[GUIIcon::GOOGLESAT] = new FXXPMIcon(a, googlesat_xpm);
     myIcons[GUIIcon::OSM] = new FXXPMIcon(a, osm_xpm);
+
+    myIcons[GUIIcon::LANGUAGE_EN] = new FXXPMIcon(a, language_en_xpm);
+    myIcons[GUIIcon::LANGUAGE_DE] = new FXXPMIcon(a, language_de_xpm);
+    myIcons[GUIIcon::LANGUAGE_ES] = new FXXPMIcon(a, language_es_xpm);
+    myIcons[GUIIcon::LANGUAGE_FR] = new FXXPMIcon(a, language_fr_xpm);
+    myIcons[GUIIcon::LANGUAGE_IT] = new FXXPMIcon(a, language_it_xpm);
+    myIcons[GUIIcon::LANGUAGE_HU] = new FXXPMIcon(a, language_hu_xpm);
+    myIcons[GUIIcon::LANGUAGE_TR] = new FXXPMIcon(a, language_tr_xpm);
+    myIcons[GUIIcon::LANGUAGE_ZH] = new FXXPMIcon(a, language_zh_xpm);
+    myIcons[GUIIcon::LANGUAGE_ZHT] = new FXXPMIcon(a, language_zht_xpm);
 
     // ... and create them
     for (const auto& icon : myIcons) {
@@ -922,7 +978,7 @@ GUIIconSubSys::~GUIIconSubSys() {
 void
 GUIIconSubSys::initIcons(FXApp* a) {
     if (myInstance) {
-        throw ProcessError("Instance was previously created");
+        throw ProcessError(TL("Instance was previously created"));
     } else {
         myInstance = new GUIIconSubSys(a);
     }

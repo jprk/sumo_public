@@ -31,9 +31,6 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # recompute
 netedit.rebuildNetwork()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # go to inspect mode
 netedit.inspectMode()
 
@@ -43,11 +40,8 @@ netedit.leftClick(referencePosition, 250, 180)
 # check parameters
 netedit.checkParameters(referencePosition, netedit.attrs.edge.inspect.parameters, False)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

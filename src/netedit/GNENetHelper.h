@@ -541,6 +541,9 @@ struct GNENetHelper {
         /// @brief retrieve generic datas within the given interval
         std::vector<GNEGenericData*> retrieveGenericDatas(const SumoXMLTag genericDataTag, const double begin, const double end);
 
+        /// @brief Return the number of generic datas
+        int getNumberOfGenericDatas() const;
+
         /// @brief get number of selected edge datas
         int getNumberOfSelectedEdgeDatas() const;
 
@@ -761,31 +764,31 @@ struct GNENetHelper {
         /// @brief constructor
         SavingStatus();
 
-        /// @name SUMOConfig
+        /// @name SumoConfig
         /// @{
 
-        /// @brief inform that SUMOConfig has to be saved
-        void requireSaveSUMOConfig();
+        /// @brief inform that SumoConfig has to be saved
+        void requireSaveSumoConfig();
 
-        /// @brief mark SUMOConfig as saved
-        void SUMOConfigSaved();
+        /// @brief mark SumoConfig as saved
+        void SumoConfigSaved();
 
-        /// @brief check if SUMOConfig is saved
-        bool isSUMOConfigSaved() const;
+        /// @brief check if SumoConfig is saved
+        bool isSumoConfigSaved() const;
 
         /// @}
 
-        /// @name NETEDITConfig
+        /// @name NeteditConfig
         /// @{
 
-        /// @brief inform that NETEDITConfig has to be saved
-        void requireSaveNETEDITConfig();
+        /// @brief inform that netedit config has to be saved
+        void requireSaveNeteditConfig();
 
-        /// @brief mark NETEDITConfig as saved
-        void NETEDITConfigSaved();
+        /// @brief mark netedit config as saved
+        void neteditConfigSaved();
 
-        /// @brief check if NETEDITConfig is saved
-        bool isNETEDITConfigSaved() const;
+        /// @brief check if netedit config is saved
+        bool isNeteditConfigSaved() const;
 
         /// @}
 
@@ -888,11 +891,11 @@ struct GNENetHelper {
         /// @}
 
     private:
-        /// @brief flag for SUMOConfigSUMOConfig saved
-        bool mySUMOConfigSaved = true;
+        /// @brief flag for SumoConfigSumoConfig saved
+        bool mySumoConfigSaved = true;
 
-        /// @brief flag for network saved
-        bool myNETEDITConfigSaved = true;
+        /// @brief flag for netedit config saved
+        bool myNeteditConfigSaved = true;
 
         /// @brief flag for network  saved
         bool myNetworkSaved = true;

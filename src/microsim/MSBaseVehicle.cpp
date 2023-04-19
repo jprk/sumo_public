@@ -169,7 +169,7 @@ MSBaseVehicle::initDevices() {
 
 void
 MSBaseVehicle::setID(const std::string& /*newID*/) {
-    throw ProcessError("Changing a vehicle ID is not permitted");
+    throw ProcessError(TL("Changing a vehicle ID is not permitted"));
 }
 
 const SUMOVehicleParameter&
@@ -236,9 +236,9 @@ MSBaseVehicle::stopsAtEdge(const MSEdge* edge) const {
 void
 MSBaseVehicle::reroute(SUMOTime t, const std::string& info, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router, const bool onInit, const bool withTaz, const bool silent) {
     // check whether to reroute
-    const MSEdge* source = withTaz && onInit ? MSEdge::dictionary(myParameter->fromTaz + "-source") : getRerouteOrigin();
+    const MSEdge* source = withTaz && onInit ? MSEdge::dictionary(myParameter->fromTaz + "-source") : *getRerouteOrigin();
     if (source == nullptr) {
-        source = getRerouteOrigin();
+        source = *getRerouteOrigin();
     }
     const MSEdge* sink = withTaz ? MSEdge::dictionary(myParameter->toTaz + "-sink") : myRoute->getLastEdge();
     if (sink == nullptr) {
@@ -393,7 +393,7 @@ MSBaseVehicle::replaceRouteEdges(ConstMSEdgeVector& edges, double cost, double s
     }
     int oldSize = (int)edges.size();
     if (!onInit) {
-        const MSEdge* const origin = getRerouteOrigin();
+        const MSEdge* const origin = *getRerouteOrigin();
         if (origin != *myCurrEdge && edges.front() == origin) {
             edges.insert(edges.begin(), *myCurrEdge);
             oldSize = (int)edges.size();
@@ -810,7 +810,7 @@ MSBaseVehicle::calculateArrivalParams(bool onInit) {
     switch (myParameter->arrivalPosProcedure) {
         case ArrivalPosDefinition::GIVEN:
             if (fabs(myParameter->arrivalPos) > lastLaneLength) {
-                WRITE_WARNING("Vehicle '" + getID() + "' will not be able to arrive at the given position!");
+                WRITE_WARNINGF(TL("Vehicle '%' will not be able to arrive at the given position!"), getID());
             }
             // Maybe we should warn the user about invalid inputs!
             myArrivalPos = MIN2(myParameter->arrivalPos, lastLaneLength);
@@ -830,7 +830,7 @@ MSBaseVehicle::calculateArrivalParams(bool onInit) {
     }
     if (myParameter->arrivalLaneProcedure == ArrivalLaneDefinition::GIVEN) {
         if (myParameter->arrivalLane >= (int)lanes.size() || !lanes[myParameter->arrivalLane]->allowsVehicleClass(myType->getVehicleClass())) {
-            WRITE_WARNING("Vehicle '" + getID() + "' will not be able to arrive at the given lane '" + arrivalEdge->getID() + "_" + toString(myParameter->arrivalLane) + "'!");
+            WRITE_WARNINGF(TL("Vehicle '%' will not be able to arrive at the given lane '%_%'!"), getID(), arrivalEdge->getID(), toString(myParameter->arrivalLane));
         }
         myArrivalLane = MIN2(myParameter->arrivalLane, (int)(lanes.size() - 1));
     } else if (myParameter->arrivalLaneProcedure == ArrivalLaneDefinition::FIRST_ALLOWED) {
@@ -842,7 +842,7 @@ MSBaseVehicle::calculateArrivalParams(bool onInit) {
             }
         }
         if (myArrivalLane == -1) {
-            WRITE_WARNING("Vehicle '" + getID() + "' has no usable arrivalLane on edge '" + arrivalEdge->getID() + "'.");
+            WRITE_WARNINGF(TL("Vehicle '%' has no usable arrivalLane on edge '%'."), getID(), arrivalEdge->getID());
             myArrivalLane = 0;
         }
     } else if (myParameter->arrivalLaneProcedure == ArrivalLaneDefinition::RANDOM) {
@@ -854,7 +854,7 @@ MSBaseVehicle::calculateArrivalParams(bool onInit) {
             }
         }
         if (usable.empty()) {
-            WRITE_WARNING("Vehicle '" + getID() + "' has no usable arrivalLane on edge '" + arrivalEdge->getID() + "'.");
+            WRITE_WARNINGF(TL("Vehicle '%' has no usable arrivalLane on edge '%'."), getID(), arrivalEdge->getID());
             myArrivalLane = 0;
         } else {
             myArrivalLane = usable[RandHelper::rand(0, (int)usable.size())]->getIndex();
@@ -866,7 +866,7 @@ MSBaseVehicle::calculateArrivalParams(bool onInit) {
                 return;
             }
         }
-        WRITE_WARNING("Vehicle '" + getID() + "' will not be able to arrive with the given speed!");
+        WRITE_WARNINGF(TL("Vehicle '%' will not be able to arrive with the given speed!"), getID());
     }
 }
 
@@ -882,7 +882,7 @@ MSBaseVehicle::setDepartAndArrivalEdge() {
         }
         assert(pars->departEdge >= 0);
         if (pars->departEdge >= routeEdges) {
-            WRITE_WARNING("Ignoring departEdge " + toString(pars->departEdge) + " for vehicle '" + getID() + " with " + toString(routeEdges) + " route edges");
+            WRITE_WARNINGF(TL("Ignoring departEdge % for vehicle '% with % route edges"), toString(pars->departEdge), getID(), toString(routeEdges));
         } else {
             myCurrEdge += pars->departEdge;
         }
@@ -1228,15 +1228,16 @@ MSBaseVehicle::addStop(const SUMOVehicleParameter::Stop& stopPar, std::string& e
     if (iter != myStops.begin()) {
         std::list<MSStop>::iterator iter2 = iter;
         iter2--;
-        if (stop.pars.until >= 0 && iter2->pars.until > stop.pars.until) {
+        if (stop.getUntil() >= 0 && iter2->getUntil() > stop.getUntil()
+                && (!MSGlobals::gUseStopEnded || iter2->pars.ended < 0 || stop.pars.ended >= 0)) {
             errorMsg = errorMsgStart + " for vehicle '" + myParameter->id + "' on lane '" + stop.lane->getID()
-                       + "' set to end at " + time2string(stop.pars.until)
-                       + " earlier than previous stop at " + time2string(iter2->pars.until) + ".";
+                       + "' set to end at " + time2string(stop.getUntil())
+                       + " earlier than previous stop at " + time2string(iter2->getUntil()) + ".";
         }
-        if (stop.pars.arrival >= 0 && iter2->pars.until > stop.pars.arrival) {
+        if (stop.pars.arrival >= 0 && iter2->pars.arrival > stop.pars.arrival) {
             errorMsg = errorMsgStart + " for vehicle '" + myParameter->id + "' on lane '" + stop.lane->getID()
                        + "' set to start at " + time2string(stop.pars.arrival)
-                       + " earlier than previous stop end at " + time2string(iter2->pars.until) + ".";
+                       + " earlier than previous stop end at " + time2string(iter2->getUntil()) + ".";
         }
         if (stop.pars.arrival >= 0 && iter2->pars.arrival > stop.pars.arrival) {
             errorMsg = errorMsgStart + " for vehicle '" + myParameter->id + "' on lane '" + stop.lane->getID()
@@ -1244,15 +1245,15 @@ MSBaseVehicle::addStop(const SUMOVehicleParameter::Stop& stopPar, std::string& e
                        + " earlier than previous stop arrival at " + time2string(iter2->pars.arrival) + ".";
         }
     } else {
-        if (stop.pars.until >= 0 && getParameter().depart > stop.pars.until) {
+        if (stop.getUntil() >= 0 && getParameter().depart > stop.getUntil()) {
             errorMsg = errorMsgStart + " for vehicle '" + myParameter->id + "' on lane '" + stop.lane->getID()
-                       + "' set to end at " + time2string(stop.pars.until)
+                       + "' set to end at " + time2string(stop.getUntil())
                        + " earlier than departure at " + time2string(getParameter().depart) + ".";
         }
     }
-    if (stop.pars.until >= 0 && stop.pars.arrival > stop.pars.until && errorMsg == "") {
+    if (stop.getUntil() >= 0 && stop.pars.arrival > stop.getUntil() && errorMsg == "") {
         errorMsg = errorMsgStart + " for vehicle '" + myParameter->id + "' on lane '" + stop.lane->getID()
-                   + "' set to end at " + time2string(stop.pars.until)
+                   + "' set to end at " + time2string(stop.getUntil())
                    + " earlier than arrival at " + time2string(stop.pars.arrival) + ".";
     }
     myStops.insert(iter, stop);
@@ -1586,6 +1587,8 @@ MSBaseVehicle::replaceStop(int nextStopIndex, SUMOVehicleParameter::Stop stop, c
         newEdges.push_back(stopEdge);
     }
     //std::cout << SIMTIME << " replaceStop veh=" << getID()
+    //    << " teleport=" << teleport
+    //    << " busStop=" << stop.busstop
     //    << " oldEdges=" << oldRemainingEdges.size()
     //    << " newEdges=" << newEdges.size()
     //    << " toNewStop=" << toNewStop.size()
@@ -1735,7 +1738,9 @@ MSBaseVehicle::insertStop(int nextStopIndex, SUMOVehicleParameter::Stop stop, co
     } else {
         newEdges.push_back(stopEdge);
     }
-    //std::cout << SIMTIME << " replaceStop veh=" << getID()
+    //std::cout << SIMTIME << " insertStop veh=" << getID()
+    //    << " teleport=" << teleport
+    //    << " busStop=" << stop.busstop
     //    << " oldEdges=" << oldRemainingEdges.size()
     //    << " newEdges=" << newEdges.size()
     //    << " toNewStop=" << toNewStop.size()

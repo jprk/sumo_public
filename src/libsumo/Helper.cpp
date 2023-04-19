@@ -132,6 +132,9 @@ Helper::subscribe(const int commandId, const std::string& id, const std::vector<
     const SUMOTime begin = beginTime == INVALID_DOUBLE_VALUE ? 0 : TIME2STEPS(beginTime);
     const SUMOTime end = endTime == INVALID_DOUBLE_VALUE || endTime > STEPS2TIME(SUMOTime_MAX) ? SUMOTime_MAX : TIME2STEPS(endTime);
     libsumo::Subscription s(commandId, id, variables, parameters, begin, end, contextDomain, range);
+    if (commandId == libsumo::CMD_SUBSCRIBE_SIM_CONTEXT) {
+        s.range = std::numeric_limits<double>::max();
+    }
     if (s.variables.size() == 1 && s.variables.front() == -1) {
         s.variables.clear();
     }
@@ -1335,7 +1338,8 @@ Helper::applySubscriptionFilterLateralDistanceSinglePass(const Subscription& s, 
         try {
             laneShape.move2side(-posLat);
         } catch (ProcessError&) {
-            WRITE_WARNING("addSubscriptionFilterLateralDistance could not determine shape of lane '" + lane->getID() + "' with lateral shift of " + toString(posLat));
+            WRITE_WARNINGF(TL("addSubscriptionFilterLateralDistance could not determine shape of lane '%' with a lateral shift of %."),
+                           lane->getID(), toString(posLat));
         }
 #ifdef DEBUG_SURROUNDING
         std::cout << "   posLat=" << posLat << " laneShape=" << laneShape << "\n";
@@ -1392,7 +1396,7 @@ Helper::postProcessRemoteControl() {
             controlled.second->getInfluencer().postProcessRemoteControl(controlled.second);
             numControlled++;
         } else {
-            WRITE_WARNING("Vehicle '" + controlled.first + "' was removed though being controlled by TraCI");
+            WRITE_WARNINGF(TL("Vehicle '%' was removed though being controlled by TraCI"), controlled.first);
         }
     }
     myRemoteControlledVehicles.clear();
@@ -1401,7 +1405,7 @@ Helper::postProcessRemoteControl() {
             controlled.second->getInfluencer().postProcessRemoteControl(controlled.second);
             numControlled++;
         } else {
-            WRITE_WARNING("Person '" + controlled.first + "' was removed though being controlled by TraCI");
+            WRITE_WARNINGF(TL("Person '%' was removed though being controlled by TraCI"), controlled.first);
         }
     }
     myRemoteControlledPersons.clear();
@@ -1651,7 +1655,7 @@ Helper::moveToXYMap(const Position& pos, double maxRouteDistance, bool mayLeaveN
     if (u.onRoute) {
         ConstMSEdgeVector::const_iterator prevEdgePos = std::find(currentRoute.begin(), currentRoute.end(), prevEdge);
         routeOffset = (int)std::distance(currentRoute.begin(), prevEdgePos);
-        //std::cout << SIMTIME << "moveToXYMap vehicle=" << veh.getID() << " currLane=" << veh.getLane()->getID() << " routeOffset=" << routeOffset << " edges=" << toString(ev) << " bestLane=" << bestLane->getID() << " prevEdge=" << prevEdge->getID() << "\n";
+        //std::cout << SIMTIME << "moveToXYMap currLane=" << currentLane->getID() << " routeOffset=" << routeOffset << " edges=" << toString(edges) << " bestLane=" << bestLane->getID() << " prevEdge=" << prevEdge->getID() << "\n";
     } else {
         edges.push_back(u.prevEdge);
         /*
@@ -1706,7 +1710,9 @@ Helper::findCloserLane(const MSEdge* edge, const Position& pos, SUMOVehicleClass
             }
             for (const MSLink* const link : l->getLinkCont()) {
                 if (link->isInternalJunctionLink()) {
-                    findCloserLane(&link->getViaLane()->getEdge(), pos, vClass, bestDistance, lane);
+                    if (findCloserLane(&link->getViaLane()->getEdge(), pos, vClass, bestDistance, lane)) {
+                        newBest = true;
+                    }
                 }
             }
         }

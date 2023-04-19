@@ -35,13 +35,13 @@ netedit.additionalMode()
 netedit.changeElement("instantInductionLoop")
 
 # create E1
-netedit.leftClick(referencePosition, 250, 210)
+netedit.leftClick(referencePosition, 405, 257)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first E1
-netedit.leftClick(referencePosition, 250, 210)
+netedit.leftClick(referencePosition, 405, 257)
 
 # Change boolean parameter friendlyPos
 netedit.modifyBoolAttribute(netedit.attrs.E1Instant.inspect.friendlyPos, True)
@@ -50,11 +50,8 @@ netedit.modifyBoolAttribute(netedit.attrs.E1Instant.inspect.friendlyPos, True)
 netedit.undo(referencePosition, 2)
 netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -225,6 +225,7 @@ inline std::string toString(const std::vector<V*>& v, std::streamsize accuracy =
     return toString<V>(v.begin(), v.end(), accuracy);
 }
 
+
 template <typename V>
 inline std::string toString(const typename std::vector<V*>::const_iterator& b, const typename std::vector<V*>::const_iterator& e, std::streamsize accuracy = gPrecision) {
     UNUSED_PARAMETER(accuracy);
@@ -367,6 +368,23 @@ inline std::string toString(const std::vector<double>& v, std::streamsize accura
 }
 
 
+template <typename V, typename W>
+inline std::string toString(const std::vector<std::pair<V, W> >& v, std::streamsize accuracy = gPrecision, const std::string& between = ";", const std::string& between2 = ",") {
+    std::ostringstream oss;
+    oss << std::setprecision(accuracy);
+    bool connect = false;
+    for (auto it : v) {
+        if (connect) {
+            oss << toString(between, accuracy);
+        } else {
+            connect = true;
+        }
+        oss << toString(it.first) << between2 << toString(it.second);
+    }
+    return oss.str();
+}
+
+
 template <typename T, typename T_BETWEEN>
 inline std::string joinToString(const std::set<T>& s, const T_BETWEEN& between, std::streamsize accuracy = gPrecision) {
     std::ostringstream oss;
@@ -414,4 +432,10 @@ inline std::string joinToString(const std::map<KEY, VAL>& s, const T_BETWEEN& be
 template <>
 inline std::string toString(const Parameterised::Map& v, std::streamsize) {
     return joinToString(v, ", ", ":");
+}
+
+template <>
+inline std::string toString(const MMVersion& v, std::streamsize) {
+    // we only need higher accuracy on the minor version for hotfix releases
+    return toString(v.first) + "." + toString(v.second, 0);
 }

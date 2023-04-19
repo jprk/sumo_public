@@ -145,11 +145,13 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.realisticLinkRules = StringUtils::toBool(attrs.getStringSecure("realisticLinkRules", toString(mySettings.realisticLinkRules)));
             mySettings.showLinkRules = StringUtils::toBool(attrs.getStringSecure("showLinkRules", toString(mySettings.showLinkRules)));
             mySettings.showRails = StringUtils::toBool(attrs.getStringSecure("showRails", toString(mySettings.showRails)));
+            mySettings.secondaryShape = StringUtils::toBool(attrs.getStringSecure("secondaryShape", toString(mySettings.secondaryShape)));
             mySettings.edgeName = parseTextSettings("edgeName", attrs, mySettings.edgeName);
             mySettings.internalEdgeName = parseTextSettings("internalEdgeName", attrs, mySettings.internalEdgeName);
             mySettings.cwaEdgeName = parseTextSettings("cwaEdgeName", attrs, mySettings.cwaEdgeName);
             mySettings.streetName = parseTextSettings("streetName", attrs, mySettings.streetName);
             mySettings.edgeValue = parseTextSettings("edgeValue", attrs, mySettings.edgeValue);
+            mySettings.edgeScaleValue = parseTextSettings("edgeScaleValue", attrs, mySettings.edgeScaleValue);
             mySettings.hideConnectors = StringUtils::toBool(attrs.getStringSecure("hideConnectors", toString(mySettings.hideConnectors)));
             mySettings.laneWidthExaggeration = StringUtils::toDouble(attrs.getStringSecure("widthExaggeration", toString(mySettings.laneWidthExaggeration)));
             mySettings.laneMinSize = StringUtils::toDouble(attrs.getStringSecure("minSize", toString(mySettings.laneWidthExaggeration)));
@@ -163,6 +165,7 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.vehicleTextParam = attrs.getStringSecure("vehicleTextParam", mySettings.vehicleTextParam);
             mySettings.edgeData = attrs.getStringSecure("edgeData", mySettings.edgeData);
             mySettings.edgeDataID = attrs.getStringSecure("edgeDataID", mySettings.edgeDataID);
+            mySettings.edgeDataScaling = attrs.getStringSecure("edgeDataScaling", mySettings.edgeDataScaling);
             mySettings.edgeValueHideCheck = StringUtils::toBool(attrs.getStringSecure("edgeValueHideCheck", toString(mySettings.edgeValueHideCheck)));
             mySettings.edgeValueHideThreshold = StringUtils::toDouble(attrs.getStringSecure("edgeValueHideThreshold", toString(mySettings.edgeValueHideThreshold)));
             mySettings.edgeValueHideCheck2 = StringUtils::toBool(attrs.getStringSecure("edgeValueHideCheck2", toString(mySettings.edgeValueHideCheck2)));
@@ -387,7 +390,7 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             d.centerZ = attrs.getOpt<double>(SUMO_ATTR_CENTER_Z, nullptr, ok, d.centerZ);
             d.width = attrs.getOpt<double>(SUMO_ATTR_WIDTH, nullptr, ok, d.width);
             d.height = attrs.getOpt<double>(SUMO_ATTR_HEIGHT, nullptr, ok, d.height);
-            d.altitude = StringUtils::toDouble(attrs.getStringSecure("altitude", toString(d.height)));
+            d.altitude = StringUtils::toDouble(attrs.getStringSecure("altitude", "0"));
             d.rot = StringUtils::toDouble(attrs.getStringSecure("rotation", toString(d.rot)));
             d.tilt = StringUtils::toDouble(attrs.getStringSecure("tilt", toString(d.tilt)));
             d.roll = StringUtils::toDouble(attrs.getStringSecure("roll", toString(d.roll)));
@@ -405,7 +408,7 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             d.centerZ = attrs.getOpt<double>(SUMO_ATTR_CENTER_Z, nullptr, ok, d.centerZ);
             d.width = attrs.getOpt<double>(SUMO_ATTR_WIDTH, nullptr, ok, d.width);
             d.height = attrs.getOpt<double>(SUMO_ATTR_HEIGHT, nullptr, ok, d.height);
-            d.altitude = StringUtils::toDouble(attrs.getStringSecure("altitude", toString(d.height)));
+            d.altitude = StringUtils::toDouble(attrs.getStringSecure("altitude", "0"));
             d.rot = StringUtils::toDouble(attrs.getStringSecure("rotation", toString(d.rot)));
             d.tilt = StringUtils::toDouble(attrs.getStringSecure("tilt", toString(d.tilt)));
             d.roll = StringUtils::toDouble(attrs.getStringSecure("roll", toString(d.roll)));
@@ -493,7 +496,10 @@ void
 GUISettingsHandler::applyViewport(GUISUMOAbstractView* view) const {
     if (myLookFrom.z() > 0 || myZoom > 0) {
         // z value stores zoom so we must convert first
-        double z = (view->is3DView()) ? (myZCoordSet) ? myLookFrom.z() : 1. : view->getChanger().zoom2ZPos(myZoom);
+        double z = (view->is3DView()) ? myLookFrom.z() : view->getChanger().zoom2ZPos(myZoom);
+        if (view->is3DView() && !myZCoordSet) { // set view angle to ground to at least 45 degrees if no Z coordinate is given
+            z = myLookFrom.distanceTo2D(myLookAt) * sin(PI * 0.25);
+        }
         Position lookFrom(myLookFrom.x(), myLookFrom.y(), z);
         view->setViewportFromToRot(lookFrom, myLookAt, myRotation);
         if (view->is3DView() && !myZCoordSet) {
@@ -550,7 +556,7 @@ GUISettingsHandler::loadBreakpoints(const std::string& file) {
             WRITE_ERROR(" A breakpoint-value must be an int. " + toString(e.what()));
         } catch (EmptyData&) {
         } catch (ProcessError&) {
-            WRITE_ERROR(" Could not decode breakpoint '" + val + "'");
+            WRITE_ERRORF(TL(" Could not decode breakpoint '%'"), val);
         }
     }
     return result;

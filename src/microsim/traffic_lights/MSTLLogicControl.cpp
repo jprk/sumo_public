@@ -78,7 +78,7 @@ MSTLLogicControl::TLSLogicVariants::checkOriginalTLS() const {
             }
         }
         if (hadProgramErrors) {
-            WRITE_ERROR("Mismatching phase size in tls '" + (*j).second->getID() + "', program '" + (*j).first + "'.");
+            WRITE_ERRORF(TL("Mismatching phase size in tls '%', program '%'."), (*j).second->getID(), (*j).first);
             hadErrors = true;
         }
     }
@@ -113,7 +113,7 @@ MSTLLogicControl::TLSLogicVariants::addLogic(const std::string& programID,
         if (myCurrentProgram == nullptr) {
             const std::string id = logic->getID();
             delete logic;
-            throw ProcessError("No initial signal plan loaded for tls '" + id + "'.");
+            throw ProcessError(TLF("No initial signal plan loaded for tls '%'.", id));
         }
         logic->adaptLinkInformationFrom(*myCurrentProgram);
         if (logic->getLinks().size() > logic->getPhase(0).getState().size()) {
@@ -160,7 +160,7 @@ MSTLLogicControl::TLSLogicVariants::getLogicInstantiatingOff(MSTLLogicControl& t
             MSTrafficLightLogic* tlLogic = new MSOffTrafficLightLogic(tlc, myCurrentProgram->getID());
             if (!addLogic("off", tlLogic, true, true)) {
                 // inform the user if this fails
-                throw ProcessError("Could not build an off-state for tls '" + myCurrentProgram->getID() + "'.");
+                throw ProcessError(TLF("Could not build an off-state for tls '%'.", myCurrentProgram->getID()));
             }
         } else {
             // inform the user about a missing logic
@@ -484,7 +484,7 @@ MSTLLogicControl::WAUTSwitchProcedure_Stretch::stretchLogic(SUMOTime step, SUMOT
         }
     }
     if (facSum == 0) {
-        WRITE_WARNING("The computed factor sum in WAUT '" + myWAUT.id + "' at time '" + toString(STEPS2TIME(step)) + "' equals zero;\n assuming an error in WAUT definition.");
+        WRITE_WARNINGF(TL("The computed factor sum in WAUT '%' at time '%' equals zero;\n assuming an error in WAUT definition."), myWAUT.id, toString(STEPS2TIME(step)));
         return;
     }
     durOfPhase = durOfPhase - diffToStart + StretchTimeOfPhase;

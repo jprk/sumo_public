@@ -2,6 +2,8 @@
 cmake_policy(SET CMP0048 NEW)
 # do not expand quoted variables in if statements
 cmake_policy(SET CMP0054 NEW)
+# find python by path
+set(Python_FIND_STRATEGY LOCATION)
 # Options
 option(CHECK_OPTIONAL_LIBS "Try to download / enable all optional libraries (use only EPL clean libraries, if set to false)" true)
 option(MULTITHREADED_BUILD "Use all available cores for building (applies to Visual Studio only)" true)
@@ -15,6 +17,7 @@ set(BINARY_SUFFIX "" CACHE STRING "Append the suffix to every generated binary")
 set(COMPILE_DEFINITIONS "" CACHE STRING "Macros or defines to add when compiling")
 set(CCACHE_SUPPORT ON CACHE BOOL "Enable ccache support if installed")
 set(TCMALLOC ON CACHE BOOL "Use tcmalloc if installed")
+set(PROJECT_NAME "SUMO" CACHE STRING "Project/Solution name")
 
 # disable warnings
 option(DISABLEWARNING_C5264 "'const' variable is not used" true)
@@ -36,7 +39,7 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif ()
 
-project(SUMO CXX C)
+project("${PROJECT_NAME}" CXX C)
 set(PACKAGE_VERSION "git")
 cmake_minimum_required(VERSION 3.4)
 
@@ -203,9 +206,23 @@ if (CMAKE_GENERATOR MATCHES Xcode)
 endif ()
 message(STATUS "")
 
-find_package(PythonInterp REQUIRED)
+if (SKBUILD OR ${CMAKE_VERSION} VERSION_LESS 3.12.0)
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs)
+else()
+    find_package(Python REQUIRED COMPONENTS Interpreter Development)
+    # define variables for compatibility. refactor once older cmake unsupported
+    if (Python_FOUND)
+        set(PYTHONLIBS_FOUND ${Python_FOUND})
+        set(PYTHON_EXECUTABLE ${Python_EXECUTABLE})
+        set(PYTHON_LIBRARIES ${Python_LIBRARIES})
+        set(PYTHON_INCLUDE_DIRS ${Python_INCLUDE_DIRS})
+        set(PYTHON_LIBRARY_DIRS ${Python_LIBRARY_DIRS})
+    endif()
+endif()
 message(STATUS "Found Python: " ${PYTHON_EXECUTABLE})
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import setuptools" RESULT_VARIABLE SETUPTOOLS_MISSING)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import setuptools" RESULT_VARIABLE PYTHON_SETUPTOOLS_MISSING ERROR_QUIET)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import build; import pip; build.__version__" RESULT_VARIABLE PYTHON_BUILD_MISSING ERROR_QUIET)
 
 if (APPLE)
     # we know that openGL is deprecated for newer MacOS
@@ -249,7 +266,7 @@ if (SUMO_LIBRARIES AND WIN32)
     file(GLOB ZLIB_PATH "${SUMO_LIBRARIES}/3rdPartyLibs/zlib-?.?.??")
     file(GLOB PROJ_PATH "${SUMO_LIBRARIES}/proj-?.?.?")
     file(GLOB FOX_PATH "${SUMO_LIBRARIES}/fox-?.?.??")
-    file(GLOB FREETYPE_PATH "${SUMO_LIBRARIES}/freetype-2.??.?")
+    file(GLOB FREETYPE_PATH "${SUMO_LIBRARIES}/3rdPartyLibs/freetype-2.??.?")
     file(GLOB EIGEN3_PATH "${SUMO_LIBRARIES}/eigen-3.?.?")
     file(GLOB GETTEXT_PATH "${SUMO_LIBRARIES}/gettext-?.??")
     # set all paths in prefix
@@ -259,7 +276,7 @@ if (SUMO_LIBRARIES AND WIN32)
                                  "${PROJ_PATH}/bin/*.dll"
                                  "${FOX_PATH}/bin/*.dll"
                                  "${ZLIB_PATH}/bin/*.dll"
-#                                 "${FREETYPE_PATH}/bin/*.dll"
+                                 "${FREETYPE_PATH}/bin/*.dll"
                                  "${GETTEXT_PATH}/bin/*.dll"
                                  "${SUMO_LIBRARIES}/3rdPartyLibs/bzip2-*/bin/*.dll"
                                  "${SUMO_LIBRARIES}/3rdPartyLibs/curl-*/bin/*.dll"
@@ -498,11 +515,19 @@ endif ()
 
 install(EXPORT SUMOConfig DESTINATION ${DATA_PATH}cmake NAMESPACE SUMO::)
 
-if (NOT ${SETUPTOOLS_MISSING})
-    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/build/setup-sumolib.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
-            COMPONENT pysumolib)
-    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/build/setup-traci.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
-            COMPONENT pytraci)
+if (NOT ${PYTHON_SETUPTOOLS_MISSING})
+    set(TOOLS_DIR "${CMAKE_SOURCE_DIR}/tools")
+    if (${PYTHON_BUILD_MISSING})
+        install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${TOOLS_DIR}/build/setup-sumolib.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
+                COMPONENT pysumolib)
+        install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${TOOLS_DIR}/build/setup-traci.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
+                COMPONENT pytraci)
+    else ()
+        install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ./build/version.py ./build/setup-sumolib.py ./setup.py COMMAND ${PYTHON_EXECUTABLE} -m pip install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} . WORKING_DIRECTORY ${TOOLS_DIR})"
+                COMPONENT pysumolib)
+        install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ./build/version.py ./build/setup-traci.py ./setup.py COMMAND ${PYTHON_EXECUTABLE} -m pip install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} . WORKING_DIRECTORY ${TOOLS_DIR})"
+                COMPONENT pytraci)
+    endif ()
 endif ()
 
 if (SUMO_LIBRARIES AND WIN32)
@@ -696,6 +721,7 @@ set_property(TARGET examples PROPERTY FOLDER "doc")
 find_program(PYINSTALLER_FOUND "pyinstaller")
 if (PYINSTALLER_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/tools/game/runner.spec)
     add_custom_target(game
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/game/minwait.py
         COMMAND pyinstaller --noconfirm ${CMAKE_SOURCE_DIR}/tools/game/runner.spec
         COMMAND ${CMAKE_COMMAND} -E chdir dist/runner ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_BINARY_DIR}/sumo-game.zip" --format=zip "."
     )

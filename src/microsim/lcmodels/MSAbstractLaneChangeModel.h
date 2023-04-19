@@ -622,6 +622,10 @@ public:
         return myHaveBlueLight;
     }
 
+    virtual LatAlignmentDefinition getDesiredAlignment() const {
+        return myVehicle.getVehicleType().getPreferredLateralAlignment();
+    }
+
     static const double NO_NEIGHBOR;
 
 protected:
@@ -636,6 +640,15 @@ protected:
 
     /// @brief return the max of maxSpeedLat and lcMaxSpeedLatStanding
     double getMaxSpeedLat2() const;
+
+    /** @brief Takes a vSafe (speed advice for speed in the next simulation step), converts it into an acceleration
+     *         and stores it into myLCAccelerationAdvices.
+     *  @note  This construction was introduced to deal with action step lengths,
+     *         where operation on the speed in the next sim step had to be replaced by acceleration
+     *         throughout the next action step.
+     */
+    void addLCSpeedAdvice(const double vSafe, bool ownAdvice = true);
+
 
 protected:
     /// @brief The vehicle this lane-changer belongs to
@@ -766,6 +779,11 @@ protected:
     /* @brief to be called by derived classes in their changed() method.
      * If dir=0 is given, the current value remains unchanged */
     void initLastLaneChangeOffset(int dir);
+
+    /* @brief vector of LC-related acceleration recommendations combined with a
+     * boolean to indicate whether the advice is from ego or someone else.
+     * Filled in wantsChange() and applied in patchSpeed() */
+    std::vector<std::pair<double, bool> > myLCAccelerationAdvices;
 
     /// @brief whether overtaking on the right is permitted
     static bool myAllowOvertakingRight;

@@ -112,8 +112,26 @@ GNEMultiEntryExitDetector::writeAdditional(OutputDevice& device) const {
         writeParams(device);
         device.closeTag();
     } else {
-        WRITE_WARNING(myTagProperty.getTagStr() + " '" + getID() + "' needs at least one entry and one exit");
+        WRITE_WARNING("E3 '" + getID() + TL("' needs at least one entry and one exit"));
     }
+}
+
+
+bool
+GNEMultiEntryExitDetector::isAdditionalValid() const {
+    return true;
+}
+
+
+std::string
+GNEMultiEntryExitDetector::getAdditionalProblem() const {
+    return "";
+}
+
+
+void
+GNEMultiEntryExitDetector::fixAdditionalProblem() {
+    // nothing to fix
 }
 
 
@@ -270,7 +288,6 @@ GNEMultiEntryExitDetector::isValid(SumoXMLAttr key, const std::string& value) {
                 return SUMOXMLDefinitions::isValidListOfTypeID(value);
             }
         case SUMO_ATTR_HALTING_TIME_THRESHOLD:
-            return canParse<SUMOTime>(value);
         case SUMO_ATTR_HALTING_SPEED_THRESHOLD:
             return canParse<double>(value) && (parse<double>(value) >= 0);
         case GNE_ATTR_SELECTED:
@@ -297,10 +314,10 @@ GNEMultiEntryExitDetector::checkChildAdditionalRestriction() const {
     }
     // write warnings
     if (numEntrys == 0) {
-        WRITE_WARNING("An " + toString(SUMO_TAG_ENTRY_EXIT_DETECTOR) + " need at least one " + toString(SUMO_TAG_DET_ENTRY) + " detector");
+        WRITE_WARNING(TL("An entry-exit detector needs at least one entry detector"));
     }
     if (numExits == 0) {
-        WRITE_WARNING("An " + toString(SUMO_TAG_ENTRY_EXIT_DETECTOR) + " need at least one " + toString(SUMO_TAG_DET_EXIT) + " detector");
+        WRITE_WARNING(TL("An entry-exit detector needs at least one exit detector"));
     }
     // return false depending of number of Entrys and Exits
     return ((numEntrys != 0) && (numExits != 0));

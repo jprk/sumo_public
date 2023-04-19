@@ -131,6 +131,19 @@ echo $SUMO_HOME
 
 and console shows "/home/<user\>/sumo-<version\>"
 
+## Install python packages
+
+Compiling netedit requires a list of python packages to generate templates. Install it using pip:
+
+```
+pip install google lxml rtree pandas matplotlib pulp pyproj ezdxf scipy fmpy ortools texttest pyautogui pyperclip
+```
+Or if you're using python3
+
+```
+pip3 install google lxml rtree pandas matplotlib pulp pyproj ezdxf scipy fmpy ortools texttest pyautogui pyperclip
+```
+
 ## Building the SUMO binaries with cmake
 
 To build with cmake version 3 or higher is required.
@@ -185,6 +198,7 @@ Other useful cmake options:
 - `-D FOX_CONFIG=` disable FOX toolkit (GUI and multithreading)
 - `-D PYTHON_EXECUTABLE=/usr/bin/python3` select a different python version (also for libsumo / libtraci)
 - `-D MVN_EXECUTABLE=` disable maven packaging (especially useful if you have no network connection)
+- `-D ENABLE_CS_BINDINGS=ON` enable C# bindings when compiling libsumo / libtraci
 
 
 ## Building with clang

@@ -35,25 +35,25 @@ netedit.additionalMode()
 netedit.changeElement("chargingStation")
 
 # create chargingStation in mode "reference left"
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 304, 244)
 
 # set invalid ID (duplicated
 netedit.changeDefaultValue(netedit.attrs.chargingStation.create.id, ";;;;;;;;;;;;;;;;")
 
 # create chargingStation in mode "reference left"
-netedit.leftClick(referencePosition, 255, 250)
+netedit.leftClick(referencePosition, 346, 244)
 
 # set invalid ID (duplicated
 netedit.changeDefaultValue(netedit.attrs.chargingStation.create.id, "cs_0")
 
 # create chargingStation in mode "reference left"
-netedit.leftClick(referencePosition, 260, 250)
+netedit.leftClick(referencePosition, 304, 244)
 
 # set invalid ID (duplicated
 netedit.changeDefaultValue(netedit.attrs.chargingStation.create.id, "custom_ID")
 
 # create chargingStation in mode "reference left"
-netedit.leftClick(referencePosition, 270, 250)
+netedit.leftClick(referencePosition, 346, 244)
 
 # Check undo redo
 netedit.undo(referencePosition, 2)
@@ -63,11 +63,8 @@ netedit.redo(referencePosition, 2)
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

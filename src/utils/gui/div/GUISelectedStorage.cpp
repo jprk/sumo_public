@@ -113,7 +113,7 @@ void
 GUISelectedStorage::select(GUIGlID id, bool update) {
     GUIGlObject* object = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
     if (!object) {
-        throw ProcessError("Unknown object in GUISelectedStorage::select (id=" + toString(id) + ").");
+        throw ProcessError(TLF("Unknown object in GUISelectedStorage::select (id=%).", toString(id)));
     }
     GUIGlObjectType type = object->getType();
     GUIGlObjectStorage::gIDStorage.unblockObject(id);
@@ -130,7 +130,7 @@ void
 GUISelectedStorage::deselect(GUIGlID id) {
     GUIGlObject* object = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
     if (!object) {
-        throw ProcessError("Unknown object in GUISelectedStorage::deselect (id=" + toString(id) + ").");
+        throw ProcessError(TLF("Unknown object in GUISelectedStorage::deselect (id=%).", toString(id)));
     }
     GUIGlObjectType type = object->getType();
     GUIGlObjectStorage::gIDStorage.unblockObject(id);
@@ -147,7 +147,7 @@ void
 GUISelectedStorage::toggleSelection(GUIGlID id) {
     GUIGlObject* object = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
     if (!object) {
-        throw ProcessError("Unknown object in GUISelectedStorage::toggleSelection (id=" + toString(id) + ").");
+        throw ProcessError(TLF("Unknown object in GUISelectedStorage::toggleSelection (id=%).", toString(id)));
     }
 
     bool selected = isSelected(object->getType(), id);
@@ -184,6 +184,14 @@ GUISelectedStorage::clear() {
 }
 
 
+void
+GUISelectedStorage::notifyChanged() {
+    if (myUpdateTarget) {
+        myUpdateTarget->selectionUpdated();
+    }
+}
+
+
 std::set<GUIGlID>
 GUISelectedStorage::loadIDs(const std::string& filename, std::string& msgOut, GUIGlObjectType type, int maxErrors) {
     std::set<GUIGlID> result;
@@ -200,6 +208,9 @@ GUISelectedStorage::loadIDs(const std::string& filename, std::string& msgOut, GU
         strm >> line;
         if (line.length() == 0) {
             continue;
+        }
+        if (StringUtils::startsWith(line, "node:")) {
+            line = StringUtils::replace(line, "node:", "junction:");
         }
 
         GUIGlObject* object = GUIGlObjectStorage::gIDStorage.getObjectBlocking(line);

@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # go to additional mode
 netedit.additionalMode()
 
@@ -38,19 +35,16 @@ netedit.additionalMode()
 netedit.changeElement("dummyAdditional")
 
 # try to create an dummy additional
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 451, 210)
 
 # select valid additional (busStop)
 netedit.changeElement("busStop")
 
 # create busStop in mode "reference left"
-netedit.leftClick(referencePosition, 300, 250)
+netedit.leftClick(referencePosition, 451, 210)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

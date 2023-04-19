@@ -28,20 +28,17 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect edge
-netedit.leftClick(referencePosition, 300, 180)
+netedit.leftClick(referencePosition, 450, 180)
 
 # Change parameter length
 netedit.modifyAttribute(netedit.attrs.edge.inspect.length, "25", False)
 
 # inspect edge
-netedit.leftClick(referencePosition, 300, 280)
+netedit.leftClick(referencePosition, 450, 280)
 
 # Change parameter length
 netedit.modifyAttribute(netedit.attrs.edge.inspect.length, "25", False)
@@ -49,14 +46,11 @@ netedit.modifyAttribute(netedit.attrs.edge.inspect.length, "25", False)
 # recompute
 netedit.rebuildNetwork()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # fix stopping place positions
 netedit.fixStoppingPlace("fixPositions")
-
-# save network
-netedit.saveNetwork(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -70,6 +70,7 @@ public:
     void remove(MSTransportableStateAdapter* state);
 
     /** @brief whether a pedestrian is blocking the crossing of lane for the given vehicle bondaries
+     * @param[in] ego The object that inquires about blockage (and may electively ignore foes)
      * @param[in] lane The crossing to check
      * @param[in] vehside The offset to the vehicle side near the start of the crossing
      * @param[in] vehWidth The width of the vehicle
@@ -77,7 +78,7 @@ public:
      * @param[in] collectBlockers The list of persons blocking the crossing
      * @return Whether the vehicle must wait
      */
-    bool blockedAtDist(const MSLane* lane, double vehSide, double vehWidth,
+    bool blockedAtDist(const SUMOTrafficObject* ego, const MSLane* lane, double vehSide, double vehWidth,
                        double oncomingGap, std::vector<const MSPerson*>* collectBlockers);
 
     /// @brief whether the given lane has pedestrians on it
@@ -141,6 +142,7 @@ public:
     // @brief fraction of the leftmost lanes to reserve for oncoming traffic
     static double RESERVE_FOR_ONCOMING_FACTOR;
     static double RESERVE_FOR_ONCOMING_FACTOR_JUNCTIONS;
+    static double RESERVE_FOR_ONCOMING_MAX;
 
     // @brief the time pedestrians take to reach maximum impatience
     static const double MAX_WAIT_TOLERANCE;
@@ -228,6 +230,8 @@ protected:
         ObstacleType type;
         /// @brief the id / description of the obstacle
         std::string description;
+
+        bool closer(const Obstacle& o, int dir);
     };
 
     struct WalkingAreaPath {
@@ -455,7 +459,7 @@ protected:
     void moveInDirection(SUMOTime currentTime, std::set<MSPerson*>& changedLane, int dir);
 
     /// @brief move pedestrians forward on one lane
-    void moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane* lane, SUMOTime currentTime, std::set<MSPerson*>& changedLane, int dir);
+    void moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane* lane, SUMOTime currentTime, std::set<MSPerson*>& changedLane, int dir, bool debug);
 
     /// @brief handle arrivals and lane advancement
     void arriveAndAdvance(Pedestrians& pedestrians, SUMOTime currentTime, std::set<MSPerson*>& changedLane, int dir);
@@ -529,6 +533,9 @@ private:
 
     static bool addVehicleFoe(const MSVehicle* veh, const MSLane* walkingarea, const Position& relPos, double xWidth, double yWidth, double lateral_offset,
                               double minY, double maxY, Pedestrians& toDelete, Pedestrians& transformedPeds);
+
+    static int getReserved(int stripes, double factor);
+
 
 private:
     /// @brief the total number of active pedestrians

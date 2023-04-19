@@ -147,6 +147,24 @@ GNECalibrator::writeAdditional(OutputDevice& device) const {
 }
 
 
+bool
+GNECalibrator::isAdditionalValid() const {
+    return true;
+}
+
+
+std::string
+GNECalibrator::getAdditionalProblem() const {
+    return "";
+}
+
+
+void
+GNECalibrator::fixAdditionalProblem() {
+    // nothing to fix
+}
+
+
 GNEMoveOperation*
 GNECalibrator::getMoveOperation() {
     // calibrators cannot be moved
@@ -173,7 +191,7 @@ GNECalibrator::updateGeometry() {
             myEdgeCalibratorGeometries.push_back(calibratorGeometry);
         }
     } else {
-        throw ProcessError("Both edges and lanes aren't defined");
+        throw ProcessError(TL("Both edges and lanes aren't defined"));
     }
 }
 
@@ -217,7 +235,7 @@ GNECalibrator::getParentName() const {
     } else if (getParentEdges().size() > 0) {
         return getParentEdges().front()->getLanes().at(0)->getID();
     } else {
-        throw ProcessError("Both myEdge and myLane aren't defined");
+        throw ProcessError(TL("Both myEdge and myLane aren't defined"));
     }
 }
 
@@ -459,7 +477,7 @@ GNECalibrator::drawCalibratorSymbol(const GUIVisualizationSettings& s, const dou
             } else if (getParentEdges().size() > 0) {
                 GLHelper::drawText("edge", Position(0, 3), .1, 1, textColor, 180);
             } else {
-                throw ProcessError("Both myEdge and myLane aren't defined");
+                throw ProcessError(TL("Both myEdge and myLane aren't defined"));
             }
         }
         // pop layer matrix

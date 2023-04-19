@@ -15,7 +15,7 @@
 /// @author  Pablo Alvarez Lopez
 /// @date    May 2019
 ///
-// Representation of persons in NETEDIT
+// Representation of persons in netedit
 /****************************************************************************/
 #include <cmath>
 #include <microsim/devices/MSDevice_BTreceiver.h>
@@ -532,10 +532,12 @@ GNEPerson::getAttribute(SumoXMLAttr key) const {
                 return "triggered";
             } else if (departProcedure == DepartDefinition::CONTAINER_TRIGGERED) {
                 return "containerTriggered";
-            } else if (departProcedure == DepartDefinition::SPLIT) {
-                return "split";
             } else if (departProcedure == DepartDefinition::NOW) {
                 return "now";
+            } else if (departProcedure == DepartDefinition::SPLIT) {
+                return "split";
+            } else if (departProcedure == DepartDefinition::BEGIN) {
+                return "begin";
             } else {
                 return time2string(depart);
             }

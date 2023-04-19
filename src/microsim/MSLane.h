@@ -282,6 +282,18 @@ public:
     void setBidiLane(MSLane* bidyLane);
     ///@}
 
+    /// @name Used by the GUI for secondary shape visualization
+    /// @{
+    virtual void addSecondaryShape(const PositionVector& /*shape*/) {}
+
+    virtual double getLengthGeometryFactor(bool /*secondaryShape*/) const {
+        return myLengthGeometryFactor;
+    }
+
+    virtual const PositionVector& getShape(bool /*secondaryShape*/) const {
+        return myShape;
+    }
+    ///@}
 
 
     /// @name interaction with MSMoveReminder
@@ -590,6 +602,20 @@ public:
         return myPermissions;
     }
 
+    /** @brief Returns the vehicle class permissions for changing to the left neighbour lane
+     * @return The vehicle classes allowed to change to the left neighbour lane
+     */
+    inline SVCPermissions getChangeLeft() const {
+        return myChangeLeft;
+    }
+
+    /** @brief Returns the vehicle class permissions for changing to the right neighbour lane
+     * @return The vehicle classes allowed to change to the right neighbour lane
+     */
+    inline SVCPermissions getChangeRight() const {
+        return myChangeRight;
+    }
+
     /** @brief Returns the lane's width
      * @return This lane's width
      */
@@ -861,6 +887,15 @@ public:
     void resetPermissions(long long transientID);
     bool hadPermissionChanges() const;
 
+    /** @brief Sets the permissions for changing to the left neighbour lane
+     * @param[in] permissions The new permissions
+     */
+    void setChangeLeft(SVCPermissions permissions);
+
+    /** @brief Sets the permissions for changing to the right neighbour lane
+     * @param[in] permissions The new permissions
+     */
+    void setChangeRight(SVCPermissions permissions);
 
     inline bool allowsVehicleClass(SUMOVehicleClass vclass) const {
         return (myPermissions & vclass) == vclass;
@@ -1026,6 +1061,11 @@ public:
      * the lane itself is returned
      */
     const MSLane* getNormalPredecessorLane() const;
+
+    /** @brief get normal lane following this internal lane, for normal lanes,
+     * the lane itself is returned
+     */
+    const MSLane* getNormalSuccessorLane() const;
 
     /** @brief return the (first) predecessor lane from the given edge
      */

@@ -173,7 +173,7 @@ MSLaneSpeedTrigger::myStartElement(int element, const SUMOSAXAttributes& attrs) 
     // check the values
     if (next < 0 || (speed > 0 && !myLoadedSpeeds.empty() && myLoadedSpeeds.back().first > next) ||
             (friction > 0 && !myLoadedFrictions.empty() && myLoadedFrictions.back().first > next)) {
-        WRITE_ERROR("Invalid or unsorted time entry in vss '" + getID() + "'.");
+        WRITE_ERRORF(TL("Invalid or unsorted time entry in vss '%'."), getID());
         return;
     }
     if (speed < 0 && friction < 0) {
@@ -189,7 +189,7 @@ MSLaneSpeedTrigger::myStartElement(int element, const SUMOSAXAttributes& attrs) 
     // set the values for the next step if they are valid
     if (speed >= 0) {
         if (myLoadedSpeeds.size() != 0 && myLoadedSpeeds.back().first == next) {
-            WRITE_WARNING("Time " + time2string(next) + " was set twice for vss '" + getID() + "'; replacing first entry.");
+            WRITE_WARNINGF(TL("Time % was set twice for vss '%'; replacing first entry."), time2string(next), getID());
             myLoadedSpeeds.back().second = speed;
         } else {
             myLoadedSpeeds.push_back(std::make_pair(next, speed));

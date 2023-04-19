@@ -27,7 +27,7 @@ import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(
-    neteditTestRoot, ['--sidewalks.guess', '--crossings.guess', '--gui-testing-debug-gl'])
+    neteditTestRoot, ['--sidewalks.guess', '--crossings.guess'])
 
 # show demand elements in network mode
 netedit.changeEditMode(netedit.attrs.modes.network.showDemandElements)
@@ -35,14 +35,8 @@ netedit.changeEditMode(netedit.attrs.modes.network.showDemandElements)
 # Recompute with volatile options
 netedit.rebuildNetworkWithVolatileOptions()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save routes
-netedit.saveRoutes(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -221,10 +221,10 @@ SUMORouteHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         default:
             // parse embedded car following model information
             if (myCurrentVType != nullptr) {
-                WRITE_WARNING("Defining car following parameters in a nested element is deprecated in vType '" + myCurrentVType->id + "', use attributes instead!");
+                WRITE_WARNINGF(TL("Defining car-following parameters in a nested element is deprecated in vType '%', use attributes instead!"), myCurrentVType->id);
                 if (!SUMOVehicleParserHelper::parseCFMParams(myCurrentVType, (SumoXMLTag)element, attrs, true)) {
                     if (myHardFail) {
-                        throw ProcessError("Invalid parsing embedded VType");
+                        throw ProcessError(TL("Invalid parsing embedded VType"));
                     } else {
                         WRITE_ERROR(TL("Invalid parsing embedded VType"));
                     }
@@ -477,8 +477,12 @@ SUMORouteHandler::parseStop(SUMOVehicleParameter::Stop& stop, const SUMOSAXAttri
         errorSuffix = " at '" + stop.containerstop + "'" + errorSuffix;
     } else if (stop.parkingarea != "") {
         errorSuffix = " at '" + stop.parkingarea + "'" + errorSuffix;
+    } else if (attrs.hasAttribute(SUMO_ATTR_LANE)) {
+        errorSuffix = " on lane '" + attrs.get<std::string>(SUMO_ATTR_LANE, nullptr, ok) + "'" + errorSuffix;
+    } else if (attrs.hasAttribute(SUMO_ATTR_EDGE)) {
+        errorSuffix = " on edge '" + attrs.get<std::string>(SUMO_ATTR_EDGE, nullptr, ok) + "'" + errorSuffix;
     } else {
-        errorSuffix = " on lane '" + stop.lane + "'" + errorSuffix;
+        errorSuffix = " at undefined location" + errorSuffix;
     }
     // speed for counting as stopped
     stop.speed = attrs.getOpt<double>(SUMO_ATTR_SPEED, nullptr, ok, 0);
@@ -502,6 +506,10 @@ SUMORouteHandler::parseStop(SUMOVehicleParameter::Stop& stop, const SUMOSAXAttri
         errorOutput->inform("Invalid duration or end time is given for a stop" + errorSuffix);
         return false;
     }
+    if (triggers.size() > 0 && stop.speed > 0) {
+        errorOutput->inform("Triggers and waypoints cannot be combined" + errorSuffix);
+        return false;
+    }
     stop.extension = attrs.getOptSUMOTimeReporting(SUMO_ATTR_EXTENSION, nullptr, ok, -1);
     const bool defaultParking = (stop.triggered || stop.containerTriggered || stop.parkingarea != "");
     stop.parking = attrs.getOpt<ParkingType>(SUMO_ATTR_PARKING, nullptr, ok, defaultParking ? ParkingType::OFFROAD : ParkingType::ONROAD);
@@ -509,15 +517,11 @@ SUMORouteHandler::parseStop(SUMOVehicleParameter::Stop& stop, const SUMOSAXAttri
         WRITE_WARNING("Stop at parkingarea overrides attribute 'parking' for stop" + errorSuffix);
         stop.parking = ParkingType::OFFROAD;
     }
-    if (!ok) {
-        errorOutput->inform("Invalid bool for 'triggered', 'containerTriggered' or 'parking' for stop" + errorSuffix);
-        return false;
-    }
 
     // expected persons
     const std::vector<std::string>& expected = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_EXPECTED, nullptr, ok);
     stop.awaitedPersons.insert(expected.begin(), expected.end());
-    if (stop.awaitedPersons.size() > 0 && (stop.parametersSet & STOP_TRIGGER_SET) == 0) {
+    if (stop.awaitedPersons.size() > 0) {
         stop.triggered = true;
         if ((stop.parametersSet & STOP_PARKING_SET) == 0) {
             stop.parking = ParkingType::OFFROAD;
@@ -531,7 +535,7 @@ SUMORouteHandler::parseStop(SUMOVehicleParameter::Stop& stop, const SUMOSAXAttri
     // expected containers
     const std::vector<std::string>& expectedContainers = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_EXPECTED_CONTAINERS, nullptr, ok);
     stop.awaitedContainers.insert(expectedContainers.begin(), expectedContainers.end());
-    if (stop.awaitedContainers.size() > 0 && (stop.parametersSet & STOP_CONTAINER_TRIGGER_SET) == 0) {
+    if (stop.awaitedContainers.size() > 0) {
         stop.containerTriggered = true;
         if ((stop.parametersSet & STOP_PARKING_SET) == 0) {
             stop.parking = ParkingType::OFFROAD;

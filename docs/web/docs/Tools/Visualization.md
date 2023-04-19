@@ -54,9 +54,26 @@ When option **--show** is set, a interactive plot is opened that allows identify
 
 Option **--filter-ids ID1,ID2,...** allows restricting the plot to the given data element ids. You can use a wildcard to filter out ids that follow some pattern; for instance **--filter-ids bus_*** will filter out all ids that begin with the four characters "bus_".
 
-By setting the special attribute key `@RANK` then the index of the elements within the input file is used.
-
 Further examples are shown below. Some of them are generated with the scenario acosta, one of the published sumo scenarios (https://github.com/DLR-TS/sumo-scenarios/tree/main/bologna/acosta).
+
+### Plot Styles
+
+The script supports the following distinct styles of plots:
+
+- **lineplot**: default
+- **scatterplot:** with option **--scatterplot**
+- **box plot:** by setting one of **--xattr @BOX** or **--yattr @BOX**
+- **bar plot:** by setting either **--barplot** or **--hbarplot**
+
+### Special Attributes
+
+The following attribute values have a special meaning. Instead of using an attribute from the input file they derive a value based on the *other* attribute. (i.e. the special attribute is set for **--xattr** then the *other* value is given by the **--yattr**).
+
+- `@INDEX`: the index of the *other* value within the input file is used.
+- `@RANK`: the index of the *other* value within the sorted (descending) list of values is used
+- `@COUNT`: the number of occurences of the *other* value is used. Together with option **--barplot** or **-hbarplot** this gives a histogram. Binning size can be set via options **--xbin** and **--ybin**.
+- `@BOX`: one or more [box plots](https://en.wikipedia.org/wiki/Box_plot) of the *other* value are drawn. The **--idattr** is used for grouping and there will be one box plot per id
+- `@NONE`: can be used with option **--idattr** to explicitly avoid grouping
 
 ### Multi-line plots
 
@@ -141,7 +158,7 @@ Call `python tools/visualization/plotXMLAttributes.py -i id -x depart -y departD
 ### Time to collision over simulation time
 
 The plot is created from the output file of a SUMO simulation for which a global [SSM device](https://sumo.dlr.de/docs/Simulation/Output/SSM_Device.html) has been added. For this example, starting from the [Bologna "acosta" scenario](https://github.com/DLR-TS/sumo-scenarios/tree/main/bologna/acosta), the SUMO configuration file had been modified in order to compute time to collision:
-```
+```xml
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 	
 	<device.ssm.deterministic value="true"/>
@@ -249,6 +266,35 @@ python tools/visualization/plotXMLAttributes.py turnCounts.xml -i from,to -x beg
 ```
 
 <img src="../images/turn-counts.png" width="500px"/>
+
+
+### Boxplot: waiting time by departLane
+
+This plot demonstrates box-plotting for a single attribute (waitingTime). Optionally split by category (departLane). The call uses [tripinfo-output](../Simulation/Output/TripInfo.md) from two different simulation runs as it's input.
+
+Call to generate the plot:
+```
+python tools/visualization/plotXMLAttributes.py tripinfos.xml tripinfos2.xml  -x waitingTime -y @BOX -i departLane --show
+```
+
+<img src="../images/boxplot_departLane_waitingTime_horiz.png" width="500px"/>
+
+!!! note
+    By swapping x-attribute and y-attribute the orientation of the boxplot can be changed from horizontal to vertical
+
+### Histogram of timeLoss
+
+This plot demonstrates the use of **--barplot** binning and `@COUNT` to create a histogram of timeLoss values from two simulation runs.
+It also shows how to clamp data to the upper range of 300.
+
+Call to generate the plot:
+```
+plotXMLAttributes.py tripinfos.xml tripinfos2.xml -x timeLoss -y @COUNT -i @NONE -s --legend  --barplot --xbin 20 --xclamp :300
+```
+<img src="../images/hist_timeLoss_clamped.png" width="500px"/>
+
+!!! caution
+    It is importent to set **-i @NONE** to ensure that the timeLoss values are aggregated by file rather than by vehicle id.
 
 ## plot_trajectories.py
 
@@ -744,6 +790,7 @@ respectively.
 | **--size** {{DT_FLOAT}},{{DT_FLOAT}}                                               | Defines the size of figure                                                                                                                                                                                                                                                             |
 | **--no-legend**                                                          | If set, no legend is drawn                                                                                                                                                                                                                                                             |
 | **--legend-position** {{DT_STR}}                                           | Defines the position of the legend; default: matplolib default                                                                                                                                                                                                                         |
+| **--alpha** {{DT_FLOAT}}                                           | Defines the opacity of the plot background in the range 0=fully transparent to 1=opaque; default: 1                                                                                                                                                                                           |
 
 ### Interaction Options
 
@@ -762,23 +809,16 @@ the figure (once known it is as it should be). In such cases, the option
 
 # Further Visualization Methods
 
-## Coloring edges in [sumo-gui](../sumo-gui.md) according to arbitrary data
+## Coloring and scaling edges in [sumo-gui](../sumo-gui.md) according to arbitrary data
 
-[sumo-gui](../sumo-gui.md) can load weight files and show their
-values when setting edge coloring mode to *by loaded weight*. When
-stepping through the simulation, different time intervals contained in
-the weight file can be shown.
+[sumo-gui](../sumo-gui.md) can load [edgeData files](../sumo-gui.md#visualizing_edge-related_data) and user the contained values of any attribute for coloring edges (roads) as well as for modifying the visual width of the edges. This serves a similar use case as #plot_net_dumppy but allows all dynamic zooming and panning features of of sumo-gui.
+
+When stepping through the simulation, different time intervals contained in
+the weight file can be shown. It can be useful to adapt the simulation step length to the data period for easier stepping:
 
 ```
-sumo-gui -n NET --weight-files FILE --weight-attribute ATTR -e 86400
+sumo-gui -n NET --edgedata-files FILE --step-length 3600 --end 24:0:0
 ```
-
-Suitable weight files are those produced by
-[edgeData-output](../Simulation/Output/Lane-_or_Edge-based_Traffic_Measures.md).
-To show the number of departed vehicles for each edge, the option **--weight-attribute departed** would
-be used.
-
-The weight files generated by [randomTrips option **--weights-output-prefix**](../Tools/Trip.md#customized_weights) can also be used (to visualize depart/arrival probabilties). 
 
 ## Intersection Flow Diagram
 
@@ -794,6 +834,18 @@ To visualize the flow on an intersection with line widths according to the amoun
         sumo-gui -n NET -a flows.poly.xml
 
 <img src="../images/Route2poly_intersectionFlow.png" width="400px"/>
+
+## Visulizing FCD-Data as moving POIs
+
+The tool `fcdReplay.py` can be used to replay an [fcd-output file](../Simulation/Output/FCDOutput.md) in [sumo-gui](../sumo-gui.md).
+
+Example uses:
+
+```
+python  tools/fcdReplay.py -k example.sumocfg -f fcd.xml
+```
+
+To make use of fcd data with lon/lat values (generated with sumo option **--fcd-output.geo**), the option **--geo** must be set.
 
 # Outdated
 

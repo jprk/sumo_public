@@ -33,10 +33,7 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 netedit.rebuildNetwork()
 
 # wait for output
-time.sleep(10)
-
-# force save additionals
-netedit.forceSaveAdditionals()
+time.sleep(3)
 
 # inspect central node
 netedit.leftClick(referencePosition, 325, 250)
@@ -63,7 +60,7 @@ netedit.modifyAttribute(netedit.attrs.junction.inspectTLS.pos, "40.00,40.00", Fa
 netedit.rebuildNetwork()
 
 # wait for output
-time.sleep(10)
+time.sleep(3)
 
 # Check undo
 netedit.undo(referencePosition, 1)
@@ -72,7 +69,7 @@ netedit.undo(referencePosition, 1)
 netedit.rebuildNetwork()
 
 # wait for output
-time.sleep(10)
+time.sleep(3)
 
 # Check redo
 netedit.redo(referencePosition, 1)
@@ -81,16 +78,13 @@ netedit.redo(referencePosition, 1)
 netedit.rebuildNetwork()
 
 # wait for output
-time.sleep(10)
+time.sleep(3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # Fix stopping places position
 netedit.fixStoppingPlace("fixPositions")
-
-# save network
-netedit.saveNetwork(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

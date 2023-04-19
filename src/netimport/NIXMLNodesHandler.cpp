@@ -24,10 +24,6 @@
 
 #include <string>
 #include <iostream>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/sax/AttributeList.hpp>
-#include <xercesc/sax/SAXParseException.hpp>
-#include <xercesc/sax/SAXException.hpp>
 #include <utils/xml/SUMOSAXHandler.h>
 #include <utils/xml/SUMOXMLDefinitions.h>
 #include <utils/common/MsgHandler.h>
@@ -71,6 +67,9 @@ NIXMLNodesHandler::myStartElement(int element,
     switch (element) {
         case SUMO_TAG_LOCATION:
             myLocation = NIImporter_SUMO::loadLocation(attrs);
+            if (myLocation) {
+                GeoConvHelper::setLoadedPlain(getFileName(), *myLocation);
+            }
             break;
         case SUMO_TAG_NODE:
             addNode(attrs);
@@ -146,10 +145,10 @@ NIXMLNodesHandler::addNode(const SUMOSAXAttributes& attrs) {
     }
     if (xOk && yOk) {
         if (needConversion && !NBNetBuilder::transformCoordinate(myPosition, true, myLocation)) {
-            WRITE_ERROR("Unable to project coordinates for node '" + myID + "'.");
+            WRITE_ERRORF(TL("Unable to project coordinates for node '%'."), myID);
         }
     } else {
-        WRITE_ERROR("Missing position (at node ID='" + myID + "').");
+        WRITE_ERRORF(TL("Missing position (at node ID='%')."), myID);
     }
     bool updateEdgeGeometries = node != nullptr && myPosition != node->getPosition();
     node = processNodeType(attrs, node, myID, myPosition, updateEdgeGeometries, myNodeCont, myEdgeCont, myTLLogicCont);
@@ -182,7 +181,7 @@ NIXMLNodesHandler::processNodeType(const SUMOSAXAttributes& attrs, NBNode* node,
     if (node == nullptr) {
         node = new NBNode(nodeID, position, type);
         if (!nc.insert(node)) {
-            throw ProcessError("Could not insert node though checked this before (id='" + nodeID + "').");
+            throw ProcessError(TLF("Could not insert node though checked this before (id='%').", nodeID));
         }
     } else {
         // patch information
@@ -211,7 +210,7 @@ NIXMLNodesHandler::processNodeType(const SUMOSAXAttributes& attrs, NBNode* node,
     if (attrs.hasAttribute(SUMO_ATTR_SHAPE)) {
         shape = attrs.getOpt<PositionVector>(SUMO_ATTR_SHAPE, nodeID.c_str(), ok, PositionVector());
         if (!NBNetBuilder::transformCoordinates(shape)) {
-            WRITE_ERROR("Unable to project node shape at node '" + node->getID() + "'.");
+            WRITE_ERRORF(TL("Unable to project node shape at node '%'."), node->getID());
         }
         if (shape.size() > 2) {
             shape.closePolygon();
@@ -319,7 +318,7 @@ NIXMLNodesHandler::processTrafficLightDefinitions(const SUMOSAXAttributes& attrs
     if (SUMOXMLDefinitions::TrafficLightTypes.hasString(typeS)) {
         type = SUMOXMLDefinitions::TrafficLightTypes.get(typeS);
     } else {
-        WRITE_ERROR("Unknown traffic light type '" + typeS + "' for node '" + currentNode->getID() + "'.");
+        WRITE_ERRORF(TL("Unknown traffic light type '%' for node '%'."), typeS, currentNode->getID());
         return;
     }
     TrafficLightLayout layout = TrafficLightLayout::DEFAULT;
@@ -328,7 +327,7 @@ NIXMLNodesHandler::processTrafficLightDefinitions(const SUMOSAXAttributes& attrs
         if (SUMOXMLDefinitions::TrafficLightLayouts.hasString(layoutS)) {
             layout = SUMOXMLDefinitions::TrafficLightLayouts.get(layoutS);
         } else {
-            WRITE_ERROR("Unknown traffic light layout '" + typeS + "' for node '" + currentNode->getID() + "'.");
+            WRITE_ERRORF(TL("Unknown traffic light layout '%' for node '%'."), typeS, currentNode->getID());
             return;
         }
     }
@@ -356,7 +355,7 @@ NIXMLNodesHandler::processTrafficLightDefinitions(const SUMOSAXAttributes& attrs
         if (!tlc.insert(tlDef)) {
             // actually, nothing should fail here
             delete tlDef;
-            throw ProcessError("Could not allocate tls '" + currentNode->getID() + "'.");
+            throw ProcessError(TLF("Could not allocate tls '%'.", currentNode->getID()));
         }
         tlDef->setLayout(layout);
         tlDefs.insert(tlDef);

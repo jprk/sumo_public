@@ -46,27 +46,28 @@ SOURCE_DEST_SEP = ';'
 
 
 def get_options(args=None):
-    optParser = sumolib.options.ArgumentParser(usage="%(prog)s <options> <test directory>")
-    optParser.add_option("-o", "--output", default=".", help="send output to directory")
-    optParser.add_option("-f", "--file", help="read list of source and target dirs from")
-    optParser.add_option("-p", "--python-script",
+    optParser = sumolib.options.ArgumentParser(usage="%(prog)s <options> [<test directory>[;<target_directory>]]*")
+    optParser.add_option("-o", "--output", category="output",  default=".", help="send output to directory")
+    optParser.add_option("-f", "--file", category="input", help="read list of source and target dirs from")
+    optParser.add_option("-p", "--python-script", category="input",
                          help="name of a python script to generate for a batch run")
-    optParser.add_option("-i", "--intelligent-names", dest="names", action="store_true",
+    optParser.add_option("-i", "--intelligent-names", category="processing", dest="names", action="store_true",
                          default=False, help="generate cfg name from directory name")
-    optParser.add_option("-v", "--verbose", action="store_true", default=False, help="more information")
-    optParser.add_option("-a", "--application", help="sets the application to be used")
-    optParser.add_option("-s", "--skip-configuration", default=False, action="store_true",
+    optParser.add_option("-v", "--verbose", category="processing", action="store_true", default=False,
+                         help="more information")
+    optParser.add_option("-a", "--application", category="processing", help="sets the application to be used")
+    optParser.add_option("-s", "--skip-configuration", category="processing", default=False, action="store_true",
                          help="skips creation of an application config from the options.app file")
-    optParser.add_option("-x", "--skip-validation", default=False, action="store_true",
+    optParser.add_option("-x", "--skip-validation", category="processing", default=False, action="store_true",
                          help="remove all options related to XML validation")
-    optParser.add_option("-d", "--no-subdir", dest="noSubdir", action="store_true",
+    optParser.add_option("-d", "--no-subdir", category="processing", dest="noSubdir", action="store_true",
                          default=False, help="store test files directly in the output directory")
-    optParser.add_option("--depth", type=int, default=1, help="maximum depth when descending into testsuites")
-    options, args = optParser.parse_known_args(args)
-    if not options.file and len(args) == 0:
-        optParser.print_help()
-        sys.exit(1)
-    options.args = args
+    optParser.add_option("--depth", category="processing", type=int, default=1,
+                         help="maximum depth when descending into testsuites")
+    optParser.add_option("test_dir", nargs="*", category="input", help="read list of source and target dirs from")
+    options = optParser.parse_args(args)
+    if not options.file and not options.test_dir:
+        optParser.error("Please specify either an input file or a test directory")
     return options
 
 
@@ -102,7 +103,7 @@ def main(options):
                 ls[0] = join(dirname, ls[0])
                 ls[1] = join(dirname, ls[1])
                 targets.append(ls[:3])
-    for val in options.args:
+    for val in options.test_dir:
         source_and_maybe_target = val.split(SOURCE_DEST_SEP) + ["", ""]
         targets.append(source_and_maybe_target[:3])
     depth = options.depth
@@ -338,7 +339,7 @@ for d, p in [
     if options.python_script:
         pyBatch.write("""]:
     if p.wait() != 0:
-        print("Error: '%s' failed for '%s'!" % (" ".join(p.args), d))
+        print("Error: '%s' failed for '%s'!" % (" ".join(getattr(p, "args", [str(p.pid)])), d))
         sys.exit(1)\n""")
 
 

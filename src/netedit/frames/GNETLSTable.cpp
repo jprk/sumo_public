@@ -76,7 +76,7 @@ FXIMPLEMENT(GNETLSTable, FXHorizontalFrame, GNETLSTableMap, ARRAYNUMBER(GNETLSTa
 // ---------------------------------------------------------------------------
 
 GNETLSTable::GNETLSTable(GNETLSEditorFrame::TLSPhases* TLSPhasesParent) :
-    FXHorizontalFrame(TLSPhasesParent->getCollapsableFrame(), GUIDesignAuxiliarTLSTable),
+    FXHorizontalFrame(TLSPhasesParent->getCollapsableFrame(), GUIDesignAuxiliarFrameFixWidth),
     myProgramFont(new FXFont(getApp(), "Courier New", 10)),
     myIndexFont(new FXFont(getApp(), "Segoe UI", 9)),
     myIndexSelectedFont(new FXFont(getApp(), "Segoe UI", 9, FXFont::Bold)),
@@ -216,7 +216,7 @@ GNETLSTable::setItemText(FXint row, FXint column, const std::string& text) {
             updateAccumulatedDuration();
         }
     } else {
-        throw ProcessError("Invalid row or column");
+        throw ProcessError(TL("Invalid row or column"));
     }
 }
 
@@ -227,7 +227,7 @@ GNETLSTable::getItemText(const int row, const int column) const {
             (column >= 0) && (column < (FXint)myColumns.size())) {
         return myRows.at(row)->getText(column);
     }
-    throw ProcessError("Invalid row or column");
+    throw ProcessError(TL("Invalid row or column"));
 }
 
 
@@ -251,7 +251,7 @@ GNETLSTable::selectRow(const int row) {
         // update index label
         updateIndexLabel();
     } else {
-        throw ProcessError("Invalid row");
+        throw ProcessError(TL("Invalid row"));
     }
 }
 
@@ -261,7 +261,7 @@ GNETLSTable::setColumnLabelTop(const int column, const std::string& text, const 
     if ((column >= 0) && (column < (int)myColumns.size())) {
         myColumns.at(column)->setColumnLabelTop(text, tooltip);
     } else {
-        throw ProcessError("Invalid column");
+        throw ProcessError(TL("Invalid column"));
     }
 }
 
@@ -271,7 +271,7 @@ GNETLSTable::setColumnLabelBot(const int column, const std::string& text) {
     if ((column >= 0) && (column < (int)myColumns.size())) {
         myColumns.at(column)->setColumnLabelBot(text);
     } else {
-        throw ProcessError("Invalid column");
+        throw ProcessError(TL("Invalid column"));
     }
 }
 
@@ -606,7 +606,7 @@ GNETLSTable::updateAccumulatedDuration() {
         }
         // set tooltips in row cells
         for (int i = 0; i < (int)myRows.size(); i++) {
-            myRows.at(i)->getCells().at(durationCol)->setTooltip("Accumulated: " + toString(durations.at(i)));
+            myRows.at(i)->getCells().at(durationCol)->setTooltip(TL("Accumulated: ") + toString(durations.at(i)));
         }
     }
 }
@@ -676,37 +676,37 @@ GNETLSTable::Cell::Cell(GNETLSTable* TLSTable, int col, int row) :
     // build menu button
     myAddButton = new MFXMenuButtonTooltip(TLSTable->myColumns.at(col)->getVerticalCellFrame(),
                                            myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                           "\tAdd phase\tAdd new phase.",
+                                           (std::string("\t") + TL("Add phase") + std::string("\t") + TL("Add new phase.")).c_str(),
                                            GUIIconSubSys::getIcon(GUIIcon::ADD), myMenuButtonPopup, TLSTable, GUIDesignTLSTableCheckableButtonIcon);
     // default phase
     myAddPhaseButton = new MFXButtonTooltip(myMenuButtonPopup,
                                             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                            "\tDefault phase\tAdd default phase.",
+                                            (std::string("\t") + TL("Default phase") + std::string("\t") + TL("Add default phase.")).c_str(),
                                             GUIIconSubSys::getIcon(GUIIcon::TLSPHASEDEFAULT), TLSTable, MID_GNE_TLSTABLE_ADDPHASE, GUIDesignButtonIcon);
     // duplicate phase
     myDuplicatePhaseButton = new MFXButtonTooltip(myMenuButtonPopup,
             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-            "\tDuplicate phase\tDuplicate this phase.",
+            (std::string("\t") + TL("Duplicate phase") + std::string("\t") + TL("Duplicate this phase.")).c_str(),
             GUIIconSubSys::getIcon(GUIIcon::TLSPHASECOPY), TLSTable, MID_GNE_TLSTABLE_COPYPHASE, GUIDesignButtonIcon);
     // red phase
     myAddAllRedButton = new MFXButtonTooltip(myMenuButtonPopup,
             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-            "\tRed phase\tAdd red phase.",
+            (std::string("\t") + TL("Red phase") + std::string("\t") + TL("Add red phase.")).c_str(),
             GUIIconSubSys::getIcon(GUIIcon::TLSPHASEALLRED), TLSTable, MID_GNE_TLSTABLE_ADDPHASEALLRED, GUIDesignButtonIcon);
     // yellow phase
     myAddAllYellowButton = new MFXButtonTooltip(myMenuButtonPopup,
             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-            "\tYellow phase\tAdd yellow phase.",
+            (std::string("\t") + TL("Yellow phase") + std::string("\t") + TL("Add yellow phase.")).c_str(),
             GUIIconSubSys::getIcon(GUIIcon::TLSPHASEALLYELLOW), TLSTable, MID_GNE_TLSTABLE_ADDPHASEALLYELLOW, GUIDesignButtonIcon);
     // green phase
     myAddAllGreenButton = new MFXButtonTooltip(myMenuButtonPopup,
             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-            "\tGreen phase\tAdd green phase.",
+            (std::string("\t") + TL("Green phase") + std::string("\t") + TL("Add green phase.")).c_str(),
             GUIIconSubSys::getIcon(GUIIcon::TLSPHASEALLGREEN), TLSTable, MID_GNE_TLSTABLE_ADDPHASEALLGREEN, GUIDesignButtonIcon);
     // green priority phase
     myAddAllGreenPriorityButton = new MFXButtonTooltip(myMenuButtonPopup,
             myTLSTable->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-            "\tGreen priority phase\tAdd green priority phase.",
+            (std::string("\t") + TL("Green priority phase") + std::string("\t") + TL("Add green priority phase.")).c_str(),
             GUIIconSubSys::getIcon(GUIIcon::TLSPHASEALLGREENPRIORITY), TLSTable, MID_GNE_TLSTABLE_ADDPHASEALLGREENPRIORITY, GUIDesignButtonIcon);
     // create elements
     myMenuButtonPopup->create();
@@ -907,7 +907,7 @@ GNETLSTable::Cell::getDoubleValue() const {
     if (myTextField->getText().empty()) {
         return 0;
     } else if (!GNEAttributeCarrier::canParse<double>(myTextField->getText().text())) {
-        throw ProcessError("Cannot be parsed to double");
+        throw ProcessError(TL("Cannot be parsed to double"));
     } else {
         return GNEAttributeCarrier::parse<double>(myTextField->getText().text());
     }
@@ -919,7 +919,7 @@ GNETLSTable::Cell::setTooltip(const std::string& toolTip) {
     if (myTextField) {
         myTextField->setToolTipText(toolTip.c_str());
     } else {
-        throw ProcessError("Tooltips pnly for TextFields");
+        throw ProcessError(TL("Tooltips only for TextFields"));
     }
 }
 
@@ -1051,7 +1051,7 @@ GNETLSTable::Column::Column(GNETLSTable* table, const int index, const char type
     myIndex(index),
     myType(type) {
     // create vertical frame
-    myVerticalFrame = new FXVerticalFrame(table, GUIDesignAuxiliarTLSTable);
+    myVerticalFrame = new FXVerticalFrame(table, GUIDesignAuxiliarFrameFixWidth);
     // create top label
     switch (myType) {
         case 's':
@@ -1062,31 +1062,31 @@ GNETLSTable::Column::Column(GNETLSTable* table, const int index, const char type
             // empty label
             myTopLabel = new MFXLabelTooltip(myVerticalFrame,
                                              table->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                             "", nullptr, GUIDesignLabelTLSTableEmpty);
+                                             "", nullptr, GUIDesignLabelFixed(0));
             break;
         default:
             // ticked label
             myTopLabel = new MFXLabelTooltip(myVerticalFrame,
                                              table->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                             "", nullptr, GUIDesignLabelTLSTableEmpty);
+                                             "", nullptr, GUIDesignLabelThickedFixed(0));
             break;
     }
     // create vertical frame for cells
-    myVerticalCellFrame = new FXVerticalFrame(myVerticalFrame, GUIDesignAuxiliarTLSTable);
+    myVerticalCellFrame = new FXVerticalFrame(myVerticalFrame, GUIDesignAuxiliarFrameFixWidth);
     // create bot label
     switch (myType) {
         case 's':
             // label with icon
-            myBotLabel = new FXLabel(myVerticalFrame, "", GUIIconSubSys::getIcon(GUIIcon::SUM), GUIDesignLabelTLSTable);
+            myBotLabel = new FXLabel(myVerticalFrame, "", GUIIconSubSys::getIcon(GUIIcon::SUM), GUIDesignLabelThickedFixed(0));
             break;
         case 'u':
         case 'p':
             // ticked label
-            myBotLabel = new FXLabel(myVerticalFrame, "", nullptr, GUIDesignLabelTLSTable);
+            myBotLabel = new FXLabel(myVerticalFrame, "", nullptr, GUIDesignLabelThickedFixed(0));
             break;
         default:
             // empty label
-            myBotLabel = new FXLabel(myVerticalFrame, "", nullptr, GUIDesignLabelTLSTableEmpty);
+            myBotLabel = new FXLabel(myVerticalFrame, "", nullptr, GUIDesignLabelFixed(0));
             break;
     }
     // create elements
@@ -1210,9 +1210,9 @@ GNETLSTable::Row::Row(GNETLSTable* table) :
             case ('s'): {
                 // create labels for index
                 auto indexLabel = new FXLabel(table->myColumns.at(columnIndex)->getVerticalCellFrame(),
-                                              toString(myTable->myRows.size()).c_str(), nullptr, GUIDesignLabelTLSTableIndex);
+                                              toString(myTable->myRows.size()).c_str(), nullptr, GUIDesignLabelThickedFixed(30));
                 auto indexLabelBold = new FXLabel(table->myColumns.at(columnIndex)->getVerticalCellFrame(),
-                                                  toString(myTable->myRows.size()).c_str(), nullptr, GUIDesignLabelTLSTableIndex);
+                                                  toString(myTable->myRows.size()).c_str(), nullptr, GUIDesignLabelThickedFixed(30));
                 // set fonts
                 indexLabel->setFont(myTable->myIndexFont);
                 indexLabelBold->setFont(myTable->myIndexSelectedFont);
@@ -1249,7 +1249,7 @@ GNETLSTable::Row::Row(GNETLSTable* table) :
                 // create button for delete phase
                 auto button = new MFXButtonTooltip(table->myColumns.at(columnIndex)->getVerticalCellFrame(),
                                                    table->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                                   "\tDelete phase\tDelete this phase.",
+                                                   (std::string("\t") + TL("Delete phase") + std::string("\t") + TL("Delete this phase.")).c_str(),
                                                    GUIIconSubSys::getIcon(GUIIcon::REMOVE), table, MID_GNE_TLSTABLE_REMOVEPHASE, GUIDesignButtonIcon);
                 myCells.push_back(new Cell(table, button, columnIndex, numCells));
                 break;
@@ -1258,7 +1258,7 @@ GNETLSTable::Row::Row(GNETLSTable* table) :
                 // create button for move up phase
                 auto button = new MFXButtonTooltip(table->myColumns.at(columnIndex)->getVerticalCellFrame(),
                                                    table->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                                   "\tMove phase up\tMove this phase up.",
+                                                   (std::string("\t") + TL("Move phase up") + std::string("\t") + TL("Move this phase up.")).c_str(),
                                                    GUIIconSubSys::getIcon(GUIIcon::ARROW_UP), table, MID_GNE_TLSTABLE_MOVEUPPHASE, GUIDesignButtonIcon);
                 myCells.push_back(new Cell(table, button, columnIndex, numCells));
                 break;
@@ -1267,7 +1267,7 @@ GNETLSTable::Row::Row(GNETLSTable* table) :
                 // create button for move down phase
                 auto button = new MFXButtonTooltip(table->myColumns.at(columnIndex)->getVerticalCellFrame(),
                                                    table->getTLSPhasesParent()->getTLSEditorParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                                   "\tMove phase down\tMove this phase down.",
+                                                   (std::string("\t") + TL("Move phase down") + std::string("\t") + TL("Move this phase down.")).c_str(),
                                                    GUIIconSubSys::getIcon(GUIIcon::ARROW_DOWN), table, MID_GNE_TLSTABLE_MOVEDOWNPHASE, GUIDesignButtonIcon);
                 myCells.push_back(new Cell(table, button, columnIndex, numCells));
                 break;

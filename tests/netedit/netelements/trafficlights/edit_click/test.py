@@ -30,12 +30,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
-# force save demand elements
-netedit.forceSaveDemandElements()
-
 # go to TLS mode
 netedit.selectTLSMode()
 
@@ -55,7 +49,7 @@ pyautogui.rightClick(clickedPosition)
 for _ in range(7):
     # wait before every down
     time.sleep(0.3)
-    # type down keys
+# type down keys
     pyautogui.hotkey('down')
 
 # type right key for the second menu
@@ -68,7 +62,7 @@ netedit.focusOnFrame()
 for _ in range(3):
     # wait before every down
     time.sleep(0.3)
-    # type down keys
+# type down keys
     netedit.typeTab()
 
 # type right key for the second menu
@@ -83,14 +77,8 @@ netedit.undo(referencePosition, 1)
 # Check redo
 netedit.redo(referencePosition, 1)
 
-# save network
-netedit.saveNetwork(referencePosition)
-
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save routes
-netedit.saveRoutes(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

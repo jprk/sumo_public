@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect calibrator
-netedit.leftClick(referencePosition, 300, 130)
+netedit.leftClick(referencePosition, 591, 178)
 
 # Change parameter id with a non valid value (invalid characters)
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.name, "///", True)
@@ -50,11 +50,8 @@ netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.name, "customN
 netedit.undo(referencePosition, 4)
 netedit.redo(referencePosition, 4)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

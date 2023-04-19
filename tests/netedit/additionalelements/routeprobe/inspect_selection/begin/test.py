@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# recompute (needed for vertical position)
-netedit.rebuildNetwork()
-
 # go to select mode
 netedit.selectMode()
 
@@ -41,23 +38,20 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect routeProbes
-netedit.leftClick(referencePosition, 552, 205)
+netedit.leftClick(referencePosition, 223, 313)
 
 # Set invalid begin
-netedit.modifyAttribute(netedit.attrs.routeProbe.inspectSelection.begin, "-5", True)
+netedit.modifyAttribute(netedit.attrs.routeProbe.inspectSelection.begin, "-5", False)
 
 # Set valid begin
-netedit.modifyAttribute(netedit.attrs.routeProbe.inspectSelection.begin, "11.3", True)
+netedit.modifyAttribute(netedit.attrs.routeProbe.inspectSelection.begin, "11.3", False)
 
 # Check undos and redos
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -21,6 +21,14 @@ Either
 - load the additional file when cutting and then save the reduced additional file or
 - open the reduced network and load the original additional file. All objects outside the reduced network will be discarded with a warning.
 
+## Making curved roads
+
+1. switch to [selection mode](editModesCommon.md#select)
+2. click on both directional edges once to select them
+3. switch to [move mode](editModesCommon.md#move)
+4. click and drag to add / change geometry points (affecting both edges at the same time)
+5. (optionally) [smooth both edges](neteditPopupFunctions.md#smooth_edge) at the same time
+
 ## Specifying the complete geometry of an edge including endpoints
 
 By default, the geometry of an edge starts with the position of the source junction and ends at the position of the destination junction. However, this sometimes leads to undesired junction shapes when dealing with roads that have a large green median strip or when modeling edges that meet at a sharp angle such as highway ramps. Also, when edges in opposite directions have unequal number of lanes (i.e. due to added left-turn lanes) and the road shapes do not line up. The solution is to define an edge geometry with custom endpoints. Below are three alternative methods of accomplishing this.
@@ -175,6 +183,14 @@ directions. To make a unidirectional track usable in both directions,
 6.  in [Create Edges](editModesNetwork.md#create_edges), set the checkbox to *Two-way* and optionally to *Chain*
 7.  continue to created edges. Each click will create bidirectional track
 
+## Define rail signals that only affect one track direction
+
+If a piece of railway track is [modelled for train operations in both directions](#creating_bidirectional_railway_tracks), any rail signal defined on this *bidi*-track will affect both direction of travel by default.
+To change this, the following steps have to be taken:
+
+1. ensure that [edges for both directions of travel are visible](../Simulation/Railways.md#working_with_bidirectional_tracks_in_netedit)
+2. [set connection attribute](#setting_connection_attributes) `uncontrolled=True` for the connection that shall not be controlled
+
 ## Creating a zipper merge
 
 1. use inspect mode to set junction type to 'zipper'.
@@ -224,3 +240,13 @@ There is also another solution in case you want to add special lanes to your edg
 
 1. select edges with the help of the select mode
 2. after right clicking use lane operation 'add restricted lane'
+
+
+## Building a [Two-Way-Left-Turn-lane](https://en.wikipedia.org/wiki/Reversible_lane#Turn_lanes_and_flush_medians)
+
+1. create a network with two lanes in each direction (on the road that should have a TWLT)
+2. select all edges that belong to that road using *select mode*
+3. switch to *move mode*, enter the value of -1.6 in the the 'shift value' input field and press 'Apply shift value' (or hit ENTER)
+  - explanation: This makes it so that the inside lanes in both directions are directly on top of each other
+4. go to inspect mode and inspect the selection of edges
+5. activate the 'isBidi' checkbox

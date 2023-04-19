@@ -61,12 +61,12 @@ loadNet(RONet& toFill, ROAbstractEdgeBuilder& eb) {
     OptionsCont& oc = OptionsCont::getOptions();
     std::string file = oc.getString("net-file");
     if (file == "") {
-        throw ProcessError("Missing definition of network to load!");
+        throw ProcessError(TL("Missing definition of network to load!"));
     }
     if (!FileHelpers::isReadable(file)) {
-        throw ProcessError("The network file '" + file + "' could not be accessed.");
+        throw ProcessError(TLF("The network file '%' could not be accessed.", file));
     }
-    PROGRESS_BEGIN_MESSAGE("Loading net");
+    PROGRESS_BEGIN_MESSAGE(TL("Loading net"));
     RONetHandler handler(toFill, eb, true, 0);
     handler.setFileName(file);
     if (!XMLSubSys::runParser(handler, file, true)) {
@@ -76,7 +76,7 @@ loadNet(RONet& toFill, ROAbstractEdgeBuilder& eb) {
         PROGRESS_DONE_MESSAGE();
     }
     if (!deprecatedVehicleClassesSeen.empty()) {
-        WRITE_WARNING("Deprecated vehicle classes '" + toString(deprecatedVehicleClassesSeen) + "' in input network.");
+        WRITE_WARNINGF(TL("Deprecated vehicle classes '%' in input network."), toString(deprecatedVehicleClassesSeen));
         deprecatedVehicleClassesSeen.clear();
     }
 }
@@ -110,9 +110,9 @@ main(int argc, char* argv[]) {
         net = new RONet();
         AGStreet::Builder builder;
         loadNet(*net, builder);
-        WRITE_MESSAGE("Loaded " + toString(net->getEdgeNumber()) + " edges.");
+        WRITE_MESSAGEF(TL("Loaded % edges."), toString(net->getEdgeNumber()));
         if (oc.getBool("debug")) {
-            WRITE_MESSAGE(TL("\n\t ---- begin AcitivtyGen ----\n"));
+            WRITE_MESSAGE("\n\t ---- begin ActivityGen ----\n");
         }
 
         std::string statFile = oc.getString("stat-file");
@@ -125,7 +125,7 @@ main(int argc, char* argv[]) {
         actiGen.makeActivityTrips(duration.getDay(), begin.getTime(), end.getTime());
 
         if (oc.getBool("debug")) {
-            WRITE_MESSAGE(TL("\n\t ---- end of ActivityGen ----\n"));
+            WRITE_MESSAGE("\n\t ---- end of ActivityGen ----\n");
         }
         ret = 0;
     } catch (const ProcessError& e) {

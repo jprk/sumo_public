@@ -72,6 +72,8 @@ public:
         return MSVehicle::getPosition(offset);
     }
 
+    Position getVisualPosition(bool s2, const double offset = 0) const;
+
     /** @brief Return current angle
      *
      * @note implementation of abstract method does not work otherwise
@@ -79,6 +81,12 @@ public:
     double getAngle() const {
         return MSVehicle::getAngle();
     }
+
+    /** @brief Returns the vehicle's direction in radians taking into account
+     * secondary shape
+     * @return The vehicle's current angle
+     */
+    double getVisualAngle(bool s2) const;
 
     /** @brief Draws the route
      * @param[in] r The route to draw
@@ -158,6 +166,9 @@ public:
     std::string getSpeedMode() const;
     /// @brief return the lane change mode as bit string
     std::string getLaneChangeMode() const;
+
+    /// @brief return the current lateral alignment as string
+    std::string getDynamicAlignment() const;
 
     /// @brief handle route to accomodate to given stop
     void rerouteDRTStop(MSStoppingPlace* busStop);

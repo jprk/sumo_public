@@ -137,7 +137,7 @@ public:
      * @param[in] oc The options container holding options needed during the building
      * @return The built logic (may be 0)
      */
-    NBTrafficLightLogic* compute(OptionsCont& oc);
+    NBTrafficLightLogic* compute(const OptionsCont& oc);
 
     /// @name Access to controlled nodes
     /// @{
@@ -154,7 +154,7 @@ public:
     virtual void removeNode(NBNode* node);
 
     /** @brief removes the given connection from the traffic light
-     * if recontruct=true, reconstructs the logic and informs the edges for immediate use in NETEDIT
+     * if recontruct=true, reconstructs the logic and informs the edges for immediate use in netedit
      * @note: tlIndex is not necessarily unique. we need the whole connection data here
      */
     virtual void removeConnection(const NBConnection& conn, bool reconstruct = true) {

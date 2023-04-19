@@ -16,6 +16,7 @@
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @author  Laura Bieker
+/// @author  Mirko Barthauer
 /// @date    Mon, 14.04.2008
 ///
 // Importer for networks stored in openDrive format
@@ -30,6 +31,7 @@
 #include <utils/common/ToString.h>
 #include <utils/common/StringUtils.h>
 #include <utils/common/MsgHandler.h>
+#include <utils/common/SUMOVehicleClass.h>
 #include <utils/shapes/SUMOPolygon.h>
 #include <utils/shapes/PointOfInterest.h>
 #include <utils/iodevices/OutputDevice.h>
@@ -58,9 +60,10 @@
 //#define DEBUG_INTERNALSHAPES
 //#define DEBUG_SHAPE
 
-#define DEBUG_COND(road) ((road)->id == "32")
-#define DEBUG_COND2(edgeID) (StringUtils::startsWith((edgeID), "67"))
-#define DEBUG_COND3(roadID) (roadID == "32")
+#define DEBUG_ID ""
+#define DEBUG_COND(road) ((road)->id == DEBUG_ID)
+#define DEBUG_COND2(edgeID) (StringUtils::startsWith((edgeID), DEBUG_ID))
+#define DEBUG_COND3(roadID) (roadID == DEBUG_ID)
 
 // ===========================================================================
 // definitions
@@ -86,6 +89,7 @@ StringBijection<int>::Entry NIImporter_OpenDrive::openDriveTags[] = {
     { "center",           NIImporter_OpenDrive::OPENDRIVE_TAG_CENTER },
     { "right",            NIImporter_OpenDrive::OPENDRIVE_TAG_RIGHT },
     { "lane",             NIImporter_OpenDrive::OPENDRIVE_TAG_LANE },
+    { "access",           NIImporter_OpenDrive::OPENDRIVE_TAG_ACCESS },
     { "signal",           NIImporter_OpenDrive::OPENDRIVE_TAG_SIGNAL },
     { "signalReference",  NIImporter_OpenDrive::OPENDRIVE_TAG_SIGNALREFERENCE },
     { "validity",         NIImporter_OpenDrive::OPENDRIVE_TAG_VALIDITY },
@@ -153,6 +157,8 @@ StringBijection<int>::Entry NIImporter_OpenDrive::openDriveAttrs[] = {
     { "toLane",         NIImporter_OpenDrive::OPENDRIVE_ATTR_TOLANE },
     { "max",            NIImporter_OpenDrive::OPENDRIVE_ATTR_MAX },
     { "sOffset",        NIImporter_OpenDrive::OPENDRIVE_ATTR_SOFFSET },
+    { "rule",           NIImporter_OpenDrive::OPENDRIVE_ATTR_RULE },
+    { "restriction",    NIImporter_OpenDrive::OPENDRIVE_ATTR_RESTRICTION },
     { "name",           NIImporter_OpenDrive::OPENDRIVE_ATTR_NAME },
     // towards xodr v1.4 speed:unit
     { "unit",           NIImporter_OpenDrive::OPENDRIVE_ATTR_UNIT },
@@ -174,7 +180,7 @@ bool NIImporter_OpenDrive::myImportInternalShapes;
 // ---------------------------------------------------------------------------
 void
 NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
-    // check whether the option is set (properly)
+    // check whether the option is set properly and all files exist
     if (!oc.isUsableFileList("opendrive-files")) {
         return;
     }
@@ -191,15 +197,10 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
     NIImporter_OpenDrive handler(nb.getTypeCont(), edges);
     handler.needsCharacterData();
     // parse file(s)
-    std::vector<std::string> files = oc.getStringVector("opendrive-files");
-    for (std::vector<std::string>::const_iterator file = files.begin(); file != files.end(); ++file) {
-        if (!FileHelpers::isReadable(*file)) {
-            WRITE_ERROR("Could not open opendrive file '" + *file + "'.");
-            return;
-        }
-        handler.setFileName(*file);
-        PROGRESS_BEGIN_MESSAGE("Parsing opendrive from '" + *file + "'");
-        XMLSubSys::runParser(handler, *file);
+    for (const std::string& file : oc.getStringVector("opendrive-files")) {
+        handler.setFileName(file);
+        PROGRESS_BEGIN_MESSAGE("Parsing opendrive from '" + file + "'");
+        XMLSubSys::runParser(handler, file, false, false, true);
         PROGRESS_DONE_MESSAGE();
     }
     // apply signal reference information
@@ -207,7 +208,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
         for (OpenDriveSignal& signal : item.second->signals) {
             if (signal.type == "") {
                 if (handler.getSignals().count(signal.id) == 0) {
-                    WRITE_WARNING("Could not find signal reference '" + signal.id + "'.");
+                    WRITE_WARNINGF(TL("Could not find signal reference '%'."), signal.id);
                 } else {
                     const OpenDriveSignal& ref = handler.getSignals()[signal.id];
                     signal.type = ref.type;
@@ -256,7 +257,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
     for (std::map<std::string, Boundary>::iterator i = posMap.begin(); i != posMap.end(); ++i) {
         //std::cout << " import node=" << (*i).first << " z=" << (*i).second.getCenter() << " boundary=" << (*i).second << "\n";
         if (!nb.getNodeCont().insert((*i).first, (*i).second.getCenter())) {
-            throw ProcessError("Could not add node '" + (*i).first + "'.");
+            throw ProcessError(TLF("Could not add node '%'.", (*i).first));
         }
     }
     //  assign built nodes
@@ -270,7 +271,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                     // not yet seen, build (possibly a junction without connections)
                     Position pos = l.linkType == OPENDRIVE_LT_SUCCESSOR ? e->geom[-1] : e->geom[0];
                     if (!nb.getNodeCont().insert(nid, pos)) {
-                        throw ProcessError("Could not build node '" + nid + "'.");
+                        throw ProcessError(TLF("Could not build node '%'.", nid));
                     }
                 }
                 // set node information
@@ -308,7 +309,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                 // not yet seen, build
                 Position pos = l.linkType == OPENDRIVE_LT_SUCCESSOR ? e->geom[-1] : e->geom[0];
                 if (!nb.getNodeCont().insert(nid, pos)) {
-                    throw ProcessError("Could not build node '" + nid + "'.");
+                    throw ProcessError(TLF("Could not build node '%'.", nid));
                 }
             }
             /* debug-stuff
@@ -375,7 +376,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
         joinedPos.mul(1. / (double)joined.size());
         const std::string joinedID = nc.createClusterId(joined);
         if (!nc.insert(joinedID, joinedPos)) {
-            throw ProcessError("Could not add node '" + joinedID + "'.");
+            throw ProcessError(TLF("Could not add node '%'.", joinedID));
         }
         NBNode* n = nc.retrieve(joinedID);
         for (NBNode* j : joined) {
@@ -407,7 +408,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
     for (std::map<std::string, OpenDriveEdge*>::iterator i = outerEdges.begin(); i != outerEdges.end(); ++i) {
         OpenDriveEdge* e = (*i).second;
         if (e->geom.size() < 2) {
-            WRITE_WARNING("Ignoring road '" + e->id + "' without geometry.");
+            WRITE_WARNINGF(TL("Ignoring road '%' without geometry."), e->id);
             continue;
         }
         bool lanesBuilt = false;
@@ -431,7 +432,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                 geomWithOffset.move2sideCustom(e->laneOffsets);
                 //std::cout << " e=" << e->id << " offsets=" << e->laneOffsets << " geom=" << e->geom << " geom2=" << geomWithOffset << "\n";
             } catch (InvalidArgument&) {
-                WRITE_WARNING("Could not apply laneOffsets for edge '" + e->id + "'");
+                WRITE_WARNINGF(TL("Could not apply laneOffsets for edge '%'"), e->id);
             }
         }
 #ifdef DEBUG_SHAPE
@@ -470,7 +471,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                 const std::string nodeID = e->id + (positionIDs ? "." + toString(nextS) : "#" + toString(sectionIndex + 1));
                 sTo = new NBNode(nodeID, geomWithOffset.positionAtOffset(nextS));
                 if (!nb.getNodeCont().insert(sTo)) {
-                    throw ProcessError("Could not add node '" + sTo->getID() + "'.");
+                    throw ProcessError(TLF("Could not add node '%'.", sTo->getID()));
                 }
                 sE = nextS / cF;
             }
@@ -534,7 +535,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                     }
                 }
                 if (!nb.getEdgeCont().insert(currRight, myImportAllTypes)) {
-                    throw ProcessError("Could not add edge '" + currRight->getID() + "'.");
+                    throw ProcessError(TLF("Could not add edge '%'.", currRight->getID()));
                 }
                 if (nb.getEdgeCont().wasIgnored(id)) {
                     prevRight = nullptr;
@@ -592,7 +593,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                     }
                 }
                 if (!nb.getEdgeCont().insert(currLeft, myImportAllTypes)) {
-                    throw ProcessError("Could not add edge '" + currLeft->getID() + "'.");
+                    throw ProcessError(TLF("Could not add edge '%'.", currLeft->getID()));
                 }
                 if (nb.getEdgeCont().wasIgnored(id)) {
                     prevLeft = nullptr;
@@ -700,7 +701,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
 #endif
         std::string fromEdge = (*i).fromEdge;
         if (edges.find(fromEdge) == edges.end()) {
-            WRITE_WARNING("While setting connections: from-edge '" + fromEdge + "' is not known.");
+            WRITE_WARNINGF(TL("While setting connections: from-edge '%' is not known."), fromEdge);
             continue;
         }
         OpenDriveEdge* odFrom = edges[fromEdge];
@@ -710,7 +711,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
 
         std::string toEdge = (*i).toEdge;
         if (edges.find(toEdge) == edges.end()) {
-            WRITE_WARNING("While setting connections: to-edge '" + toEdge + "' is not known.");
+            WRITE_WARNINGF(TL("While setting connections: to-edge '%' is not known."), toEdge);
             continue;
         }
 
@@ -736,10 +737,10 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
         NBEdge* from = nb.getEdgeCont().retrieve(fromEdge);
         NBEdge* to = nb.getEdgeCont().retrieve(toEdge);
         if (from == nullptr) {
-            WRITE_WARNING("Could not find fromEdge representation of '" + fromEdge + "' in connection '" + (*i).origID + "'.");
+            WRITE_WARNINGF(TL("Could not find fromEdge representation of '%' in connection '%'."), fromEdge, (*i).origID);
         }
         if (to == nullptr) {
-            WRITE_WARNING("Could not find fromEdge representation of '" + toEdge + "' in connection '" + (*i).origID + "'.");
+            WRITE_WARNINGF(TL("Could not find fromEdge representation of '%' in connection '%'."), toEdge, (*i).origID);
         }
         if (from == nullptr || to == nullptr) {
             continue;
@@ -788,7 +789,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                 continue;
             }
             if (e->laneSections.size() == 0) {
-                WRITE_WARNING("Edge '" + e->id + "' has signals but no lane sections.");
+                WRITE_WARNINGF(TL("Edge '%' has signals but no lane sections."), e->id);
                 continue;
             }
             std::vector<OpenDriveLaneSection>::iterator k = e->laneSections.begin();
@@ -805,7 +806,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
             if (id == "") {
                 // traffic light on connecting road
                 if (e->junction != "") {
-                    //WRITE_WARNING("Found a traffic light signal on an internal edge; will not build it (original edge id='" + e->id + "').");
+                    //WRITE_WARNINGF(TL("Found a traffic light signal on an internal edge; will not build it (original edge id='%')."), e->id);
                     std::string fromID, toID;
                     for (std::vector<OpenDriveLink>::const_iterator l = e->links.begin(); l != e->links.end(); ++l) {
                         if ((*l).linkType == OPENDRIVE_LT_PREDECESSOR && (*l).elementType == OPENDRIVE_ET_ROAD) {
@@ -957,7 +958,7 @@ NIImporter_OpenDrive::setLaneAttributes(const OpenDriveEdge* e, NBEdge::Lane& su
         sumoLane.setParameter(SUMO_PARAM_ORIGID, e->id + "_" + toString(odLane.id));
     }
     sumoLane.speed = odLane.speed != 0 ? odLane.speed : tc.getEdgeTypeSpeed(odLane.type);
-    sumoLane.permissions = tc.getEdgeTypePermissions(odLane.type);
+    sumoLane.permissions = odLane.permission > 0 ? odLane.permission : tc.getEdgeTypePermissions(odLane.type); // TODO: how to get the OD lane specific restrictions?
     sumoLane.width = myImportWidths && odLane.width != NBEdge::UNSPECIFIED_WIDTH ? odLane.width : tc.getEdgeTypeWidth(odLane.type);
     sumoLane.type = odLane.type;
 
@@ -1016,7 +1017,7 @@ NIImporter_OpenDrive::buildConnectionsToOuter(const Connection& c,
         auto innerEdgesIt = innerEdges.find(destCon.toEdge);
 #ifdef DEBUG_CONNECTIONS
         if (DEBUG_COND3(c.fromEdge)) {
-            std::cout << "      toInner=" << (innerEdgesIt != innerEdges.end()) << " destCon " << (*i).getDescription() << "\n";
+            std::cout << "      toInner=" << (innerEdgesIt != innerEdges.end()) << " destCon " << destCon.getDescription() << "\n";
         }
 #endif
         if (innerEdgesIt != innerEdges.end()) {
@@ -1283,7 +1284,7 @@ NIImporter_OpenDrive::setEdgeLinks2(OpenDriveEdge& e, const std::map<std::string
                     std::swap(c.fromCP, c.toCP);
                 }
                 if (edges.find(c.fromEdge) == edges.end()) {
-                    WRITE_ERROR("While setting connections: incoming road '" + c.fromEdge + "' is not known.");
+                    WRITE_ERRORF(TL("While setting connections: incoming road '%' is not known."), c.fromEdge);
                 } else {
                     OpenDriveEdge* src = edges.find(c.fromEdge)->second;
                     src->connections.insert(c);
@@ -1315,7 +1316,7 @@ NIImporter_OpenDrive::setEdgeLinks2(OpenDriveEdge& e, const std::map<std::string
                     std::swap(c.fromCP, c.toCP);
                 }
                 if (edges.find(c.fromEdge) == edges.end()) {
-                    WRITE_ERROR("While setting connections: incoming road '" + c.fromEdge + "' is not known.");
+                    WRITE_ERRORF(TL("While setting connections: incoming road '%' is not known."), c.fromEdge);
                 } else {
                     OpenDriveEdge* src = edges.find(c.fromEdge)->second;
                     src->connections.insert(c);
@@ -1346,7 +1347,7 @@ NIImporter_OpenDrive::getOrBuildNode(const std::string& id, const Position& pos,
         // not yet built; build now
         if (!nc.insert(id, pos)) {
             // !!! clean up
-            throw ProcessError("Could not add node '" + id + "'.");
+            throw ProcessError(TLF("Could not add node '%'.", id));
         }
     }
     return nc.retrieve(id);
@@ -1358,7 +1359,7 @@ NIImporter_OpenDrive::setNodeSecure(NBNodeCont& nc, OpenDriveEdge& e,
                                     const std::string& nodeID, NIImporter_OpenDrive::LinkType lt, std::vector<NodeSet>& joinedNodeIDs) {
     NBNode* n = nc.retrieve(nodeID);
     if (n == nullptr) {
-        throw ProcessError("Could not find node '" + nodeID + "'.");
+        throw ProcessError(TLF("Could not find node '%'.", nodeID));
     }
     NBNode* toJoin = nullptr;
     if (lt == OPENDRIVE_LT_SUCCESSOR) {
@@ -1484,7 +1485,7 @@ NIImporter_OpenDrive::computeShapes(std::map<std::string, OpenDriveEdge*>& edges
         }
 #endif
         if (!NBNetBuilder::transformCoordinates(e.geom)) {
-            WRITE_ERROR("Unable to project coordinates for edge '" + e.id + "'.");
+            WRITE_ERRORF(TL("Unable to project coordinates for edge '%'."), e.id);
         }
         // add z-data
         int k = 0;
@@ -1608,12 +1609,12 @@ NIImporter_OpenDrive::revisitLaneSections(const NBTypeCont& tc, std::map<std::st
         }
 #endif
         std::vector<OpenDriveLaneSection>& laneSections = e.laneSections;
-        // split by speed limits
+        // split by speed limits or by access restrictions
         std::vector<OpenDriveLaneSection> newSections;
         for (std::vector<OpenDriveLaneSection>::iterator j = laneSections.begin(); j != laneSections.end(); ++j) {
             std::vector<OpenDriveLaneSection> splitSections;
-            bool splitBySpeed = (*j).buildSpeedChanges(tc, splitSections);
-            if (!splitBySpeed) {
+            bool splitByAttrChange = (*j).buildAttributeChanges(tc, splitSections);
+            if (!splitByAttrChange) {
                 newSections.push_back(*j);
             } else {
                 std::copy(splitSections.begin(), splitSections.end(), back_inserter(newSections));
@@ -1632,10 +1633,10 @@ NIImporter_OpenDrive::revisitLaneSections(const NBTypeCont& tc, std::map<std::st
             lastS = (*j).s;
         }
         if (!sorted) {
-            WRITE_WARNING("The sections of edge '" + e.id + "' are not sorted properly.");
+            WRITE_WARNINGF(TL("The sections of edge '%' are not sorted properly."), e.id);
             sort(e.laneSections.begin(), e.laneSections.end(), sections_by_s_sorter());
         }
-        // check whether no duplicates of s-value occure
+        // check whether no duplicates of s-value occur
         lastS = -1;
         laneSections = e.laneSections;
         for (std::vector<OpenDriveLaneSection>::iterator j = laneSections.begin(); j != laneSections.end();) {
@@ -1736,7 +1737,7 @@ NIImporter_OpenDrive::geomFromSpiral(const OpenDriveEdge& e, const OpenDriveGeom
         // shift to geometry start
         ret.add(g.x, g.y, 0);
     } catch (const std::runtime_error& error) {
-        WRITE_WARNING("Could not compute spiral geometry for edge '" + e.id + "' (" + error.what() + ").");
+        WRITE_WARNINGF(TL("Could not compute spiral geometry for edge '%' (%)."), e.id, error.what());
         ret.push_back(Position(g.x, g.y));
     }
     return ret.getSubpart2D(0, g.length);
@@ -1976,55 +1977,133 @@ NIImporter_OpenDrive::OpenDriveLaneSection::getInnerConnections(OpenDriveXMLTag 
 
 
 NIImporter_OpenDrive::OpenDriveLaneSection
-NIImporter_OpenDrive::OpenDriveLaneSection::buildLaneSection(double startPos) {
+NIImporter_OpenDrive::OpenDriveLaneSection::buildLaneSection(const NBTypeCont& tc, double startPos) {
     OpenDriveLaneSection ret(*this);
     ret.s += startPos;
     for (int k = 0; k < (int)ret.lanesByDir[OPENDRIVE_TAG_RIGHT].size(); ++k) {
         OpenDriveLane& l = ret.lanesByDir[OPENDRIVE_TAG_RIGHT][k];
         l.speed = 0;
-        std::vector<std::pair<double, double> >::const_iterator i = std::find_if(l.speeds.begin(), l.speeds.end(), same_position_finder(startPos));
-        if (i != l.speeds.end()) {
-            l.speed = (*i).second;
+        l.permission = 0;
+        std::vector<std::pair<double, LaneAttributeChange> >::const_iterator it = std::find_if(l.attributeChanges.begin(), l.attributeChanges.end(), same_position_finder(startPos));
+        if (it != l.attributeChanges.end()) {
+            l.speed = (*it).second.speed;
+            l.permission = l.computePermission(tc, (*it).second.allowed, (*it).second.denied);
         }
     }
     for (int k = 0; k < (int)ret.lanesByDir[OPENDRIVE_TAG_LEFT].size(); ++k) {
         OpenDriveLane& l = ret.lanesByDir[OPENDRIVE_TAG_LEFT][k];
-        std::vector<std::pair<double, double> >::const_iterator i = std::find_if(l.speeds.begin(), l.speeds.end(), same_position_finder(startPos));
         l.speed = 0;
-        if (i != l.speeds.end()) {
-            l.speed = (*i).second;
+        l.permission = 0;
+        std::vector<std::pair<double, LaneAttributeChange> >::const_iterator it = std::find_if(l.attributeChanges.begin(), l.attributeChanges.end(), same_position_finder(startPos));
+        if (it != l.attributeChanges.end()) {
+            l.speed = (*it).second.speed;
+            l.permission = l.computePermission(tc, (*it).second.allowed, (*it).second.denied);
         }
     }
     return ret;
 }
 
 
+SVCPermissions
+NIImporter_OpenDrive::OpenDriveLane::computePermission(const NBTypeCont& tc, const std::vector<std::string>& allowed,
+        const std::vector<std::string>& denied) const {
+    SVCPermissions perms = tc.getEdgeTypePermissions(type);
+    if (allowed.size() > 0 && denied.size() > 0) {
+        WRITE_WARNING(TL("Will discard access settings as both denied and allowed classes have been specified."));
+    } else if (allowed.size() > 0) {
+        perms = SVC_IGNORING;
+        for (const std::string& allow : allowed) {
+            if (allow == "simulator") {
+                perms = SVC_IGNORING;
+                break;
+            } else if (allow == "autonomousTraffic" || allow == "autonomous traffic" || allow == "throughTraffic") {
+                perms = tc.getEdgeTypePermissions(type);
+                break;
+            } else if (allow == "pedestrian") {
+                perms |= SVC_PEDESTRIAN;
+            } else if (allow == "passengerCar") {
+                perms |= SVC_PASSENGER;
+            } else if (allow == "bus") {
+                perms |= SVC_BUS;
+            } else if (allow == "delivery") {
+                perms |= SVC_DELIVERY;
+            } else if (allow == "emergency") {
+                perms |= SVC_EMERGENCY;
+            } else if (allow == "taxi") {
+                perms |= SVC_TAXI;
+            } else if (allow == "bicycle") {
+                perms |= SVC_BICYCLE;
+            } else if (allow == "motorcycle") {
+                perms |= SVC_MOTORCYCLE;
+            } else if (allow == "truck" || allow == "trucks") {
+                perms |= SVC_TRUCK;
+                perms |= SVC_TRAILER;
+            }
+        }
+    } else if (denied.size() > 0) {
+        for (const std::string& deny : denied) {
+            if (deny == "none") {
+                perms = tc.getEdgeTypePermissions(type);
+                break;
+            } else if (deny == "autonomousTraffic" || deny == "autonomous traffic" || deny == "throughTraffic") {
+                perms = SVC_IGNORING;
+                break;
+            } else if (deny == "pedestrian") {
+                perms &= ~SVC_PEDESTRIAN;
+            } else if (deny == "passengerCar") {
+                perms &= ~SVC_PASSENGER;
+            } else if (deny == "bus") {
+                perms &= ~SVC_BUS;
+            } else if (deny == "delivery") {
+                perms &= ~SVC_DELIVERY;
+            } else if (deny == "emergency") {
+                perms &= ~SVC_EMERGENCY;
+            } else if (deny == "taxi") {
+                perms &= ~SVC_TAXI;
+            } else if (deny == "bicycle") {
+                perms &= ~SVC_BICYCLE;
+            } else if (deny == "motorcycle") {
+                perms &= ~SVC_MOTORCYCLE;
+            } else if (deny == "truck" || deny == "trucks") {
+                perms &= ~SVC_TRUCK;
+                perms &= ~SVC_TRAILER;
+            }
+        }
+    }
+    return perms;
+}
+
+
 bool
-NIImporter_OpenDrive::OpenDriveLaneSection::buildSpeedChanges(const NBTypeCont& tc, std::vector<OpenDriveLaneSection>& newSections) {
-    std::set<double> speedChangePositions;
-    // collect speed change positions and apply initial speed to the begin
+NIImporter_OpenDrive::OpenDriveLaneSection::buildAttributeChanges(const NBTypeCont& tc, std::vector<OpenDriveLaneSection>& newSections) {
+    std::set<double> attributeChangePositions;
+    // collect speed change and access restriction positions and apply initial values to the begin
     for (std::vector<OpenDriveLane>::iterator k = lanesByDir[OPENDRIVE_TAG_RIGHT].begin(); k != lanesByDir[OPENDRIVE_TAG_RIGHT].end(); ++k) {
-        for (std::vector<std::pair<double, double> >::const_iterator l = (*k).speeds.begin(); l != (*k).speeds.end(); ++l) {
-            speedChangePositions.insert((*l).first);
+        for (std::vector<std::pair<double, LaneAttributeChange> >::const_iterator l = (*k).attributeChanges.begin(); l != (*k).attributeChanges.end(); ++l) {
+            attributeChangePositions.insert((*l).first);
             if ((*l).first == 0) {
-                (*k).speed = (*l).second;
+                (*k).speed = (*l).second.speed;
+                (*k).permission = (*k).computePermission(tc, (*l).second.allowed, (*l).second.denied);
             }
         }
     }
     for (std::vector<OpenDriveLane>::iterator k = lanesByDir[OPENDRIVE_TAG_LEFT].begin(); k != lanesByDir[OPENDRIVE_TAG_LEFT].end(); ++k) {
-        for (std::vector<std::pair<double, double> >::const_iterator l = (*k).speeds.begin(); l != (*k).speeds.end(); ++l) {
-            speedChangePositions.insert((*l).first);
+        for (std::vector<std::pair<double, LaneAttributeChange> >::const_iterator l = (*k).attributeChanges.begin(); l != (*k).attributeChanges.end(); ++l) {
+            attributeChangePositions.insert((*l).first);
             if ((*l).first == 0) {
-                (*k).speed = (*l).second;
+                (*k).speed = (*l).second.speed;
+                (*k).permission = (*k).computePermission(tc, (*l).second.allowed, (*l).second.denied);
             }
         }
     }
+
     // do nothing if there is none
-    if (speedChangePositions.size() == 0) {
+    if (attributeChangePositions.size() == 0) {
         return false;
     }
-    if (*speedChangePositions.begin() > 0) {
-        speedChangePositions.insert(0);
+
+    if (*attributeChangePositions.begin() > 0) {
+        attributeChangePositions.insert(0);
     }
 #ifdef DEBUG_VARIABLE_SPEED
     if (gDebugFlag1) std::cout
@@ -2032,25 +2111,32 @@ NIImporter_OpenDrive::OpenDriveLaneSection::buildSpeedChanges(const NBTypeCont& 
                 << " speedChangePositions=" << joinToString(speedChangePositions, ", ")
                 << "\n";
 #endif
-    for (std::set<double>::iterator i = speedChangePositions.begin(); i != speedChangePositions.end(); ++i) {
-        if (i == speedChangePositions.begin()) {
+    for (std::set<double>::iterator i = attributeChangePositions.begin(); i != attributeChangePositions.end(); ++i) {
+        if (i == attributeChangePositions.begin()) {
             newSections.push_back(*this);
         } else {
-            newSections.push_back(buildLaneSection(*i));
+            newSections.push_back(buildLaneSection(tc, *i));
         }
     }
-    // propagate speeds
+    // propagate speeds and access restrictions
     for (int i = 0; i != (int)newSections.size(); ++i) {
         for (auto& k : newSections[i].lanesByDir) {
             for (int j = 0; j != (int)k.second.size(); ++j) {
                 OpenDriveLane& l = k.second[j];
-                if (l.speed != 0) {
-                    continue;
+                if (l.speed == 0) {
+                    if (i > 0) {
+                        l.speed = newSections[i - 1].lanesByDir[k.first][j].speed;
+                    } else {
+                        tc.getEdgeTypeSpeed(l.type);
+                    }
                 }
-                if (i > 0) {
-                    l.speed = newSections[i - 1].lanesByDir[k.first][j].speed;
-                } else {
-                    tc.getEdgeTypeSpeed(l.type);
+                if (l.permission == 0) {
+                    if (i > 0) {
+                        l.permission = newSections[i - 1].lanesByDir[k.first][j].permission;
+                        l.type = newSections[i - 1].lanesByDir[k.first][j].type;
+                    } else {
+                        tc.getEdgeTypePermissions(l.type);
+                    }
                 }
             }
         }
@@ -2112,7 +2198,7 @@ NIImporter_OpenDrive::myStartElement(int element,
             int minorVersion = attrs.get<int>(OPENDRIVE_ATTR_REVMINOR, nullptr, ok);
             if (majorVersion != 1 || minorVersion != 2) {
                 // TODO: leave note of exceptions
-                WRITE_WARNING("Given openDrive file '" + getFileName() + "' uses version " + toString(majorVersion) + "." + toString(minorVersion) + ";\n Version 1.2 is supported.");
+                WRITE_WARNINGF(TL("Given openDrive file '%' uses version %.%;\n Version 1.2 is supported."), getFileName(), toString(majorVersion), toString(minorVersion));
             }
             */
         }
@@ -2229,7 +2315,7 @@ NIImporter_OpenDrive::myStartElement(int element,
             } else if (pRange == "arcLength") {
                 vals.push_back(-1.0);
             } else {
-                WRITE_WARNING("Ignoring invalid pRange value '" + pRange + "' for road '" + myCurrentEdge.id + "'.");
+                WRITE_WARNINGF(TL("Ignoring invalid pRange value '%' for road '%'."), pRange, myCurrentEdge.id);
                 vals.push_back(1.0);
             }
             addGeometryShape(OPENDRIVE_GT_PARAMPOLY3, vals);
@@ -2329,7 +2415,7 @@ NIImporter_OpenDrive::myStartElement(int element,
             c.toCP = myCurrentContactPoint;
             c.all = false;
             if (myEdges.find(c.fromEdge) == myEdges.end()) {
-                WRITE_ERROR("In laneLink-element: incoming road '" + c.fromEdge + "' is not known.");
+                WRITE_ERRORF(TL("In laneLink-element: incoming road '%' is not known."), c.fromEdge);
             } else {
                 OpenDriveEdge* e = myEdges.find(c.fromEdge)->second;
                 e->connections.insert(c);
@@ -2368,6 +2454,32 @@ NIImporter_OpenDrive::myStartElement(int element,
             }
         }
         break;
+        case OPENDRIVE_TAG_ACCESS: {
+            if (myElementStack.size() >= 2 && myElementStack[myElementStack.size() - 1] == OPENDRIVE_TAG_LANE) {
+                const double pos = attrs.get<double>(OPENDRIVE_ATTR_SOFFSET, myCurrentEdge.id.c_str(), ok);
+                std::string rule = attrs.getOpt<std::string>(OPENDRIVE_ATTR_RULE, nullptr, ok, "allow", false); // OpenDRIVE 1.4 without rule value
+                std::string vClass = attrs.get<std::string>(OPENDRIVE_ATTR_RESTRICTION, myCurrentEdge.id.c_str(), ok);
+
+                std::vector < std::pair<double, LaneAttributeChange >>& attributeChanges = myCurrentEdge.laneSections.back().lanesByDir[myCurrentLaneDirection].back().attributeChanges;
+                std::vector<std::pair<double, LaneAttributeChange> >::iterator i = std::find_if(attributeChanges.begin(), attributeChanges.end(), same_position_finder(pos));
+                if (i != attributeChanges.end()) {
+                    if (rule == "allow") {
+                        (*i).second.allowed.push_back(vClass);
+                    } else if (rule == "deny") {
+                        (*i).second.denied.push_back(vClass);
+                    }
+                } else {
+                    LaneAttributeChange lac = LaneAttributeChange(0);
+                    if (rule == "allow") {
+                        lac.allowed.push_back(vClass);
+                    } else if (rule == "deny") {
+                        lac.denied.push_back(vClass);
+                    }
+                    attributeChanges.push_back(std::make_pair(pos, lac));
+                }
+            }
+        }
+        break;
         case OPENDRIVE_TAG_SPEED: {
             if (myElementStack.size() >= 2 && myElementStack[myElementStack.size() - 1] == OPENDRIVE_TAG_LANE) {
                 double speed = attrs.get<double>(OPENDRIVE_ATTR_MAX, myCurrentEdge.id.c_str(), ok);
@@ -2385,13 +2497,20 @@ NIImporter_OpenDrive::myStartElement(int element,
                     }
                     // IGNORING unknown units.
                 }
-                myCurrentEdge.laneSections.back().lanesByDir[myCurrentLaneDirection].back().speeds.push_back(std::make_pair(pos, speed));
+                std::vector < std::pair<double, LaneAttributeChange >>& attributeChanges = myCurrentEdge.laneSections.back().lanesByDir[myCurrentLaneDirection].back().attributeChanges;
+                std::vector<std::pair<double, LaneAttributeChange> >::iterator i = std::find_if(attributeChanges.begin(), attributeChanges.end(), same_position_finder(pos));
+                if (i != attributeChanges.end()) {
+                    (*i).second.speed = speed;
+                } else {
+                    LaneAttributeChange lac = LaneAttributeChange(speed);
+                    attributeChanges.push_back(std::make_pair(pos, lac));
+                }
             }
         }
         break;
         case OPENDRIVE_TAG_OBJECT: {
             if (!attrs.hasAttribute(OPENDRIVE_ATTR_ID)) {
-                WRITE_WARNING("Ignoring object without id at edge '" + toString(myCurrentEdge.id) + "'.");
+                WRITE_WARNINGF(TL("Ignoring object without id at edge '%'."), toString(myCurrentEdge.id));
                 break;
             }
             OpenDriveObject o;
@@ -2409,7 +2528,7 @@ NIImporter_OpenDrive::myStartElement(int element,
         break;
         case OPENDRIVE_TAG_REPEAT: {
             if (myCurrentEdge.objects.empty()) {
-                WRITE_ERROR("Repeat without object at edge '" + toString(myCurrentEdge.id) + "'.");
+                WRITE_ERRORF(TL("Repeat without object at edge '%'."), toString(myCurrentEdge.id));
                 ok = false;
             } else {
                 OpenDriveObject o = myCurrentEdge.objects.back();
@@ -2463,11 +2582,11 @@ NIImporter_OpenDrive::myCharacters(int element, const std::string& cdata) {
                     result = new GeoConvHelper(proj, myOffset, origBoundary, convBoundary);
                     GeoConvHelper::setLoaded(*result);
                 } catch (ProcessError& e) {
-                    WRITE_ERROR("Could not set projection (" + std::string(e.what()) + "). This can be ignored with --ignore-errors.");
+                    WRITE_ERRORF(TL("Could not set projection (%). This can be ignored with --ignore-errors."), std::string(e.what()));
                 }
             }
         } else {
-            WRITE_WARNING("geoReference format '" + cdata + "' currently not supported");
+            WRITE_WARNINGF(TL("geoReference format '%' currently not supported"), cdata);
         }
         needsCharacterData(false);
     }
@@ -2492,7 +2611,7 @@ NIImporter_OpenDrive::myEndElement(int element) {
                 c.toCP = myCurrentContactPoint;
                 c.all = true;
                 if (myEdges.find(c.fromEdge) == myEdges.end()) {
-                    WRITE_ERROR("In laneLink-element: incoming road '" + c.fromEdge + "' is not known.");
+                    WRITE_ERRORF(TL("In laneLink-element: incoming road '%' is not known."), c.fromEdge);
                 } else {
                     OpenDriveEdge* e = myEdges.find(c.fromEdge)->second;
                     e->connections.insert(c);
@@ -2536,11 +2655,11 @@ void
 NIImporter_OpenDrive::addGeometryShape(GeometryType type, const std::vector<double>& vals) {
     // checks
     if (myCurrentEdge.geometries.size() == 0) {
-        throw ProcessError("Mismatching parenthesis in geometry definition for road '" + myCurrentEdge.id + "'");
+        throw ProcessError(TLF("Mismatching parenthesis in geometry definition for road '%'", myCurrentEdge.id));
     }
     OpenDriveGeometry& last = myCurrentEdge.geometries.back();
     if (last.type != OPENDRIVE_GT_UNKNOWN) {
-        throw ProcessError("Double geometry information for road '" + myCurrentEdge.id + "'");
+        throw ProcessError(TLF("Double geometry information for road '%'", myCurrentEdge.id));
     }
     // set
     last.type = type;
@@ -2875,6 +2994,5 @@ NIImporter_OpenDrive::recomputeWidths(std::vector<OpenDriveLane>& lanes, double 
         }
     }
 }
-
 
 /****************************************************************************/

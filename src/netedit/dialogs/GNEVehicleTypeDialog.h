@@ -21,7 +21,7 @@
 #include <config.h>
 
 #include <utils/common/SUMOVehicleClass.h>
-#include <utils/foxtools/MFXIconComboBox.h>
+#include <utils/foxtools/MFXComboBoxIcon.h>
 
 #include "GNEDemandElementDialog.h"
 
@@ -70,7 +70,7 @@ public:
             VTypeAttributes* myVTypeAttributesParent;
 
             /// @brief FXComboBox for VClass
-            MFXIconComboBox* myComboBoxVClass;
+            MFXComboBoxIcon* myComboBoxVClass;
 
             /// @brief label with image of VClass
             FXLabel* myComboBoxVClassLabelImage;
@@ -100,7 +100,7 @@ public:
             VTypeAttributes* myVTypeAttributesParent;
 
             /// @brief FXComboBox for Shape
-            MFXIconComboBox* myComboBoxShape;
+            MFXComboBoxIcon* myComboBoxShape;
 
             /// @brief label with image of Shape
             FXLabel* myComboBoxShapeLabelImage;
@@ -176,7 +176,7 @@ public:
             FXTextField* myTextField;
 
             /// @brief ComboBox for attributes with limited values
-            MFXIconComboBox* myComboBox;
+            MFXComboBoxIcon* myComboBox;
 
             /// @brief pointer to current parameter map
             Parameterised::Map myParameters;
@@ -476,7 +476,7 @@ public:
         std::vector<CarFollowingModelRow*> myRows;
 
         /// @brief Row for CarFollowModel
-        MFXIconComboBox* myComboBoxCarFollowModel;
+        MFXComboBoxIcon* myComboBoxCarFollowModel;
 
         /// @brief Vertical Frame for CarFollowingModelRow
         FXVerticalFrame* myVerticalFrameRows;
@@ -549,6 +549,33 @@ public:
 
         /// @brief Row for Adapt Time
         CarFollowingModelRow* myAdaptTimeRow;
+
+        /// @brief Row for W99 CC 01
+        CarFollowingModelRow* myW99CC1;
+
+        /// @brief Row for W99 CC 02
+        CarFollowingModelRow* myW99CC2;
+
+        /// @brief Row for W99 CC 03
+        CarFollowingModelRow* myW99CC3;
+
+        /// @brief Row for W99 CC 04
+        CarFollowingModelRow* myW99CC4;
+
+        /// @brief Row for W99 CC 05
+        CarFollowingModelRow* myW99CC5;
+
+        /// @brief Row for W99 CC 06
+        CarFollowingModelRow* myW99CC6;
+
+        /// @brief Row for W99 CC 07
+        CarFollowingModelRow* myW99CC7;
+
+        /// @brief Row for W99 CC 08
+        CarFollowingModelRow* myW99CC8;
+
+        /// @brief Row for W99 CC 09
+        CarFollowingModelRow* myW99CC9;
 
         /// @brief Row for Look ahead/preview Time
         CarFollowingModelRow* myTpreviewRow;

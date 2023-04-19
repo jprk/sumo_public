@@ -60,18 +60,18 @@ GNENetworkSelector::GNENetworkSelector(GNEFrame* frameParent, const Type network
     switch (myNetworkElementType) {
         case Type::EDGE:
             new FXLabel(this,
-                        "-Click over an edge to select\n-ESC to clear selection",
+                        (TL("-Click over an edge to select") + std::string("\n") + std::string("-ESC to clear selection")).c_str(),
                         0, GUIDesignLabelFrameInformation);
             setText(TL("Edges"));
             break;
         case Type::LANE:
             new FXLabel(this,
-                        "-Click over a lane to select\n-ESC to clear selection",
+                        (TL("-Click over an lane to select") + std::string("\n") + std::string("-ESC to clear selection")).c_str(),
                         0, GUIDesignLabelFrameInformation);
             setText(TL("Lanes"));
             break;
         default:
-            throw ProcessError("Invalid NetworkElementType");
+            throw ProcessError(TL("Invalid NetworkElementType"));
     }
     // Hide List
     hide();
@@ -180,7 +180,7 @@ GNENetworkSelector::onCmdUseSelectedElements(FXObject*, FXSelector, void*) {
             }
             break;
         default:
-            throw ProcessError("Invalid NetworkElementType");
+            throw ProcessError(TL("Invalid NetworkElementType"));
     }
     // Update Frame
     update();

@@ -63,8 +63,8 @@ private:
     void startElement(const XMLCh* const name, XERCES_CPP_NAMESPACE::AttributeList& attributes);
 
     /// @brief add option
-    bool addOption(const std::string& value, const std::string& synonymes,
-                   const std::string& type, const std::string& help) const;
+    bool addOption(std::string value, const std::string& synonymes, const std::string& type,
+                   const std::string& help, const bool required) const;
 
     /** @brief Called on the end of an element
      *
@@ -106,11 +106,17 @@ private:
     /// @brief The options to fill
     OptionsCont& myOptions;
 
-    /// @brief The name of the currently topic
-    std::string myTopic;
+    /// @brief The name of the current option
+    std::string myOptionName;
 
     /// @brief current subtopic
     std::string mySubTopic;
+
+    /// @brief invalid int in string format
+    static const std::string INVALID_INT_STR;
+
+    /// @brief invalid double in string format
+    static const std::string INVALID_DOUBLE_STR;
 
     /// @brief invalid copy constructor
     TemplateHandler(const TemplateHandler& s) = delete;

@@ -41,7 +41,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect selection
-netedit.leftClick(referencePosition, 320, 250)
+netedit.leftClick(referencePosition, 670, 255)
 
 # Change parameter file with an non valid value
 netedit.modifyAttribute(netedit.attrs.E2Multilane.inspectSelection.file, "%;;%%&%%%&&", True)
@@ -56,11 +56,8 @@ netedit.modifyAttribute(netedit.attrs.E2Multilane.inspectSelection.file, "myOwnO
 netedit.undo(referencePosition, 4)
 netedit.redo(referencePosition, 4)
 
-# save network
-netedit.saveNetwork(referencePosition)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 # quit netedit
 netedit.quit(neteditProcess)

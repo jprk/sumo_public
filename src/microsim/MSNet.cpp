@@ -185,7 +185,7 @@ MSNet::getInstance(void) {
     if (myInstance != nullptr) {
         return myInstance;
     }
-    throw ProcessError("A network was not yet constructed.");
+    throw ProcessError(TL("A network was not yet constructed."));
 }
 
 void
@@ -219,7 +219,7 @@ MSNet::MSNet(MSVehicleControl* vc, MSEventControl* beginOfTimestepEvents,
     myEdgeDataEndTime(-1),
     myDynamicShapeUpdater(nullptr) {
     if (myInstance != nullptr) {
-        throw ProcessError("A network was already constructed.");
+        throw ProcessError(TL("A network was already constructed."));
     }
     OptionsCont& oc = OptionsCont::getOptions();
     myStep = string2time(oc.getString("begin"));
@@ -261,7 +261,7 @@ MSNet::closeBuilding(const OptionsCont& oc, MSEdgeControl* edges, MSJunctionCont
                      std::vector<std::string> stateDumpFiles,
                      bool hasInternalLinks,
                      bool junctionHigherSpeeds,
-                     double version) {
+                     const MMVersion& version) {
     myEdges = edges;
     myJunctions = junctions;
     myRouteLoaders = routeLoaders;
@@ -284,7 +284,7 @@ MSNet::closeBuilding(const OptionsCont& oc, MSEdgeControl* edges, MSJunctionCont
     myVersion = version;
     if ((!MSGlobals::gUsingInternalLanes || !myHasInternalLinks)
             && MSGlobals::gWeightsSeparateTurns > 0) {
-        throw ProcessError("Option weights.separate-turns is only supported when simulating with internal lanes");
+        throw ProcessError(TL("Option weights.separate-turns is only supported when simulating with internal lanes"));
     }
 }
 
@@ -432,10 +432,10 @@ MSNet::loadRoutes() {
 
 
 const std::string
-MSNet::generateStatistics(SUMOTime start) {
+MSNet::generateStatistics(const SUMOTime start, const long now) {
     std::ostringstream msg;
     if (myLogExecutionTime) {
-        long duration = SysUtils::getCurrentMillis() - mySimBeginMillis;
+        const long duration = now - mySimBeginMillis;
         // print performance notice
         msg << "Performance: " << "\n" << " Duration: " << elapsedMs2string(duration) << "\n";
         if (duration != 0) {
@@ -521,6 +521,7 @@ MSNet::generateStatistics(SUMOTime start) {
     return msg.str();
 }
 
+
 void
 MSNet::writeCollisions() const {
     OutputDevice& od = OutputDevice::getDeviceByOption("collision-output");
@@ -540,12 +541,25 @@ MSNet::writeCollisions() const {
             od.closeTag();
         }
     }
-
 }
 
+
 void
-MSNet::writeStatistics() const {
+MSNet::writeStatistics(const SUMOTime start, const long now) const {
+    const long duration = now - mySimBeginMillis;
     OutputDevice& od = OutputDevice::getDeviceByOption("statistic-output");
+    od.openTag("performance");
+    od.writeAttr("clockBegin", time2string(mySimBeginMillis));
+    od.writeAttr("clockEnd", time2string(now));
+    od.writeAttr("clockDuration", time2string(duration));
+    od.writeAttr("traciDuration", time2string(myTraCIMillis));
+    od.writeAttr("realTimeFactor", duration != 0 ? (double)(myStep - start) / (double)duration : -1);
+    od.writeAttr("vehicleUpdatesPerSecond", duration != 0 ? (double)myVehiclesMoved / ((double)duration / 1000) : -1);
+    od.writeAttr("personUpdatesPerSecond", duration != 0 ? (double)myPersonsMoved / ((double)duration / 1000) : -1);
+    od.writeAttr("begin", time2string(start));
+    od.writeAttr("end", time2string(myStep));
+    od.writeAttr("duration", time2string(myStep - start));
+    od.closeTag();
     od.openTag("vehicles");
     od.writeAttr("loaded", myVehicleControl->getLoadedVehicleNo());
     od.writeAttr("inserted", myVehicleControl->getDepartedVehicleNo());
@@ -670,28 +684,35 @@ MSNet::closeSimulation(SUMOTime start, const std::string& reason) {
     if (OptionsCont::getOptions().isSet("railsignal-block-output")) {
         writeRailSignalBlocks();
     }
+    const long now = SysUtils::getCurrentMillis();
     if (myLogExecutionTime || OptionsCont::getOptions().getBool("duration-log.statistics")) {
-        WRITE_MESSAGE(generateStatistics(start));
+        WRITE_MESSAGE(generateStatistics(start, now));
     }
     if (OptionsCont::getOptions().isSet("statistic-output")) {
-        writeStatistics();
+        writeStatistics(start, now);
     }
 }
 
 
 void
-MSNet::simulationStep() {
+MSNet::simulationStep(const bool onlyMove) {
+    if (myStepCompletionMissing) {
+        postMoveStep();
+        myStepCompletionMissing = false;
+        return;
+    }
 #ifdef DEBUG_SIMSTEP
     std::cout << SIMTIME << ": MSNet::simulationStep() called"
               << ", myStep = " << myStep
               << std::endl;
 #endif
     TraCIServer* t = TraCIServer::getInstance();
+    int lastTraCICmd = 0;
     if (t != nullptr) {
         if (myLogExecutionTime) {
             myTraCIStepDuration = SysUtils::getCurrentMillis();
         }
-        t->processCommandsUntilSimStep(myStep);
+        lastTraCICmd = t->processCommands(myStep);
 #ifdef DEBUG_SIMSTEP
         bool loadRequested = !TraCI::getLoadArgs().empty();
         assert(t->getTargetTime() >= myStep || loadRequested || TraCIServer::wasClosed());
@@ -741,7 +762,6 @@ MSNet::simulationStep() {
 
     if (MSGlobals::gUseMesoSim) {
         MSGlobals::gMesoNet->simulate(myStep);
-        myVehicleControl->removePending();
     } else {
         // assure all lanes with vehicles are 'active'
         myEdges->patchActiveLanes();
@@ -766,6 +786,8 @@ MSNet::simulationStep() {
             myEdges->detectCollisions(myStep, STAGE_LANECHANGE);
         }
     }
+    // flush arrived meso vehicles and micro vehicles that were removed due to collision
+    myVehicleControl->removePending();
     loadRoutes();
 
     // persons
@@ -795,6 +817,19 @@ MSNet::simulationStep() {
     if (myLogExecutionTime) {
         myTraCIStepDuration -= SysUtils::getCurrentMillis();
     }
+    if (onlyMove) {
+        myStepCompletionMissing = true;
+        return;
+    }
+    if (t != nullptr && lastTraCICmd == libsumo::CMD_EXECUTEMOVE) {
+        t->processCommands(myStep, true);
+    }
+    postMoveStep();
+}
+
+
+void
+MSNet::postMoveStep() {
     const int numControlled = libsumo::Helper::postProcessRemoteControl();
     if (numControlled > 0 && MSGlobals::gCheck4Accidents) {
         myEdges->detectCollisions(myStep, STAGE_REMOTECONTROL);
@@ -809,10 +844,10 @@ MSNet::simulationStep() {
         removeOutdatedCollisions();
     }
     // update and write (if needed) detector values
+    mySimStepDuration = SysUtils::getCurrentMillis() - mySimStepDuration;
     writeOutput();
 
     if (myLogExecutionTime) {
-        mySimStepDuration = SysUtils::getCurrentMillis() - mySimStepDuration;
         myVehiclesMoved += myVehicleControl->getRunningVehicleNo();
         if (myPersonControl != nullptr) {
             myPersonsMoved += myPersonControl->getRunningNumber();
@@ -1464,7 +1499,7 @@ MSNet::getRouterTT(const int rngIndex, const MSEdgeVector& prohibited) const {
             myRouterTT[rngIndex] = new DijkstraRouter<MSEdge, SUMOVehicle>(MSEdge::getAllEdges(), true, &MSNet::getTravelTime, nullptr, false, nullptr, true);
         } else {
             if (routingAlgorithm != "astar") {
-                WRITE_WARNING("TraCI and Triggers cannot use routing algorithm '" + routingAlgorithm + "'. using 'astar' instead.");
+                WRITE_WARNINGF(TL("TraCI and Triggers cannot use routing algorithm '%'. using 'astar' instead."), routingAlgorithm);
             }
             myRouterTT[rngIndex] = new AStarRouter<MSEdge, SUMOVehicle>(MSEdge::getAllEdges(), true, &MSNet::getTravelTime, nullptr, true);
         }
@@ -1634,7 +1669,7 @@ MSNet::quickReload() {
         MSRouteHandler rh(file, true);
         const long before = PROGRESS_BEGIN_TIME_MESSAGE("Loading traffic from '" + file + "'");
         if (!XMLSubSys::runParser(rh, file, false)) {
-            throw ProcessError("Loading of " + file + " failed.");
+            throw ProcessError(TLF("Loading of % failed.", file));
         }
         PROGRESS_TIME_MESSAGE(before);
     }
@@ -1643,17 +1678,18 @@ MSNet::quickReload() {
     updateGUI();
 }
 
+
 SUMOTime
-MSNet::loadState(const std::string& fileName) {
+MSNet::loadState(const std::string& fileName, const bool catchExceptions) {
     // load time only
     const SUMOTime newTime = MSStateHandler::MSStateTimeHandler::getTime(fileName);
     // clean up state
     clearState(newTime);
     // load state
     MSStateHandler h(fileName, 0);
-    XMLSubSys::runParser(h, fileName);
+    XMLSubSys::runParser(h, fileName, false, false, false, catchExceptions);
     if (MsgHandler::getErrorInstance()->wasInformed()) {
-        throw ProcessError("Loading state from '" + fileName + "' failed.");
+        throw ProcessError(TLF("Loading state from '%' failed.", fileName));
     }
     // reset route loaders
     delete myRouteLoaders;
@@ -1664,5 +1700,6 @@ MSNet::loadState(const std::string& fileName) {
     updateGUI();
     return newTime;
 }
+
 
 /****************************************************************************/

@@ -41,7 +41,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect selection
-netedit.leftClick(referencePosition, 320, 250)
+netedit.leftClick(referencePosition, 670, 255)
 
 # Change parameter TimeTreshold with a non valid value
 netedit.modifyAttribute(netedit.attrs.E2Multilane.inspectSelection.timeThreshold, "dummyTimeTreshold", True)
@@ -56,11 +56,8 @@ netedit.modifyAttribute(netedit.attrs.E2Multilane.inspectSelection.timeThreshold
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save network
-netedit.saveNetwork(referencePosition)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 # quit netedit
 netedit.quit(neteditProcess)

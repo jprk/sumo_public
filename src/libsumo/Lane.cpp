@@ -126,6 +126,18 @@ Lane::getDisallowed(const std::string& laneID) {
 }
 
 
+std::vector<std::string>
+Lane::getChangePermissions(const std::string& laneID, const int direction) {
+    if (direction == libsumo::LANECHANGE_LEFT) {
+        return getVehicleClassNamesList(getLane(laneID)->getChangeLeft());
+    } else if (direction == libsumo::LANECHANGE_RIGHT) {
+        return getVehicleClassNamesList(getLane(laneID)->getChangeRight());
+    } else {
+        throw TraCIException("Invalid direction for change permission (must be " + toString(libsumo::LANECHANGE_LEFT) + " or " + toString(libsumo::LANECHANGE_RIGHT));
+    }
+}
+
+
 TraCIPositionVector
 Lane::getShape(const std::string& laneID) {
     TraCIPositionVector pv;
@@ -349,6 +361,19 @@ Lane::setDisallowed(const std::string& laneID, std::vector<std::string> disallow
 
 
 void
+Lane::setChangePermissions(const std::string& laneID, std::vector<std::string> allowedClasses, const int direction) {
+    MSLane* const l = getLane(laneID);
+    if (direction == libsumo::LANECHANGE_LEFT) {
+        l->setChangeLeft(parseVehicleClasses(allowedClasses));
+    } else if (direction == libsumo::LANECHANGE_RIGHT) {
+        l->setChangeRight(parseVehicleClasses(allowedClasses));
+    } else {
+        throw TraCIException("Invalid direction for change permission (must be " + toString(libsumo::LANECHANGE_LEFT) + " or " + toString(libsumo::LANECHANGE_RIGHT));
+    }
+}
+
+
+void
 Lane::setMaxSpeed(const std::string& laneID, double speed) {
     getLane(laneID)->setMaxSpeed(speed);
 }
@@ -427,6 +452,9 @@ Lane::handleVariable(const std::string& objID, const int variable, VariableWrapp
             return wrapper->wrapStringList(objID, variable, getAllowed(objID));
         case LANE_DISALLOWED:
             return wrapper->wrapStringList(objID, variable, getDisallowed(objID));
+        case LANE_CHANGES:
+            paramData->readUnsignedByte();
+            return wrapper->wrapStringList(objID, variable, getChangePermissions(objID, paramData->readByte()));
         case VAR_CO2EMISSION:
             return wrapper->wrapDouble(objID, variable, getCO2Emission(objID));
         case VAR_COEMISSION:

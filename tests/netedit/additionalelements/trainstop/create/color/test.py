@@ -38,29 +38,26 @@ netedit.changeElement("trainStop")
 netedit.changeColorUsingDialog(netedit.attrs.trainStop.create.colorButton, 5)
 
 # try to create trainStop
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 430, 256)
 
 # set invalid person number
 netedit.changeDefaultValue(netedit.attrs.trainStop.create.color, "Vlue")
 
 # try to create trainStop
-netedit.leftClick(referencePosition, 260, 250)
+netedit.leftClick(referencePosition, 497, 257)
 
 # set invalid person number
 netedit.changeDefaultValue(netedit.attrs.trainStop.create.color, "red")
 
 # create trainStop in mode "reference left"
-netedit.leftClick(referencePosition, 270, 250)
+netedit.leftClick(referencePosition, 544, 255)
 
 # Check undo redo
 netedit.undo(referencePosition, 2)
 netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

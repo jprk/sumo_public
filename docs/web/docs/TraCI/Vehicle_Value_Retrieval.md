@@ -197,7 +197,7 @@ value is also shown in the table.
 <td><p>fuel consumption<br />
 (id 0x65)</p></td>
 <td><p>double</p></td>
-<td><p>Vehicle's fuel consumption in ml/s during this time step, to get the value for one step multiply with the step length; error value: -2^30</p></td>
+<td><p>Vehicle's fuel consumption in mg/s during this time step, to get the value for one step multiply with the step length; error value: -2^30</p></td>
 <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getFuelConsumption">getFuelConsumption</a></p></td>
 </tr>
 <tr class="odd">
@@ -471,10 +471,10 @@ value is also shown in the table.
 <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getTeleportingIDList">getTeleportingIDList</a></p></td>
 </tr>
 <tr class="even">
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+  <td><p>next links (0x33)</p></td>
+  <td><p>complex</p></td>
+  <td><p>Returns the list of upcoming links with each compound containing info about (lane, via, priority, opened, foe, state, direction, length)</p></td>
+  <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getNextLinks">getNextLinks</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -740,6 +740,9 @@ call](../TraCI/GenericParameters.md#get_parameter).
 - device.taxi.occupiedTime
 - device.taxi.occupiedDistance
 - device.taxi.currentCustomers
+- device.tripinfo.waitingTime (total waiting time)
+- device.tripinfo.waitingCount 
+- device.tripinfo.stopTime (total stopping time)
 - device.example.customValue1 (return the value of option **--device.example.parameter**)
 - device.example.customValue2 (return the value of vehicle parameter
   *example*)

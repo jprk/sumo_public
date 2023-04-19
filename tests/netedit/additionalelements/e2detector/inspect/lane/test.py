@@ -35,35 +35,32 @@ netedit.additionalMode()
 netedit.changeElement("laneAreaDetector")
 
 # create E2
-netedit.leftClick(referencePosition, 250, 130)
+netedit.leftClick(referencePosition, 520, 210)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first E2
-netedit.leftClick(referencePosition, 350, 130)
+netedit.leftClick(referencePosition, 480, 210)
 
 # Change parameter lane with a non valid value (dummy lane)
 netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "dummy lane", True)
 
 # Change parameter lane with a valid value (different edge)
-netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "gneE0_0", True)
+netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "center0_0", True)
 
 # Change parameter lane with a valid value (original edge, same lane)
-netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "gneE2_1", True)
+netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "center1_1", True)
 
 # Change parameter lane with a valid value (original edge, different lane)
-netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "gneE2_0", True)
+netedit.modifyAttribute(netedit.attrs.E2.inspect.lane, "center1_0", True)
 
 # Check undos and redos
 netedit.undo(referencePosition, 4)
 netedit.redo(referencePosition, 4)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -31,9 +31,6 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # recompute
 netedit.rebuildNetwork()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # go to inspect mode
 netedit.inspectMode()
 
@@ -53,9 +50,6 @@ netedit.modifyAttribute(netedit.attrs.edge.inspect.disallowed, "authority  army,
 netedit.modifyAttribute(netedit.attrs.edge.inspect.disallowed, "", False)
 
 # Change parameter 8 with a valid value (empty)
-netedit.modifyAllowDisallowValue(netedit.attrs.edge.inspect.disallowedButton, False)
-
-# Change parameter 8 with a valid value (empty)
 netedit.modifyAttribute(netedit.attrs.edge.inspect.disallowed,
                         "authority army vip passenger hov taxi bus coach tram bicycle", False)
 
@@ -71,11 +65,8 @@ netedit.rebuildNetwork()
 # check redos
 netedit.redo(referencePosition, 4)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

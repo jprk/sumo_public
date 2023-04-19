@@ -38,16 +38,13 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E2s
-netedit.leftClick(referencePosition, 350, 310)
+netedit.leftClick(referencePosition, 582, 180)
 
 # check parameters
 netedit.checkParameters(referencePosition, netedit.attrs.E2.inspectSelection.parameters, True)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -67,18 +67,46 @@ class MSTrafficLightLogic;
 class MSLink {
 public:
 
+    /** @enum LinkLeaderFlag
+     * @brief additional information for link leaders
+     */
+    enum LinkLeaderFlag {
+        /// @brief vehicle is in the way
+        LL_IN_THE_WAY = 1 << 0,
+        /// @brief link leader is passing from left to right
+        LL_FROM_LEFT = 1 << 1,
+        /// @brief link leader is coming from the same (normal) lane
+        LL_SAME_SOURCE = 1 << 2,
+        /// @brief link leader is targeting the same outgoing lane
+        LL_SAME_TARGET = 1 << 3
+    };
+
     struct LinkLeader {
-        LinkLeader(MSVehicle* _veh, double _gap, double _distToCrossing, bool _fromLeft = true, bool _inTheWay = false) :
+        LinkLeader(MSVehicle* _veh, double _gap, double _distToCrossing, int _llFlags = LL_FROM_LEFT, double _latOffst = 0) :
             vehAndGap(std::make_pair(_veh, _gap)),
             distToCrossing(_distToCrossing),
-            fromLeft(_fromLeft),
-            inTheWay(_inTheWay) {
+            llFlags(_llFlags),
+            latOffset(_latOffst)
+        { }
+
+        inline bool fromLeft() const {
+            return (llFlags & LL_FROM_LEFT) != 0;
+        }
+        inline bool inTheWay() const {
+            return (llFlags & LL_IN_THE_WAY) != 0;
+        }
+        inline bool sameTarget() const {
+            return (llFlags & LL_SAME_TARGET) != 0;
+        }
+        inline bool sameSource() const {
+            return (llFlags & LL_SAME_SOURCE) != 0;
         }
 
         std::pair<MSVehicle*, double> vehAndGap;
         double distToCrossing;
-        bool fromLeft;
-        bool inTheWay;
+        int llFlags;
+        double latOffset;
+
     };
 
     typedef std::vector<LinkLeader> LinkLeaders;
@@ -137,6 +165,46 @@ public:
     typedef std::map<const SUMOVehicle*, const ApproachingVehicleInformation, ComparatorNumericalIdLess> ApproachInfos;
     typedef std::vector<const SUMOVehicle*> BlockingFoes;
 
+    enum ConflictFlag {
+        CONFLICT_DEFAULT,
+        CONFLICT_DUMMY_MERGE,
+        CONFLICT_NO_INTERSECTION,
+        CONFLICT_STOP_AT_INTERNAL_JUNCTION
+    };
+
+    /// @brief pre-computed information for conflict points
+    struct ConflictInfo {
+
+        ConflictInfo(double lbc, double cs, ConflictFlag fl = CONFLICT_DEFAULT) :
+            foeConflictIndex(-1),
+            lengthBehindCrossing(lbc),
+            conflictSize(cs),
+            flag(fl)
+        {}
+        /// @brief the conflict from the perspective of the foe
+        int foeConflictIndex;
+        /// @brief length of internal lane after the crossing point
+        double lengthBehindCrossing;
+        /// @brief the length of the conflict space
+        double conflictSize;
+
+        ConflictFlag flag;
+
+        double getFoeLengthBehindCrossing(const MSLink* foeExitLink) const;
+        double getFoeConflictSize(const MSLink* foeExitLink) const;
+        double getLengthBehindCrossing(const MSLink* exitLink) const;
+    };
+
+    /// @brief holds user defined conflict positions (must be interpreted for the correct exitLink)
+    struct CustomConflict {
+        CustomConflict(const MSLane* f, const MSLane* t, double s, double e) :
+            from(f), to(t), startPos(s), endPos(e) {}
+        const MSLane* from;
+        const MSLane* to;
+        double startPos;
+        double endPos;
+    };
+
     /** @brief Constructor for simulation which uses internal lanes
      *
      * @param[in] succLane The lane approached by this link
@@ -161,6 +229,7 @@ public:
     /// @brief Destructor
     ~MSLink();
 
+    void addCustomConflict(const MSLane* from, const MSLane* to, double startPos, double endPos);
 
     /** @brief Sets the request information
      *
@@ -568,8 +637,8 @@ public:
         return myFoeLanes;
     }
 
-    const std::vector<std::pair<double, double> >& getLengthsBehindCrossing() const {
-        return myLengthsBehindCrossing;
+    const std::vector<ConflictInfo>& getConflicts() const {
+        return myConflicts;
     }
 
     const std::vector<MSLink*>& getFoeLinks() const {
@@ -586,6 +655,13 @@ public:
 
     /// @brief get string description for this link
     std::string  getDescription() const;
+
+    /// @brief post-processing for legacy networks
+    static void recheckSetRequestInformation();
+
+    static bool ignoreFoe(const SUMOTrafficObject* ego, const SUMOTrafficObject* foe);
+
+    static const double NO_INTERSECTION;
 
 private:
     /// @brief return whether the given vehicles may NOT merge safely
@@ -631,7 +707,8 @@ private:
     /// @brief check whether the given vehicle positions overlap laterally
     static bool lateralOverlap(double posLat, double width, double posLat2, double width2);
 
-    static bool ignoreFoe(const SUMOTrafficObject* ego, const SUMOVehicle* foe);
+    /// @brief return CustomConflict with foeLane if it is defined
+    const CustomConflict* getCustomConflict(const MSLane* foeLane) const;
 
 private:
     /// @brief The lane behind the junction approached by this link
@@ -704,11 +781,12 @@ private:
     double myLateralShift;
 
     /* @brief lengths after the crossing point with foeLane
-     * (lengthOnThis, lengthOnFoe)
      * (index corresponds to myFoeLanes)
      * empty vector for entry links
      * */
-    std::vector<std::pair<double, double> > myLengthsBehindCrossing;
+    std::vector<ConflictInfo> myConflicts;
+
+    std::vector<CustomConflict> myCustomConflicts;
 
     // TODO: documentation
     std::vector<MSLink*> myFoeLinks;
@@ -740,6 +818,9 @@ private:
 
     static const SUMOTime myLookaheadTime;
     static const SUMOTime myLookaheadTimeZipper;
+
+    /// @brief links that need post processing after initialization (to deal with legacy networks)
+    static std::set<std::pair<MSLink*, MSLink*> > myRecheck;
 
     MSLink* myParallelRight;
     MSLink* myParallelLeft;

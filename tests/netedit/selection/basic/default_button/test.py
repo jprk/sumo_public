@@ -31,18 +31,12 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # go to select mode
 netedit.selectMode()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # select edges with speed < 10 and delete it (only one)
 netedit.selectionApply()
 netedit.deleteSelectedItems()
 
-# save network
-netedit.saveNetwork(referencePosition)
-
-# save shapes
-netedit.saveAdditionals(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

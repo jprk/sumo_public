@@ -35,10 +35,11 @@ netedit.additionalMode()
 netedit.changeElement("space")
 
 # try to create space without selecting Parking Area parent
-netedit.leftClick(referencePosition, 231, 83)
+netedit.leftClick(referencePosition, 292, 371)
 
-# save network
-netedit.saveNetwork(referencePosition)
+
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

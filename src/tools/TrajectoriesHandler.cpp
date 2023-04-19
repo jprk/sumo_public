@@ -73,7 +73,7 @@ TrajectoriesHandler::myStartElement(int element,
                 const std::string acId = attrs.getString(SUMO_ATTR_ACTORCONFIG);
                 const std::string id = attrs.getString(SUMO_ATTR_ID);
                 if (myEmissionClassByType.count(acId) == 0) {
-                    WRITE_WARNING("Unknown actor configuration '" + acId + "' for vehicle '" + id + "'!");
+                    WRITE_WARNINGF(TL("Unknown actor configuration '%' for vehicle '%'!"), acId, id);
                 } else {
                     myEmissionClassByVehicle[id] = myEmissionClassByType.count(acId) > 0 ? myEmissionClassByType[acId] : myDefaultClass;
                 }
@@ -91,7 +91,7 @@ TrajectoriesHandler::myStartElement(int element,
         case SUMO_TAG_MOTIONSTATE: {
             const std::string id = attrs.getString(SUMO_ATTR_VEHICLE);
             if (myEmissionClassByVehicle.count(id) == 0) {
-                WRITE_WARNING("Motion state for unknown vehicle '" + id + "'!");
+                WRITE_WARNINGF(TL("Motion state for unknown vehicle '%'!"), id);
                 myEmissionClassByVehicle[id] = myDefaultClass;
             }
             const SUMOEmissionClass c = myEmissionClassByVehicle[id];
@@ -133,7 +133,7 @@ TrajectoriesHandler::computeEmissions(const std::string id, const SUMOEmissionCl
         a = PollutantsInterface::getModifiedAccel(c, v, a, s);
     }
     if (a == INVALID_VALUE) {
-        throw ProcessError("Acceleration information is missing; try running with --compute-a.");
+        throw ProcessError(TL("Acceleration information is missing; try running with --compute-a."));
     }
     if (s == INVALID_VALUE) {
         s = myDefaultSlope;

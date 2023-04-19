@@ -27,18 +27,18 @@ selection, see figure).
 The result should look more or less like shown in the figure. The
 important thing is the circular shape. Now save the network somewhere
 (`Ctrl-Shift-S`) in an empty directory (we will refer to that place by
-`baseDir`). As name for the created net-file type in `circles.net.xml`.
+`baseDir`). Use `circles.net.xml` as the name for the created net-file.
 
 ## Create vehicles and run SUMO
 
-In the `baseDir` create two empty text-files, call them
+In `baseDir` create two empty text-files and call them
 `circles.rou.xml` and `circles.sumocfg`. These files will define our
 vehicles and the run configuration.
 
 First, we edit `circles.rou.xml` and define a vehicle flow of five
 standard passenger cars. The file contents should look like this:
 
-```
+```xml
 <routes>
    <vType id="car" type="passenger" length="5" accel="3.5" decel="2.2" sigma="1.0"/>
    <flow id="carflow" type="car" beg="0" end="0" number="5"/>
@@ -52,10 +52,10 @@ and [Vehicle
 Types](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#vehicle_types).
 
 To use the route-file and the generated net-file with SUMO, we edit the
-configuration-file `circles.sumocfg` to tell SUMO where it finds vehicle
+configuration-file `circles.sumocfg` to tell SUMO where it should look for vehicle
 and net definitions:
 
-```
+```xml
 <configuration>
     <input>
        <net-file value="circles.net.xml"/>
@@ -77,7 +77,7 @@ PATH or set the environment variable `SUMO_HOME`
 
 First attempt to run the simulation
 
-Did it work? No.
+Does it work? No.
 
 Let us have a look at the Message Window at the bottom of the GUI (see figure 
 above) to endeavor what went wrong (by the way: the Message Window is often a 
@@ -86,7 +86,7 @@ at it first, if you run into problems).
 
 It says: `Error: The route for flow 'carflow' has no edges.` This means
 that SUMO does not know from where to where the vehicles of the flow we
-declared in `circles.rou.xml` should take. To do this, we need to add
+declared in `circles.rou.xml` should move. To fix this, we need to add
 attributes `to` and `from`, and provide corresponding edge-ids to the
 flow.
 
@@ -103,7 +103,7 @@ Renaming an edge in netedit
 Now we add the from-edge and the to-edge to the flow in
 `circles.rou.xml`:
 
-```
+```xml
  ...
     <flow id="carflow" type="car" beg="0" end="0" number="5" from="edge1" to="edge2"/>
  ...
@@ -138,12 +138,11 @@ again. To this end we will create a rerouter.
 
 Since in SUMO the additional elements are not considered as elements of
 the net, we have to specify them in a separate file (the
-"additionals-file"). Create and open a file `circles.add.xml` in the
-`baseDir` and add the following xml-code (see [Rerouter/Assigning a new
+"additionals-file"). Create and open a file `circles.add.xml` in `baseDir` and add the following xml-code (see [Rerouter/Assigning a new
 Destination](../Simulation/Rerouter.md#assigning_a_new_destination)
 for details):
 
-```
+```xml
 <additionals>
     <rerouter id="rerouter_0" edges="edge1">
         <interval end="1e9">
@@ -162,7 +161,7 @@ Then we have to tell SUMO to include the rerouters into the simulation
 by adding a line to the config `circles.sumocfg`. Within the `<input>` tag
 add a child:
 
-```
+```xml
 <additional-files value="circles.add.xml"/>
 ```
 
@@ -195,11 +194,11 @@ First we have to change the mode to "demand" by pressing `F3` and then press
 `r` for switch to "create route" mode. We can either choose to create a route by 
 clicking over "consecutive edges" or "non consecutive edges", which will find 
 the shortest path between the non consecutive edges given. For this test, we 
-will choose the last option. We can change the route "id" by clicking over the 
+will choose the last option. We can change the route "id" by clicking on the 
 id box. In this case, we will leave the default "id" `route_0`.
 
-First we have to click over the first edge of our route (let's take one of the 
-upper edges) and then click over the last edge of the route (let's choose one 
+First we have to click on the first edge of our route (let's take one of the 
+upper edges) and then click on the last edge of the route (let's choose one 
 of the lower edges). An orange path connecting both edges has been created. To 
 create the route we have to press the "create route" button or the `Enter` key. 
 Route creation can be aborted using the "abort creation" button or pressing the 
@@ -212,8 +211,8 @@ Create a route with netedit.
 Now we have to create a flow of vehicles that will drive along this route. For 
 this, we press `v` to go to the vehicles mode and then select over the vehicles 
 list "flow (over route)". We leave the default values for "id" (`flow_0`) and 
-"begin" (`0`). If we scroll over the list we will find more flow attributes. In 
-this case we want to simulate 5 vehicles after each other, so we set `0` as 
+"begin" (`0`). If we scroll through the list we will find more flow attributes. In 
+this case, we want to simulate 5 vehicles after each other, so we set `0` as 
 "end" and `5` as "number". To create the flow we just have to click over the 
 route we have created and a vehicle will appear at the beginning of the route. 
 
@@ -257,7 +256,7 @@ again and again.
 To add the first rerouter we have to check the "id" of the last edge of our 
 route by clicking over the edge with the right button. In this example the edge 
 id is `edge2`. Select the id over the list and click again, this time with the 
-left button, over the edge. The rerouter have been created. Now we have to add 
+left button, over the edge. The rerouter has been created. Now we have to add 
 a `destProbReroute`-element. Select the rerouter and click over it with the 
 right-button. Select "Open rerouter Dialog" over the list.
 

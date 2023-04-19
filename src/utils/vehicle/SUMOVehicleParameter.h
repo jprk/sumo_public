@@ -118,6 +118,8 @@ enum class DepartDefinition {
     NOW,
     /// @brief The departure is triggered by a train split
     SPLIT,
+    /// @brief The departure is at simulation start
+    BEGIN,
     /// @brief Tag for the last element in the enum for safe int casting
     DEF_MAX
 };
@@ -349,7 +351,7 @@ public:
         /// @brief write trigger attribute
         std::vector<std::string> getTriggers() const;
 
-        /// @brief The edge to stop at (used only in NETEDIT)
+        /// @brief The edge to stop at (used only in netedit)
         std::string edge;
 
         /// @brief The lane to stop at
@@ -409,10 +411,10 @@ public:
         /// @brief IDs of containers the vehicle has to wait for until departing
         std::set<std::string> awaitedContainers;
 
-        /// @brief enable or disable friendly position (used by NETEDIT)
+        /// @brief enable or disable friendly position (used by netedit)
         bool friendlyPos = false;
 
-        /// @brief act Type (only used by Persons) (used by NETEDIT)
+        /// @brief act Type (only used by Persons) (used by netedit)
         std::string actType;
 
         /// @brief id of the trip within a cyclical public transport route

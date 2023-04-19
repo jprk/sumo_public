@@ -23,6 +23,7 @@
 #include <netedit/GNEViewNet.h>
 #include <netedit/changes/GNEChange_DemandElement.h>
 #include <netedit/dialogs/GNESingleParametersDialog.h>
+#include <utils/common/MsgHandler.h>
 #include <utils/common/StringTokenizer.h>
 #include <utils/emissions/PollutantsInterface.h>
 #include <utils/gui/div/GUIDesigns.h>
@@ -64,8 +65,8 @@ GNEVehicleTypeDialog::VTypeAttributes::VClassRow::VClassRow(VTypeAttributes* VTy
     // create two auxiliary frames
     FXVerticalFrame* verticalFrameLabelAndComboBox = new FXVerticalFrame(this, GUIDesignAuxiliarVerticalFrame);
     // create FXComboBox for VClass
-    new FXLabel(verticalFrameLabelAndComboBox, toString(SUMO_ATTR_VCLASS).c_str(), nullptr, GUIDesignLabelAttribute150);
-    myComboBoxVClass = new MFXIconComboBox(verticalFrameLabelAndComboBox, GUIDesignComboBoxNCol, true,
+    new FXLabel(verticalFrameLabelAndComboBox, toString(SUMO_ATTR_VCLASS).c_str(), nullptr, GUIDesignLabelThickedFixed(150));
+    myComboBoxVClass = new MFXComboBoxIcon(verticalFrameLabelAndComboBox, GUIDesignComboBoxNCol, true,
                                            VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBox);
     myComboBoxVClassLabelImage = new FXLabel(this, "", nullptr, GUIDesignLabelTickedIcon180x46);
     myComboBoxVClassLabelImage->setBackColor(FXRGBA(255, 255, 255, 255));
@@ -271,8 +272,8 @@ GNEVehicleTypeDialog::VTypeAttributes::VShapeRow::VShapeRow(VTypeAttributes* VTy
     // create two auxiliar frames
     FXVerticalFrame* verticalFrameLabelAndComboBox = new FXVerticalFrame(this, GUIDesignAuxiliarVerticalFrame);
     // create combo for vehicle shapes
-    new FXLabel(verticalFrameLabelAndComboBox, toString(SUMO_ATTR_GUISHAPE).c_str(), nullptr, GUIDesignLabelAttribute150);
-    myComboBoxShape = new MFXIconComboBox(verticalFrameLabelAndComboBox, GUIDesignComboBoxNCol, false,
+    new FXLabel(verticalFrameLabelAndComboBox, toString(SUMO_ATTR_GUISHAPE).c_str(), nullptr, GUIDesignLabelThickedFixed(150));
+    myComboBoxShape = new MFXComboBoxIcon(verticalFrameLabelAndComboBox, GUIDesignComboBoxNCol, false,
                                           VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBox);
     myComboBoxShapeLabelImage = new FXLabel(this, "", nullptr, GUIDesignLabelTickedIcon180x46);
     myComboBoxShapeLabelImage->setBackColor(FXRGBA(255, 255, 255, 255));
@@ -444,13 +445,13 @@ GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow::VTypeAttributeRow(VTyp
     } else if (rowAttrType == ROWTYPE_PARAMETERS) {
         myButton = new FXButton(this, TL("Edit parameters"), nullptr, VTypeAttributesParent, MID_GNE_OPEN_PARAMETERS_DIALOG, GUIDesignButtonRectangular150);
     } else {
-        new FXLabel(this, filterAttributeName(attr), nullptr, GUIDesignLabelAttribute150);
+        new FXLabel(this, filterAttributeName(attr), nullptr, GUIDesignLabelThickedFixed(150));
     }
     // now check if we have to create a textfield or a ComboBox
     if ((rowAttrType == ROWTYPE_STRING) || (rowAttrType == ROWTYPE_COLOR) || (rowAttrType == ROWTYPE_FILENAME) || (rowAttrType == ROWTYPE_PARAMETERS)) {
-        myTextField = new FXTextField(this, GUIDesignTextFieldNCol, VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFielWidth180);
+        myTextField = new FXTextField(this, GUIDesignTextFieldNCol, VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldFixed(180));
     } else if (rowAttrType == ROWTYPE_COMBOBOX) {
-        myComboBox = new MFXIconComboBox(this, GUIDesignComboBoxNCol, false, VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBoxWidth180);
+        myComboBox = new MFXComboBoxIcon(this, GUIDesignComboBoxNCol, false, VTypeAttributesParent, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBoxWidth180);
         // fill combo Box with values
         for (const auto& value : values) {
             myComboBox->appendIconItem(value.c_str(), nullptr);
@@ -462,7 +463,7 @@ GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow::VTypeAttributeRow(VTyp
             myComboBox->setNumVisible(10);
         }
     } else {
-        throw ProcessError("Invalid row type");
+        throw ProcessError(TL("Invalid row type"));
     }
 }
 
@@ -631,7 +632,7 @@ GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow::getButton() const {
 void
 GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow::openColorDialog() {
     // create FXColorDialog
-    FXColorDialog colordialog(this, tr("Color Dialog"));
+    FXColorDialog colordialog(this, TL("Color Dialog"));
     colordialog.setTarget(this);
     // If previous attribute wasn't correct, set black as default color
     if (GNEAttributeCarrier::canParse<RGBColor>(myTextField->getText().text())) {
@@ -857,8 +858,8 @@ GNEVehicleTypeDialog::VTypeAttributes::buildAttributesA(FXVerticalFrame* column)
 
     // 02 create FXTextField and Label for vehicleTypeID
     FXHorizontalFrame* row = new FXHorizontalFrame(column, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(row, toString(SUMO_ATTR_ID).c_str(), nullptr, GUIDesignLabelAttribute150);
-    myTextFieldVehicleTypeID = new FXTextField(row, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFielWidth180);
+    new FXLabel(row, toString(SUMO_ATTR_ID).c_str(), nullptr, GUIDesignLabelThickedFixed(150));
+    myTextFieldVehicleTypeID = new FXTextField(row, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldFixed(180));
 
     // 03 create FXTextField and Button for Color
     myColor = new VTypeAttributeRow(this, column, SUMO_ATTR_COLOR, VTypeAttributeRow::RowAttrType::ROWTYPE_COLOR);
@@ -1256,15 +1257,15 @@ GNEVehicleTypeDialog::CarFollowingModelParameters::CarFollowingModelParameters(G
 
     // declare combo box
     FXHorizontalFrame* row = new FXHorizontalFrame(myVerticalFrameRows, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(row, "Algorithm", nullptr, GUIDesignLabelAttribute150);
-    myComboBoxCarFollowModel = new MFXIconComboBox(row, GUIDesignComboBoxNCol, false, this, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBox);
+    new FXLabel(row, "Algorithm", nullptr, GUIDesignLabelThickedFixed(150));
+    myComboBoxCarFollowModel = new MFXComboBoxIcon(row, GUIDesignComboBoxNCol, false, this, MID_GNE_SET_ATTRIBUTE, GUIDesignComboBox);
 
     // fill combo Box with all Car following models
     std::vector<std::string> CFModels = SUMOXMLDefinitions::CarFollowModels.getStrings();
     for (const auto& CFModel : CFModels) {
         myComboBoxCarFollowModel->appendIconItem(CFModel.c_str(), nullptr);
     }
-    myComboBoxCarFollowModel->setNumVisible(10);
+    myComboBoxCarFollowModel->setNumVisible(myComboBoxCarFollowModel->getNumItems());
 
     // 01 create FX and Label for Accel
     myAccelRow = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_ACCEL);
@@ -1357,6 +1358,42 @@ GNEVehicleTypeDialog::CarFollowingModelParameters::CarFollowingModelParameters(G
     // 23 create FX and Label for Adapt Time
     myAdaptTimeRow = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_IDMM_ADAPT_TIME);
     myRows.push_back(myAdaptTimeRow);
+
+    // 24 create FX and Label for W99 CC 01
+    myW99CC1 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC1);
+    myRows.push_back(myW99CC1);
+
+    // 25 create FX and Label for W99 CC 02
+    myW99CC2 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC2);
+    myRows.push_back(myW99CC2);
+
+    // 26 create FX and Label for W99 CC 03
+    myW99CC3 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC3);
+    myRows.push_back(myW99CC3);
+
+    // 27 create FX and Label for W99 CC 04
+    myW99CC4 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC4);
+    myRows.push_back(myW99CC4);
+
+    // 28 create FX and Label for W99 CC 05
+    myW99CC5 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC5);
+    myRows.push_back(myW99CC5);
+
+    // 29 create FX and Label for W99 CC 06
+    myW99CC6 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC6);
+    myRows.push_back(myW99CC6);
+
+    // 30 create FX and Label for W99 CC 07
+    myW99CC7 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC7);
+    myRows.push_back(myW99CC7);
+
+    // 31 create FX and Label for W99 CC 08
+    myW99CC8 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC8);
+    myRows.push_back(myW99CC8);
+
+    // 32 create FX and Label for W99 CC 09
+    myW99CC9 = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_W99_CC9);
+    myRows.push_back(myW99CC9);
 
     // X1 create FX and Label for Look ahead/preview Time
     myTpreviewRow = new CarFollowingModelRow(this, myVerticalFrameRows, SUMO_ATTR_CF_EIDM_T_LOOK_AHEAD);
@@ -1542,6 +1579,17 @@ GNEVehicleTypeDialog::CarFollowingModelParameters::refreshCFMFields() {
                 myMinGapFactorRow->show();
                 mySecurityRow->show();
                 myEstimationRow->show();
+                break;
+            case SUMO_TAG_CF_W99:
+                myW99CC1->show();
+                myW99CC2->show();
+                myW99CC3->show();
+                myW99CC4->show();
+                myW99CC5->show();
+                myW99CC6->show();
+                myW99CC7->show();
+                myW99CC8->show();
+                myW99CC9->show();
                 break;
             case SUMO_TAG_CF_RAIL:
                 myTauRow->show();
@@ -1768,8 +1816,8 @@ GNEVehicleTypeDialog::CarFollowingModelParameters::CarFollowingModelRow::CarFoll
     myCarFollowingModelParametersParent(carFollowingModelParametersParent),
     myAttr(attr),
     myTextField(nullptr) {
-    new FXLabel(this, toString(attr).c_str(), nullptr, GUIDesignLabelAttribute150);
-    myTextField = new FXTextField(this, GUIDesignTextFieldNCol, carFollowingModelParametersParent, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFielWidth180);
+    new FXLabel(this, toString(attr).c_str(), nullptr, GUIDesignLabelThickedFixed(150));
+    myTextField = new FXTextField(this, GUIDesignTextFieldNCol, carFollowingModelParametersParent, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldFixed(180));
 }
 
 

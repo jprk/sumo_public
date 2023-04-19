@@ -113,7 +113,7 @@ NLJunctionControlBuilder::closeJunction(const std::string& basePath) {
         throw InvalidArgument("The description for the junction logic '" + myActiveKey + "' is malicious.");
     }
     if (myJunctions == nullptr) {
-        throw ProcessError("Information about the number of nodes was missing.");
+        throw ProcessError(TL("Information about the number of nodes was missing."));
     }
     MSJunction* junction = nullptr;
     switch (myType) {
@@ -330,7 +330,7 @@ NLJunctionControlBuilder::closeTrafficLightLogic(const std::string& basePath) {
             tlLogic = new MSOffTrafficLightLogic(getTLLogicControlToUse(), myActiveKey);
             break;
         case TrafficLightType::INVALID:
-            throw ProcessError("Invalid traffic light type '" + toString(myLogicType) + "'");
+            throw ProcessError(TLF("Invalid traffic light type '%'", toString(myLogicType)));
     }
     myActivePhases.clear();
     if (tlLogic != nullptr) {
@@ -341,7 +341,7 @@ NLJunctionControlBuilder::closeTrafficLightLogic(const std::string& basePath) {
                 myLogics2PostLoadInit.push_back(tlLogic);
             }
         } else {
-            WRITE_ERROR("Another logic with id '" + myActiveKey + "' and programID '" + myActiveProgram + "' exists.");
+            WRITE_ERRORF(TL("Another logic with id '%' and programID '%' exists."), myActiveKey, myActiveProgram);
         }
     }
 }
@@ -468,7 +468,7 @@ MSTLLogicControl*
 NLJunctionControlBuilder::buildTLLogics() {
     postLoadInitialization(); // must happen after edgeBuilder is finished
     if (!myLogicControl->closeNetworkReading()) {
-        throw ProcessError("Traffic lights could not be built.");
+        throw ProcessError(TL("Traffic lights could not be built."));
     }
     MSTLLogicControl* ret = myLogicControl;
     myLogicControl = nullptr;

@@ -304,7 +304,7 @@ NWWriter_OpenDrive::writeNormalEdge(OutputDevice& device, const NBEdge* e,
     } else {
         bool ok = writeGeomSmooth(ls, e->getSpeed(), planViewOSS, elevationOSS, straightThresh, length);
         if (!ok) {
-            WRITE_WARNING("Could not compute smooth shape for edge '" + e->getID() + "'.");
+            WRITE_WARNINGF(TL("Could not compute smooth shape for edge '%'."), e->getID());
         }
     }
     planViewOSS.closeTag();
@@ -447,7 +447,7 @@ NWWriter_OpenDrive::writeInternalEdge(OutputDevice& device, OutputDevice& juncti
         length = fallBackShape.length2D();
         // problem with turnarounds is known, method currently returns 'ok' (#2539)
         if (!ok) {
-            WRITE_WARNING("Could not compute smooth shape from lane '" + inEdge->getLaneID(cLeft.fromLane) + "' to lane '" + outEdge->getLaneID(cLeft.toLane) + "'. Use option 'junctions.scurve-stretch' or increase radius of junction '" + inEdge->getToNode()->getID() + "' to fix this.");
+            WRITE_WARNINGF(TL("Could not compute smooth shape from lane '%' to lane '%'. Use option 'junctions.scurve-stretch' or increase radius of junction '%' to fix this."), inEdge->getLaneID(cLeft.fromLane), outEdge->getLaneID(cLeft.toLane), inEdge->getToNode()->getID());
         } else if (length <= NUMERICAL_EPS) {
             // left-curving geometry-like edges must use the right
             // side as reference line and shift
@@ -954,7 +954,7 @@ NWWriter_OpenDrive::checkLaneGeometries(const NBEdge* e) {
         for (int lane = 1; lane < e->getNumLanes(); ++lane) {
             const double dist = stopLine.distance2D(e->getLaneShape(lane)[-1]);
             if (dist > NUMERICAL_EPS) {
-                WRITE_WARNING("Uneven stop line at lane '" + e->getLaneID(lane) + "' (dist=" + toString(dist) + ") cannot be represented in OpenDRIVE.");
+                WRITE_WARNINGF(TL("Uneven stop line at lane '%' (dist=%) cannot be represented in OpenDRIVE."), e->getLaneID(lane), toString(dist));
             }
         }
     }

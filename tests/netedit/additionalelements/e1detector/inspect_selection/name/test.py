@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E1
-netedit.leftClick(referencePosition, 150, 240)
+netedit.leftClick(referencePosition, 325, 248)
 
 # Change parameter name with an non valid value
 netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.name, "%%%;:..&&%$%$", True)
@@ -47,14 +47,11 @@ netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.name, "%%%;:..&&%$%$",
 netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.name, "customName", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

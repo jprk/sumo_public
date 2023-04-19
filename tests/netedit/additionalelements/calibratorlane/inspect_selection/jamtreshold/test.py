@@ -37,8 +37,8 @@ netedit.selectionInvert()
 # go to inspect mode
 netedit.inspectMode()
 
-# inspect calibrator
-netedit.leftClick(referencePosition, 300, 100)
+# inspect calibratorLane
+netedit.leftClick(referencePosition, 514, 284)
 
 # Change parameter id with a non valid value (invalid characters)
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.jamTreshold, "dummyjam", True)
@@ -50,14 +50,11 @@ netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.jamTreshold, "
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.jamTreshold, "7.5", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -57,7 +57,7 @@ GNEAttributesCreatorRow::GNEAttributesCreatorRow(GNEAttributesCreator* Attribute
     // Create left visual elements
     myAttributeLabel = new MFXLabelTooltip(this,
                                            AttributesCreatorParent->getFrameParent()->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
-                                           "name", nullptr, GUIDesignLabelAttribute);
+                                           TL("name"), nullptr, GUIDesignLabelThickedFixed(100));
     myAttributeLabel->hide();
     myEnableAttributeCheckButton = new FXCheckButton(this, TL("name"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButtonAttribute);
     myEnableAttributeCheckButton->hide();
@@ -228,10 +228,10 @@ GNEAttributesCreatorRow::refreshRow() {
         if (myAttrProperties.isBool()) {
             if (GNEAttributeCarrier::parse<bool>(myAttributesCreatorParent->getCurrentTemplateAC()->getAttribute(myAttrProperties.getAttr()))) {
                 myValueCheckButton->setCheck(true);
-                myValueCheckButton->setText(TL("true"));
+                myValueCheckButton->setText("true");
             } else {
                 myValueCheckButton->setCheck(false);
-                myValueCheckButton->setText(TL("false"));
+                myValueCheckButton->setText("false");
             }
             myValueCheckButton->show();
             // check if enable or disable
@@ -347,10 +347,10 @@ GNEAttributesCreatorRow::onCmdSetAttribute(FXObject* obj, FXSelector, void*) {
         }
     } else if (obj == myValueCheckButton) {
         if (myValueCheckButton->getCheck()) {
-            myValueCheckButton->setText(TL("true"));
+            myValueCheckButton->setText("true");
             myAttributesCreatorParent->getCurrentTemplateAC()->setAttribute(myAttrProperties.getAttr(), "true");
         } else {
-            myValueCheckButton->setText(TL("false"));
+            myValueCheckButton->setText("false");
             myAttributesCreatorParent->getCurrentTemplateAC()->setAttribute(myAttrProperties.getAttr(), "false");
         }
     } else if (obj == myValueComboBox) {
@@ -422,7 +422,7 @@ GNEAttributesCreatorRow::onCmdOpenAttributeDialog(FXObject*, FXSelector, void*) 
     // continue depending of attribute
     if (myAttrProperties.getAttr() == SUMO_ATTR_COLOR) {
         // create FXColorDialog
-        FXColorDialog colordialog(this, tr("Color Dialog"));
+        FXColorDialog colordialog(this, TL("Color Dialog"));
         colordialog.setTarget(this);
         // If previous attribute wasn't correct, set black as default color
         if (GNEAttributeCarrier::canParse<RGBColor>(myValueTextField->getText().text())) {
@@ -473,7 +473,7 @@ GNEAttributesCreatorRow::isValidID() const {
         return (myAttributesCreatorParent->getFrameParent()->getViewNet()->getNet()->getAttributeCarriers()->retrieveAdditional(
                     myAttrProperties.getTagPropertyParent().getTag(), myValueTextField->getText().text(), false) == nullptr);
     } else {
-        throw ProcessError("Unsupported additional ID");
+        throw ProcessError(TL("Unsupported additional ID"));
     }
 }
 

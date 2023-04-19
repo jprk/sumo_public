@@ -62,13 +62,13 @@ MSVehicleDevice_BTreceiver::insertOptions(OptionsCont& oc) {
     insertDefaultAssignmentOptions("btreceiver", "Communication", oc);
 
     oc.doRegister("device.btreceiver.range", new Option_Float(300));
-    oc.addDescription("device.btreceiver.range", "Communication", "The range of the bt receiver");
+    oc.addDescription("device.btreceiver.range", "Communication", TL("The range of the bt receiver"));
 
     oc.doRegister("device.btreceiver.all-recognitions", new Option_Bool(false));
-    oc.addDescription("device.btreceiver.all-recognitions", "Communication", "Whether all recognition point shall be written");
+    oc.addDescription("device.btreceiver.all-recognitions", "Communication", TL("Whether all recognition point shall be written"));
 
     oc.doRegister("device.btreceiver.offtime", new Option_Float(0.64));
-    oc.addDescription("device.btreceiver.offtime", "Communication", "The offtime used for calculating detection probability (in seconds)");
+    oc.addDescription("device.btreceiver.offtime", "Communication", TL("The offtime used for calculating detection probability (in seconds)"));
 
     myWasInitialised = false;
     myHasPersons = false;
@@ -292,11 +292,11 @@ MSDevice_BTreceiver::BTreceiverUpdate::updateVisibility(MSDevice_BTreceiver::Veh
                 leaveRange(receiver, intersectionReceiverData,
                            sender, intersectionSenderData, (intersections.back() - 1.) * TS);
             } else {
-                WRITE_WARNING("The vehicle '" + sender.getID() + "' cannot be in the range of vehicle '" + receiver.getID() + "', leave, and enter it in one step.");
+                WRITE_WARNINGF(TL("The vehicle '%' cannot be in the range of vehicle '%', leave, and enter it in one step."), sender.getID(), receiver.getID());
             }
             break;
         default:
-            WRITE_WARNING(TL("Nope, a circle cannot be crossed more often than twice by a line."));
+            WRITE_WARNING("Nope, a circle cannot be crossed more often than twice by a line.");
             break;
     }
 }
@@ -418,7 +418,7 @@ MSDevice_BTreceiver::notifyEnter(SUMOTrafficObject& veh, MSMoveReminder::Notific
 bool
 MSDevice_BTreceiver::notifyMove(SUMOTrafficObject& veh, double /* oldPos */, double newPos, double newSpeed) {
     if (sVehicles.find(veh.getID()) == sVehicles.end()) {
-        WRITE_WARNING("btreceiver: Can not update position of vehicle '" + veh.getID() + "' which is not on the road.");
+        WRITE_WARNINGF(TL("btreceiver: Can not update position of vehicle '%' which is not on the road."), veh.getID());
         return true;
     }
     const std::string location = MSDevice_BTsender::getLocation(veh);
@@ -433,7 +433,7 @@ MSDevice_BTreceiver::notifyLeave(SUMOTrafficObject& veh, double /* lastPos */, M
         return true;
     }
     if (sVehicles.find(veh.getID()) == sVehicles.end()) {
-        WRITE_WARNING("btreceiver: Can not update position of vehicle '" + veh.getID() + "' which is not on the road.");
+        WRITE_WARNINGF(TL("btreceiver: Can not update position of vehicle '%' which is not on the road."), veh.getID());
         return true;
     }
     const std::string location = MSDevice_BTsender::getLocation(veh);

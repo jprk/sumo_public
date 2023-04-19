@@ -61,13 +61,13 @@ public:
     void createNewNetwork();
 
     /// @brief load network
-    void loadNetwork(const std::string &networkFile);
+    void loadNetwork(const std::string& networkFile);
 
     /// @brief starts to load a configuration
-    void loadConfiguration(const std::string &configurationFile);
+    void loadConfiguration(const std::string& configurationFile);
 
     /// @brief starts to load a OSM File
-    void loadOSM(const std::string &OSMFile);
+    void loadOSM(const std::string& OSMFile);
 
     /// @brief build dependent
     void dependentBuild();
@@ -110,23 +110,23 @@ public:
     /// @brief called when the command/FXCall open foreign is executed
     long onCmdOpenForeign(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall open NETEDITConfig is executed
-    long onCmdOpenNETEDITConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall open netedit config is executed
+    long onCmdOpenNeteditConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall open SUMOConfig is executed
-    long onCmdOpenSUMOConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall open SumoConfig is executed
+    long onCmdOpenSumoConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall reload NETEDITConfig is executed
-    long onCmdReloadNETEDITConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall reload netedit config is executed
+    long onCmdReloadNeteditConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall reload SUMOConfig is executed
-    long onCmdReloadSUMOConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall reload SumoConfig is executed
+    long onCmdReloadSumoConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall reload NETEDITConfig is updated
-    long onUpdReloadNETEDITConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall reload netedit config is updated
+    long onUpdReloadNeteditConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall reload SUMOConfig is updated
-    long onUpdReloadSUMOConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall reload SumoConfig is updated
+    long onUpdReloadSumoConfig(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall open TLS programs is executed
     long onCmdOpenTLSPrograms(FXObject*, FXSelector, void*);
@@ -173,11 +173,17 @@ public:
     /// @brief called when the command/FXCall locate is executed
     long onCmdLocate(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall run NetDiff is executed
-    long onCmdToolNetDiff(FXObject*, FXSelector, void*);
+    /// @brief called when user press over a tool dialog button
+    long onCmdOpenPythonToolDialog(FXObject* obj, FXSelector, void*);
 
-    /// @brief called when the command/FXCall run NetDiff is updated
-    long onUpdToolNetDiff(FXObject*, FXSelector, void*);
+    /// @brief called when user run a tool
+    long onCmdRunPythonTool(FXObject* obj, FXSelector, void*);
+
+    /// @brief post processing after run tool
+    long onCmdPostProcessingPythonTool(FXObject* obj, FXSelector, void*);
+
+    /// @brief called when the command/FXCall python tool is updated
+    long onUpdPythonTool(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save network is executed
     long onCmdSaveNetwork(FXObject*, FXSelector, void*);
@@ -191,23 +197,23 @@ public:
     /// @brief called when the command/FXCall save joined is executed
     long onCmdSaveJoinedJunctionsAs(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save NETEDITConfig is executed
-    long onCmdSaveNETEDITConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save netedit config is executed
+    long onCmdSaveNeteditConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save NETEDITConfig as is executed
-    long onCmdSaveNETEDITConfigAs(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save netedit config as is executed
+    long onCmdSaveNeteditConfigAs(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save NETEDITConfig is updated
-    long onUpdSaveNETEDITConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save netedit config is updated
+    long onUpdSaveNeteditConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save SUMOConfig is executed
-    long onCmdSaveSUMOConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save SumoConfig is executed
+    long onCmdSaveSumoConfig(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save SUMOConfig as is executed
-    long onCmdSaveSUMOConfigAs(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save SumoConfig as is executed
+    long onCmdSaveSumoConfigAs(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save SUMOConfig is updated
-    long onUpdSaveSUMOConfig(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save SumoConfig is updated
+    long onUpdSaveSumoConfig(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save TLSPrograms is executed
     long onCmdSaveTLSPrograms(FXObject*, FXSelector, void*);
@@ -347,9 +353,7 @@ public:
     /// @brief called when a key is released
     long onKeyRelease(FXObject* o, FXSelector sel, void* data);
 
-    /**@brief Called by FOX if the application shall be closed
-     * @note Called either by FileMenu->Quit, the normal close-menu or SIGINT
-     */
+    /// @brief Called by FOX if the application shall be closed
     long onCmdQuit(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall edit chosen is executed
@@ -415,18 +419,6 @@ public:
     /// @brief called if the user hits backspace
     long onCmdBackspace(FXObject* sender, FXSelector sel, void* ptr);
 
-    /// @brief force save network (flag)
-    long onCmdForceSaveNetwork(FXObject* sender, FXSelector sel, void* ptr);
-
-    /// @brief force save additionals (flag)
-    long onCmdForceSaveAdditionals(FXObject* sender, FXSelector sel, void* ptr);
-
-    /// @brief force save demand elements (flag)
-    long onCmdForceSaveDemandElements(FXObject* sender, FXSelector sel, void* ptr);
-
-    /// @brief force save data elements (flag)
-    long onCmdForceSaveDataElements(FXObject* sender, FXSelector sel, void* ptr);
-
     /// @brief called if the user hits key combination for focus on frame
     long onCmdFocusFrame(FXObject* sender, FXSelector sel, void* ptr);
 
@@ -435,6 +427,12 @@ public:
 
     /// @brief update label for require recomputing
     long onUpdRequireRecomputing(FXObject* sender, FXSelector sel, void* ptr);
+
+    /// @brief called when run netgenerate is called
+    long onCmdRunNetgenerate(FXObject* sender, FXSelector sel, void* ptr);
+
+    /// @brief postprocessing netgenerate
+    long onCmdPostprocessingNetgenerate(FXObject* sender, FXSelector sel, void* ptr);
 
     /// @brief called if the user press key combination Ctrl + G to toggle grid
     long onCmdToggleGrid(FXObject*, FXSelector, void*);
@@ -460,14 +458,23 @@ public:
     /// @brief called if the user selects help->Tutorial
     long onCmdTutorial(FXObject* sender, FXSelector sel, void* ptr);
 
+    /// @brief called if the user selects help->feedback
+    long onCmdFeedback(FXObject* sender, FXSelector sel, void* ptr);
+
     /// @brief called when toggle checkbox compute network when switching between supermodes
     long onCmdToggleComputeNetworkData(FXObject*, FXSelector, void*);
 
-    /// @brief called if the user selects Processing->Configure Options
+    /// @brief called when user press "options" button
     long onCmdOpenOptionsDialog(FXObject*, FXSelector, void*);
 
-    /// @brief called if the user selects Processing->Configure Options
-    long onCmdOpenSUMOOptionsDialog(FXObject*, FXSelector, void*);
+    /// @brief called when user press "sumo options" button
+    long onCmdOpenSumoOptionsDialog(FXObject*, FXSelector, void*);
+
+    /// @brief called when user press "netgenerate" button
+    long onCmdOpenNetgenerateDialog(FXObject*, FXSelector, void*);
+
+    /// @brief called when user press "netgenerate options" button
+    long onCmdOpenNetgenerateOptionsDialog(FXObject*, FXSelector, void*);
 
     /// @brief called when user press Ctrl+Z
     long onCmdUndo(FXObject*, FXSelector, void*);
@@ -506,7 +513,7 @@ public:
 
     /// @name inherited from GUIMainWindow
     /// @{
-    /// @brief get build OpenGL Canvas (due NETEDIT only uses a single View, it always return nullptr)
+    /// @brief get build OpenGL Canvas (due netedit only uses a single View, it always return nullptr)
     FXGLCanvas* getBuildGLCanvas() const;
 
     /// @brief get current simulation time (pure virtual but we don't need it)
@@ -562,10 +569,19 @@ public:
     const GNEApplicationWindowHelper::ProcessingMenuCommands& getProcessingMenuCommands() const;
 
     /// @brief get SUMO options container
-    OptionsCont& getSUMOOptions();
+    OptionsCont& getSumoOptions();
 
-    /// @brief load elements (additional, routes and meanDatas)
-    void loadElements();
+    /// @brief get netgenerate options container
+    OptionsCont& getNetgenerateOptions();
+
+    /// @brief load additional elements
+    void loadAdditionalElements();
+
+    /// @brief load demand elements
+    void loadDemandElements();
+
+    /// @brief load meanData elements
+    void loadMeanDataElements();
 
     /// @brief load data elements
     void loadDataElements();
@@ -582,8 +598,8 @@ protected:
 
     /// @brief the submenus
     FXMenuPane* myFileMenu = nullptr,
-                *myFileMenuNETEDITConfig = nullptr,
-                 *myFileMenuSUMOConfig = nullptr,
+                *myFileMenuNeteditConfig = nullptr,
+                 *myFileMenuSumoConfig = nullptr,
                   *myFileMenuTLS = nullptr,
                    *myFileMenuEdgeTypes = nullptr,
                     *myFileMenuAdditionals = nullptr,
@@ -598,8 +614,28 @@ protected:
                              *myProcessingMenu = nullptr,
                               *myLocatorMenu = nullptr,
                                *myToolsMenu = nullptr,
-                                *myWindowMenu = nullptr,
-                                 *myHelpMenu = nullptr;
+                                *myToolsDetectorMenu = nullptr,
+                                 *myToolsDistrictMenu = nullptr,
+                                  *myToolsDRTMenu = nullptr,
+                                   *myToolsEmissionsMenu = nullptr,
+                                    *myToolsImportMenu = nullptr,
+                                     *myToolsImportCityBrainMenu = nullptr,
+                                      *myToolsImportGTFSMenu = nullptr,
+                                       *myToolsImportVissim = nullptr,
+                                        *myToolsImportVisum = nullptr,
+                                         *myToolsNetMenu = nullptr,
+                                          *myToolsRouteMenu = nullptr,
+                                           *myToolsOutputMenu = nullptr,
+                                            *myToolsShapes = nullptr,
+                                             *myToolsTLS = nullptr,
+                                              *myToolsTurnDefs = nullptr,
+                                               *myToolsVisualizationMenu = nullptr,
+                                                *myToolsXML = nullptr,
+                                                 *myWindowMenu = nullptr,
+                                                  *myHelpMenu = nullptr;
+
+    /// @brief map with menu pane tools and strings
+    std::map<std::string, FXMenuPane*> myMenuPaneToolMaps;
 
     /// @brief menu title for modes
     FXMenuTitle* myModesMenuTitle = nullptr;
@@ -640,8 +676,11 @@ protected:
     /// @brief string to check if undo/redo list is enabled (a String is used to keep the disabling reason)
     std::string myUndoRedoListEnabled;
 
-    /// @brief SUMO options container
-    OptionsCont mySUMOOptions;
+    /// @brief sumo options container
+    OptionsCont mySumoOptions;
+
+    /// @brief netgenerate options container
+    OptionsCont myNetgenerateOptions;
 
     /// @brief flag for check if console options was already loaded
     bool myConsoleOptionsLoaded = true;
@@ -677,6 +716,9 @@ private:
     /// @brief Windows Menu Commands
     GNEApplicationWindowHelper::WindowsMenuCommands myWindowsMenuCommands;
 
+    /// @brief Help Menu Commands
+    GNEApplicationWindowHelper::HelpMenuCommands myHelpMenuCommands;
+
     /// @brief Supermode Commands
     GNEApplicationWindowHelper::SupermodeCommands mySupermodeCommands;
 
@@ -696,19 +738,22 @@ private:
     void closeAllWindows();
 
     /// @brief warns about unsaved changes and gives the user the option to abort
-    bool continueWithUnsavedChanges(const std::string& operation);
+    bool continueWithUnsavedChanges();
 
     /// @brief warns about unsaved changes in additionals and gives the user the option to abort
-    bool continueWithUnsavedAdditionalChanges(const std::string& operation);
+    bool continueWithUnsavedAdditionalChanges();
 
     /// @brief warns about unsaved changes in demand elements and gives the user the option to abort
-    bool continueWithUnsavedDemandElementChanges(const std::string& operation);
+    bool continueWithUnsavedDemandElementChanges();
 
     /// @brief warns about unsaved changes in data elements and gives the user the option to abort
-    bool continueWithUnsavedDataElementChanges(const std::string& operation);
+    bool continueWithUnsavedDataElementChanges();
+
+    /// @brief warns about unsaved changes in meanData elements and gives the user the option to abort
+    bool continueWithUnsavedMeanDataElementChanges();
 
     /// @brief set input files in sumo options
-    void setInputInSUMOOptions(const bool ignoreAdditionals, const bool ignoreRoutes);
+    void setInputInSumoOptions(const bool ignoreAdditionals, const bool ignoreRoutes);
 
     /// @brief extract folder
     FXString getFolder(const std::string& folder) const;

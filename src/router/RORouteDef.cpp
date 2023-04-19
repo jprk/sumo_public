@@ -120,7 +120,7 @@ RORouteDef::preComputeCurrentRoute(SUMOAbstractRouter<ROEdge, ROVehicle>& router
         if (repairCurrentRoute(router, begin, veh, myAlternatives[0]->getEdgeVector(), newEdges)) {
             if (myAlternatives[0]->getEdgeVector() != newEdges) {
                 if (!myMayBeDisconnected) {
-                    WRITE_WARNING("Repaired route of vehicle '" + veh.getID() + "'.");
+                    WRITE_WARNINGF(TL("Repaired route of vehicle '%'."), veh.getID());
                 }
                 myNewRoute = true;
                 RGBColor* col = myAlternatives[0]->getColor() != nullptr ? new RGBColor(*myAlternatives[0]->getColor()) : nullptr;
@@ -219,7 +219,7 @@ RORouteDef::repairCurrentRoute(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
         }
         // reconnect remaining edges
         if (mandatory.size() > oldEdges.size() && initialSize > 2) {
-            WRITE_MESSAGE("There are stop edges which were not part of the original route for vehicle '" + veh.getID() + "'.");
+            WRITE_MESSAGEF(TL("There are stop edges which were not part of the original route for vehicle '%'."), veh.getID());
         }
         const ConstROEdgeVector& targets = mandatory.size() > oldEdges.size() ? mandatory : oldEdges;
         newEdges.push_back(targets.front());
@@ -234,7 +234,7 @@ RORouteDef::repairCurrentRoute(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
             } else {
                 if (initialSize > 2) {
                     // only inform if the input is (probably) not a trip
-                    WRITE_MESSAGE("Edge '" + (*(i - 1))->getID() + "' not connected to edge '" + (*i)->getID() + "' for vehicle '" + veh.getID() + "'.");
+                    WRITE_MESSAGEF(TL("Edge '%' not connected to edge '%' for vehicle '%'."), (*(i - 1))->getID(), (*i)->getID(), veh.getID());
                 }
                 const ROEdge* last = newEdges.back();
                 newEdges.pop_back();

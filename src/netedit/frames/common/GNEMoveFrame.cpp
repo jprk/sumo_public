@@ -173,11 +173,11 @@ GNEMoveFrame::ShiftEdgeSelectedGeometry::ShiftEdgeSelectedGeometry(GNEMoveFrame*
     // create horizontal frame
     FXHorizontalFrame* myZValueFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create elements for Z value
-    new FXLabel(myZValueFrame, "Shift value", 0, GUIDesignLabelAttribute);
-    myShiftValueTextField = new FXTextField(myZValueFrame, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldReal);
+    new FXLabel(myZValueFrame, "Shift value", 0, GUIDesignLabelThickedFixed(100));
+    myShiftValueTextField = new FXTextField(myZValueFrame, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldRestricted(TEXTFIELD_REAL));
     myShiftValueTextField->setText("0");
     // create apply button
-    myApplyZValue = new FXButton(getCollapsableFrame(), TL("Apply shift value\t\tShift edge geometry orthogonally to driving direction for all selected edges"),
+    myApplyZValue = new FXButton(getCollapsableFrame(), (TL("Apply shift value") + std::string("\t\t") + TL("Shift edge geometry orthogonally to driving direction for all selected edges")).c_str(),
                                  GUIIconSubSys::getIcon(GUIIcon::MODEMOVE), this, MID_GNE_APPLY, GUIDesignButton);
 }
 
@@ -253,16 +253,16 @@ GNEMoveFrame::ChangeZInSelection::ChangeZInSelection(GNEMoveFrame* moveFramePare
     // create horizontal frame
     FXHorizontalFrame* myZValueFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create elements for Z value
-    new FXLabel(myZValueFrame, "Z value", 0, GUIDesignLabelAttribute);
-    myZValueTextField = new FXTextField(myZValueFrame, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldReal);
+    new FXLabel(myZValueFrame, "Z value", 0, GUIDesignLabelThickedFixed(100));
+    myZValueTextField = new FXTextField(myZValueFrame, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldRestricted(TEXTFIELD_REAL));
     myZValueTextField->setText("0");
     // Create all options buttons
-    myAbsoluteValue = new FXRadioButton(getCollapsableFrame(), TL("Absolute value\t\tSet Z value as absolute"),
+    myAbsoluteValue = new FXRadioButton(getCollapsableFrame(), (TL("Absolute value") + std::string("\t\t") + TL("Set Z value as absolute")).c_str(),
                                         this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
-    myRelativeValue = new FXRadioButton(getCollapsableFrame(), TL("Relative value\t\tSet Z value as relative"),
+    myRelativeValue = new FXRadioButton(getCollapsableFrame(), (TL("Relative value") + std::string("\t\t") + TL("Set Z value as relative")).c_str(),
                                         this, MID_CHOOSEN_OPERATION, GUIDesignRadioButton);
     // create apply button
-    myApplyButton = new FXButton(getCollapsableFrame(), TL("Apply Z value\t\tApply Z value to all selected junctions"),
+    myApplyButton = new FXButton(getCollapsableFrame(), (TL("Apply Z value") + std::string("\t\t") + TL("Apply Z value to all selected junctions")).c_str(),
                                  GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_GNE_APPLY, GUIDesignButton);
     // set absolute value as default
     myAbsoluteValue->setCheck(true);
@@ -520,18 +520,18 @@ GNEMoveFrame::ShiftShapeGeometry::ShiftShapeGeometry(GNEMoveFrame* moveFramePare
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameX = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create elements for Z value
-    new FXLabel(horizontalFrameX, "X value", 0, GUIDesignLabelAttribute);
-    myShiftValueXTextField = new FXTextField(horizontalFrameX, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldReal);
+    new FXLabel(horizontalFrameX, "X value", 0, GUIDesignLabelThickedFixed(100));
+    myShiftValueXTextField = new FXTextField(horizontalFrameX, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldRestricted(TEXTFIELD_REAL));
     myShiftValueXTextField->setText("0");
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameY = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create elements for Z value
-    new FXLabel(horizontalFrameY, "Y value", 0, GUIDesignLabelAttribute);
-    myShiftValueYTextField = new FXTextField(horizontalFrameY, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldReal);
+    new FXLabel(horizontalFrameY, "Y value", 0, GUIDesignLabelThickedFixed(100));
+    myShiftValueYTextField = new FXTextField(horizontalFrameY, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextFieldRestricted(TEXTFIELD_REAL));
     myShiftValueYTextField->setText("0");
     // create apply button
     new FXButton(this,
-                 "Shift shape geometry\t\tShift shape geometry orthogonally to driving direction for all selected shapes",
+                 (TL("Shift shape geometry") + std::string("\t\t") + TL("Shift shape geometry orthogonally to driving direction for all selected shapes")).c_str(),
                  GUIIconSubSys::getIcon(GUIIcon::MODEMOVE), this, MID_GNE_APPLY, GUIDesignButton);
 }
 
@@ -625,10 +625,10 @@ GNEMoveFrame::Information::Information(GNEMoveFrame* moveFrameParent) :
     // create label
     new FXLabel(getCollapsableFrame(), information.str().c_str(), 0, GUIDesignLabelFrameInformation);
     // create source label
-    FXLabel* sourceLabel = new FXLabel(getCollapsableFrame(), TL("-Move geometry point"), 0, GUIDesignLabelLeft);
+    FXLabel* sourceLabel = new FXLabel(getCollapsableFrame(), TL("-Move geometry point"), 0, GUIDesignLabel(JUSTIFY_LEFT));
     sourceLabel->setBackColor(MFXUtils::getFXColor(RGBColor::ORANGE));
     // create target label
-    FXLabel* targetLabel = new FXLabel(getCollapsableFrame(), TL("-Merge geometry point"), 0, GUIDesignLabelLeft);
+    FXLabel* targetLabel = new FXLabel(getCollapsableFrame(), TL("-Merge geometry point"), 0, GUIDesignLabel(JUSTIFY_LEFT));
     targetLabel->setBackColor(MFXUtils::getFXColor(RGBColor::CYAN));
 }
 

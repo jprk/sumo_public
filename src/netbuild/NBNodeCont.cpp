@@ -403,7 +403,7 @@ NBNodeCont::removeComponents(NBDistrictCont& dc, NBEdgeCont& ec, const int numKe
         }
     }
     if (foundComponents > 1) {
-        WRITE_MESSAGE("Found " + toString(foundComponents) + " components and removed " + toString(numRemoved) + " (" + toString(toRemove.size()) + " edges).");
+        WRITE_MESSAGEF(TL("Found % components and removed % (% edges)."), toString(foundComponents), toString(numRemoved), toString(toRemove.size()));
     }
 }
 
@@ -444,7 +444,7 @@ NBNodeCont::removeRailComponents(NBDistrictCont& dc, NBEdgeCont& ec, NBPTStopCon
         }
     }
     if (numRemoved > 0) {
-        WRITE_MESSAGE("Removed " + toString(numRemoved) + " railway components (" + toString(numRemovedEdges) + " edges).");
+        WRITE_MESSAGEF(TL("Removed % railway components (% edges)."), toString(numRemoved), toString(numRemovedEdges));
     }
 }
 
@@ -697,7 +697,7 @@ NBNodeCont::addCluster2Join(const std::set<std::string>& cluster, NBNode* node) 
             if (retrieve(nodeID) != nullptr) {
                 validCluster.insert(nodeID);
             } else {
-                WRITE_ERROR("Unknown junction '" + nodeID + "' in join-cluster.");
+                WRITE_ERRORF(TL("Unknown junction '%' in join-cluster."), nodeID);
             }
         }
     }
@@ -719,7 +719,7 @@ NBNodeCont::joinLoadedClusters(NBDistrictCont& dc, NBEdgeCont& ec, NBTrafficLigh
         for (std::string nodeID : item.first) {
             NBNode* node = retrieve(nodeID);
             if (node == nullptr) {
-                WRITE_ERROR("unknown junction '" + nodeID + "' while joining.");
+                WRITE_ERRORF(TL("unknown junction '%' while joining."), nodeID);
             } else {
                 cluster.insert(node);
             }
@@ -1736,7 +1736,7 @@ NBNodeCont::joinNodeCluster(NodeSet cluster, NBDistrictCont& dc, NBEdgeCont& ec,
         if (!tlc.insert(tlDef)) {
             // actually, nothing should fail here
             delete tlDef;
-            throw ProcessError("Could not allocate tls '" + id + "'.");
+            throw ProcessError(TLF("Could not allocate tls '%'.", id));
         }
     }
 
@@ -2002,7 +2002,7 @@ NBNodeCont::guessTLs(OptionsCont& oc, NBTrafficLightLogicCont& tlc) {
         for (std::vector<std::string>::const_iterator i = notTLControlledNodes.begin(); i != notTLControlledNodes.end(); ++i) {
             NBNode* n = NBNodeCont::retrieve(*i);
             if (n == nullptr) {
-                throw ProcessError(" The junction '" + *i + "' to set as not-controlled is not known.");
+                throw ProcessError(TLF(" The junction '%' to set as not-controlled is not known.", *i));
             }
             std::set<NBTrafficLightDefinition*> tls = n->getControllingTLS();
             for (std::set<NBTrafficLightDefinition*>::const_iterator j = tls.begin(); j != tls.end(); ++j) {
@@ -2552,7 +2552,7 @@ NBNodeCont::addPrefix(const std::string& prefix) {
 void
 NBNodeCont::rename(NBNode* node, const std::string& newID) {
     if (myNodes.count(newID) != 0) {
-        throw ProcessError("Attempt to rename node using existing id '" + newID + "'");
+        throw ProcessError(TLF("Attempt to rename node using existing id '%'", newID));
     }
     myNodes.erase(node->getID());
     node->setID(newID);
@@ -2648,6 +2648,9 @@ NBNodeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& pref
             node->setParameter(SUMO_PARAM_ORIGID, node->getID());
         }
         node->setID(idSupplier.getNext());
+        for (NBTrafficLightDefinition* tlDef : node->getControllingTLS()) {
+            tlc.rename(tlDef, node->getID());
+        }
         myNodes[node->getID()] = node;
     }
     if (prefix.empty()) {
@@ -2758,4 +2761,16 @@ NBNodeCont::applyConditionalDefaults() {
     }
 }
 
+
+bool
+NBNodeCont::resetNodeShapes() {
+    bool hadShapes = false;
+    for (const auto& item : myNodes) {
+        if (item.second->getShape().size() > 0 && !item.second->hasCustomShape()) {
+            hadShapes = true;
+            item.second->resetShape();
+        }
+    }
+    return hadShapes;
+}
 /****************************************************************************/

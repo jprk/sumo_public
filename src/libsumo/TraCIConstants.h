@@ -52,6 +52,9 @@ TRACI_CONST int CMD_GETVERSION = 0x00;
 // command: load
 TRACI_CONST int CMD_LOAD = 0x01;
 
+// command: execute move (half step)
+TRACI_CONST int CMD_EXECUTEMOVE = 0x7d;
+
 // command: simulation step
 TRACI_CONST int CMD_SIMSTEP = 0x02;
 
@@ -590,11 +593,13 @@ TRACI_CONST int STOP_PARKING_AREA = 0x40;
 TRACI_CONST int STOP_OVERHEAD_WIRE = 0x80;
 
 // ****************************************
-// Departure Flags
+// Departure Flags (corresponding value from DepartDefinition, DepartLaneDefinition with a minus)
 // ****************************************
 TRACI_CONST int DEPARTFLAG_TRIGGERED = -0x01;
 TRACI_CONST int DEPARTFLAG_CONTAINER_TRIGGERED = -0x02;
 TRACI_CONST int DEPARTFLAG_NOW = -0x03;
+TRACI_CONST int DEPARTFLAG_SPLIT = -0x04;
+TRACI_CONST int DEPARTFLAG_BEGIN = -0x05;
 
 TRACI_CONST int DEPARTFLAG_SPEED_RANDOM = -0x02;
 TRACI_CONST int DEPARTFLAG_SPEED_MAX = -0x03;
@@ -637,6 +642,12 @@ TRACI_CONST int ROUTING_MODE_AGGREGATED_CUSTOM = 0x04;
 TRACI_CONST int TRAFFICLIGHT_TYPE_STATIC = 0x00;
 TRACI_CONST int TRAFFICLIGHT_TYPE_ACTUATED = 0x03;
 TRACI_CONST int TRAFFICLIGHT_TYPE_DELAYBASED = 0x04;
+
+// ****************************************
+// Lane change directions
+// ****************************************
+TRACI_CONST int LANECHANGE_LEFT = 0x01;
+TRACI_CONST int LANECHANGE_RIGHT = -0x01;
 
 // ****************************************
 // FILTER TYPES (for context subscription filters)
@@ -893,6 +904,9 @@ TRACI_CONST int LANE_ALLOWED = 0x34;
 
 // list of not allowed vehicle classes (get&set: lanes)
 TRACI_CONST int LANE_DISALLOWED = 0x35;
+
+// list of allowed vehicle classes for lane changes (get&set: lanes)
+TRACI_CONST int LANE_CHANGES = 0x3c;
 
 // list of foe lanes (get: lanes)
 TRACI_CONST int VAR_FOES = 0x37;
@@ -1160,6 +1174,9 @@ TRACI_CONST int VAR_NEXT_STOPS = 0x73;
 
 // upcoming stops with selection (get: vehicle)
 TRACI_CONST int VAR_NEXT_STOPS2 = 0x74;
+
+// upcoming links(get: vehicle)
+TRACI_CONST int VAR_NEXT_LINKS = 0x33;
 
 // current acceleration (get,set: vehicle)
 TRACI_CONST int VAR_ACCELERATION = 0x72;

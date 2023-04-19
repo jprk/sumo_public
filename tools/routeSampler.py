@@ -65,84 +65,88 @@ def multi_process(cpu_num, interval_list, func, outf, mismatchf, **kwargs):
 
 
 def get_options(args=None):
-    parser = sumolib.options.ArgumentParser(description="Sample routes to match counts")
-    parser.add_argument("-r", "--route-files", dest="routeFiles",
-                        help="Input route file")
-    parser.add_argument("-t", "--turn-files", dest="turnFiles",
-                        help="Input turn-count file")
-    parser.add_argument("-d", "--edgedata-files", dest="edgeDataFiles",
-                        help="Input edgeData file (for counts)")
-    parser.add_argument("-O", "--od-files", dest="odFiles",
-                        help="Input edgeRelation file for origin-destination counts")
-    parser.add_argument("--edgedata-attribute", dest="edgeDataAttr", default="entered",
-                        help="Read edgeData counts from the given attribute")
-    parser.add_argument("--arrival-attribute", dest="arrivalAttr",
-                        help="Read arrival counts from the given edgeData file attribute")
-    parser.add_argument("--depart-attribute", dest="departAttr",
-                        help="Read departure counts from the given edgeData file attribute")
-    parser.add_argument("--turn-attribute", dest="turnAttr", default="count",
-                        help="Read turning counts from the given attribute")
-    parser.add_argument("--turn-ratio-attribute", dest="turnRatioAttr",
-                        help="Read turning ratios from the given attribute")
-    parser.add_argument("--turn-ratio-total", dest="turnRatioTotal", type=float, default=1,
-                        help="Set value for normalizing turning ratios (default 1)")
-    parser.add_argument("--turn-ratio-tolerance", dest="turnRatioTolerance", type=float,
-                        help="Set tolerance for error in resulting ratios (relative to turn-ratio-total)")
-    parser.add_argument("--turn-ratio-abs-tolerance", dest="turnRatioAbsTolerance", type=int, default=1,
-                        help="Set tolerance for error in resulting turning ratios as absolute count")
-    parser.add_argument("--turn-max-gap", type=int, dest="turnMaxGap", default=0,
-                        help="Allow at most a gap of INT edges between from-edge and to-edge")
-    parser.add_argument("--total-count", dest="totalCount",
-                        help="Set a total count that should be reached (either as single value that is split "
-                             + " proportionally among all intervals or as a list of counts per interval)."
-                             + " Setting the value 'input' preserves input vehicle counts in each interval.")
-    parser.add_argument("-o", "--output-file", dest="out", default="out.rou.xml",
-                        help="Output route file")
-    parser.add_argument("--prefix", dest="prefix", default="",
-                        help="prefix for the vehicle ids")
-    parser.add_argument("-a", "--attributes", dest="vehattrs", default="",
-                        help="additional vehicle attributes")
-    parser.add_argument("-s", "--seed", type=int, default=42,
-                        help="random seed")
-    parser.add_argument("--mismatch-output", dest="mismatchOut",
-                        help="write cout-data with overflow/underflow information to FILE")
-    parser.add_argument("--weighted", dest="weighted", action="store_true", default=False,
-                        help="Sample routes according to their probability (or count)")
-    parser.add_argument("--optimize",
-                        help="set optimization method level (full, INT boundary)")
-    parser.add_argument("--optimize-input", dest="optimizeInput", action="store_true", default=False,
-                        help="Skip resampling and run optimize directly on the input routes")
-    parser.add_argument("--min-count", dest="minCount", type=int, default=1,
-                        help="Set minimum number of counting locations that a route must visit")
-    parser.add_argument("--minimize-vehicles", dest="minimizeVehs", type=float, default=0,
-                        help="Set optimization factor from [0, 1[ for reducing the number of vehicles"
-                        + "(prefer routes that pass multiple counting locations over routes that pass fewer)")
-    parser.add_argument("--geh-ok", dest="gehOk", type=float, default=5,
-                        help="threshold for acceptable GEH values")
-    parser.add_argument("-f", "--write-flows", dest="writeFlows",
-                        help="write flows with the give style instead of vehicles [number|probability|poisson]")
-    parser.add_argument("-I", "--write-route-ids", dest="writeRouteIDs", action="store_true", default=False,
-                        help="write routes with ids")
-    parser.add_argument("-u", "--write-route-distribution", dest="writeRouteDist",
-                        help="write routeDistribution with the given ID instead of individual routes")
-    parser.add_argument("--pedestrians", action="store_true", default=False,
-                        help="write person walks instead of vehicle routes")
-    parser.add_argument("-b", "--begin", help="custom begin time (seconds or H:M:S)")
-    parser.add_argument("-e", "--end", help="custom end time (seconds or H:M:S)")
-    parser.add_argument("-i", "--interval", help="custom aggregation interval (seconds or H:M:S)")
-    parser.add_argument("-v", "--verbose", action="store_true", default=False,
-                        help="tell me what you are doing")
-    parser.add_argument("-V", "--verbose.histograms", dest="verboseHistogram", action="store_true", default=False,
-                        help="print histograms of edge numbers and detector passing count")
-    parser.add_argument("--threads", dest="threads", type=int, default=1,
-                        help="If parallelization is desired, enter the number of CPUs to use. Set to a value >> then "
-                             "your machines CPUs if you want to utilize all CPUs (Default is 1)"
-                        )
+    op = sumolib.options.ArgumentParser(description="Sample routes to match counts")
+    op.add_argument("-r", "--route-files", category="input", dest="routeFiles", type=op.route_file,
+                    help="Input route file")
+    op.add_argument("-t", "--turn-files", category="input", dest="turnFiles", type=op.edgedata_file,
+                    help="Input turn-count file")
+    op.add_argument("-d", "--edgedata-files", category="input", dest="edgeDataFiles", type=op.edgedata_file,
+                    help="Input edgeData file (for counts)")
+    op.add_argument("-O", "--od-files", category="input", dest="odFiles", type=op.edgedata_file,
+                    help="Input edgeRelation file for origin-destination counts")
+    op.add_argument("--edgedata-attribute", category="attribute", dest="edgeDataAttr", default="entered",
+                    help="Read edgeData counts from the given attribute")
+    op.add_argument("--arrival-attribute", category="attribute", dest="arrivalAttr",
+                    help="Read arrival counts from the given edgeData file attribute")
+    op.add_argument("--depart-attribute", category="attribute", dest="departAttr",
+                    help="Read departure counts from the given edgeData file attribute")
+    op.add_argument("--turn-attribute", category="turn-ratio", dest="turnAttr", default="count",
+                    help="Read turning counts from the given attribute")
+    op.add_argument("--turn-ratio-attribute", category="turn-ratio", dest="turnRatioAttr",
+                    help="Read turning ratios from the given attribute")
+    op.add_argument("--turn-ratio-total", category="turn-ratio", dest="turnRatioTotal", type=float, default=1,
+                    help="Set value for normalizing turning ratios (default 1)")
+    op.add_argument("--turn-ratio-tolerance", category="turn-ratio", dest="turnRatioTolerance", type=float,
+                    help="Set tolerance for error in resulting ratios (relative to turn-ratio-total)")
+    op.add_argument("--turn-ratio-abs-tolerance", category="turn-ratio", dest="turnRatioAbsTolerance", type=int,
+                    default=1, help="Set tolerance for error in resulting turning ratios as absolute count")
+    op.add_argument("--turn-max-gap", category="turn-ratio", type=int, dest="turnMaxGap", default=0,
+                    help="Allow at most a gap of INT edges between from-edge and to-edge")
+    op.add_argument("--total-count", category="processing", dest="totalCount",
+                    help="Set a total count that should be reached (either as single value that is split " +
+                    " proportionally among all intervals or as a list of counts per interval)." +
+                    " Setting the value 'input' preserves input vehicle counts in each interval.")
+    op.add_argument("-o", "--output-file", category="output", dest="out", default="out.rou.xml",
+                    help="Output route file")
+    op.add_argument("--prefix", category="processing", dest="prefix", default="",
+                    help="prefix for the vehicle ids")
+    op.add_argument("-a", "--attributes", category="processing", dest="vehattrs", default="",
+                    help="additional vehicle attributes")
+    op.add_argument("-s", "--seed", category="seed", type=int, default=42,
+                    help="random seed")
+    op.add_argument("--mismatch-output", category="processing", dest="mismatchOut",
+                    help="write cout-data with overflow/underflow information to FILE")
+    op.add_argument("--weighted", category="processing", dest="weighted", action="store_true", default=False,
+                    help="Sample routes according to their probability (or count)")
+    op.add_argument("--keep-stops", category="outut", dest="keepStops", action="store_true", default=False,
+                    help="Preserve stops from the input routes")
+    op.add_argument("--optimize", category="processing",
+                    help="set optimization method level (full, INT boundary)")
+    op.add_argument("--optimize-input", category="processing", dest="optimizeInput", action="store_true", default=False,
+                    help="Skip resampling and run optimize directly on the input routes")
+    op.add_argument("--min-count",  category="processing", dest="minCount", type=int, default=1,
+                    help="Set minimum number of counting locations that a route must visit")
+    op.add_argument("--minimize-vehicles", category="processing", dest="minimizeVehs", type=float, default=0,
+                    help="Set optimization factor from [0, 1[ for reducing the number of vehicles" +
+                    "(prefer routes that pass multiple counting locations over routes that pass fewer)")
+    op.add_argument("--geh-ok", category="processing", dest="gehOk", type=float, default=5,
+                    help="threshold for acceptable GEH values")
+    op.add_argument("-f", "--write-flows", category="output", dest="writeFlows",
+                    help="write flows with the give style instead of vehicles [number|probability|poisson]")
+    op.add_argument("-I", "--write-route-ids", category="output", dest="writeRouteIDs", action="store_true",
+                    default=False, help="write routes with ids")
+    op.add_argument("-u", "--write-route-distribution", category="output", dest="writeRouteDist",
+                    help="write routeDistribution with the given ID instead of individual routes")
+    op.add_argument("--pedestrians", category="output", action="store_true", default=False,
+                    help="write person walks instead of vehicle routes")
+    op.add_argument("-b", "--begin", category="time",
+                    help="custom begin time (seconds or H:M:S)")
+    op.add_argument("-e", "--end", category="time",
+                    help="custom end time (seconds or H:M:S)")
+    op.add_argument("-i", "--interval", category="time",
+                    help="custom aggregation interval (seconds or H:M:S)")
+    op.add_argument("-v", "--verbose", action="store_true", default=False,
+                    help="tell me what you are doing")
+    op.add_argument("-V", "--verbose.histograms", dest="verboseHistogram", action="store_true", default=False,
+                    help="print histograms of edge numbers and detector passing count")
+    op.add_argument("--threads", category="processing", dest="threads", type=int, default=1,
+                    help="If parallelization is desired, enter the number of CPUs to use. Set to a value >> then " +
+                    "your machines CPUs if you want to utilize all CPUs (Default is 1)")
 
-    options = parser.parse_args(args=args)
+    options = op.parse_args(args=args)
     if (options.routeFiles is None or
             (options.turnFiles is None and options.edgeDataFiles is None and options.odFiles is None)):
-        parser.print_help()
+        op.print_help()
         sys.exit()
     if options.writeRouteIDs and options.writeRouteDist:
         sys.stderr.write("Only one of the options --write-route-ids and --write-route-distribution may be used")
@@ -496,11 +500,13 @@ def zero():
 
 
 class Routes:
-    def __init__(self, routefiles):
+    def __init__(self, routefiles, keepStops, rng):
+        self.rng = rng
         self.all = []
         self.edgeProbs = defaultdict(zero)
         self.edgeIDs = {}
         self.withProb = 0
+        self.routeStops = defaultdict(list)  # list of list of stops for the given edges
         for routefile in routefiles:
             warned = False
             # not all routes may have specified probability, in this case use their number of occurrences
@@ -525,6 +531,9 @@ class Routes:
                 if r.hasAttribute("id"):
                     self.edgeIDs[edges] = r.id
                 self.edgeProbs[edges] += prob
+                if keepStops and r.stop:
+                    self.routeStops[edges].append(list(r.stop))
+
         self.unique = sorted(list(self.edgeProbs.keys()))
         self.number = len(self.unique)
         self.edges2index = dict([(e, i) for i, e in enumerate(self.unique)])
@@ -532,6 +541,34 @@ class Routes:
             print("Error: no input routes loaded", file=sys.stderr)
             sys.exit()
         self.probabilities = np.array([self.edgeProbs[e] for e in self.unique], dtype=np.float64)
+
+    def write(self, outf, prefix, intervalPrefix, routeIndex, count, writeDist=False):
+        edges = self.unique[routeIndex]
+        indent = ' ' * 8
+        comment = []
+        probability = ""
+        ID = ' id="%s%s%s"' % (prefix, intervalPrefix, routeIndex) if prefix is not None else ""
+        if writeDist:
+            probability = ' probability="%s"' % count
+        elif ID:
+            indent = ' ' * 4
+            comment.append(str(count))
+        if ID and edges in self.edgeIDs:
+            comment.append("(%s)" % self.edgeIDs[edges])
+        comment = ' '.join(comment)
+        if comment:
+            comment = " <!-- %s -->" % comment
+
+        stops = []
+        stopCandidates = self.routeStops.get(edges)
+        if stopCandidates:
+            stops = stopCandidates[self.rng.choice(range(len(stopCandidates)))]
+        close = '' if stops else '/'
+        outf.write('%s<route%s edges="%s"%s%s>%s\n' % (indent, ID, ' '.join(edges), probability, close, comment))
+        if stops:
+            for stop in stops:
+                outf.write(stop.toXML(indent + ' ' * 4))
+            outf.write('%s</route>\n' % indent)
 
 
 def initTurnRatioSiblings(routes, countData):
@@ -630,7 +667,7 @@ def initTotalCounts(options, routes, intervals, b, e):
 def main(options):
     rng = np.random.RandomState(options.seed)
 
-    routes = Routes(options.routeFiles)
+    routes = Routes(options.routeFiles, options.keepStops, rng)
 
     intervals = getIntervals(options)
     if len(intervals) == 0:
@@ -902,21 +939,14 @@ def solveInterval(options, routes, begin, end, intervalPrefix, outf, mismatchf, 
         routeCounts = getRouteCounts(routes, usedRoutes)
         if options.writeRouteIDs:
             for routeIndex in sorted(set(usedRoutes)):
-                edges = routes.unique[routeIndex]
-                routeIDComment = ""
-                if edges in routes.edgeIDs:
-                    routeIDComment = " (%s)" % routes.edgeIDs[edges]
-                outf.write('    <route id="%s%s%s" edges="%s"/> <!-- %s%s -->\n' % (
-                    options.prefix, intervalPrefix, routeIndex, ' '.join(edges),
-                    routeCounts[routeIndex], routeIDComment))
+                routes.write(outf, options.prefix, intervalPrefix, routeIndex, routeCounts[routeIndex])
             outf.write('\n')
         elif options.writeRouteDist:
             outf.write('    <routeDistribution id="%s%s%s">\n' % (
                        options.prefix, intervalPrefix, options.writeRouteDist))
             for routeIndex in sorted(set(usedRoutes)):
-                outf.write('        <route id="%s%s%s" edges="%s" probability="%s"/>\n' % (
-                    options.prefix, intervalPrefix, routeIndex,
-                    ' '.join(routes.unique[routeIndex]), routeCounts[routeIndex]))
+                routes.write(outf, options.prefix, intervalPrefix, routeIndex,
+                             routeCounts[routeIndex], writeDist=True)
             outf.write('    </routeDistribution>\n\n')
 
         routeID = options.writeRouteDist
@@ -943,7 +973,7 @@ def solveInterval(options, routes, begin, end, intervalPrefix, outf, mismatchf, 
                     else:
                         outf.write('    <vehicle id="%s" depart="%.2f"%s>\n' % (
                             vehID, depart, options.vehattrs))
-                        outf.write('        <route edges="%s"/>\n' % ' '.join(routes.unique[routeIndex]))
+                        routes.write(outf, None, None, routeIndex, None)
                         outf.write('    </vehicle>\n')
                 depart += period
         else:
@@ -1005,7 +1035,7 @@ def solveInterval(options, routes, begin, end, intervalPrefix, outf, mismatchf, 
                         else:
                             outf2.write('    <flow id="%s" begin="%.2f" end="%.2f" %s%s>\n' % (
                                 flowID, fBegin, fEnd, repeat, options.vehattrs))
-                            outf2.write('        <route edges="%s"/>\n' % ' '.join(routes.unique[routeIndex]))
+                            routes.write(outf2, None, None, routeIndex, None)
                             outf2.write('    </flow>\n')
                     flows.append((fBegin, outf2))
                 flows.sort()

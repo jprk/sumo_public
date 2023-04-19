@@ -15,7 +15,7 @@
 /// @author  Pablo Alvarez Lopez
 /// @date    March 2019
 ///
-// Representation of Stops in NETEDIT
+// Representation of Stops in netedit
 /****************************************************************************/
 #include <cmath>
 #include <netedit/GNENet.h>
@@ -440,7 +440,7 @@ GNEStop::getPositionInView() const {
         } else if (getParentAdditionals().size() > 0) {
             return getParentAdditionals().front()->getPositionInView();
         } else {
-            throw ProcessError("Invalid Stop parent");
+            throw ProcessError(TL("Invalid Stop parent"));
         }
     }
 }
@@ -455,7 +455,7 @@ GNEStop::getParentName() const {
     } else if (getParentLanes().size() > 0) {
         return getParentLanes().front()->getID();
     } else {
-        throw ProcessError("Invalid parent");
+        throw ProcessError(TL("Invalid parent"));
     }
 }
 
@@ -923,7 +923,7 @@ GNEStop::isValid(SumoXMLAttr key, const std::string& value) {
         }
         case SUMO_ATTR_PARKING:
             if (value == "opportunistic") {
-                return false; // Currrently deactivated opportunistic in NETEDIT waiting for the implementation in SUMO
+                return false; // Currrently deactivated opportunistic in netedit waiting for the implementation in SUMO
             } else {
                 return canParse<bool>(value);
             }

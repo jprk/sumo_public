@@ -49,6 +49,7 @@
 #include <microsim/devices/MSRoutingEngine.h>
 #include <microsim/trigger/MSChargingStation.h>
 #include <microsim/trigger/MSOverheadWire.h>
+#include <microsim/devices/MSDevice_Tripinfo.h>
 #include <mesosim/MELoop.h>
 #include <mesosim/MESegment.h>
 #include <netload/NLBuilder.h>
@@ -143,6 +144,12 @@ Simulation::step(const double time) {
     }
 #endif
     Helper::handleSubscriptions(t);
+}
+
+
+void
+Simulation::executeMove() {
+    MSNet::getInstance()->simulationStep(true);
 }
 
 
@@ -673,7 +680,7 @@ Simulation::findIntermodalRoute(const std::string& from, const std::string& to,
         arrivalPos += toEdge->getLength();
     }
     if (departPos < 0 || departPos >= fromEdge->getLength()) {
-        throw TraCIException("Invalid depart position " + toString(departPos) + " for edge '" + to + "'.");
+        throw TraCIException("Invalid depart position " + toString(departPos) + " for edge '" + from + "'.");
     }
     if (arrivalPos < 0 || arrivalPos >= toEdge->getLength()) {
         throw TraCIException("Invalid arrival position " + toString(arrivalPos) + " for edge '" + to + "'.");
@@ -689,7 +696,7 @@ Simulation::findIntermodalRoute(const std::string& from, const std::string& to,
                 throw TraCIException("Unknown vehicle type '" + vehPar->vtypeid + "'.");
             }
             if (type->getVehicleClass() != SVC_IGNORING && (fromEdge->getPermissions() & type->getVehicleClass()) == 0) {
-                WRITE_WARNING("Ignoring vehicle type '" + type->getID() + "' when performing intermodal routing because it is not allowed on the start edge '" + from + "'.");
+                WRITE_WARNINGF(TL("Ignoring vehicle type '%' when performing intermodal routing because it is not allowed on the start edge '%'."), type->getID(), from);
             } else {
                 ConstMSRoutePtr const routeDummy = std::make_shared<MSRoute>(vehPar->id, ConstMSEdgeVector({ fromEdge }), false, nullptr, std::vector<SUMOVehicleParameter::Stop>());
                 vehicle = vehControl.buildVehicle(vehPar, routeDummy, type, !MSGlobals::gCheckRoutes);
@@ -805,6 +812,13 @@ Simulation::getParameter(const std::string& objectID, const std::string& key) {
         } else {
             throw TraCIException("Invalid busStop parameter '" + attrName + "'");
         }
+    } else if (StringUtils::startsWith(key, "device.tripinfo.")) {
+        if (objectID != "") {
+            throw TraCIException("Simulation parameter '" + key + "' is not supported for object id '" + objectID
+                                 + "'. Use empty id for global device parameers or vehicle domain for vehicle specific parameters");
+        }
+        const std::string attrName = key.substr(16);
+        return MSDevice_Tripinfo::getGlobalParameter(attrName);
     } else if (objectID == "") {
         return MSNet::getInstance()->getParameter(key, "");
     } else {
@@ -843,13 +857,15 @@ double
 Simulation::loadState(const std::string& fileName) {
     long before = PROGRESS_BEGIN_TIME_MESSAGE("Loading state from '" + fileName + "'");
     try {
-        const SUMOTime newTime = MSNet::getInstance()->loadState(fileName);
+        const SUMOTime newTime = MSNet::getInstance()->loadState(fileName, false);
         Helper::clearStateChanges();
         Helper::clearSubscriptions();
         PROGRESS_TIME_MESSAGE(before);
         return STEPS2TIME(newTime);
-    } catch (ProcessError&) {
-        throw TraCIException("Loading state from '" + fileName + "' failed.");
+    } catch (const IOError& e) {
+        throw TraCIException("Loading state from '" + fileName + "' failed. " + e.what());
+    } catch (const ProcessError& e) {
+        throw TraCIException("Loading state from '" + fileName + "' failed, check whether SUMO versions match. " + e.what());
     }
 }
 

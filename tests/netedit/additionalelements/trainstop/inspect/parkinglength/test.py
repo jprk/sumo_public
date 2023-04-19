@@ -38,13 +38,13 @@ netedit.changeElement("trainStop")
 netedit.changeDefaultValue(netedit.attrs.trainStop.create.references, "reference center")
 
 # create trainStop in mode "reference center"
-netedit.leftClick(referencePosition, 250, 170)
+netedit.leftClick(referencePosition, 430, 256)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first trainStop
-netedit.leftClick(referencePosition, 250, 190)
+netedit.leftClick(referencePosition, 427, 275)
 
 # Change parameter length with a non valid value (throw warning)
 netedit.modifyAttribute(netedit.attrs.trainStop.inspect.parkingLength, "dummylength", True)
@@ -62,11 +62,8 @@ netedit.modifyAttribute(netedit.attrs.trainStop.inspect.parkingLength, "10", Tru
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

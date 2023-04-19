@@ -38,26 +38,26 @@ netedit.additionalMode()
 netedit.changeElement("parkingArea")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 250, 180)
+netedit.leftClick(referencePosition, 475, 256)
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 400, 180)
+netedit.leftClick(referencePosition, 382, 256)
 
 # select space
 netedit.changeElement("space")
 
 # create first space
 netedit.selectAdditionalChild(netedit.attrs.parkingSpace.create.parent, 0)
-netedit.leftClick(referencePosition, 231, 285)
+netedit.leftClick(referencePosition, 292, 371)
 
 # create second space
-netedit.leftClick(referencePosition, 279, 285)
+netedit.leftClick(referencePosition, 472, 371)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect space
-netedit.leftClick(referencePosition, 230, 275)
+netedit.leftClick(referencePosition, 292, 347)
 
 # Change parameter 8 with a non valid value (dummy)
 netedit.modifyAttribute(netedit.attrs.parkingSpace.inspect.parent, "dummyParent", False)
@@ -72,11 +72,8 @@ netedit.modifyAttribute(netedit.attrs.parkingSpace.inspect.parent, "pa_1", False
 netedit.undo(referencePosition, 5)
 netedit.redo(referencePosition, 5)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

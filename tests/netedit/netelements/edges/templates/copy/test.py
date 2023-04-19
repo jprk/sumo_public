@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--new'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # Change to create mode
 netedit.createEdgeMode()
@@ -58,7 +58,7 @@ netedit.leftClick(referencePosition, 250, 120)
 netedit.changeDefaultBoolValue(netedit.attrs.edge.template.create)
 
 # inspect other edge
-netedit.leftClick(referencePosition, 250, 360)
+netedit.leftClick(referencePosition, 250, 354)
 
 # copy template template
 netedit.changeDefaultBoolValue(netedit.attrs.edge.template.copy)
@@ -70,8 +70,8 @@ netedit.redo(referencePosition, 3)
 # rebuild network
 netedit.rebuildNetwork()
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

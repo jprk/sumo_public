@@ -117,6 +117,9 @@ public:
     /// @brief get test label
     FXLabel* getTestLabel();
 
+    /// @brief get test frame
+    FXHorizontalFrame* getTestFrame();
+
     /// @brief return whether the gui is in gaming mode
     bool isGaming() const;
 
@@ -177,6 +180,12 @@ public:
         return std::vector<SUMOTime>();
     }
 
+    // @brief called when changes language
+    long onCmdChangeLanguage(FXObject*, FXSelector, void*);
+
+    // @brief called when language is updated
+    long onUpdChangeLanguage(FXObject*, FXSelector, void*);
+
 protected:
     /// @brief FOX need this
     FOX_CONSTRUCTOR(GUIMainWindow)
@@ -225,6 +234,9 @@ protected:
     FXDockSite* myLeftDock = nullptr;
     FXDockSite* myRightDock = nullptr;
 
+    /// @brief Language menu common to all applications
+    FXMenuPane* myLanguageMenu = nullptr;
+
     /// @brief static toolTip used in menus
     MFXStaticToolTip* myStaticTooltipMenu = nullptr;
 
@@ -254,4 +266,7 @@ protected:
 
     /// @brief record window position and size in registry
     void storeWindowSizeAndPos();
+
+    void buildLanguageMenu(FXMenuBar* menuBar);
+
 };

@@ -1261,7 +1261,7 @@ MSEdge::checkAndRegisterBiDirEdge(const std::string& bidiID) {
     if (bidiID != "") {
         myBidiEdge = dictionary(bidiID);
         if (myBidiEdge == nullptr) {
-            WRITE_ERROR("Bidi-edge '" + bidiID + "' does not exist");
+            WRITE_ERRORF(TL("Bidi-edge '%' does not exist"), bidiID);
         }
         setBidiLanes();
         return;
@@ -1274,7 +1274,7 @@ MSEdge::checkAndRegisterBiDirEdge(const std::string& bidiID) {
     for (ConstMSEdgeVector::const_iterator it = candidates.begin(); it != candidates.end(); it++) {
         if ((*it)->getToJunction() == myFromJunction) { //reverse edge
             if (myBidiEdge != nullptr && isSuperposable(*it)) {
-                WRITE_WARNING("Ambiguous superposable edges between junction '" + myToJunction->getID() + "' and '" + myFromJunction->getID() + "'.");
+                WRITE_WARNINGF(TL("Ambiguous superposable edges between junction '%' and '%'."), myToJunction->getID(), myFromJunction->getID());
                 break;
             }
             if (isSuperposable(*it)) {

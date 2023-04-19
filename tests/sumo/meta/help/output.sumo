@@ -1,4 +1,4 @@
-Eclipse SUMO sumo Version v1_15_0+1315-6cce7c5914f
+Eclipse SUMO sumo Version v1_16_0+1707-833d692
  Copyright (C) 2001-2023 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 A microscopic, multi-modal traffic simulation.
 
@@ -114,6 +114,8 @@ Output Options:
   --tripinfo-output.write-undeparted   Write tripinfo output for vehicles which
                                         have not departed at simulation end
                                         because of depart delay
+  --personinfo-output FILE             Save personinfo and containerinfo to
+                                        separate FILE
   --vehroute-output FILE               Save single vehicle route info into FILE
   --vehroute-output.exit-times         Write the exit times for all edges
   --vehroute-output.last-route         Write the last route only
@@ -310,7 +312,7 @@ Processing Options:
                                         overhead wire circuit
   --overhead-wire.recuperation         Enable recuperation from the vehicle
                                         equipped with elecHybrid device into the
-                                        ovrehead wire.
+                                        overhead wire.
   --overhead-wire.substation-current-limits  Enable current limits of traction
                                         substation during solving the overhead
                                         wire electrical circuit.
@@ -322,6 +324,8 @@ Processing Options:
                                         blocking
   --use-stop-ended                     Override stop until times with stop
                                         ended times when given
+  --use-stop-started                   Override stop arrival times with stop
+                                        started times when given
   --pedestrian.model STR               Select among pedestrian models
                                         ['nonInteracting', 'striping', 'remote']
   --pedestrian.striping.stripe-width FLOAT  Width of parallel stripes for
@@ -350,6 +354,8 @@ Processing Options:
   --pedestrian.striping.reserve-oncoming.junctions FLOAT  Fraction of stripes
                                         to reserve for oncoming pedestrians on
                                         crossings and walkingareas
+  --pedestrian.striping.reserve-oncoming.max FLOAT  Maximum width in m to
+                                        reserve for oncoming pedestrians
   --pedestrian.striping.legacy-departposlat  Interpret departPosLat for walks
                                         in legacy style
   --pedestrian.striping.walkingarea-detail INT  Generate INT intermediate
@@ -648,6 +654,11 @@ Driver State Device Options:
                                         coefficient for applying the error to
                                         the perceived distance (error also
                                         scales with distance).
+  --device.driverstate.freeSpeedErrorCoefficient FLOAT  General scaling
+                                        coefficient for applying the error to
+                                        the vehicle's own speed when driving
+                                        without a leader (error also scales with
+                                        own speed).
   --device.driverstate.speedDifferenceChangePerceptionThreshold FLOAT  Base
                                         threshold for recognizing changes in the
                                         speed difference (threshold also scales
@@ -834,6 +845,8 @@ GUI Only Options:
                                         should halt
   --edgedata-files FILE                Load edge/lane weights for visualization
                                         from FILE
+  -N, --alternative-net-file FILE      Load a secondary road network for
+                                        abstract visualization from FILE
   -D, --demo                           Restart the simulation after ending
                                         (demo mode)
   -T, --disable-textures               Do not load background pictures
@@ -844,8 +857,6 @@ GUI Only Options:
                                         position
   --tracker-interval TIME              The aggregation period for value tracker
                                         windows
-  --osg-view                           Start with an OpenSceneGraph view
-                                        instead of the regular 2D view
   --gui-testing                        Enable overlay for screen recognition
   --gui-testing-debug                  Enable output messages during
                                         GUI-Testing

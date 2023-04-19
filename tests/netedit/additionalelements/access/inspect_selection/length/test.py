@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# apply zoom
-netedit.setZoom("20", "0", "17")
-
 # go to select mode
 netedit.selectMode()
 
@@ -41,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect Access
-netedit.leftClick(referencePosition, 326, 308)
+netedit.leftClick(referencePosition, 838, 214)
 
 # Change length (invalid, empty)
 netedit.modifyAttribute(netedit.attrs.access.inspectSelection.length, "", True)
@@ -59,11 +56,8 @@ netedit.modifyAttribute(netedit.attrs.access.inspectSelection.length, "5.5", Tru
 netedit.undo(referencePosition, 4)
 netedit.redo(referencePosition, 4)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

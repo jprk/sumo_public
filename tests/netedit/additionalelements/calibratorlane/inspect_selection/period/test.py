@@ -37,8 +37,8 @@ netedit.selectionInvert()
 # go to inspect mode
 netedit.inspectMode()
 
-# inspect calibrator
-netedit.leftClick(referencePosition, 300, 100)
+# inspect calibratorLane
+netedit.leftClick(referencePosition, 514, 284)
 
 # Change parameter id with a non valid value (dummy)
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.frequency, "dummyFreq", True)
@@ -53,11 +53,8 @@ netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.frequency, "12
 netedit.undo(referencePosition, 4)
 netedit.redo(referencePosition, 4)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

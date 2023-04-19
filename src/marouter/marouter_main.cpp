@@ -177,7 +177,7 @@ computeRoutes(RONet& net, OptionsCont& oc, ODMatrix& matrix) {
                 ROEdge::getAllEdges(), oc.getBool("ignore-errors"), &ROEdge::getTravelTimeStatic,
                 begin, end, weightPeriod, net.hasPermissions(), oc.getInt("routing-threads"));
         } else {
-            throw ProcessError("Unknown routing Algorithm '" + routingAlgorithm + "'!");
+            throw ProcessError(TLF("Unknown routing Algorithm '%'!", routingAlgorithm));
         }
     } else {
         DijkstraRouter<ROEdge, ROVehicle>::Operation op;
@@ -207,7 +207,7 @@ computeRoutes(RONet& net, OptionsCont& oc, ODMatrix& matrix) {
             op = &ROEdge::getStoredEffort;
         }
         if (measure != "traveltime" && !net.hasLoadedEffort()) {
-            WRITE_WARNING("No weight data was loaded for attribute '" + measure + "'.");
+            WRITE_WARNINGF(TL("No weight data was loaded for attribute '%'."), measure);
         }
         router = new DijkstraRouter<ROEdge, ROVehicle>(ROEdge::getAllEdges(), oc.getBool("ignore-errors"), op, ttOp, false, nullptr, net.hasPermissions());
     }
@@ -320,7 +320,7 @@ computeRoutes(RONet& net, OptionsCont& oc, ODMatrix& matrix) {
             haveOutput = true;
         }
         if (!haveOutput) {
-            throw ProcessError("No output file given.");
+            throw ProcessError(TL("No output file given."));
         }
         // end the processing
         net.cleanup();
@@ -384,10 +384,10 @@ main(int argc, char** argv) {
         ROMARouteHandler handler(matrix);
         matrix.loadRoutes(oc, handler);
         if (matrix.getNumLoaded() == matrix.getNumDiscarded()) {
-            throw ProcessError("No valid vehicles loaded.");
+            throw ProcessError(TL("No valid vehicles loaded."));
         }
         if (MsgHandler::getErrorInstance()->wasInformed() && !oc.getBool("ignore-errors")) {
-            throw ProcessError("Loading failed.");
+            throw ProcessError(TL("Loading failed."));
         }
         MsgHandler::getErrorInstance()->clear();
         WRITE_MESSAGE(toString(matrix.getNumLoaded() - matrix.getNumDiscarded()) + " valid vehicles loaded (total seen: " + toString(matrix.getNumLoaded()) + ").");

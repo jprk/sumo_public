@@ -38,23 +38,20 @@ netedit.changeElement("laneAreaDetector")
 netedit.changeDefaultValue(netedit.attrs.E2.create.tl, ";;;;$$$")
 
 # try to create E2 with invalid tl
-netedit.leftClick(referencePosition, 300, 250)
+netedit.leftClick(referencePosition, 427, 253)
 
 # set valid tl
 netedit.changeDefaultValue(netedit.attrs.E2.create.tl, "gneJ0")
 
 # create E2 with valid tl
-netedit.leftClick(referencePosition, 300, 250)
+netedit.leftClick(referencePosition, 381, 253)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

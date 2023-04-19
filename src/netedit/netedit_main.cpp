@@ -15,7 +15,7 @@
 /// @author  Jakob Erdmann
 /// @date    Feb 2011
 ///
-// Main for NETEDIT (adapted from guisim_main)
+// Main for netedit (adapted from guisim_main)
 /****************************************************************************/
 #include <config.h>
 
@@ -31,6 +31,7 @@
 #include <utils/options/OptionsCont.h>
 #include <utils/options/OptionsIO.h>
 #include <utils/xml/XMLSubSys.h>
+#include <netedit/elements/GNEAttributeCarrier.h>
 
 #include "GNEApplicationWindow.h"
 #include "GNELoadThread.h"
@@ -66,13 +67,18 @@ main(int argc, char** argv) {
             SystemFrame::close();
             return 0;
         }
+        if (neteditOptions.isSet("attribute-help-output")) {
+            GNEAttributeCarrier::writeAttributeHelp();
+            SystemFrame::close();
+            return 0;
+        }
         // Make application
         FXApp application("SUMO netedit", "netedit");
         // Open display
         application.init(argc, argv);
         int minor, major;
         if (!FXGLVisual::supported(&application, major, minor)) {
-            throw ProcessError("This system has no OpenGL support. Exiting.");
+            throw ProcessError(TL("This system has no OpenGL support. Exiting."));
         }
         // build the main window
         GNEApplicationWindow* window = new GNEApplicationWindow(&application, "*.netc.cfg,*.netccfg");

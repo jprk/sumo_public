@@ -174,11 +174,11 @@ METriggeredCalibrator::execute(SUMOTime currentTime) {
                     route = MSRoute::dictionary(pars->routeid);
                 }
                 if (route == nullptr) {
-                    WRITE_WARNING("No valid routes in calibrator '" + getID() + "'.");
+                    WRITE_WARNINGF(TL("No valid routes in calibrator '%'."), getID());
                     break;
                 }
                 if (!route->contains(myEdge)) {
-                    WRITE_WARNING("Route '" + route->getID() + "' in calibrator '" + getID() + "' does not contain edge '" + myEdge->getID() + "'.");
+                    WRITE_WARNINGF(TL("Route '%' in calibrator '%' does not contain edge '%'."), route->getID(), getID(), myEdge->getID());
                     break;
                 }
                 MSVehicleType* vtype = vc.getVType(pars->vtypeid);
@@ -243,7 +243,7 @@ METriggeredCalibrator::execute(SUMOTime currentTime) {
     }
     //assert(!invalidJam());
     if (invalidJam()) {
-        WRITE_WARNINGF(TL("DEBUG: Could not clear jam at calibrator '%' at time=%."), getID(), time2string(currentTime));
+        WRITE_WARNINGF("DEBUG: Could not clear jam at calibrator '%' at time=%.", getID(), time2string(currentTime));
     }
     return myFrequency;
 }

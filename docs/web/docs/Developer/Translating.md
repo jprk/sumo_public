@@ -2,6 +2,9 @@
 title: Translating
 ---
 
+
+<div class="d-flex justify-content-evenly"><div class="align-self-center"><a class="no-arrow-link" href="https://hosted.weblate.org/engage/eclipse-sumo/"> <img src="https://hosted.weblate.org/widgets/eclipse-sumo/-/287x66-grey.png" alt="Translation status"/> </a></div><div class="align-self-center"> <a class="no-arrow-link" href="https://hosted.weblate.org/engage/eclipse-sumo/"> <img src="https://hosted.weblate.org/widgets/eclipse-sumo/-/multi-auto.svg" alt="Translation status"/> </a></div></div>
+
 # Introduction
 
 SUMO uses the [gettext tooling](https://www.gnu.org/software/gettext/) to maintain
@@ -30,6 +33,9 @@ use `WRITE_MESSAGEF(TL("The vehicle '%' has a problem."), id);` (this works for
 Please be aware that changing a translatable string in the code (even if you just fix a typo)
 will invalidate (i.e. remove) all translations. This does not mean you should not do it, you
 should just review the changes to the translation files as well.
+
+The translations should not be applied to debug and developer messages. This includes everything
+in src/foreign, src/libsumo, src/libtraci, src/traci_testclient and unittest.
 
 # Using translations
 

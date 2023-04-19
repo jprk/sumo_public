@@ -308,16 +308,16 @@ protected:
 
         /* @brief the actual driveway part up to the next railsignal (halting position)
          * This must be free of other trains */
-        std::vector<MSLane*> myForward;
+        std::vector<const MSLane*> myForward;
 
         /* @brief the list of bidirectional edges that can enter the forward
          * section and which must also be free of traffic
          * (up to the first element that could give protection) */
-        std::vector<MSLane*> myBidi;
+        std::vector<const MSLane*> myBidi;
 
         /* @brief the list of bidirectional edges that can enter the forward
          * section and which might contain deadlock-relevant traffic */
-        std::vector<MSLane*> myBidiExtended;
+        std::vector<const MSLane*> myBidiExtended;
 
         /* @brief the list of edges that merge with the forward section
          * (found via backward search, up to the first element that could give protection) */
@@ -344,7 +344,7 @@ protected:
         std::vector<MSLink*> myConflictLinks;
 
         /// @brief whether any of myConflictLanes is occupied (vehicles that are the target of a join must be ignored)
-        bool conflictLaneOccupied(const std::string& joinVehicle = "", bool store = true) const;
+        bool conflictLaneOccupied(const std::string& joinVehicle = "", bool store = true, const SUMOVehicle* ego = nullptr) const;
 
         /// @brief whether any of myBidiExtended is occupied by a vehicle that targets myBidi
         bool deadlockLaneOccupied(bool store = true) const;
@@ -385,14 +385,20 @@ protected:
          */
         void buildRoute(MSLink* origin, double length, MSRouteIterator next, MSRouteIterator end, LaneVisitedMap& visited);
 
-        /// @brief find switches that threaten this driveway
-        void checkFlanks(const MSLink* originLink, const std::vector<MSLane*>& lanes, const LaneVisitedMap& visited, bool allFoes);
+        /* @brief find switches that threaten this driveway
+         * @param[out] flankSwitches collect the switches
+         */
+        void checkFlanks(const MSLink* originLink, const std::vector<const MSLane*>& lanes, const LaneVisitedMap& visited, bool allFoes, std::vector<MSLink*>& flankSwitches) const;
 
-        /// @brief find links that cross the driveway without entering it
-        void checkCrossingFlanks(MSLink* dwLink, const LaneVisitedMap& visited);
+        /* @brief find links that cross the driveway without entering it
+         * @param[out] flankSwitches collect the switches
+         */
+        void checkCrossingFlanks(MSLink* dwLink, const LaneVisitedMap& visited, std::vector<MSLink*>& flankSwitches) const;
 
-        /// @brief find upstream protection from the given link
-        void findFlankProtection(MSLink* link, double length, LaneVisitedMap& visited, MSLink* origLink);
+        /* @brief find upstream protection from the given link
+         * @param[out] flank: the stored flank lanes
+         */
+        void findFlankProtection(MSLink* link, double length, LaneVisitedMap& visited, MSLink* origLink, std::vector<const MSLane*>& flank);
     };
 
     /* The driveways for each link

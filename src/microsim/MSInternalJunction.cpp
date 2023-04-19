@@ -52,7 +52,7 @@ MSInternalJunction::~MSInternalJunction() {}
 void
 MSInternalJunction::postloadInit() {
     if (myIncomingLanes.size() == 0) {
-        throw ProcessError("Internal junction " + getID() + " has no incoming lanes");
+        throw ProcessError(TLF("Internal junction % has no incoming lanes", getID()));
     }
     // the first lane in the list of incoming lanes is special. It defines the
     // link that needs to do all the checking for this internal junction
@@ -82,12 +82,16 @@ MSInternalJunction::postloadInit() {
                     // and only one of the has priority
                     myInternalLaneFoes.push_back(lane);
                 }
-                myInternalLaneFoes.push_back(link->getViaLane());
+                if (std::find(myInternalLaneFoes.begin(), myInternalLaneFoes.end(), link->getViaLane()) == myInternalLaneFoes.end()) {
+                    myInternalLaneFoes.push_back(link->getViaLane());
+                }
             } else {
-                myInternalLaneFoes.push_back(lane);
+                if (std::find(myInternalLaneFoes.begin(), myInternalLaneFoes.end(), lane) == myInternalLaneFoes.end()) {
+                    myInternalLaneFoes.push_back(lane);
+                }
             }
-            //std::cout << "  i=" << (*i)->getID() << " qLane=" << (*q)->getLane()->getID() << " qVia=" << Named::getIDSecure((*q)->getViaLane()) << " foes=" << toString(myInternalLaneFoes) << "\n";
         }
+        //std::cout << "  intLane=" << lane->getID() << " foes=" << toString(myInternalLaneFoes) << "\n";
 
     }
     for (std::vector<MSLane*>::const_iterator i = myIncomingLanes.begin() + 1; i != myIncomingLanes.end(); ++i) {

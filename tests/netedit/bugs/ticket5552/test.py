@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, [], False)
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # go to select mode
 netedit.selectMode()
@@ -60,8 +60,8 @@ netedit.rebuildNetwork()
 # Check redo
 netedit.redo(referencePosition, 2)
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

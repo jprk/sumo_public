@@ -651,7 +651,7 @@ public:
      *  very close to the junction
      * @return The rerouting start point
      */
-    const MSEdge* getRerouteOrigin() const;
+    ConstMSEdgeVector::const_iterator getRerouteOrigin() const;
 
 
     /** @brief Returns the SUMOTime waited (speed was lesser than 0.1m/s)
@@ -827,7 +827,7 @@ public:
     /** @brief Get the distance and direction of the next upcoming turn for the vehicle (within its look-ahead range)
      *  @return The first entry of the returned pair is the distance for the upcoming turn, the second is the link direction
      */
-    const std::pair<double, LinkDirection>& getNextTurn() {
+    const std::pair<double, const MSLink*>& getNextTurn() {
         return myNextTurn;
     }
 
@@ -1843,6 +1843,9 @@ protected:
     /// @brief try joining the given vehicle to the front of this one (to resolve joinTriggered)
     bool joinTrainPartFront(MSVehicle* veh);
 
+    /// @brief optionally return an upper bound on speed to stay within the schedule
+    double slowDownForSchedule(double vMinComfortable) const;
+
 protected:
 
     /// @brief The time the vehicle waits (is not faster than 0.1m/s) in seconds
@@ -1896,7 +1899,7 @@ protected:
 
     /// @brief the upcoming turn for the vehicle
     /// @todo calculate during plan move
-    std::pair<double, LinkDirection> myNextTurn;
+    std::pair<double, const MSLink*> myNextTurn;
 
     /// @brief The information into which lanes the vehicle laps into
     std::vector<MSLane*> myFurtherLanes;
@@ -2007,7 +2010,7 @@ protected:
     DriveItemVector::iterator myNextDriveItem;
 
     /// @todo: documentation
-    void planMoveInternal(const SUMOTime t, MSLeaderInfo ahead, DriveItemVector& lfLinks, double& myStopDist, std::pair<double, LinkDirection>& myNextTurn) const;
+    void planMoveInternal(const SUMOTime t, MSLeaderInfo ahead, DriveItemVector& lfLinks, double& myStopDist, std::pair<double, const MSLink*>& myNextTurn) const;
 
     /// @brief runs heuristic for keeping the intersection clear in case of downstream jamming
     void checkRewindLinkLanes(const double lengthsInFront, DriveItemVector& lfLinks) const;
@@ -2090,7 +2093,8 @@ protected:
     /// @brief decide whether the given link must be kept clear
     bool keepClear(const MSLink* link) const;
 
-    double estimateTimeToNextStop() const;
+    /// @brief return time (s) and distance to the next stop
+    std::pair<double, double> estimateTimeToNextStop() const;
 
     /* @brief special considerations for opposite direction driving so that the
      * result can be used directly by getPositionOnLane(...) */
@@ -2109,6 +2113,9 @@ protected:
 
     /// @brief whether the give lane is reverse direction of the current route or not
     bool isOppositeLane(const MSLane* lane) const;
+
+    /// @brief remove vehicle from further lanes (on leaving the network)
+    void cleanupFurtherLanes();
 
 private:
     /// @brief The per vehicle variables of the car following model

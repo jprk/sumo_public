@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# set position
-netedit.setZoom(25, 0, 75)
-
 # go to select mode
 netedit.selectMode()
 
@@ -41,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E1
-netedit.leftClick(referencePosition, 150, 240)
+netedit.leftClick(referencePosition, 325, 248)
 
 # Change parameter file with an non valid value
 netedit.modifyAttribute(netedit.attrs.E1Instant.inspectSelection.file, "%%%;:..&&%$%$", True)
@@ -50,14 +47,11 @@ netedit.modifyAttribute(netedit.attrs.E1Instant.inspectSelection.file, "%%%;:..&
 netedit.modifyAttribute(netedit.attrs.E1Instant.inspectSelection.file, "myOwnOutput.txt", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

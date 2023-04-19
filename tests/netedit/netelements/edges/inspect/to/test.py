@@ -34,9 +34,6 @@ netedit.rebuildNetwork()
 # go to inspect mode
 netedit.inspectMode()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # inspect edge
 netedit.leftClick(referencePosition, 250, 180)
 
@@ -64,11 +61,8 @@ netedit.rebuildNetwork()
 # Check redo
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

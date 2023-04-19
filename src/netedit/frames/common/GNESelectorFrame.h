@@ -23,7 +23,7 @@
 
 #include <netedit/frames/GNEFrame.h>
 #include <netedit/GNEViewNetHelper.h>
-#include <utils/foxtools/MFXIconComboBox.h>
+#include <utils/foxtools/MFXComboBoxIcon.h>
 
 // ===========================================================================
 // class declaration
@@ -197,8 +197,8 @@ public:
         /// @brief destructor
         ~SelectionOperation();
 
-        /// @brief get reduce button
-        FXButton* getReduceButton() const;
+        /// @brief load from file
+        void loadFromFile(const std::string& file) const;
 
         /// @name FOX-callbacks
         /// @{
@@ -425,7 +425,10 @@ public:
     FXVerticalFrame* getContentFrame() const;
 
     /// @brief get modification mode modul
-    ModificationMode* getModificationModeModule() const;
+    ModificationMode* getModificationModeModul() const;
+
+    /// @brief get selection operation modul
+    GNESelectorFrame::SelectionOperation* getSelectionOperationModul() const;
 
     /// @brief get modul for selection information
     SelectionInformation* getSelectionInformation() const;

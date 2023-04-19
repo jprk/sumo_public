@@ -301,7 +301,7 @@ GUI::start(const std::vector<std::string>& cmd) {
         return false;
     }
 #ifdef WIN32
-    WRITE_WARNING(TL("Libsumo on Windows does not work with GUI, falling back to plain libsumo."));
+    WRITE_WARNING("Libsumo on Windows does not work with GUI, falling back to plain libsumo.");
     return false;
 #else
     try {
@@ -327,7 +327,7 @@ GUI::start(const std::vector<std::string>& cmd) {
         myApp->init(argc, argv);
         int minor, major;
         if (!FXGLVisual::supported(myApp, major, minor)) {
-            throw ProcessError("This system has no OpenGL support. Exiting.");
+            throw ProcessError(TL("This system has no OpenGL support. Exiting."));
         }
 
         // build the main window
@@ -349,7 +349,7 @@ GUI::start(const std::vector<std::string>& cmd) {
 bool
 GUI::load(const std::vector<std::string>& /* cmd */) {
     if (myWindow != nullptr) {
-        WRITE_ERROR(TL("libsumo.load is not implemented for the GUI."));
+        WRITE_ERROR("libsumo.load is not implemented for the GUI.");
         return true;
     }
     return false;

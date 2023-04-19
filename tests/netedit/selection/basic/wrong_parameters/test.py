@@ -31,9 +31,6 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # go to select mode
 netedit.selectMode()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # try to select node gneJ0 and delete it (Error in element set)
 netedit.focusOnFrame()
 for x in range(0, 8):
@@ -92,11 +89,8 @@ netedit.typeEnter()
 netedit.selectItems("Network", "junction", "id", "gneJ0")
 netedit.deleteSelectedItems()
 
-# save network
-netedit.saveNetwork(referencePosition)
-
-# save shapes
-netedit.saveAdditionals(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

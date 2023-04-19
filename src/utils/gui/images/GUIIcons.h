@@ -32,11 +32,30 @@
  */
 enum class GUIIcon {
 
-    /// @name general Interface icons
+    /// @name SUMO Logos
     /// @{
     SUMO,
     SUMO_MINI,
     SUMO_LOGO,
+    /// @}
+
+    /// @name other SUMO programs
+    /// @{
+    NETEDIT,
+    NETEDIT_MINI,
+    NETGENERATE,
+    /// @}
+
+    /// @name netgenerate networks
+    /// @{
+    NETGENERATE_GRID,
+    NETGENERATE_SPIDER,
+    NETGENERATE_RANDOMGRID,
+    NETGENERATE_RANDOM,
+    /// @}
+
+    /// @name general Interface icons
+    /// @{
     EMPTY,
     NEW_NET,
     RELOAD,
@@ -129,9 +148,18 @@ enum class GUIIcon {
     LOCATEPOLY,
     /// @}
 
-    /// @name locate objects icons
+    /// @name tools
     /// @{
-    TOOL_NETDIFF,
+    TOOL_PYTHON,
+    TOOL_EMISSIONS,
+    TOOL_CITYBRAIN,
+    TOOL_GTFS,
+    TOOL_VISSIM,
+    TOOL_VISUM,
+    TOOL_IMPORT,
+    TOOL_OUTPUT,
+    TOOL_TURNDEFS,
+    TOOL_XML,
     /// @}
 
     /// @name green and yellow objects icons
@@ -180,7 +208,7 @@ enum class GUIIcon {
     FLAG_MINUS,
     /// @}
 
-    /// @name windows icosn
+    /// @name windows icons
     /// @{
     WINDOWS_CASCADE,
     WINDOWS_TILE_VERT,
@@ -226,13 +254,11 @@ enum class GUIIcon {
     TRACKER,
     /// @}
 
-    /// @name NETEDIT icons
+    /// @name Netedit icons
     /// @{
     UNDO,
     REDO,
     UNDOLIST,
-    NETEDIT,
-    NETEDIT_MINI,
     LOCK,
     UNLOCK,
     LOCK_SELECTED,
@@ -247,9 +273,10 @@ enum class GUIIcon {
     COLLAPSE,
     UNCOLLAPSE,
     EXTEND,
+    CURRENT,
     /// @}
 
-    /// @name NETEDIT common mode specific icons
+    /// @name Netedit common mode specific icons
     /// @{
     COMMONMODE_CHECKBOX_TOGGLEGRID,
     COMMONMODE_CHECKBOX_TOGGLEDRAWJUNCTIONSHAPE,
@@ -257,7 +284,7 @@ enum class GUIIcon {
     COMMONMODE_CHECKBOX_SHOWDEMANDELEMENTS,
     /// @}
 
-    /// @name NETEDIT network mode specific icons
+    /// @name Netedit network mode specific icons
     /// @{
     NETWORKMODE_CHECKBOX_SELECTEDGES,
     NETWORKMODE_CHECKBOX_SHOWCONNECTIONS,
@@ -273,7 +300,7 @@ enum class GUIIcon {
     NETWORKMODE_CHECKBOX_APPLYTOALLPHASES,
     /// @}
 
-    /// @name NETEDIT demand mode specific icons
+    /// @name Netedit demand mode specific icons
     /// @{
     DEMANDMODE_CHECKBOX_HIDESHAPES,
     DEMANDMODE_CHECKBOX_SHOWTRIPS,
@@ -285,7 +312,7 @@ enum class GUIIcon {
     DEMANDMODE_CHECKBOX_SHOWOVERLAPPEDROUTES,
     /// @}
 
-    /// @name NETEDIT data mode specific icons
+    /// @name Netedit data mode specific icons
     /// @{
     DATAMODE_CHECKBOX_SHOWADDITIONALS,
     DATAMODE_CHECKBOX_SHOWSHAPES,
@@ -318,7 +345,7 @@ enum class GUIIcon {
     SUPERMODEDATA,
     /// @}
 
-    /// @name NETEDIT Network modes icons
+    /// @name Netedit Network modes icons
     /// @{
     MODEADDITIONAL,
     MODECONNECTION,
@@ -335,7 +362,7 @@ enum class GUIIcon {
     MODEWIRE,
     /// @}
 
-    /// @name NETEDIT Demand modes icons
+    /// @name Netedit Demand modes icons
     /// @{
     MODEROUTE,
     MODEVEHICLE,
@@ -347,7 +374,7 @@ enum class GUIIcon {
     MODECONTAINERPLAN,
     /// @}
 
-    /// @name NETEDIT Edge modes icons
+    /// @name Netedit Edge modes icons
     /// @{
     MODEEDGEDATA,
     MODEEDGERELDATA,
@@ -355,7 +382,7 @@ enum class GUIIcon {
     MODEMEANDATA,
     /// @}
 
-    /// @name NETEDIT processing icons
+    /// @name Netedit processing icons
     /// @{
     COMPUTEJUNCTIONS,
     CLEANJUNCTIONS,
@@ -431,7 +458,7 @@ enum class GUIIcon {
     /// @}
 
 
-    /// @name NETEDIT Demand elements icons
+    /// @name Netedit Demand elements icons
     /// @{
     ROUTE,
     VTYPE,
@@ -465,7 +492,7 @@ enum class GUIIcon {
     TRANSHIP_CONTAINERSTOP,
     /// @}
 
-    /// @name NETEDIT data elements icons
+    /// @name Netedit data elements icons
     /// @{
     DATASET,
     DATAINTERVAL,
@@ -476,7 +503,7 @@ enum class GUIIcon {
     MEANDATALANE,
     /// @}
 
-    /// @name NETEDIT icons used in GNETLSTable
+    /// @name Netedit icons used in GNETLSTable
     /// @{
     TLSPHASEDEFAULT,
     TLSPHASECOPY,
@@ -594,6 +621,7 @@ enum class GUIIcon {
     WARNING,
     DANGER,
     SUM,
+    BACK,
     /// @}
 
     /// @name icons for grid
@@ -605,7 +633,22 @@ enum class GUIIcon {
     /// @}
 
     /// @brief icons for geo tools
+    /// @{
     GEOHACK,
     GOOGLESAT,
-    OSM
+    OSM,
+    /// @}
+
+    /// @brief icons for languages
+    /// @{
+    LANGUAGE_EN,
+    LANGUAGE_DE,
+    LANGUAGE_ES,
+    LANGUAGE_FR,
+    LANGUAGE_IT,
+    LANGUAGE_HU,
+    LANGUAGE_TR,
+    LANGUAGE_ZH,
+    LANGUAGE_ZHT
+    /// @}
 };

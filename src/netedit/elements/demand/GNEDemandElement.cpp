@@ -260,6 +260,12 @@ GNEDemandElement::updateGLObject() {
 }
 
 
+bool
+GNEDemandElement::isPathElementSelected() const {
+    return mySelected;
+}
+
+
 double
 GNEDemandElement::getPathElementDepartValue() const {
     // get previous person Plan
@@ -1041,7 +1047,7 @@ GNEDemandElement::setVTypeDistributionParent(const std::string& value) {
 bool
 GNEDemandElement::checkChildDemandElementRestriction() const {
     // throw exception because this function mus be implemented in child (see GNEE3Detector)
-    throw ProcessError("Calling non-implemented function checkChildDemandElementRestriction during saving of " + getTagStr() + ". It muss be reimplemented in child class");
+    throw ProcessError(StringUtils::format("Calling non-implemented function checkChildDemandElementRestriction during saving of %. It muss be reimplemented in child class", getTagStr()));
 }
 
 

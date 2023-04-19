@@ -131,7 +131,7 @@ GNEAttributesCreator::getAttributesAndValues(CommonXMLStructure::SumoBaseObject*
                 } else if (attrProperties.isBool()) {
                     const bool boolValue = GNEAttributeCarrier::canParse<bool>(row->getValue()) ? GNEAttributeCarrier::parse<bool>(row->getValue()) : GNEAttributeCarrier::parse<bool>(attrProperties.getDefaultValue());
                     baseObject->addBoolAttribute(attrProperties.getAttr(), boolValue);
-                } else if (attrProperties.isposition()) {
+                } else if (attrProperties.isPosition()) {
                     const Position positionValue = GNEAttributeCarrier::canParse<Position>(row->getValue()) ? GNEAttributeCarrier::parse<Position>(row->getValue()) : GNEAttributeCarrier::parse<Position>(attrProperties.getDefaultValue());
                     baseObject->addPositionAttribute(attrProperties.getAttr(), positionValue);
                 } else if (attrProperties.isSUMOTime()) {
@@ -141,7 +141,7 @@ GNEAttributesCreator::getAttributesAndValues(CommonXMLStructure::SumoBaseObject*
                     const RGBColor colorValue = GNEAttributeCarrier::canParse<RGBColor>(row->getValue()) ? GNEAttributeCarrier::parse<RGBColor>(row->getValue()) : GNEAttributeCarrier::parse<RGBColor>(attrProperties.getDefaultValue());
                     baseObject->addColorAttribute(attrProperties.getAttr(), colorValue);
                 } else if (attrProperties.isList()) {
-                    if (attrProperties.isposition()) {
+                    if (attrProperties.isPosition()) {
                         const PositionVector positionVectorValue = GNEAttributeCarrier::canParse<PositionVector>(row->getValue()) ? GNEAttributeCarrier::parse<PositionVector>(row->getValue()) : GNEAttributeCarrier::parse<PositionVector>(attrProperties.getDefaultValue());
                         baseObject->addPositionVectorAttribute(attrProperties.getAttr(), positionVectorValue);
                     } else {
@@ -172,9 +172,9 @@ GNEAttributesCreator::showWarningMessage(std::string extra) const {
     std::string errorMessage;
     // show warning box if input parameters aren't invalid
     if (extra.size() == 0) {
-        errorMessage = "Invalid input parameter of " + myTemplateAC->getTagProperty().getTagStr();
+        errorMessage = TL("Invalid input parameter of ") + myTemplateAC->getTagProperty().getTagStr();
     } else {
-        errorMessage = "Invalid input parameter of " + myTemplateAC->getTagProperty().getTagStr() + ": " + extra;
+        errorMessage = TL("Invalid input parameter of ") + myTemplateAC->getTagProperty().getTagStr() + ": " + extra;
     }
     // set message in status bar
     myFrameParent->getViewNet()->setStatusBarText(errorMessage);

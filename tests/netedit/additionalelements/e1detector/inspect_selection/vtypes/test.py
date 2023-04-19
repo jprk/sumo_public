@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E1
-netedit.leftClick(referencePosition, 150, 240)
+netedit.leftClick(referencePosition, 325, 248)
 
 # Change parameter vtypes with a empty value
 netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.vTypes, "", True)
@@ -50,14 +50,11 @@ netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.vTypes, "Type%%%%%1 T;
 netedit.modifyAttribute(netedit.attrs.E1.inspectSelection.vTypes, "Type1 Type2 Type3", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 5)
-netedit.redo(referencePosition, 5)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

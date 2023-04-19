@@ -104,7 +104,7 @@ NBTrafficLightDefinition::~NBTrafficLightDefinition() {}
 
 
 NBTrafficLightLogic*
-NBTrafficLightDefinition::compute(OptionsCont& oc) {
+NBTrafficLightDefinition::compute(const OptionsCont& oc) {
     // it is not really a traffic light if no incoming edge exists
     if (amInvalid()) {
         // make a copy of myControlledNodes because it will be modified;
@@ -226,7 +226,7 @@ NBTrafficLightDefinition::collectEdges() {
         }
         if (reachable2.count(edge) == 0 && edge->getFirstNonPedestrianLaneIndex(NBNode::FORWARD, true) >= 0
                 && getID() != DummyID) {
-            WRITE_WARNING("Unreachable edge '" + edge->getID() + "' within tlLogic '" + getID() + "'");
+            WRITE_WARNINGF(TL("Unreachable edge '%' within tlLogic '%'"), edge->getID(), getID());
         }
     }
 }

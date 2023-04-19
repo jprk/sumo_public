@@ -15,6 +15,7 @@
 # @file    drtOrtools.py
 # @author  Philip Ritzer
 # @author  Johannes Rummel
+# @author  Mirko Barthauer
 # @date    2021-12-16
 
 """
@@ -39,6 +40,7 @@ else:
 # SUMO modules
 import sumolib  # noqa
 import traci  # noqa
+from sumolib.options import ArgumentParser  # noqa
 
 verbose = False
 
@@ -48,11 +50,11 @@ class CostType(Enum):
     TIME = 2
 
 
-def dispatch(reservations, fleet, time_limit, cost_type, drf, verbose):
+def dispatch(reservations, fleet, time_limit, cost_type, drf, end, fix_allocation, verbose):
     """Dispatch using ortools."""
     if verbose:
         print('Start creating the model.')
-    data = create_data_model(reservations, fleet, cost_type, drf, verbose)
+    data = create_data_model(reservations, fleet, cost_type, drf, end, fix_allocation, verbose)
     if verbose:
         print('Start solving the problem.')
     solution_ortools = ortools_pdp.main(data, time_limit, verbose)
@@ -62,7 +64,7 @@ def dispatch(reservations, fleet, time_limit, cost_type, drf, verbose):
     return solution_requests
 
 
-def create_data_model(reservations, fleet, cost_type, drf, verbose):
+def create_data_model(reservations, fleet, cost_type, drf, end, fix_allocation, verbose):
     """Creates the data for the problem."""
     n_vehicles = len(fleet)
     # use only reservations that haven't been picked up yet; reservation.state!=8 (not picked up)
@@ -168,7 +170,7 @@ def create_data_model(reservations, fleet, cost_type, drf, verbose):
                 setattr(reservation, 'vehicle_index', v_i)  # index of assigned vehicle [0, ..., n_v -1]
 
     # get time windows
-    time_windows = get_time_windows(reservations, fleet)
+    time_windows = get_time_windows(reservations, fleet, end)
 
     data = {}
     data['cost_matrix'] = cost_matrix
@@ -182,17 +184,18 @@ def create_data_model(reservations, fleet, cost_type, drf, verbose):
     data['vehicle_capacities'] = vehicle_capacities
     data['drf'] = drf
     data['time_windows'] = time_windows
+    data['fix_allocation'] = fix_allocation
     return data
 
 
-def get_time_windows(reservations, fleet):
+def get_time_windows(reservations, fleet, end):
     """returns a list of pairs with earliest and latest time"""
     # order must be the same as for the cost_matrix and demands
     # edges: [depot_id, res_from_id, ..., res_to_id, ..., res_dropoff_id, ..., veh_start_id, ...]
     time_windows = []
     # start at depot should be the current simulation time:
     current_time = round(traci.simulation.getTime())
-    max_time = get_max_time()
+    max_time = round(end)
     time_windows.append((current_time, max_time))
     # use reservations that haven't been picked up yet; reservation.state!=8 (not picked up)
     dp_reservations = [res for res in reservations if res.state != 8]
@@ -309,6 +312,8 @@ def solution_by_requests(solution_ortools, reservations, data, verbose=False):
         for i_route in solution_ortools[key][0][1:-1]:  # take only the routes ([0]) without the start node ([1:-1])
             if i_route in route2request:
                 solution[0].append(route2request[i_route])  # add node to route
+                res = [res for res in reservations if res.id == route2request[i_route]][0]  # get the reservation
+                setattr(res, 'vehicle_index', key)
             else:
                 if verbose:
                     print('!solution ignored: %s' % (i_route))
@@ -318,7 +323,7 @@ def solution_by_requests(solution_ortools, reservations, data, verbose=False):
     return solution_requests
 
 
-def run(end=90000, interval=30, time_limit=10, cost_type='distance', drf=1.5, verbose=False):
+def run(end=None, interval=30, time_limit=10, cost_type='distance', drf=1.5, fix_allocation=False, verbose=False):
     """
     Execute the TraCI control loop and run the scenario.
 
@@ -338,6 +343,9 @@ def run(end=90000, interval=30, time_limit=10, cost_type='distance', drf=1.5, ve
     """
     running = True
     timestep = traci.simulation.getTime()
+    if not end:
+        end = get_max_time()
+    reservations_all = list()
     while running:
 
         traci.simulationStep(timestep)
@@ -351,7 +359,7 @@ def run(end=90000, interval=30, time_limit=10, cost_type='distance', drf=1.5, ve
             timestep += interval
             continue
 
-        traci.person.getTaxiReservations(0)
+        reservations_new = traci.person.getTaxiReservations(1)
         if verbose:
             print("timestep: ", timestep)
             res_waiting = [res.id for res in traci.person.getTaxiReservations(2)]
@@ -377,13 +385,26 @@ def run(end=90000, interval=30, time_limit=10, cost_type='distance', drf=1.5, ve
                 print("Taxis occupied and picking up:", fleet_occupied_pickup)
 
         fleet = traci.vehicle.getTaxiFleet(-1)
-        reservations_new = traci.person.getTaxiReservations(2)
-        reservations_all = traci.person.getTaxiReservations(0)
+        reservations_not_assigned = traci.person.getTaxiReservations(3)
+        # if fix_allocation=True only take new reservations from traci
+        # and add to all_reservations to keep the vehicle allocation for the older reservations
+        current_reservations = traci.person.getTaxiReservations(0)
+        if fix_allocation:
+            reservations_all += reservations_new
+            current_res_ids = [res.id for res in current_reservations]
+            # remove completed reservations
+            reservations_all = [res for res in reservations_all if res.id in current_res_ids]
+            for res in reservations_all:  # update reservation state
+                if res.id in current_res_ids:
+                    res.state = [cur_res for cur_res in current_reservations if cur_res.id == res.id][0].state
+        else:
+            reservations_all = current_reservations
 
-        if reservations_new:
+        if reservations_not_assigned:
             if verbose:
                 print("Solve CPDP")
-            solution_requests = dispatch(reservations_all, fleet, time_limit, cost_type, drf, verbose)
+            solution_requests = dispatch(reservations_all, fleet, time_limit,
+                                         cost_type, drf, end, fix_allocation, verbose)
             if solution_requests is not None:
                 for index_vehicle in solution_requests:  # for each vehicle
                     id_vehicle = fleet[index_vehicle]
@@ -408,25 +429,28 @@ def run(end=90000, interval=30, time_limit=10, cost_type='distance', drf=1.5, ve
 
 def get_arguments():
     """Get command line arguments."""
-    argument_parser = sumolib.options.ArgumentParser()
-    argument_parser.add_argument("-s", "--sumo-config", required=True, help="sumo config file to run")
-    argument_parser.add_argument("-e", "--end", type=float, default=90000,
-                                 help="time step to end simulation at")
-    argument_parser.add_argument("-i", "--interval", type=float, default=30,
-                                 help="dispatching interval in s")
-    argument_parser.add_argument("-n", "--nogui", action="store_true", default=False,
-                                 help="run the commandline version of sumo")
-    argument_parser.add_argument("-v", "--verbose", action="store_true", default=False,
-                                 help="print debug information")
-    argument_parser.add_argument("-t", "--time-limit", type=float, default=10,
-                                 help="time limit for solver in s")
-    argument_parser.add_argument("-d", "--cost-type", default="distance",
-                                 help="type of costs to minimize (distance or time)")
-    argument_parser.add_argument("-f", "--drf", type=float, default=1.5,
-                                 help="direct route factor to calculate maximum cost "
-                                      "for a single dropoff-pickup route (set to -1, if you do not need it)")
-    arguments = argument_parser.parse_args()
-    return arguments
+    ap = ArgumentParser()
+    ap.add_argument("-s", "--sumo-config", required=True, category="input", type=ap.file,
+                    help="sumo config file to run")
+    ap.add_argument("-e", "--end", type=ap.time,
+                    help="time step to end simulation at")
+    ap.add_argument("-i", "--interval", type=ap.time, default=30,
+                    help="dispatching interval in s")
+    ap.add_argument("-n", "--nogui", action="store_true", default=False,
+                    help="run the commandline version of sumo")
+    ap.add_argument("-v", "--verbose", action="store_true", default=False,
+                    help="print debug information")
+    ap.add_argument("-t", "--time-limit", type=ap.time, default=10,
+                    help="time limit for solver in s")
+    ap.add_argument("-d", "--cost-type", default="distance",
+                    help="type of costs to minimize (distance or time)")
+    ap.add_argument("-f", "--drf", type=float, default=1.5,
+                    help="direct route factor to calculate maximum cost "
+                         "for a single dropoff-pickup route (set to -1, if you do not need it)")
+    ap.add_argument("-a", "--fix-allocation", action="store_true", default=False,
+                    help="if true: after first solution the allocation of reservations to vehicles" +
+                    "does not change anymore")
+    return ap.parse_args()
 
 
 def check_set_arguments(arguments):
@@ -458,4 +482,4 @@ if __name__ == "__main__":
     # subprocess and then the python script connects and runs
     traci.start([arguments.sumoBinary, "-c", arguments.sumo_config])
     run(arguments.end, arguments.interval,
-        arguments.time_limit, arguments.cost_type, arguments.drf, arguments.verbose)
+        arguments.time_limit, arguments.cost_type, arguments.drf, arguments.fix_allocation, arguments.verbose)

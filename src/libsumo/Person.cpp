@@ -527,8 +527,8 @@ Person::add(const std::string& personID, const std::string& edgeID, double pos, 
         vehicleParams.depart = MSNet::getInstance()->getCurrentTimeStep();
     } else if (depart < MSNet::getInstance()->getCurrentTimeStep()) {
         vehicleParams.depart = MSNet::getInstance()->getCurrentTimeStep();
-        WRITE_WARNING("Departure time=" + toString(departInSecs) + " for person '" + personID
-                      + "' is in the past; using current time=" + time2string(vehicleParams.depart) + " instead.");
+        WRITE_WARNINGF(TL("Departure time=% for person '%' is in the past; using current time=% instead."),
+                       toString(departInSecs), personID, time2string(vehicleParams.depart));
     } else {
         vehicleParams.depart = depart;
     }
@@ -926,7 +926,7 @@ Person::moveToXY(const std::string& personID, const std::string& edgeID, const d
                 try {
                     tmp.move2side(-lanePosLat); // moved to left
                 } catch (ProcessError&) {
-                    WRITE_WARNING("Could not determine position on lane '" + lane->getID() + " at lateral position " + toString(-lanePosLat) + ".");
+                    WRITE_WARNINGF(TL("Could not determine position on lane '% at lateral position %."), lane->getID(), toString(-lanePosLat));
                 }
                 //std::cout << " lane=" << lane->getID() << " posLat=" << lanePosLat << " shape=" << lane->getShape() << " tmp=" << tmp << " tmpDist=" << tmp.distance2D(pos) << "\n";
                 if (tmp.distance2D(pos) > perpDist) {
@@ -1205,6 +1205,9 @@ Person::handleVariable(const std::string& objID, const int variable, VariableWra
             return wrapper->wrapInt(objID, variable, getRemainingStages(objID));
         case VAR_VEHICLE:
             return wrapper->wrapString(objID, variable, getVehicle(objID));
+        case VAR_MAXSPEED:
+            // integrate desiredMaxSpeed and individual speedFactor
+            return wrapper->wrapDouble(objID, variable, getMaxSpeed(objID));
         case libsumo::VAR_PARAMETER:
             paramData->readUnsignedByte();
             return wrapper->wrapString(objID, variable, getParameter(objID, paramData->readString()));

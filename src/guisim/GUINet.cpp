@@ -317,13 +317,13 @@ GUINet::initGUIStructures() {
             b.add((*j)->getShape().getBoxBoundary());
         }
         // make sure persons are always drawn and selectable since they depend on their edge being drawn
-        b.grow(MSPModel::SIDEWALK_OFFSET + 1);
+        b.grow(MSPModel::SIDEWALK_OFFSET + 1 + lanes.front()->getWidth() / 2);
         const float cmin[2] = { (float)b.xmin(), (float)b.ymin() };
         const float cmax[2] = { (float)b.xmax(), (float)b.ymax() };
         myGrid.Insert(cmin, cmax, edge);
         myBoundary.add(b);
         if (myBoundary.getWidth() > 10e16 || myBoundary.getHeight() > 10e16) {
-            throw ProcessError("Network size exceeds 1 Lightyear. Please reconsider your inputs.\n");
+            throw ProcessError(TL("Network size exceeds 1 Lightyear. Please reconsider your inputs.\n"));
         }
     }
     for (std::vector<GUIJunctionWrapper*>::iterator i = myJunctionWrapper.begin(); i != myJunctionWrapper.end(); ++i) {
@@ -336,6 +336,40 @@ GUINet::initGUIStructures() {
         myBoundary.add(b);
     }
     myGrid.add(myBoundary);
+
+    if (OptionsCont::getOptions().isSet("alternative-net-file")) {
+        // build secondary visualization tree
+        for (GUIEdge* edge : myEdgeWrapper) {
+            Boundary b;
+            for (MSLane* lane : edge->getLanes()) {
+                b.add(static_cast<GUILane*>(lane)->getSecondaryShape().getBoxBoundary());
+            }
+            // make sure persons are always drawn and selectable since they depend on their edge being drawn
+            b.grow(MSPModel::SIDEWALK_OFFSET + 1);
+            const float cmin[2] = { (float)b.xmin(), (float)b.ymin() };
+            const float cmax[2] = { (float)b.xmax(), (float)b.ymax() };
+            myGrid2.Insert(cmin, cmax, edge);
+        }
+        for (std::vector<GUIJunctionWrapper*>::iterator i = myJunctionWrapper.begin(); i != myJunctionWrapper.end(); ++i) {
+            GUIJunctionWrapper* junction = *i;
+            Position pos = junction->getJunction().getPosition(true);
+            Boundary b = Boundary(pos.x() - 3., pos.y() - 3., pos.x() + 3., pos.y() + 3.);
+            const float cmin[2] = { (float)b.xmin(), (float)b.ymin() };
+            const float cmax[2] = { (float)b.xmax(), (float)b.ymax() };
+            myGrid2.Insert(cmin, cmax, junction);
+        }
+    }
+}
+
+
+void
+GUINet::registerRenderedObject(GUIGlObject* o) {
+    getVisualisationSpeedUp().addAdditionalGLObject(o);
+    if (OptionsCont::getOptions().isSet("alternative-net-file")) {
+        GUIGlobals::gSecondaryShape = true;
+        myGrid2.addAdditionalGLObject(o);
+        GUIGlobals::gSecondaryShape = false;
+    }
 }
 
 

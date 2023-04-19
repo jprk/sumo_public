@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E2s
-netedit.leftClick(referencePosition, 350, 310)
+netedit.leftClick(referencePosition, 582, 180)
 
 # Change parameter SpeedTreshold with a non valid value
 netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.speedThreshold, "dummySpeedTreshold", True)
@@ -50,14 +50,11 @@ netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.speedThreshold, "-12.1
 netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.speedThreshold, "6.3", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

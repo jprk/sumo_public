@@ -29,6 +29,9 @@ import argparse
 import io
 from argparse import RawDescriptionHelpFormatter  # noqa
 from copy import deepcopy
+from functools import wraps
+from .miscutils import openz
+from .miscutils import parseTime
 
 
 class ConfigurationReader(handler.ContentHandler):
@@ -50,9 +53,10 @@ class ConfigurationReader(handler.ContentHandler):
             if self._options and name not in self._options:
                 return
             help = attrs.get("help", "")
+            cat = attrs.get("category", "")
             option = optparse.Option("--" + name, help=help)
             if attrs["type"] == "BOOL":
-                option = optparse.Option("--" + name, action="store_true", default=False, help=help)
+                option = optparse.Option("--" + name, action="store_true", default=False, help=help, category=cat)
             elif attrs["type"] in ["FLOAT", "TIME"]:
                 option.type = "float"
                 if attrs["value"]:
@@ -118,7 +122,7 @@ def get_prefixed_options(options):
     return options._prefixed_options
 
 
-Option = namedtuple("Option", ["name", "value", "type", "help"])
+Option = namedtuple("Option", ["name", "value", "type", "help", "category"])
 
 
 class OptionReader(handler.ContentHandler):
@@ -130,7 +134,7 @@ class OptionReader(handler.ContentHandler):
 
     def startElement(self, name, attrs):
         if 'value' in attrs:
-            self.opts.append(Option(name, attrs['value'], attrs.get('type'), attrs.get('help')))
+            self.opts.append(Option(name, attrs['value'], attrs.get('type'), attrs.get('help'), attrs.get('category')))
 
 
 def readOptions(filename):
@@ -149,27 +153,95 @@ class ArgumentParser(argparse.ArgumentParser):
     Inspired by https://github.com/bw2/ConfigArgParse
     """
 
-    def __init__(self, allowed_programs=[], *args, **kwargs):
+    @staticmethod
+    def time(s):
+        return parseTime(s)
+
+    @staticmethod
+    def file(s):
+        return s
+
+    @staticmethod
+    def net_file(s):
+        return s
+
+    @staticmethod
+    def route_file(s):
+        return s
+
+    @staticmethod
+    def additional_file(s):
+        return s
+
+    @staticmethod
+    def edgedata_file(s):
+        return s
+
+    @staticmethod
+    def data_file(s):
+        # arbitrary data file (i.e. for attributeStats.py and plotXMLAttributes.py)
+        return s
+
+    def __init__(self, *args, **kwargs):
+        self._allowed_programs = kwargs.get("allowed_programs", [])
+        if "allowed_programs" in kwargs:
+            del kwargs["allowed_programs"]
+        self._catch_all = None
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
+        # add common argument for loading configuration
         self.add_argument('-c', '--configuration-file', help='read configuration from FILE', metavar="FILE")
+        # add common argument for save configuration
         self.add_argument('-C', '--save-configuration', help='save configuration to FILE and exit', metavar="FILE")
+        # add common argument for save template
         self.add_argument('--save-template', help='save configuration template to FILE and exit', metavar="FILE")
         self._fix_path_args = set()
-        self._allowed_programs = allowed_programs
 
     def add_argument(self, *args, **kwargs):
+        # due argparse only accept certains values (action, choices, type, help...),
+        #  we need to extract extra parameters before call add_argument
         fix_path = kwargs.get("fix_path")
         if "fix_path" in kwargs:
             del kwargs["fix_path"]
+        # get category
+        category = kwargs.get("category")
+        if "category" in kwargs:
+            del kwargs["category"]
+        catch_all = kwargs.get("catch_all", False)
+        if "catch_all" in kwargs:
+            del kwargs["catch_all"]
+        # get action
+        action = kwargs.get("action")
+        # parse argument
         a = argparse.ArgumentParser.add_argument(self, *args, **kwargs)
+        # check if fix path
         if fix_path is True:
             for s in a.option_strings:
                 if s.startswith("--"):
                     self._fix_path_args.add(s[2:])
+        # set category
+        a.category = category
+        # set if a is a boolean
+        a.boolean = ((action == "store_true") or (action == "store_false"))
+        # the value of a.required is lost during parsing
+        a.isRequired = a.required
+        if catch_all:
+            self._catch_all = a
 
     def add_option(self, *args, **kwargs):
         """alias for compatibility with OptionParser"""
         self.add_argument(*args, **kwargs)
+
+
+    def get_option(self, dest):
+        for action in self._actions:
+            if action.dest == dest:
+                return action
+        return None
+
+    def add_mutually_exclusive_group(self, required=False):
+        group = argparse.ArgumentParser.add_mutually_exclusive_group(self, required=required)
+        group.add_argument = handleCatoryWrapper(group.add_argument)
+        return group
 
     def write_config_file(self, namespace, exit=True, toString=False):
         if namespace.save_configuration:
@@ -189,19 +261,24 @@ class ArgumentParser(argparse.ArgumentParser):
             return out.getvalue()
         else:
             return
-        with open(out_file, "w") as out:
+        with openz(out_file, "w") as out:
             self.write_config_to_file(out, namespace, print_template)
         if exit:
             sys.exit()
 
     def write_config_to_file(self, out, namespace, print_template):
-        out.write('<configuration>\n')
-        for k in sorted(vars(namespace).keys()):
+        out.write(u'<configuration>\n')
+        optionNames = vars(namespace).keys()
+        if sys.version_info.major < 3 or sys.version_info.minor < 6:
+            optionNames = sorted(optionNames)
+        for k in optionNames:
             v = vars(namespace)[k]
             if k not in ("save_configuration", "save_template", "configuration_file", "_parser", "_prefixed_options"):
                 key = k
-                default = ''
                 help = ''
+                typeStr = ''
+                category = ''
+                required = ''
                 for a in self._actions:
                     if a.dest == k:
                         for s in a.option_strings:
@@ -209,16 +286,39 @@ class ArgumentParser(argparse.ArgumentParser):
                                 key = s[2:]
                                 break
                         if print_template:
+                            # default
                             if a.default is not None:
                                 v = a.default
+                            # help
                             if a.help is not None:
                                 help = ' help="%s"' % a.help
+
+                            # note: missing time, filename, list of vehicles, edges and lanes
+                            # category
+                            category = ' category="%s"' % (a.category if a.category is not None else 'processing')
+                            if a.boolean:
+                                typeName = "bool"
+                            elif a.type is None:
+                                typeName = "string"
+                            else:
+                                typeName = a.type.__name__
+                                if typeName == 'parseTime':
+                                    typeName = 'time'
+                                knownTypes = ['bool', 'float', 'int',
+                                              'time', 'file', 'net_file', 'route_file',
+                                              'additional_file', 'edgedata_file', 'data_file']
+                                if typeName not in knownTypes:
+                                    typeName = 'string'
+                            typeStr = ' type="%s"' % typeName
+                            if a.isRequired:
+                                required = ' required="true"'
                         break
                 if print_template or v != a.default:
                     if isinstance(v, list):
                         v = " ".join(map(str, v))
-                    out.write('    <%s value="%s"%s%s/>\n' % (key, xmlescape(v), default, help))
-        out.write('</configuration>\n')
+                    out.write(u'    <%s value="%s"%s%s%s%s/>\n' % (
+                              key, xmlescape(v), typeStr, help, category, required))
+        out.write(u'</configuration>\n')
 
     def parse_args(self, args=None, namespace=None):
         if args is not None:
@@ -226,7 +326,11 @@ class ArgumentParser(argparse.ArgumentParser):
             args = map(str, args)
         args_namespace, unknown_args = self.parse_known_args(args, namespace)
         if unknown_args:
-            self.error('unrecognized arguments: %s' % ' '.join(unknown_args))
+            if self._catch_all:
+                setattr(args_namespace, self._catch_all.dest,
+                        getattr(args_namespace, self._catch_all.dest) + unknown_args)
+            else:
+                self.error('unrecognized arguments: %s' % ' '.join(unknown_args))
         return args_namespace
 
     def parse_known_args(self, args=None, namespace=None):
@@ -241,6 +345,12 @@ class ArgumentParser(argparse.ArgumentParser):
             idx = args.index('-c') + 1
         if '--configuration-file' in args:
             idx = args.index('--configuration-file') + 1
+        if '--save-template' in args:
+            for a in self._actions:
+                a.required = False
+            for g in self._mutually_exclusive_groups:
+                g.required = False
+
         # add each config item to the commandline unless it's there already
         config_args = []
         pos_args = []
@@ -317,6 +427,23 @@ class ArgumentParser(argparse.ArgumentParser):
         self.write_config_file(extended_namespace)
         namespace.config_as_string = self.write_config_file(extended_namespace, toString=True)
         return namespace, remaining_args
+
+
+def handleCatoryWrapper(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        category = kwargs.get("category")
+        # remove category from arguments and set in result
+        if "category" in kwargs:
+            del kwargs["category"]
+        result = func(*args, **kwargs)
+        result.category = category
+        # set if is a boolean
+        action = kwargs.get("action")
+        result.boolean = ((action == "store_true") or (action == "store_false"))
+        result.isRequired = kwargs.get("required", False)
+        return result
+    return inner
 
 
 class SplitAction(argparse.Action):

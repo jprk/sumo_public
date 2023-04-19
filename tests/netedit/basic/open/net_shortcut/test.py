@@ -26,16 +26,13 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit without search the pink square reference
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--new'])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # open configuration using shortcut
 netedit.openNetworkAs()
 
-# we somehow lose focus after loading
-netedit.leftClick(referencePosition, 0, 0)
-
-# save loaded network as (for texttest comparing)
-netedit.saveNetworkAs()
+# save network
+netedit.saveNetwork(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

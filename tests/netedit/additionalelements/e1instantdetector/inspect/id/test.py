@@ -35,16 +35,16 @@ netedit.additionalMode()
 netedit.changeElement("instantInductionLoop")
 
 # create E1 1
-netedit.leftClick(referencePosition, 250, 210)
+netedit.leftClick(referencePosition, 405, 257)
 
 # create E1 2
-netedit.leftClick(referencePosition, 450, 210)
+netedit.leftClick(referencePosition, 475, 257)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first E1
-netedit.leftClick(referencePosition, 250, 210)
+netedit.leftClick(referencePosition, 405, 257)
 
 # Change parameter id with a non valid value (Duplicated ID)
 netedit.modifyAttribute(netedit.attrs.E1Instant.inspect.id, "e1i_1", True)
@@ -59,11 +59,8 @@ netedit.modifyAttribute(netedit.attrs.E1Instant.inspect.id, "correctID", True)
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

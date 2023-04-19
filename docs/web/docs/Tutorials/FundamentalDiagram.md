@@ -25,8 +25,8 @@ circular route where the density is increased over time. Such a scenario
 can be found at [{{SUMO}}/tests/sumo/cf_model/drive_in_circles]({{Source}}tests/sumo/cf_model/drive_in_circles).
 
 There are different ways for increasing the density. The key problem
-that must be solved is, that density can only be increased when there is
-sufficient space to insert additional vehicles. In a closed system all
+that must be solved is that density can only be increased when there is
+sufficient space to insert additional vehicles. In a closed system, all
 the space is eventually taken up by the existing vehicles and the safety
 gaps between them. Additional space can only be obtained by lowering the
 speed in some parts of the circle to reduce these gaps.
@@ -38,8 +38,7 @@ An elegant way to reduce the speed is to initialize the network with
 evenly spaced vehicles at a predefined density. For the circle scenario
 this can be accomplished by the following demand definition:
 
-```
-
+```xml
 <route id="circle" edges="6/1to7/1 7/1to8/1 8/1to9/1 9/1to10/1 10/1to1/1 1/1to2/1 2/1to3/1 3/1to4/1 4/1to5/1 5/1to6/1"/>  
 <flow id="0" type="default" route="circle" departEdge="random" begin="0" end="1" number="1000" departPos="last" departSpeed="15" departLane="free"/>
 ```
@@ -54,7 +53,7 @@ circle repeatedly and insert vehicles upstream of the speed reduction
 where the local density is reduced for a time. This can be accomplished
 with the following definition (to be placed in an {{AdditionalFile}})
 
-```
+```xml
 <variableSpeedSign id="disturbance" lanes="10/1to1/1_0">
     <step time="2000" speed="1"/>
     <step time="2100"/>
@@ -88,7 +87,7 @@ with the following definition (to be placed in an {{AdditionalFile}})
 
 And a flow that continuously tries to add vehicles:
 
-```
+```xml
 <flow id="0" type="default" begin="0" end="60000" period="3" departPos="last" departSpeed="max" departLane="free">
   <route edges="1/1to2/1 2/1to3/1 3/1to4/1 4/1to5/1 5/1to6/1"/>
 </flow>
@@ -113,8 +112,7 @@ It's possible to observe spontaneous breakdown given the sufficient length of ro
 
 Some tests cases can be obtained at
 
-- [krauss_t0.9_s1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/circle_krauss_d50_t0.8) and [circle_krauss_d30_t1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/krauss_t0.9_s1)
-- [krauss_t0.9_s0.8](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/circle_krauss_d50_t0.8) and [circle_krauss_d30_t1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/krauss_t0.9_s0.8)
-- [2lane_krauss_t0.8_s0.5](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/circle_krauss_d50_t0.8) and [circle_krauss_d30_t1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/2lane_krauss_t0.8_s0.5)
-- [2lane_IDM](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/circle_krauss_d50_t0.8) and [circle_krauss_d30_t1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/2lane_IDM)
-
+- [krauss_t0.9_s1](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/krauss_t0.9_s1)
+- [krauss_t0.9_s0.8](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/krauss_t0.9_s0.8)
+- [2lane_krauss_t0.8_s0.5](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/2lane_krauss_t0.8_s0.5)
+- [2lane_IDM](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/2lane_IDM)

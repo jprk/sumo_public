@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect busstops
-netedit.leftClick(referencePosition, 277, 207)
+netedit.leftClick(referencePosition, 270, 173)
 
 # disable friendlyPos
 netedit.modifyBoolAttribute(netedit.attrs.chargingStation.inspectSelection.friendlyPos, True)
@@ -49,14 +49,11 @@ netedit.selectMode()
 # clear selection
 netedit.selectionClear()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # Fix stopping places position
 netedit.fixStoppingPlace("fixPositions")
-
-# save network
-netedit.saveNetwork(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

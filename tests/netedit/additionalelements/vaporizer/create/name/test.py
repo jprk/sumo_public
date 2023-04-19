@@ -38,17 +38,14 @@ netedit.changeElement("vaporizer")
 netedit.changeDefaultValue(netedit.attrs.vaporizer.create.name, "customName")
 
 # create vaporizer
-netedit.leftClick(referencePosition, 200, 265)
+netedit.leftClick(referencePosition, 338, 252)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

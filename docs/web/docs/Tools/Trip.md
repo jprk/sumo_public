@@ -51,6 +51,7 @@ The probabilities for selecting an edge may also be weighted by
 - edge speed (exponentially, by option **--speed-exponent**)
 - [generic edge parameter](../Simulation/GenericParameters.md) (option **--edge-param**)
 - direction of travel (option **--angle-factor** and **--angle**)
+- randomly (option **--random-factor**)
 
 For additional ways to influence edge probabilities call
 
@@ -134,7 +135,7 @@ starting edges and inserted with high speed on a reasonable lane.
 If the generated vehicles should have a specific vehicle type, an {{AdditionalFile}} needs
 to be prepared:
 
-```
+```xml
 <additional>
   <vType id="myType" maxSpeed="27" vClass="passenger"/>
 </additional>
@@ -172,7 +173,7 @@ python tools/randomTrips.py --vehicle-class bus ...
 
 will add
 
-```
+```xml
 <vType id="bus" vClass="bus"/>
 ```
 
@@ -185,7 +186,7 @@ python tools/randomTrips.py --vehicle-class bus --trip-attributes="maxSpeed=\
 
 will add
 
-```
+```xml
 <vType id="bus" vClass="bus" maxSpeed="random"/>
 ```
 
@@ -212,6 +213,9 @@ To generate longer trips within a network, intermediate way points may
 be generated using the option **--intermediate** {{DT_INT}}. This will add the given number of
 [via-edges](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#incomplete_routes_trips_and_flows)
 to the trip definitions.
+
+!!! caution
+    If the network contains disconnected components, the probability of generating invalid trips grows with the number of intermediate waypoints (since a trip is invalid if any intermediate part is invalid). To avoid this, [make sure your network has only a single component](../netconvert.md#edge_removal).
 
 ## Customized Weights
 
@@ -260,7 +264,7 @@ python tools/randomTrips.py --weights-prefix example  ...<other options>...
 
 and define only the file *example.src.xml* as follows:
 
-```
+```xml
 <edgedata>
   <interval begin="0" end="10"/>
     <edge id="a" value="0.5"/>

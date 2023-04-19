@@ -144,6 +144,13 @@ public:
      */
     virtual bool isAttributeComputed(SumoXMLAttr key) const;
 
+    /* @brief method for check if the value for certain attribute is set
+     * @param[in] key The attribute key
+     */
+    bool hasAttribute(SumoXMLAttr key) const {
+        return myTagProperty.hasAttribute(key);
+    }
+
     /// @brief get PopPup ID (Used in AC Hierarchy)
     virtual std::string getPopUpID() const = 0;
 
@@ -247,6 +254,9 @@ public:
 
     /// @brief check if lanes are consecutives
     static bool lanesConsecutives(const std::vector<GNELane*>& lanes);
+
+    /// @brief write machine readable attribute help to file
+    static void writeAttributeHelp();
 
     /// @name Certain attributes and ACs (for example, connections) can be either loaded or guessed. The following static variables are used to remark it.
     /// @{

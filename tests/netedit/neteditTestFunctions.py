@@ -34,7 +34,8 @@ DELAY_KEY_TAB = 0.2
 DELAY_MOUSE_MOVE = 0.5
 DELAY_MOUSE_CLICK = 1
 DELAY_QUESTION = 3
-DELAY_RELOAD = 5
+DELAY_SAVING = 1
+DELAY_RELOAD = 3
 DELAY_QUIT_NETEDIT = 5
 DELAY_UNDOREDO = 1
 DELAY_SELECT = 1
@@ -307,11 +308,11 @@ def dragDrop(referencePosition, x1, y1, x2, y2):
     time.sleep(DELAY_KEY)
 
 #################################################
-# basic functions
+    # basic functions
 #################################################
 
 
-def Popen(extraParameters, debugInformation):
+def Popen(extraParameters):
     """
     @brief open netedit
     """
@@ -340,35 +341,35 @@ def getReferenceMatch(neProcess, makeScrenshot):
     try:
         # wait for reference
         time.sleep(DELAY_REFERENCE)
-        # capture screen and search reference
+    # capture screen and search reference
         positionOnScreen = pyautogui.locateOnScreen(_REFERENCE_PNG, minSearchTime=3)
     except Exception as e:
         # we cannot specify the exception here because some versions of pyautogui use one and some don't
         print(e)
         positionOnScreen = None
-        # make a screenshot
+    # make a screenshot
         errorScreenshot = pyautogui.screenshot()
     # check if pos was found
     if positionOnScreen:
         # adjust position to center
         referencePosition = (positionOnScreen[0] + 16, positionOnScreen[1] + 16)
-        # break loop
+    # break loop
         print("TestFunctions: 'reference.png' found. Position: " +
               str(referencePosition[0]) + " - " + str(referencePosition[1]))
-        # check that position is consistent (due scaling)
+    # check that position is consistent (due scaling)
         if referencePosition != (304, 168):
             print("TestFunctions: Position of 'reference.png' isn't consistent")
-        # click over position
+    # click over position
         pyautogui.moveTo(referencePosition)
-        # wait
+    # wait
         time.sleep(DELAY_MOUSE_MOVE)
-        # press i for inspect mode
+    # press i for inspect mode
         typeKey("i")
-        # click over position (used to center view in window)
+    # click over position (used to center view in window)
         pyautogui.click(button='left')
-        # wait after every operation
+    # wait after every operation
         time.sleep(DELAY_MOUSE_CLICK)
-        # return reference position
+    # return reference position
         return referencePosition
     # referente not found, then write screenshot
     if (makeScrenshot):
@@ -379,7 +380,7 @@ def getReferenceMatch(neProcess, makeScrenshot):
     sys.exit("TestFunctions: Killed Netedit process. 'reference.png' not found")
 
 
-def setupAndStart(testRoot, extraParameters=[], debugInformation=True, makeScrenshot=True):
+def setupAndStart(testRoot, extraParameters=[], makeScrenshot=True):
     """
     @brief setup and start netedit
     """
@@ -387,7 +388,7 @@ def setupAndStart(testRoot, extraParameters=[], debugInformation=True, makeScren
         # to work around non working gtk clipboard
         pyperclip.set_clipboard("xclip")
     # Open Netedit
-    neteditProcess = Popen(extraParameters, debugInformation)
+    neteditProcess = Popen(extraParameters)
     # atexit.register(quit, neteditProcess, False, False)
     # print debug information
     print("TestFunctions: Netedit opened successfully")
@@ -441,7 +442,7 @@ def rebuildNetworkWithVolatileOptions(question=True):
     # confirm recompute
     if question is True:
         waitQuestion('y')
-        # wait for output
+    # wait for output
         time.sleep(DELAY_RECOMPUTE_VOLATILE)
     else:
         waitQuestion('n')
@@ -532,7 +533,8 @@ def waitQuestion(answer):
 def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
            openAdditionalsNonSavedDialog=False, saveAdditionals=False,
            openDemandNonSavedDialog=False, saveDemandElements=False,
-           openDataNonSavedDialog=False, saveDataElements=False):
+           openDataNonSavedDialog=False, saveDataElements=False,
+           openMeanDataNonSavedDialog=False, saveMeanDataElements=False):
     """
     @brief reload Netedit
     """
@@ -546,10 +548,10 @@ def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
         time.sleep(DELAY_QUESTION)
         if saveNet:
             waitQuestion('s')
-            # wait for log
+        # wait for log
             time.sleep(DELAY_RECOMPUTE)
         else:
-            waitQuestion('q')
+            waitQuestion('d')
     # Check if additionals must be saved
     if openAdditionalsNonSavedDialog:
         # Wait some seconds
@@ -557,7 +559,7 @@ def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
         if saveAdditionals:
             waitQuestion('s')
         else:
-            waitQuestion('q')
+            waitQuestion('d')
     # Check if demand elements must be saved
     if openDemandNonSavedDialog:
         # Wait some seconds
@@ -565,7 +567,7 @@ def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
         if saveDemandElements:
             waitQuestion('s')
         else:
-            waitQuestion('q')
+            waitQuestion('d')
     # Check if data elements must be saved
     if openDataNonSavedDialog:
         # Wait some seconds
@@ -573,7 +575,15 @@ def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
         if saveDataElements:
             waitQuestion('s')
         else:
-            waitQuestion('q')
+            waitQuestion('d')
+    # Check if meanData elements must be saved
+    if openMeanDataNonSavedDialog:
+        # Wait some seconds
+        time.sleep(DELAY_QUESTION)
+        if saveMeanDataElements:
+            waitQuestion('s')
+        else:
+            waitQuestion('d')
     # Wait some seconds
     time.sleep(DELAY_RELOAD)
     # check if Netedit was crashed during reloading
@@ -584,7 +594,8 @@ def reload(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
 def quit(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
          openAdditionalsNonSavedDialog=False, saveAdditionals=False,
          openDemandNonSavedDialog=False, saveDemandElements=False,
-         openDataNonSavedDialog=False, saveDataElements=False):
+         openDataNonSavedDialog=False, saveDataElements=False,
+         openMeanDataNonSavedDialog=False, saveMeanDataElements=False):
     """
     @brief quit Netedit
     """
@@ -606,7 +617,7 @@ def quit(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
                 # wait for log
                 time.sleep(DELAY_RECOMPUTE)
             else:
-                waitQuestion('q')
+                waitQuestion('d')
         # Check if additionals must be saved
         if openAdditionalsNonSavedDialog:
             # Wait some seconds
@@ -614,7 +625,7 @@ def quit(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
             if saveAdditionals:
                 waitQuestion('s')
             else:
-                waitQuestion('q')
+                waitQuestion('d')
         # Check if demand elements must be saved
         if openDemandNonSavedDialog:
             # Wait some seconds
@@ -622,12 +633,20 @@ def quit(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
             if saveDemandElements:
                 waitQuestion('s')
             else:
-                waitQuestion('q')
+                waitQuestion('d')
         # Check if data elements must be saved
         if openDataNonSavedDialog:
             # Wait some seconds
             time.sleep(DELAY_QUESTION)
             if saveDataElements:
+                waitQuestion('s')
+            else:
+                waitQuestion('d')
+        # Check if meanData elements must be saved
+        if openMeanDataNonSavedDialog:
+            # Wait some seconds
+            time.sleep(DELAY_QUESTION)
+            if saveMeanDataElements:
                 waitQuestion('s')
             else:
                 waitQuestion('q')
@@ -670,7 +689,7 @@ def quit(NeteditProcess, openNetNonSavedDialog=False, saveNet=False,
 
 def openNetworkAs(waitTime=2):
     """
-    @brief load network as
+    @brief load network using dialog
     """
     # open save network as dialog
     typeTwoKeys('ctrl', 'o')
@@ -678,11 +697,10 @@ def openNetworkAs(waitTime=2):
     typeTwoKeys('alt', 'f')
     pasteIntoTextField(_TEXTTEST_SANDBOX)
     typeEnter()
-    pasteIntoTextField("input_net_loadedmanually.net.xml")
+    pasteIntoTextField("net_loadedmanually.net.xml")
     typeEnter()
     # wait for saving
     time.sleep(waitTime)
-
 
 def saveNetwork(referencePosition, clickOverReference=False, posX=0, posY=0):
     """
@@ -714,30 +732,6 @@ def saveNetworkAs(waitTime=2):
     time.sleep(waitTime)
     # wait for debug
     time.sleep(DELAY_RECOMPUTE)
-
-
-def forceSaveAdditionals():
-    """
-    @brief force save additionals
-    """
-    # change additional save flag using hotkey
-    typeThreeKeys('ctrl', 'shift', 'x')
-
-
-def forceSaveDemandElements():
-    """
-    @brief force save demand elements
-    """
-    # change demand elements save flag using hotkey
-    typeThreeKeys('ctrl', 'shift', 'y')
-
-
-def forceSaveDataElements():
-    """
-    @brief force save data elements
-    """
-    # change data elements save flag using hotkey
-    typeThreeKeys('ctrl', 'shift', 'z')
 
 
 def saveAdditionals(referencePosition, clickOverReference=False):
@@ -834,7 +828,7 @@ def openConfigurationShortcut(waitTime=2):
     typeTwoKeys('alt', 'f')
     pasteIntoTextField(_TEXTTEST_SANDBOX)
     typeEnter()
-    pasteIntoTextField("input_net.netccfg")
+    pasteIntoTextField("net.netccfg")
     typeEnter()
     # wait for loading
     time.sleep(waitTime)
@@ -863,7 +857,94 @@ def changeEditMode(key):
     typeTwoKeys('alt', key)
 
 #################################################
-# Create nodes and edges
+    # Configs
+#################################################
+
+def openNeteditConfigAs(waitTime=2):
+    """
+    @brief load netedit config using dialog
+    """
+    # open save network as dialog
+    typeTwoKeys('ctrl', 'e')
+    # jump to filename TextField
+    typeTwoKeys('alt', 'f')
+    pasteIntoTextField(_TEXTTEST_SANDBOX)
+    typeEnter()
+    pasteIntoTextField("netedit_loadedmanually.neteditcfg")
+    typeEnter()
+    # wait for saving
+    time.sleep(waitTime)
+
+
+def openSumoConfigAs(referencePosition):
+    """
+    @brief load netedit config using dialog
+    """
+    # click over reference (to avoid problem with undo-redo)
+    leftClick(referencePosition, 0, 0)
+    # open save network as dialog
+    typeTwoKeys('ctrl', 'm')
+    # jump to filename TextField
+    typeTwoKeys('alt', 'f')
+    pasteIntoTextField(_TEXTTEST_SANDBOX)
+    typeEnter()
+    pasteIntoTextField("sumo_loadedmanually.sumocfg")
+    typeEnter()
+    # wait for saving
+    time.sleep(DELAY_SAVING)
+
+
+def saveNeteditConfig(referencePosition, clickOverReference=False):
+    """
+    @brief save netedit config
+    """
+    # check if clickOverReference is enabled
+    if clickOverReference:
+        # click over reference (to avoid problem with undo-redo)
+        leftClick(referencePosition, 0, 0)
+    # save netedit config using hotkey
+    typeThreeKeys('ctrl', 'shift', 'e')
+    # wait for saving
+    time.sleep(DELAY_SAVING)
+
+
+def saveNeteditConfigAs(referencePosition):
+    """
+    @brief save netedit config as
+    """
+    # click over reference (to avoid problem with undo-redo)
+    leftClick(referencePosition, 0, 0)
+    # save netedit config using hotkey
+    typeThreeKeys('ctrl', 'shift', 'e')
+    # jump to filename TextField
+    typeTwoKeys('alt', 'f')
+    pasteIntoTextField(_TEXTTEST_SANDBOX)
+    typeEnter()
+    pasteIntoTextField("netedit_savedmanually.neteditcfg")
+    typeEnter()
+    # wait for saving
+    time.sleep(DELAY_SAVING)
+
+
+def saveSumoConfig(referencePosition):
+    """
+    @brief save sumo config
+    """
+    # click over reference (to avoid problem with undo-redo)
+    leftClick(referencePosition, 0, 0)
+    # save sumo config using hotkey
+    typeThreeKeys('ctrl', 'shift', 's')
+    # jump to filename TextField
+    typeTwoKeys('alt', 'f')
+    pasteIntoTextField(_TEXTTEST_SANDBOX)
+    typeEnter()
+    pasteIntoTextField("sumo_savedmanually.sumocfg")
+    typeEnter()
+    # wait for saving
+    time.sleep(DELAY_SAVING)
+
+#################################################
+    # Create nodes and edges
 #################################################
 
 
@@ -884,7 +965,7 @@ def cancelEdge():
     typeEscape()
 
 #################################################
-# Inspect mode
+    # Inspect mode
 #################################################
 
 
@@ -1046,7 +1127,7 @@ def checkDoubleParameters(referencePosition, attributeNumber, overlapped, posX=0
     redo(referencePosition, 8)
 
 #################################################
-# Move mode
+    # Move mode
 #################################################
 
 
@@ -1067,7 +1148,7 @@ def moveElement(referencePosition, startX, startY, endX, endY):
     dragDrop(referencePosition, startX, startY, endX, endY)
 
 #################################################
-# crossings
+    # crossings
 #################################################
 
 
@@ -1161,7 +1242,7 @@ def crossingInvertEdges(useSelectedEdges=False, thereIsSelectedEdges=False):
     typeSpace()
 
 #################################################
-# Connection mode
+    # Connection mode
 #################################################
 
 
@@ -1210,7 +1291,7 @@ def saveConnectionEdit():
     time.sleep(DELAY_SELECT)
 
 #################################################
-# additionals
+    # additionals
 #################################################
 
 
@@ -1320,7 +1401,7 @@ def fixStoppingPlace(solution):
         for _ in range(3):
             typeInvertTab()
         typeSpace()
-        # go back and press accept
+    # go back and press accept
         for _ in range(3):
             typeTab()
         typeSpace()
@@ -1328,14 +1409,14 @@ def fixStoppingPlace(solution):
         for _ in range(2):
             typeInvertTab()
         typeSpace()
-        # go back and press accept
+    # go back and press accept
         for _ in range(2):
             typeTab()
         typeSpace()
     elif (solution == "selectInvalids"):
         typeInvertTab()
         typeSpace()
-        # go back and press accept
+    # go back and press accept
         typeTab()
         typeSpace()
     elif (solution == "activateFriendlyPos"):
@@ -1347,7 +1428,7 @@ def fixStoppingPlace(solution):
         typeSpace()
 
 #################################################
-# demand elements
+    # demand elements
 #################################################
 
 
@@ -1405,7 +1486,7 @@ def fixDemandElement(value):
     typeTwoKeys('alt', 'a')
 
 #################################################
-# person elements
+    # person elements
 #################################################
 
 
@@ -1481,7 +1562,7 @@ def changePersonFlowPlan(personFlowPlan):
     typeEnter()
 
 #################################################
-# container elements
+    # container elements
 #################################################
 
 
@@ -1557,7 +1638,7 @@ def changeContainerFlowPlan(containerFlowPlan):
     typeEnter()
 
 #################################################
-# personPlan elements
+    # personPlan elements
 #################################################
 
 
@@ -1585,7 +1666,7 @@ def changePersonPlanMode(personPlan):
     typeEnter()
 
 #################################################
-# containerPlan elements
+    # containerPlan elements
 #################################################
 
 
@@ -1613,7 +1694,7 @@ def changeContainerPlanMode(containerPlan):
     typeEnter()
 
 #################################################
-# stop elements
+    # stop elements
 #################################################
 
 
@@ -1653,7 +1734,7 @@ def changeStopType(stopType):
     typeEnter()
 
 #################################################
-# vehicle elements
+    # vehicle elements
 #################################################
 
 
@@ -1666,7 +1747,7 @@ def vehicleMode():
     time.sleep(DELAY_CHANGEMODE)
 
 #################################################
-# vType elements
+    # vType elements
 #################################################
 
 
@@ -1755,7 +1836,7 @@ def modifyVTypeAttribute(attributeNumber, value):
     typeEnter()
 
 #################################################
-# delete
+    # delete
 #################################################
 
 
@@ -1851,7 +1932,7 @@ def waitDeleteWarning():
     typeEnter()
 
 #################################################
-# select mode
+    # select mode
 #################################################
 
 
@@ -2103,7 +2184,7 @@ def selectionInvertData():
 
 
 #################################################
-# traffic light
+    # traffic light
 #################################################
 
 def selectTLSMode():
@@ -2388,7 +2469,7 @@ def addGreenPriorityPhase(position):
     time.sleep(DELAY_SELECT)
 
 #################################################
-# shapes
+    # shapes
 #################################################
 
 
@@ -2520,7 +2601,7 @@ def GEOPOILatLon():
 
 
 #################################################
-# TAZs
+    # TAZs
 #################################################
 
 def TAZMode():
@@ -2570,7 +2651,7 @@ def createLineTAZ(referencePosition, positionx, positiony, sizex, sizey, close):
     typeEnter()
 
 #################################################
-# datas
+    # datas
 #################################################
 
 
@@ -2648,7 +2729,7 @@ def createDataInterval(begin="0", end="3600"):
     typeSpace()
 
 #################################################
-# Contextual menu
+    # Contextual menu
 #################################################
 
 
@@ -2661,25 +2742,25 @@ def contextualMenuOperation(referencePosition, positionx, positiony, operation, 
     for _ in range(operation):
         # wait before every down
         time.sleep(DELAY_KEY_TAB)
-        # type down keys
+    # type down keys
         pyautogui.hotkey('down')
     if suboperation1 > 0:
         # type right key for the second menu
         typeSpace()
-        # place cursor over second operation
+    # place cursor over second operation
         for _ in range(suboperation1):
             # wait before every down
             time.sleep(DELAY_KEY_TAB)
-            # type down keys
+        # type down keys
             pyautogui.hotkey('down')
     if suboperation2 > 0:
         # type right key for the third menu
         typeSpace()
-        # place cursor over third operation
+    # place cursor over third operation
         for _ in range(suboperation2):
             # wait before every down
             time.sleep(DELAY_KEY_TAB)
-            # type down keys
+        # type down keys
             pyautogui.hotkey('down')
     # select current operation
     typeSpace()

@@ -62,9 +62,9 @@ GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, cons
     FXVerticalFrame* contentsFrame = new FXVerticalFrame(this, GUIDesignContentsFrame);
     // create frame for file icons
     FXHorizontalFrame* frameFiles = new FXHorizontalFrame(contentsFrame, GUIDesignHorizontalFrameIcons);
-    myLoadButton = new FXButton(frameFiles, TL("Load\t\tLoad viewport from file"),
+    myLoadButton = new FXButton(frameFiles, (TL("Load") + std::string("\t\t") + TL("Load viewport from file")).c_str(),
                                 GUIIconSubSys::getIcon(GUIIcon::OPEN), this, GUIDialog_EditViewport::MID_LOAD, GUIDesignButtonToolbarWithText);
-    mySaveButton = new FXButton(frameFiles, TL("Save\t\tSave viewport to file"),
+    mySaveButton = new FXButton(frameFiles, (TL("Save") + std::string("\t\t") + TL("Save viewport to file")).c_str(),
                                 GUIIconSubSys::getIcon(GUIIcon::SAVE), this, GUIDialog_EditViewport::MID_SAVE, GUIDesignButtonToolbarWithText);
     // create horizontalframe for zoom elements and OSG
     FXHorizontalFrame* editElementsFrame = new FXHorizontalFrame(contentsFrame, GUIDesignAuxiliarHorizontalFrame);
@@ -74,49 +74,49 @@ GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, cons
 
     // create zoom elements
     FXHorizontalFrame* zoomFrame = new FXHorizontalFrame(lookFromFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(zoomFrame, "Zoom:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(zoomFrame, "Zoom:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myZoom = new FXRealSpinner(zoomFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPortZoom);
     myZoom->setRange(0.0001, 100000);
     //myZoom->setNumberFormat(4);
 
     // create lookFromX elements
     FXHorizontalFrame* lookFromXFrame = new FXHorizontalFrame(lookFromFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookFromXFrame, "X:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookFromXFrame, "X:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myXOff = new FXRealSpinner(lookFromXFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // create lookFromY elements
     FXHorizontalFrame* lookFromYFrame = new FXHorizontalFrame(lookFromFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookFromYFrame, "Y:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookFromYFrame, "Y:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myYOff = new FXRealSpinner(lookFromYFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // create lookFromZ elements
     FXHorizontalFrame* lookFromZFrame = new FXHorizontalFrame(lookFromFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookFromZFrame, "Z:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookFromZFrame, "Z:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myZOff = new FXRealSpinner(lookFromZFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
     myZOff->setRange(0.12, 100000000);
 
     // create rotation elements
     FXHorizontalFrame* rotationFrame = new FXHorizontalFrame(lookFromFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(rotationFrame, "A:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(rotationFrame, "A:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myRotation = new FXRealSpinner(rotationFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // create vertical frame for OSG
     FXVerticalFrame* lookAtFrame = new FXVerticalFrame(editElementsFrame, GUIDesignAuxiliarVerticalFrame);
-    new FXLabel(lookAtFrame, "OSG", nullptr, GUIDesignLabelCenterThick);
+    new FXLabel(lookAtFrame, "OSG", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
 
     // create lookAtX elements
     FXHorizontalFrame* lookAtXFrame = new FXHorizontalFrame(lookAtFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookAtXFrame, "LookAtX:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookAtXFrame, "LookAtX:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myLookAtX = new FXRealSpinner(lookAtXFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // create lookAtY elements
     FXHorizontalFrame* lookAtYFrame = new FXHorizontalFrame(lookAtFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookAtYFrame, "LookAtY:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookAtYFrame, "LookAtY:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myLookAtY = new FXRealSpinner(lookAtYFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // create lookAtZ elements
     FXHorizontalFrame* lookAtZFrame = new FXHorizontalFrame(lookAtFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXLabel(lookAtZFrame, "LookAtZ:", nullptr, GUIDesignLabelLeftThick);
+    new FXLabel(lookAtZFrame, "LookAtZ:", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myLookAtZ = new FXRealSpinner(lookAtZFrame, 16, this, MID_CHANGED, GUIDesignSpinDialViewPort);
 
     // only show LookAt elements for OSG views
@@ -130,8 +130,8 @@ GUIDialog_EditViewport::GUIDialog_EditViewport(GUISUMOAbstractView* parent, cons
     new FXHorizontalSeparator(contentsFrame, GUIDesignHorizontalSeparator);
     FXHorizontalFrame* frameButtons = new FXHorizontalFrame(contentsFrame, GUIDesignAuxiliarHorizontalFrame);
     new FXHorizontalFrame(frameButtons, GUIDesignAuxiliarHorizontalFrame);
-    myOKButton = new FXButton(frameButtons, TL("&OK\t\taccept"), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, GUIDialog_EditViewport::MID_OK, GUIDesignButtonOK);
-    myCancelButton = new FXButton(frameButtons, TL("&Cancel\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, GUIDialog_EditViewport::MID_CANCEL, GUIDesignButtonCancel);
+    myOKButton = new FXButton(frameButtons, (TL("&OK") + std::string("\t\t") + TL("accept")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, GUIDialog_EditViewport::MID_OK, GUIDesignButtonOK);
+    myCancelButton = new FXButton(frameButtons, (TL("&Cancel") + std::string("\t\t") + TL("close")).c_str(), GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, GUIDialog_EditViewport::MID_CANCEL, GUIDesignButtonCancel);
     new FXHorizontalFrame(frameButtons, GUIDesignAuxiliarHorizontalFrame);
     // set dialog icon
     setIcon(GUIIconSubSys::getIcon(GUIIcon::EDITVIEWPORT));

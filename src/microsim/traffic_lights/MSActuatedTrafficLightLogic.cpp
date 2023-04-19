@@ -136,7 +136,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
     initSwitchingRules();
     if (myLanes.size() == 0) {
         // must be an older network
-        WRITE_WARNING("Traffic light '" + getID() + "' does not control any links");
+        WRITE_WARNINGF(TL("Traffic light '%' does not control any links"), getID());
     }
     bool warn = true; // warn only once
     const int numLinks = (int)myLinks.size();
@@ -224,7 +224,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
             } else {
                 loop = dynamic_cast<MSInductLoop*>(MSNet::getInstance()->getDetectorControl().getTypedDetectors(SUMO_TAG_INDUCTION_LOOP).get(customID));
                 if (loop == nullptr) {
-                    WRITE_ERROR("Unknown inductionLoop '" + customID + "' given as custom detector for actuated tlLogic '" + getID() + "', program '" + getProgramID() + ".");
+                    WRITE_ERRORF(TL("Unknown inductionLoop '%' given as custom detector for actuated tlLogic '%', program '%."), customID, getID(), getProgramID());
                     continue;
                 }
                 ilpos = loop->getPosition();
@@ -238,7 +238,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
 
             if (warn && floor(floor(inductLoopPosition / DEFAULT_LENGTH_WITH_GAP) * myPassingTime) > STEPS2TIME(minDur)) {
                 // warn if the minGap is insufficient to clear vehicles between stop line and detector
-                WRITE_WARNING("At actuated tlLogic '" + getID() + "', minDur " + time2string(minDur) + " is too short for a detector gap of " + toString(inductLoopPosition) + "m.");
+                WRITE_WARNINGF(TL("At actuated tlLogic '%', minDur % is too short for a detector gap of %m."), getID(), time2string(minDur), toString(inductLoopPosition));
                 warn = false;
             }
         }
@@ -449,7 +449,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
         if (StringUtils::startsWith(kv.first, "linkMaxDur:")) {
             int link = StringUtils::toInt(kv.first.substr(11));
             if (link < 0 || link >= myNumLinks) {
-                WRITE_ERROR("Invalid link '" + kv.first.substr(11) + "' given as linkMaxDur parameter for actuated tlLogic '" + getID() + "', program '" + getProgramID() + ".");
+                WRITE_ERRORF(TL("Invalid link '%' given as linkMaxDur parameter for actuated tlLogic '%', program '%."), kv.first.substr(11), getID(), getProgramID());
                 continue;
             }
             if (myLinkMaxGreenTimes.empty()) {
@@ -459,7 +459,7 @@ MSActuatedTrafficLightLogic::init(NLDetectorBuilder& nb) {
         } else if (StringUtils::startsWith(kv.first, "linkMinDur:")) {
             int link = StringUtils::toInt(kv.first.substr(11));
             if (link < 0 || link >= myNumLinks) {
-                WRITE_ERROR("Invalid link '" + kv.first.substr(11) + "' given as linkMinDur parameter for actuated tlLogic '" + getID() + "', program '" + getProgramID() + ".");
+                WRITE_ERRORF(TL("Invalid link '%' given as linkMinDur parameter for actuated tlLogic '%', program '%."), kv.first.substr(11), getID(), getProgramID());
                 continue;
             }
             if (myLinkMinGreenTimes.empty()) {
@@ -900,7 +900,7 @@ MSActuatedTrafficLightLogic::getTarget(int step) {
     while (!myPhases[step]->isGreenPhase()) {
         if (myPhases[step]->nextPhases.size() > 0 && myPhases[step]->nextPhases.front() >= 0) {
             if (myPhases[step]->nextPhases.size() > 1) {
-                WRITE_WARNING("At actuated tlLogic '" + getID() + "', transition phase " + toString(step) + " should not have multiple next phases");
+                WRITE_WARNINGF(TL("At actuated tlLogic '%', transition phase % should not have multiple next phases"), getID(), toString(step));
             }
             step = myPhases[step]->nextPhases.front();
         } else {
@@ -1058,7 +1058,7 @@ MSActuatedTrafficLightLogic::evalExpression(const std::string& condition) const 
             }
         }
         if (bracketClose == std::string::npos) {
-            throw ProcessError("Unmatched parentheses in condition " + condition + "'");
+            throw ProcessError(TLF("Unmatched parentheses in condition %'", condition));
         }
         std::string cond2 = condition;
         const std::string inBracket = condition.substr(bracketOpen + 1, bracketClose - bracketOpen - 1);
@@ -1073,7 +1073,7 @@ MSActuatedTrafficLightLogic::evalExpression(const std::string& condition) const 
     std::vector<std::string> tokens = StringTokenizer(condition).getVector();
     //std::cout << SIMTIME << " tokens(" << tokens.size() << ")=" << toString(tokens) << "\n";
     if (tokens.size() == 0) {
-        throw ProcessError("Invalid empty condition '" + condition + "'");
+        throw ProcessError(TLF("Invalid empty condition '%'", condition));
     } else if (tokens.size() == 1) {
         try {
             return evalAtomicExpression(tokens[0]);
@@ -1088,7 +1088,7 @@ MSActuatedTrafficLightLogic::evalExpression(const std::string& condition) const 
                 throw ProcessError("Error when evaluating expression '" + condition + "':\n  " + e.what());
             }
         } else {
-            throw ProcessError("Unsupported condition '" + condition + "'");
+            throw ProcessError(TLF("Unsupported condition '%'", condition));
         }
     } else if (tokens.size() == 3) {
         // infix expression
@@ -1151,7 +1151,7 @@ MSActuatedTrafficLightLogic::evalTernaryExpression(double a, const std::string& 
         return a * b;
     } else if (o == "/") {
         if (b == 0) {
-            WRITE_ERROR("Division by 0 in condition '" + condition + "'");
+            WRITE_ERRORF(TL("Division by 0 in condition '%'"), condition);
             return 0;
         }
         return a / b;
@@ -1202,7 +1202,7 @@ MSActuatedTrafficLightLogic::executeAssignments(const AssignmentMap& assignments
             if (it != conditions.end()) {
                 it->second = toString(val);
             } else if (forbidden.find(id) != forbidden.end()) {
-                throw ProcessError("Modifying global condition '" + id + "' is forbidden");
+                throw ProcessError(TLF("Modifying global condition '%' is forbidden", id));
             } else {
                 myStack.back()[id] = val;
             }
@@ -1214,7 +1214,7 @@ MSActuatedTrafficLightLogic::executeAssignments(const AssignmentMap& assignments
 double
 MSActuatedTrafficLightLogic::evalAtomicExpression(const std::string& expr) const {
     if (expr.size() == 0) {
-        throw ProcessError("Invalid empty expression");
+        throw ProcessError(TL("Invalid empty expression"));
     } else if (expr[0] == '!') {
         return evalAtomicExpression(expr.substr(1)) == 0. ? 1. : 0.;
     } else if (expr[0] == '-') {
@@ -1310,7 +1310,7 @@ MSActuatedTrafficLightLogic::getConditions() const {
             try {
                 result[item.first] = evalExpression(item.second);
             } catch (ProcessError& e) {
-                WRITE_ERROR("Error when retrieving conditions '" + item.first + "' for tlLogic '" + getID() + "' (" + e.what() + ")");
+                WRITE_ERRORF(TL("Error when retrieving conditions '%' for tlLogic '%' (%)"), item.first, getID(), e.what());
             }
         }
     }

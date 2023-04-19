@@ -93,7 +93,8 @@ NBEdge::Connection::getInternalLaneID() const {
 
 std::string
 NBEdge::Connection::getDescription(const NBEdge* parent) const {
-    return Named::getIDSecure(parent) + "_" + toString(fromLane) + "->" + Named::getIDSecure(toEdge) + "_" + toString(toLane);
+    return (Named::getIDSecure(parent) + "_" + toString(fromLane) + "->" + Named::getIDSecure(toEdge) + "_" + toString(toLane)
+            + (permissions == SVC_UNSPECIFIED ? "" : " (" + getVehicleClassNames(permissions) + ")"));
 }
 
 
@@ -427,7 +428,7 @@ void
 NBEdge::reinitNodes(NBNode* from, NBNode* to) {
     // connections may still be valid
     if (from == nullptr || to == nullptr) {
-        throw ProcessError("At least one of edge's '" + myID + "' nodes is not known.");
+        throw ProcessError(TLF("At least one of edge's '%' nodes is not known.", myID));
     }
     if (myFrom != from) {
         myFrom->removeEdge(this, false);
@@ -452,13 +453,13 @@ NBEdge::reinitNodes(NBNode* from, NBNode* to) {
 void
 NBEdge::init(int noLanes, bool tryIgnoreNodePositions, const std::string& origID) {
     if (noLanes == 0) {
-        throw ProcessError("Edge '" + myID + "' needs at least one lane.");
+        throw ProcessError(TLF("Edge '%' needs at least one lane.", myID));
     }
     if (myFrom == nullptr || myTo == nullptr) {
-        throw ProcessError("At least one of edge's '" + myID + "' nodes is not known.");
+        throw ProcessError(TLF("At least one of edge's '%' nodes is not known.", myID));
     }
     if (!SUMOXMLDefinitions::isValidNetID(myID)) {
-        throw ProcessError("Invalid edge id '" + myID + "'.");
+        throw ProcessError(TLF("Invalid edge id '%'.", myID));
     }
     // revisit geometry
     //  should have at least two points at the end...
@@ -738,11 +739,16 @@ bool
 NBEdge::isBidiEdge(bool checkPotential) const {
     return myPossibleTurnDestination != nullptr
            && (myIsBidi || myPossibleTurnDestination->myIsBidi || checkPotential)
-           && myLaneSpreadFunction == LaneSpreadFunction::CENTER
-           && myPossibleTurnDestination->getLaneSpreadFunction() == LaneSpreadFunction::CENTER
            && myPossibleTurnDestination->getToNode() == getFromNode()
-           && (myPossibleTurnDestination->getGeometry().reverse() == getGeometry()
-               || (checkPotential && getGeometry().size() == 2 && myPossibleTurnDestination->getGeometry().size() == 2));
+           && myPossibleTurnDestination->getLaneSpreadFunction() == myLaneSpreadFunction
+           // geometry check a) full overlap geometry
+           && ((myLaneSpreadFunction == LaneSpreadFunction::CENTER
+                && (myPossibleTurnDestination->getGeometry().reverse() == getGeometry()
+                    || (checkPotential && getGeometry().size() == 2 && myPossibleTurnDestination->getGeometry().size() == 2)))
+               // b) TWLT (Two-Way-Left-Turn-lane)
+               || (myLanes.back().shape.reverse().almostSame(myPossibleTurnDestination->myLanes.back().shape, POSITION_EPS))
+              );
+
 }
 
 
@@ -1020,7 +1026,7 @@ NBEdge::checkGeometry(const double maxAngle, const double minRadius, bool fix, b
 
 // ----------- Setting and getting connections
 bool
-NBEdge::addEdge2EdgeConnection(NBEdge* dest, bool overrideRemoval) {
+NBEdge::addEdge2EdgeConnection(NBEdge* dest, bool overrideRemoval, SVCPermissions permissions) {
     if (myStep == EdgeBuildingStep::INIT_REJECT_CONNECTIONS) {
         return true;
     }
@@ -1035,6 +1041,7 @@ NBEdge::addEdge2EdgeConnection(NBEdge* dest, bool overrideRemoval) {
         myConnections.push_back(Connection(-1, dest, -1));
     } else if (find_if(myConnections.begin(), myConnections.end(), connections_toedge_finder(dest)) == myConnections.end()) {
         myConnections.push_back(Connection(-1, dest, -1));
+        myConnections.back().permissions = permissions;
     }
     if (overrideRemoval) {
         // override earlier delete decision
@@ -1150,6 +1157,11 @@ NBEdge::setConnection(int lane, NBEdge* destEdge,
     }
     for (std::vector<Connection>::iterator i = myConnections.begin(); i != myConnections.end();) {
         if ((*i).toEdge == destEdge && ((*i).fromLane == -1 || (*i).toLane == -1)) {
+            if (permissions == SVC_UNSPECIFIED) {
+                // @note: in case we were to add multiple connections from the
+                // same lane the second one wouldn't get the special permissions!
+                permissions = (*i).permissions;
+            }
             i = myConnections.erase(i);
         } else {
             ++i;
@@ -1241,7 +1253,7 @@ NBEdge::getConnectionRef(int fromLane, const NBEdge* to, int toLane) {
 
 
 bool
-NBEdge::hasConnectionTo(NBEdge* destEdge, int destLane, int fromLane) const {
+NBEdge::hasConnectionTo(const NBEdge* destEdge, int destLane, int fromLane) const {
     return destEdge != nullptr && find_if(myConnections.begin(), myConnections.end(), connections_toedgelane_finder(destEdge, destLane, fromLane)) != myConnections.end();
 }
 
@@ -2256,7 +2268,7 @@ NBEdge::computeAngle() {
 #ifdef DEBUG_ANGLES
     if (DEBUGCOND) {
         if (suspiciousFromShape) {
-            std::cout << "  len=" << shape.length() << " startA=" << myStartAngle << " startA2=" << myStartAngle2 << " startA3=" << myStartAngle3
+            std::cout << "suspiciousFromShape len=" << shape.length() << " startA=" << myStartAngle << " startA2=" << myStartAngle2 << " startA3=" << myStartAngle3
                       << " rel=" << NBHelpers::normRelAngle(myStartAngle, myStartAngle2)
                       << " fromCenter=" << fromCenter
                       << " fromPos=" << myFrom->getPosition()
@@ -2264,7 +2276,7 @@ NBEdge::computeAngle() {
                       << "\n";
         }
         if (suspiciousToShape) {
-            std::cout << " len=" << shape.length() << "  endA=" << myEndAngle << " endA2=" << myEndAngle2 << " endA3=" << myEndAngle3
+            std::cout << "suspiciousToShape len=" << shape.length() << "  endA=" << myEndAngle << " endA2=" << myEndAngle2 << " endA3=" << myEndAngle3
                       << " rel=" << NBHelpers::normRelAngle(myEndAngle, myEndAngle2)
                       << " toCenter=" << toCenter
                       << " toPos=" << myTo->getPosition()
@@ -2971,10 +2983,10 @@ NBEdge::recheckLanes() {
                 const bool forbiddenRight = lane.changeRight != SVCAll && lane.changeRight != SVC_IGNORING && lane.changeRight != SVC_UNSPECIFIED;
                 if (forbiddenLeft && (i == 0 || forbiddenRight)) {
                     lane.changeLeft = SVC_UNSPECIFIED;
-                    WRITE_WARNING("Ignoring changeLeft prohibition for '" + getLaneID(i) + "' to avoid dead-end");
+                    WRITE_WARNINGF(TL("Ignoring changeLeft prohibition for '%' to avoid dead-end"), getLaneID(i));
                 } else if (forbiddenRight && (i == getNumLanes() - 1 || (i > 0 && myLanes[i - 1].accelRamp))) {
                     lane.changeRight = SVC_UNSPECIFIED;
-                    WRITE_WARNING("Ignoring changeRight prohibition for '" + getLaneID(i) + "' to avoid dead-end");
+                    WRITE_WARNINGF(TL("Ignoring changeRight prohibition for '%' to avoid dead-end"), getLaneID(i));
                 }
             }
         }
@@ -3074,10 +3086,20 @@ NBEdge::divideOnEdges(const EdgeVector* outgoing) {
     }
     // clean up unassigned fromLanes
     bool explicitTurnaround = false;
+    SVCPermissions turnaroundPermissions = SVC_UNSPECIFIED;
     for (std::vector<Connection>::iterator i = myConnections.begin(); i != myConnections.end();) {
         if ((*i).fromLane == -1) {
             if ((*i).toEdge == myTurnDestination && myTurnDestination != nullptr) {
                 explicitTurnaround = true;
+                turnaroundPermissions = (*i).permissions;
+            }
+            if ((*i).permissions != SVC_UNSPECIFIED) {
+                for (Connection& c : myConnections) {
+                    if (c.toLane == -1 && c.toEdge == (*i).toEdge) {
+                        // carry over loaded edge2edge permissions
+                        c.permissions = (*i).permissions;
+                    }
+                }
             }
             i = myConnections.erase(i);
         } else {
@@ -3086,6 +3108,7 @@ NBEdge::divideOnEdges(const EdgeVector* outgoing) {
     }
     if (explicitTurnaround) {
         myConnections.push_back(Connection((int)myLanes.size() - 1, myTurnDestination, myTurnDestination->getNumLanes() - 1));
+        myConnections.back().permissions = turnaroundPermissions;
     }
     sortOutgoingConnectionsByIndex();
 }
@@ -3932,14 +3955,15 @@ NBEdge::disallowVehicleClass(int lane, SUMOVehicleClass vclass) {
 
 
 void
-NBEdge::preferVehicleClass(int lane, SUMOVehicleClass vclass) {
+NBEdge::preferVehicleClass(int lane, SVCPermissions vclasses) {
     if (lane < 0) { // all lanes are meant...
         for (int i = 0; i < (int)myLanes.size(); i++) {
-            allowVehicleClass(i, vclass);
+            preferVehicleClass(i, vclasses);
         }
     } else {
         assert(lane < (int)myLanes.size());
-        myLanes[lane].preferred |= vclass;
+        myLanes[lane].permissions |= vclasses;
+        myLanes[lane].preferred |= vclasses;
     }
 }
 
@@ -4330,7 +4354,7 @@ NBEdge::Lane
 NBEdge::getFirstNonPedestrianLane(int direction) const {
     int index = getFirstNonPedestrianLaneIndex(direction);
     if (index < 0) {
-        throw ProcessError("Edge " + getID() + " allows pedestrians on all lanes");
+        throw ProcessError(TLF("Edge % allows pedestrians on all lanes", getID()));
     }
     return myLanes[index];
 }

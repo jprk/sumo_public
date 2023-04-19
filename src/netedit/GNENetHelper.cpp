@@ -1458,7 +1458,7 @@ GNENetHelper::AttributeCarriers::getDefaultType() const {
             return vType;
         }
     }
-    throw ProcessError("Default vType doesn't exist");
+    throw ProcessError(TL("Default vType doesn't exist"));
 }
 
 
@@ -1491,8 +1491,13 @@ GNENetHelper::AttributeCarriers::addDefaultVTypes() {
 
     // Create default taxi Type (it has to be created here due myViewNet was previously nullptr)
     GNEVType* defaultTaxiType = new GNEVType(myNet, DEFAULT_TAXITYPE_ID, SVC_TAXI);
-    myDemandElements.at(defaultBikeType->getTagProperty().getTag()).insert(defaultTaxiType);
+    myDemandElements.at(defaultTaxiType->getTagProperty().getTag()).insert(defaultTaxiType);
     defaultTaxiType->incRef("GNENet::DEFAULT_TAXITYPE_ID");
+
+    // Create default rail Type (it has to be created here due myViewNet was previously nullptr)
+    GNEVType* defaultRailType = new GNEVType(myNet, DEFAULT_RAILTYPE_ID, SVC_RAIL);
+    myDemandElements.at(defaultRailType->getTagProperty().getTag()).insert(defaultRailType);
+    defaultRailType->incRef("GNENet::DEFAULT_RAILTYPE_ID");
 
     // Create default person Type (it has to be created here due myViewNet was previously nullptr)
     GNEVType* defaultPersonType = new GNEVType(myNet, DEFAULT_PEDTYPE_ID, SVC_PEDESTRIAN);
@@ -1942,6 +1947,17 @@ GNENetHelper::AttributeCarriers::retrieveGenericDatas(const SumoXMLTag genericDa
         }
     }
     return genericDatas;
+}
+
+
+int
+GNENetHelper::AttributeCarriers::getNumberOfGenericDatas() const {
+    int counter = 0;
+    // iterate over all generic datas
+    for (const auto& genericDataTag : myGenericDatas) {
+        counter += (int)genericDataTag.second.size();
+    }
+    return counter;
 }
 
 
@@ -2459,7 +2475,7 @@ GNENetHelper::AttributeCarriers::meanDataExist(const GNEMeanData* meanData) cons
         // find demanElement in meanDataElementTag
         return std::find(meanDataElementTag.begin(), meanDataElementTag.end(), meanData) != meanDataElementTag.end();
     } else {
-        throw ProcessError("Invalid meanData pointer");
+        throw ProcessError(TL("Invalid meanData pointer"));
     }
 }
 
@@ -2513,48 +2529,48 @@ GNENetHelper::SavingStatus::SavingStatus() {
 
 
 void
-GNENetHelper::SavingStatus::requireSaveSUMOConfig() {
-    mySUMOConfigSaved = false;
+GNENetHelper::SavingStatus::requireSaveSumoConfig() {
+    mySumoConfigSaved = false;
 }
 
 
 void
-GNENetHelper::SavingStatus::SUMOConfigSaved() {
-    mySUMOConfigSaved = true;
+GNENetHelper::SavingStatus::SumoConfigSaved() {
+    mySumoConfigSaved = true;
 }
 
 
 bool
-GNENetHelper::SavingStatus::isSUMOConfigSaved() const {
-    return mySUMOConfigSaved;
+GNENetHelper::SavingStatus::isSumoConfigSaved() const {
+    return mySumoConfigSaved;
 }
 
 
 
 void
-GNENetHelper::SavingStatus::requireSaveNETEDITConfig() {
-    myNETEDITConfigSaved = false;
+GNENetHelper::SavingStatus::requireSaveNeteditConfig() {
+    myNeteditConfigSaved = false;
 }
 
 
 void
-GNENetHelper::SavingStatus::NETEDITConfigSaved() {
-    myNETEDITConfigSaved = true;
+GNENetHelper::SavingStatus::neteditConfigSaved() {
+    myNeteditConfigSaved = true;
 }
 
 
 bool
-GNENetHelper::SavingStatus::isNETEDITConfigSaved() const {
-    return myNETEDITConfigSaved;
+GNENetHelper::SavingStatus::isNeteditConfigSaved() const {
+    return myNeteditConfigSaved;
 }
 
 
 void
 GNENetHelper::SavingStatus::requireSaveNetwork() {
     myNetworkSaved = false;
-    // implies requiere save NETEDITConfig and SUMOConfig
-    myNETEDITConfigSaved = false;
-    mySUMOConfigSaved = false;
+    // implies requiere save netedit config and sumo config
+    myNeteditConfigSaved = false;
+    mySumoConfigSaved = false;
 }
 
 
@@ -2609,9 +2625,9 @@ GNENetHelper::SavingStatus::isEdgeTypeSaved() const {
 void
 GNENetHelper::SavingStatus::requireSaveAdditionals() {
     myAdditionalSaved = false;
-    // implies requiere save NETEDITConfig and SUMOConfig
-    myNETEDITConfigSaved = false;
-    mySUMOConfigSaved = false;
+    // implies requiere save netedit config and sumo config
+    myNeteditConfigSaved = false;
+    mySumoConfigSaved = false;
 }
 
 
@@ -2630,9 +2646,9 @@ GNENetHelper::SavingStatus::isAdditionalsSaved() const {
 void
 GNENetHelper::SavingStatus::requireSaveDemandElements() {
     myDemandElementSaved = false;
-    // implies requiere save NETEDITConfig and SUMOConfig
-    myNETEDITConfigSaved = false;
-    mySUMOConfigSaved = false;
+    // implies requiere save netedit config and sumo config
+    myNeteditConfigSaved = false;
+    mySumoConfigSaved = false;
 }
 
 
@@ -2651,9 +2667,9 @@ GNENetHelper::SavingStatus::isDemandElementsSaved() const {
 void
 GNENetHelper::SavingStatus::requireSaveDataElements() {
     myDataElementSaved = false;
-    // implies requiere save NETEDITConfig and SUMOConfig
-    myNETEDITConfigSaved = false;
-    mySUMOConfigSaved = false;
+    // implies requiere save netedit config and sumo config
+    myNeteditConfigSaved = false;
+    mySumoConfigSaved = false;
 }
 
 
@@ -2672,9 +2688,9 @@ GNENetHelper::SavingStatus::isDataElementsSaved() const {
 void
 GNENetHelper::SavingStatus::requireSaveMeanDatas() {
     myMeanDataElementSaved = false;
-    // implies requiere save NETEDITConfig and SUMOConfig
-    myNETEDITConfigSaved = false;
-    mySUMOConfigSaved = false;
+    // implies requiere save netedit config and sumo config
+    myNeteditConfigSaved = false;
+    mySumoConfigSaved = false;
 }
 
 
@@ -2720,13 +2736,13 @@ GNENetHelper::GNEChange_ReplaceEdgeInTLS::redo() {
 
 std::string
 GNENetHelper::GNEChange_ReplaceEdgeInTLS::undoName() const {
-    return "Redo replace in TLS";
+    return TL("Redo replace in TLS");
 }
 
 
 std::string
 GNENetHelper::GNEChange_ReplaceEdgeInTLS::redoName() const {
-    return "Undo replace in TLS";
+    return TL("Undo replace in TLS");
 }
 
 

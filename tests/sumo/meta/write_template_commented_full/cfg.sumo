@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-01-04 11:28:03 by Eclipse SUMO sumo Version v1_15_0+1277-3febad6e597
+<!-- generated on 2023-03-27 22:53:26 by Eclipse SUMO sumo Version v1_16_0+1707-833d692
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -185,6 +185,9 @@
 
         <!-- Write tripinfo output for vehicles which have not departed at simulation end because of depart delay -->
         <tripinfo-output.write-undeparted value="false" type="BOOL"/>
+
+        <!-- Save personinfo and containerinfo to separate FILE -->
+        <personinfo-output value="" synonymes="personinfo" type="FILE"/>
 
         <!-- Save single vehicle route info into FILE -->
         <vehroute-output value="" synonymes="vehroutes" type="FILE"/>
@@ -456,7 +459,7 @@
         <!-- Use Kirchhoff&apos;s laws for solving overhead wire circuit -->
         <overhead-wire.solver value="true" type="BOOL"/>
 
-        <!-- Enable recuperation from the vehicle equipped with elecHybrid device into the ovrehead wire. -->
+        <!-- Enable recuperation from the vehicle equipped with elecHybrid device into the overhead wire. -->
         <overhead-wire.recuperation value="true" type="BOOL"/>
 
         <!-- Enable current limits of traction substation during solving the overhead wire electrical circuit. -->
@@ -470,6 +473,9 @@
 
         <!-- Override stop until times with stop ended times when given -->
         <use-stop-ended value="false" type="BOOL"/>
+
+        <!-- Override stop arrival times with stop started times when given -->
+        <use-stop-started value="false" type="BOOL"/>
 
         <!-- Select among pedestrian models [&apos;nonInteracting&apos;, &apos;striping&apos;, &apos;remote&apos;] -->
         <pedestrian.model value="striping" type="STR"/>
@@ -497,6 +503,9 @@
 
         <!-- Fraction of stripes to reserve for oncoming pedestrians on crossings and walkingareas -->
         <pedestrian.striping.reserve-oncoming.junctions value="0.34" type="FLOAT"/>
+
+        <!-- Maximum width in m to reserve for oncoming pedestrians -->
+        <pedestrian.striping.reserve-oncoming.max value="1.28" type="FLOAT"/>
 
         <!-- Interpret departPosLat for walks in legacy style -->
         <pedestrian.striping.legacy-departposlat value="false" type="BOOL"/>
@@ -918,6 +927,9 @@
         <!-- General scaling coefficient for applying the error to the perceived distance (error also scales with distance). -->
         <device.driverstate.headwayErrorCoefficient value="0.75" type="FLOAT"/>
 
+        <!-- General scaling coefficient for applying the error to the vehicle&apos;s own speed when driving without a leader (error also scales with own speed). -->
+        <device.driverstate.freeSpeedErrorCoefficient value="0" type="FLOAT"/>
+
         <!-- Base threshold for recognizing changes in the speed difference (threshold also scales with distance). -->
         <device.driverstate.speedDifferenceChangePerceptionThreshold value="0.1" type="FLOAT"/>
 
@@ -1185,6 +1197,9 @@
         <!-- Load edge/lane weights for visualization from FILE -->
         <edgedata-files value="" synonymes="data-files" type="FILE"/>
 
+        <!-- Load a secondary road network for abstract visualization from FILE -->
+        <alternative-net-file value="" synonymes="N" type="FILE"/>
+
         <!-- Restart the simulation after ending (demo mode) -->
         <demo value="false" synonymes="D" type="BOOL"/>
 
@@ -1202,9 +1217,6 @@
 
         <!-- The aggregation period for value tracker windows -->
         <tracker-interval value="1" type="TIME"/>
-
-        <!-- Start with an OpenSceneGraph view instead of the regular 2D view -->
-        <osg-view value="false" type="BOOL"/>
 
         <!-- Enable overlay for screen recognition -->
         <gui-testing value="false" type="BOOL"/>

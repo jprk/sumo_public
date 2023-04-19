@@ -60,16 +60,6 @@ jobs:
       if: github.event_name != 'schedule'
       uses: hendrikmuhs/ccache-action@v1.2
 
-    - name: Preparing Gtest
-      run: |
-        pushd /usr/src/gtest
-        sudo mkdir build
-        cd build
-        if [[ "${{ matrix.compiler }}" == "gcc" ]]; then sudo CC=gcc CXX=g++ cmake ..; fi
-        if [[ "${{ matrix.compiler }}" == "clang" ]]; then sudo CC=clang CXX=clang++ cmake ..; fi
-        sudo make
-        find . -name 'libgtest*' | xargs sudo cp --target-dir /usr/lib/
-
     - name: Configuring SUMO
       run: |
         mkdir -p sumo/cmake-build 
@@ -88,14 +78,6 @@ jobs:
       if: matrix.build_type == 'full' && github.repository == 'eclipse/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
       uses: warchant/setup-sonar-scanner@v4
 
-    - name: Setting up SonarQube cache
-      if: matrix.build_type == 'full' && github.repository == 'eclipse/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
-      uses: actions/cache@v3
-      with:
-        path: sumo/sonar-cache
-        key: ${{ github.head_ref }}-${{ github.run_number }}
-        restore-keys: ${{ github.head_ref }}-
-
     - name: Building SUMO with SonarQube wrapper
       if: matrix.build_type == 'full' && github.repository == 'eclipse/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
       run: |
@@ -104,7 +86,7 @@ jobs:
         unzip -o build-wrapper-linux-x86.zip
         build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make -j4
         cd ..
-        sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.cfamily.build-wrapper-output=cmake-build/bw-output -Dsonar.cfamily.cache.enabled=true -Dsonar.cfamily.cache.path=sonar-cache
+        sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.cfamily.build-wrapper-output=cmake-build/bw-output
 
     - name: Building and Installing SUMO
       if: matrix.build_type != 'full' || github.repository != 'eclipse/sumo' || github.event_name != 'schedule' || matrix.compiler != 'gcc'
@@ -116,7 +98,8 @@ jobs:
     - name: Building Examples and Tests
       if: matrix.build_type == 'full' && (github.repository == 'DLR-TS/sumo' || matrix.compiler == 'gcc')
       run: |
-        sudo apt-get install python3-pyproj python3-rtree python3-pandas python3-flake8 python3-autopep8
+        sudo apt-get install python3-pyproj python3-rtree python3-pandas python3-flake8 python3-autopep8 python3-scipy python3-pulp python3-ezdxf
+        sudo pip3 install ortools==9.5.2237
         sudo pip3 install -r sumo/tools/requirements.txt
         cd sumo/cmake-build
         make CTEST_OUTPUT_ON_FAILURE=1 examples test
@@ -128,6 +111,19 @@ jobs:
         sumo/tests/runTests.sh -b ci -a sumo.meso.ci
         sumo/tests/runTests.sh -b ci -a netconvert.gdal.ci,polyconvert.gdal.ci
         sumo/tests/runTests.sh -b ci -a tools.python2.ci
+
+    - name: Compressing test results
+      if: failure()
+      run: |
+        zip -r texttesttmp.zip ~/.texttest/tmp
+
+    - name: Uploading test results
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: texttesttmp
+        path: texttesttmp.zip
+        if-no-files-found: warn
 
     - name: Uploading artifacts (SUMO binaries)
       uses: actions/upload-artifact@v3

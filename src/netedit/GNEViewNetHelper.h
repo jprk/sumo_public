@@ -225,6 +225,9 @@ struct GNEViewNetHelper {
         /// @brief filter locked elements
         void filterLockedElements(const GNEViewNetHelper::LockManager& lockManager, std::vector<GUIGlObjectType> forcedIgnoredTiped = {});
 
+        /// @brief short data elements by begin
+        void shortDataElements();
+
         /// @brief get front GUI GL ID or a pointer to nullptr
         GUIGlID getGlIDFront() const;
 
@@ -492,11 +495,11 @@ struct GNEViewNetHelper {
         /// @brief checkable button for save individual files
         MFXMenuButtonTooltip* mySaveIndividualFiles = nullptr;
 
-        /// @brief checkable button for save NETEDIT config
-        MFXButtonTooltip* mySaveNETEDITConfig = nullptr;
+        /// @brief checkable button for save netedit config
+        MFXButtonTooltip* mySaveNeteditConfig = nullptr;
 
         /// @brief checkable button for save SUMO config
-        MFXButtonTooltip* mySaveSUMOConfig = nullptr;
+        MFXButtonTooltip* mySaveSumoConfig = nullptr;
 
         /// @brief checkable button for save network
         MFXButtonTooltip* mySaveNetwork = nullptr;
@@ -1147,21 +1150,15 @@ struct GNEViewNetHelper {
         /// @brief draw testing element
         void drawTestingElements(GUIMainWindow* mainWindow);
 
-        /// @brief check if testing mode is enabled
-        bool isTestingEnabled() const;
-
     private:
         /// @brief pointer to net
         GNEViewNet* myViewNet;
 
-        /// @brief flag to enable or disable testing mode
-        bool myTestingEnabled;
-
         /// @brief Width of net in testing mode
-        int myTestingWidth;
+        int myTestingWidth = 0;
 
         /// @brief Height of net in testing mode
-        int myTestingHeight;
+        int myTestingHeight = 0;
     };
 
     /// @brief struct used to group all variables related with common checkable Buttons

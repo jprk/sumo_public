@@ -22,7 +22,7 @@ with open("failTests.txt", "r") as fp:
 with open("failTests.txt", "w") as fp:
     # write header
     fp.write("-tp appdata=netedit.gui\n")
-    # iterate over lines
+# iterate over lines
     for line in lines:
         lineStrip = line.strip("\n")
         if (("Test\t" not in lineStrip) and
@@ -49,8 +49,8 @@ with open("failTests.txt", "w") as fp:
             lineStrip = lineStrip.replace(" ", "/")
             if ((len(lineStrip) > 0) and (lineStrip[-1] == '/')):
                 lineStrip = lineStrip[:-1]
-            # write line
+        # write line
             fp.write(lineStrip)
-            # check if write \n
+        # check if write \n
             if (len(lineStrip) > 0):
                 fp.write("\n")

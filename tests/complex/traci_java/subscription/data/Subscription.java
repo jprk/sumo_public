@@ -27,6 +27,11 @@ import java.util.TreeMap;
 public class Subscription {
 
     public static void main(String[] args) {
+        if (System.getProperty("os.name").startsWith("Windows") && Simulation.class.toString().contains("libsumo")) {
+            System.loadLibrary("iconv-2");
+            System.loadLibrary("intl-8");
+            System.loadLibrary("proj_9_0");
+        }
         System.loadLibrary("libtracijni");
         String sumo_bin = "sumo";
         String config_file = "data/config.sumocfg";
@@ -55,17 +60,14 @@ public class Subscription {
                 TraCIStringList vehIDs = TraCIStringList.cast(entry.getValue());
                 for (String vehID : vehIDs.getValue()) {
                     System.out.println("Subscription Departed vehicles: " + vehID);
-                    Vehicle.subscribe(vehID, new IntVector(new int[] { libtraci.getVAR_POSITION(), libtraci.getVAR_SPEED() }));
+                    Vehicle.subscribe(vehID, new IntVector(new int[] { Constants.VAR_POSITION, Constants.VAR_SPEED }));
                 }
             }
             TreeMap<String, TraCIResults> vsRes = sortedMap(Vehicle.getAllSubscriptionResults());
             for (Map.Entry<String, TraCIResults> vehEntry : vsRes.entrySet()) {
                 System.out.println("Vehicle Subscription: id=" + vehEntry.getKey());
-                TreeMap<Integer, TraCIResult> vehResults = sortedMap(vehEntry.getValue());
-                for (Map.Entry<Integer, TraCIResult> entry : vehResults.entrySet()) {
-                    TraCIResult sR = entry.getValue();
-                    System.out.println("   variable id: " + entry.getKey() + "  value: " + sR.getString());
-                }
+                vehEntry.getValue().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> System.out.println("   variable id: " + entry.getKey() + "  value: " + entry.getValue().getString()));
             }
         }
 

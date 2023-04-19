@@ -34,33 +34,33 @@ netedit.additionalMode()
 # select calibrator
 netedit.changeElement("calibrator")
 
+# change center view
+netedit.changeDefaultBoolValue(netedit.attrs.calibrator.create.center)
+
 # change output with an invalid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.jamTreshold, "dummyJam")
 
 # create calibrator with a valid parameter in other lane
-netedit.leftClick(referencePosition, 240, 250)
+netedit.leftClick(referencePosition, 312, 250)
 
 # change output with an invalid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.jamTreshold, "-5")
 
 # create calibrator with a valid parameter in other lane
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 322, 250)
 
 # change output with an valid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.jamTreshold, "12.3")
 
 # create calibrator with a valid parameter in other lane
-netedit.leftClick(referencePosition, 260, 250)
+netedit.leftClick(referencePosition, 332, 250)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

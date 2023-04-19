@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-01-04 11:28:03 by Eclipse SUMO sumo Version v1_15_0+1277-3febad6e597
+<!-- generated on 2023-03-27 22:53:26 by Eclipse SUMO sumo Version v1_16_0+1707-833d692
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -70,6 +70,7 @@
         <tripinfo-output value="" synonymes="tripinfo" type="FILE" help="Save single vehicle trip info into FILE"/>
         <tripinfo-output.write-unfinished value="false" type="BOOL" help="Write tripinfo output for vehicles which have not arrived at simulation end"/>
         <tripinfo-output.write-undeparted value="false" type="BOOL" help="Write tripinfo output for vehicles which have not departed at simulation end because of depart delay"/>
+        <personinfo-output value="" synonymes="personinfo" type="FILE" help="Save personinfo and containerinfo to separate FILE"/>
         <vehroute-output value="" synonymes="vehroutes" type="FILE" help="Save single vehicle route info into FILE"/>
         <vehroute-output.exit-times value="false" synonymes="vehroutes.exit-times" type="BOOL" help="Write the exit times for all edges"/>
         <vehroute-output.last-route value="false" synonymes="vehroutes.last-route" type="BOOL" help="Write the last route only"/>
@@ -164,11 +165,12 @@
         <default.speeddev value="-1" type="FLOAT" help="Select default speed deviation. A negative value implies vClass specific defaults (0.1 for the default passenger class"/>
         <default.emergencydecel value="default" type="STR" help="Select default emergencyDecel value among (&apos;decel&apos;, &apos;default&apos;, FLOAT) which sets the value either to the same as the deceleration value, a vClass-class specific default or the given FLOAT in m/s^2"/>
         <overhead-wire.solver value="true" type="BOOL" help="Use Kirchhoff&apos;s laws for solving overhead wire circuit"/>
-        <overhead-wire.recuperation value="true" type="BOOL" help="Enable recuperation from the vehicle equipped with elecHybrid device into the ovrehead wire."/>
+        <overhead-wire.recuperation value="true" type="BOOL" help="Enable recuperation from the vehicle equipped with elecHybrid device into the overhead wire."/>
         <overhead-wire.substation-current-limits value="true" type="BOOL" help="Enable current limits of traction substation during solving the overhead wire electrical circuit."/>
         <emergencydecel.warning-threshold value="1" type="FLOAT" help="Sets the fraction of emergency decel capability that must be used to trigger a warning."/>
         <parking.maneuver value="false" type="BOOL" help="Whether parking simulation includes maneuvering time and associated lane blocking"/>
         <use-stop-ended value="false" type="BOOL" help="Override stop until times with stop ended times when given"/>
+        <use-stop-started value="false" type="BOOL" help="Override stop arrival times with stop started times when given"/>
         <pedestrian.model value="striping" type="STR" help="Select among pedestrian models [&apos;nonInteracting&apos;, &apos;striping&apos;, &apos;remote&apos;]"/>
         <pedestrian.striping.stripe-width value="0.64" type="FLOAT" help="Width of parallel stripes for segmenting a sidewalk (meters) for use with model &apos;striping&apos;"/>
         <pedestrian.striping.dawdling value="0.2" type="FLOAT" help="Factor for random slow-downs [0,1] for use with model &apos;striping&apos;"/>
@@ -178,6 +180,7 @@
         <pedestrian.striping.jamtime.narrow value="1" type="TIME" help="Time in seconds after which pedestrians start squeezing through a jam while on a narrow lane when using model &apos;striping&apos;"/>
         <pedestrian.striping.reserve-oncoming value="0" type="FLOAT" help="Fraction of stripes to reserve for oncoming pedestrians"/>
         <pedestrian.striping.reserve-oncoming.junctions value="0.34" type="FLOAT" help="Fraction of stripes to reserve for oncoming pedestrians on crossings and walkingareas"/>
+        <pedestrian.striping.reserve-oncoming.max value="1.28" type="FLOAT" help="Maximum width in m to reserve for oncoming pedestrians"/>
         <pedestrian.striping.legacy-departposlat value="false" type="BOOL" help="Interpret departPosLat for walks in legacy style"/>
         <pedestrian.striping.walkingarea-detail value="4" type="INT" help="Generate INT intermediate points to smooth out lanes within the walkingarea"/>
         <pedestrian.remote.address value="localhost:9000" type="STR" help="The address (host:port) of the external simulation"/>
@@ -336,6 +339,7 @@
         <device.driverstate.errorNoiseIntensityCoefficient value="0.2" type="FLOAT" help="Noise intensity driving the error process."/>
         <device.driverstate.speedDifferenceErrorCoefficient value="0.15" type="FLOAT" help="General scaling coefficient for applying the error to the perceived speed difference (error also scales with distance)."/>
         <device.driverstate.headwayErrorCoefficient value="0.75" type="FLOAT" help="General scaling coefficient for applying the error to the perceived distance (error also scales with distance)."/>
+        <device.driverstate.freeSpeedErrorCoefficient value="0" type="FLOAT" help="General scaling coefficient for applying the error to the vehicle&apos;s own speed when driving without a leader (error also scales with own speed)."/>
         <device.driverstate.speedDifferenceChangePerceptionThreshold value="0.1" type="FLOAT" help="Base threshold for recognizing changes in the speed difference (threshold also scales with distance)."/>
         <device.driverstate.headwayChangePerceptionThreshold value="0.1" type="FLOAT" help="Base threshold for recognizing changes in the headway (threshold also scales with distance)."/>
         <device.driverstate.minAwareness value="0.1" type="FLOAT" help="Minimal admissible value for the driver&apos;s awareness."/>
@@ -449,13 +453,13 @@
         <delay value="0" synonymes="d" type="FLOAT" help="Use FLOAT in ms as delay between simulation steps"/>
         <breakpoints value="" synonymes="B" type="STR[]" help="Use TIME[] as times when the simulation should halt"/>
         <edgedata-files value="" synonymes="data-files" type="FILE" help="Load edge/lane weights for visualization from FILE"/>
+        <alternative-net-file value="" synonymes="N" type="FILE" help="Load a secondary road network for abstract visualization from FILE"/>
         <demo value="false" synonymes="D" type="BOOL" help="Restart the simulation after ending (demo mode)"/>
         <disable-textures value="false" synonymes="T" type="BOOL" help="Do not load background pictures"/>
         <registry-viewport value="false" type="BOOL" help="Load current viewport from registry"/>
         <window-size value="" type="STR[]" help="Create initial window with the given x,y size"/>
         <window-pos value="" type="STR[]" help="Create initial window at the given x,y position"/>
         <tracker-interval value="1" type="TIME" help="The aggregation period for value tracker windows"/>
-        <osg-view value="false" type="BOOL" help="Start with an OpenSceneGraph view instead of the regular 2D view"/>
         <gui-testing value="false" type="BOOL" help="Enable overlay for screen recognition"/>
         <gui-testing-debug value="false" type="BOOL" help="Enable output messages during GUI-Testing"/>
         <gui-testing.setting-output value="" type="FILE" help="Save gui settings in the given settings output file"/>

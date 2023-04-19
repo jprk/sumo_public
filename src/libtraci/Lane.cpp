@@ -18,6 +18,7 @@
 /// @author  Michael Behrisch
 /// @author  Robert Hilbrich
 /// @author  Leonhard Luecken
+/// @author  Mirko Barthauer
 /// @date    30.05.2012
 ///
 // C++ TraCI client API implementation
@@ -82,6 +83,7 @@ Lane::getLinkNumber(const std::string& laneID) {
 
 std::vector<libsumo::TraCIConnection>
 Lane::getLinks(const std::string& laneID) {
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     std::vector<libsumo::TraCIConnection> ret;
     tcpip::Storage& sto = Dom::get(libsumo::LANE_LINKS, laneID);
     sto.readUnsignedByte();
@@ -137,6 +139,14 @@ Lane::getAllowed(const std::string& laneID) {
 std::vector<std::string>
 Lane::getDisallowed(const std::string& laneID) {
     return Dom::getStringVector(libsumo::LANE_DISALLOWED, laneID); // negation yields disallowed
+}
+
+
+std::vector<std::string>
+Lane::getChangePermissions(const std::string& laneID, const int direction) {
+    tcpip::Storage content;
+    StoHelp::writeTypedByte(content, direction);
+    return Dom::getStringVector(libsumo::LANE_CHANGES, laneID, &content);
 }
 
 
@@ -265,14 +275,16 @@ Lane::getInternalFoes(const std::string& laneID) {
     //return Dom::getFoes(laneID, "");
 }
 
+
 const std::vector<std::string>
 Lane::getPendingVehicles(const std::string& laneID) {
     return Dom::getStringVector(libsumo::VAR_PENDING_VEHICLES, laneID);
 }
 
+
 void
 Lane::setAllowed(const std::string& laneID, std::string allowedClass) {
-    Dom::setString(libsumo::LANE_ALLOWED, laneID, allowedClass);
+    setAllowed(laneID, std::vector<std::string>({allowedClass}));
 }
 
 
@@ -291,6 +303,16 @@ Lane::setDisallowed(const std::string& laneID, std::string disallowedClasses) {
 void
 Lane::setDisallowed(const std::string& laneID, std::vector<std::string> disallowedClasses) {
     Dom::setStringVector(libsumo::LANE_DISALLOWED, laneID, disallowedClasses);
+}
+
+
+void
+Lane::setChangePermissions(const std::string& laneID, std::vector<std::string> allowedClasses, const int direction) {
+    tcpip::Storage content;
+    StoHelp::writeCompound(content, 2);
+    StoHelp::writeTypedStringList(content, allowedClasses);
+    StoHelp::writeTypedByte(content, direction);
+    Dom::set(libsumo::LANE_CHANGES, laneID, &content);
 }
 
 

@@ -82,24 +82,19 @@ StringBijection<int>::Entry NIImporter_MATSim::matsimAttrs[] = {
 // ---------------------------------------------------------------------------
 void
 NIImporter_MATSim::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
-    // check whether the option is set (properly)
-    if (!oc.isSet("matsim-files")) {
+    // check whether the option is set properly and all files exist
+    if (!oc.isUsableFileList("matsim-files")) {
         return;
     }
     /* Parse file(s)
      * Each file is parsed twice: first for nodes, second for edges. */
-    std::vector<std::string> files = oc.getStringVector("matsim-files");
+    const std::vector<std::string> files = oc.getStringVector("matsim-files");
     // load nodes, first
     NodesHandler nodesHandler(nb.getNodeCont());
-    for (std::vector<std::string>::const_iterator file = files.begin(); file != files.end(); ++file) {
-        // nodes
-        if (!FileHelpers::isReadable(*file)) {
-            WRITE_ERROR("Could not open matsim-file '" + *file + "'.");
-            return;
-        }
-        nodesHandler.setFileName(*file);
-        PROGRESS_BEGIN_MESSAGE("Parsing nodes from matsim-file '" + *file + "'");
-        if (!XMLSubSys::runParser(nodesHandler, *file)) {
+    for (const std::string& file : files) {
+        nodesHandler.setFileName(file);
+        PROGRESS_BEGIN_MESSAGE("Parsing nodes from matsim-file '" + file + "'");
+        if (!XMLSubSys::runParser(nodesHandler, file, false, false, true)) {
             return;
         }
         PROGRESS_DONE_MESSAGE();
@@ -107,11 +102,10 @@ NIImporter_MATSim::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
     // load edges, then
     EdgesHandler edgesHandler(nb.getNodeCont(), nb.getEdgeCont(), oc.getBool("matsim.keep-length"),
                               oc.getBool("matsim.lanes-from-capacity"), NBCapacity2Lanes(oc.getFloat("lanes-from-capacity.norm")));
-    for (std::vector<std::string>::const_iterator file = files.begin(); file != files.end(); ++file) {
-        // edges
-        edgesHandler.setFileName(*file);
-        PROGRESS_BEGIN_MESSAGE("Parsing edges from matsim-file '" + *file + "'");
-        XMLSubSys::runParser(edgesHandler, *file);
+    for (const std::string& file : files) {
+        edgesHandler.setFileName(file);
+        PROGRESS_BEGIN_MESSAGE("Parsing edges from matsim-file '" + file + "'");
+        XMLSubSys::runParser(edgesHandler, file, false, false, true);
         PROGRESS_DONE_MESSAGE();
     }
 }
@@ -145,12 +139,12 @@ NIImporter_MATSim::NodesHandler::myStartElement(int element, const SUMOSAXAttrib
     }
     Position pos(x, y);
     if (!NBNetBuilder::transformCoordinate(pos)) {
-        WRITE_ERROR("Unable to project coordinates for node '" + id + "'.");
+        WRITE_ERRORF(TL("Unable to project coordinates for node '%'."), id);
     }
     NBNode* node = new NBNode(id, pos);
     if (!myNodeCont.insert(node)) {
         delete node;
-        WRITE_ERROR("Could not add node '" + id + "'. Probably declared twice.");
+        WRITE_ERRORF(TL("Could not add node '%'. Probably declared twice."), id);
     }
 }
 
@@ -183,7 +177,7 @@ NIImporter_MATSim::EdgesHandler::insertEdge(const std::string& id, NBNode* fromN
     }
     if (!myEdgeCont.insert(edge)) {
         delete edge;
-        WRITE_ERROR("Could not add edge '" + id + "'. Probably declared twice.");
+        WRITE_ERRORF(TL("Could not add edge '%'. Probably declared twice."), id);
     }
 }
 
@@ -237,10 +231,10 @@ NIImporter_MATSim::EdgesHandler::myStartElement(int element,
     NBNode* fromNode = myNodeCont.retrieve(fromNodeID);
     NBNode* toNode = myNodeCont.retrieve(toNodeID);
     if (fromNode == nullptr) {
-        WRITE_ERROR("Could not find from-node for edge '" + id + "'.");
+        WRITE_ERRORF(TL("Could not find from-node for edge '%'."), id);
     }
     if (toNode == nullptr) {
-        WRITE_ERROR("Could not find to-node for edge '" + id + "'.");
+        WRITE_ERRORF(TL("Could not find to-node for edge '%'."), id);
     }
     if (fromNode == nullptr || toNode == nullptr) {
         return;
@@ -256,7 +250,7 @@ NIImporter_MATSim::EdgesHandler::myStartElement(int element,
             toNode = intermediate;
         } else {
             delete intermediate;
-            WRITE_ERROR("Could not add intermediate node to split loop edge '" + id + "'.");
+            WRITE_ERRORF(TL("Could not add intermediate node to split loop edge '%'."), id);
         }
     }
     insertEdge(id, fromNode, toNode, freeSpeed, (int)(permLanes + 0.5), capacity, length);

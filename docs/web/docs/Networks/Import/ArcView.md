@@ -53,6 +53,8 @@ shape-files**
 | Road class, used to determine the priority  | n (see below)  | **FUNC_CLASS** 	  |   |
 | Allowed speed on a road  | n (see below)  | **SPEED** or **speed**  |  **--shapefile.speed <FIELD_NAME\>**  |
 | Number of lanes a road has  | n (see below)  | **NOLANES**, **nolanes** or **rnol**  | **--shapefile.laneNumber <FIELD_NAME\>**  |
+| Total directional road width  | n  |  | **--shapefile.width <FIELD_NAME\>**  |
+| Road length  | n (see below)  |   | **--shapefile.length <FIELD_NAME\>**  |
 | Direction of travel ("B": both, "F": forward, "T": backward)  | n  | **DIR_TRAVEL**  |   |
 
 If being familiar with NavTeq, you may have noticed that the defaults
@@ -69,6 +71,8 @@ types or the explicit values, it can be catched using **--shapefile.use-defaults
 the default [netconvert](../../netconvert.md) values are used. Besides
 this, it is possible to load own [connection
 descriptions](../../Networks/PlainXML.md#connection_descriptions).
+
+If edge length is not specified, the length is computed based on the provided geometry.
 
 !!! note
     One can insert own attributes into the database using a GIS. This means, one can also insert own fields for the number of lanes, priority, or allowed speed, naming them as described above.
@@ -181,7 +185,7 @@ Ok, let's solve these problems one after another.
   have to be translated into XML. The generated file (*frida.typ.xml*)
   looks like this:
 
-```
+```xml
 <types>
   <!-- "noch nicht attributiert" (= not yet attributed) -->
   <type id="0"  priority="1" numLanes="1" speed="13.89"/>

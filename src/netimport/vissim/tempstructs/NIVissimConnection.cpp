@@ -238,14 +238,14 @@ NIVissimConnection::buildEdgeConnections(NBEdgeCont& ec) {
     NBEdge *toEdge = ec.retrievePossiblySplit(toString(getToEdgeID()), toString(getFromEdgeID()), false);
     */
     if (fromEdge == nullptr || toEdge == nullptr) {
-        WRITE_WARNING("Could not build connection between '" + toString(getFromEdgeID()) + "' and '" + toString(getToEdgeID()) + "'.");
+        WRITE_WARNINGF(TL("Could not build connection between '%' and '%'."), toString(getFromEdgeID()), toString(getToEdgeID()));
         return 1; // !!! actually not 1
     }
     recheckLanes(fromEdge, toEdge);
     const std::vector<int>& fromLanes = getFromLanes();
     const std::vector<int>& toLanes = getToLanes();
     if (fromLanes.size() != toLanes.size()) {
-        WRITE_WARNING("Lane sizes differ for connection '" + toString(getID()) + "'.");
+        WRITE_WARNINGF(TL("Lane sizes differ for connection '%'."), toString(getID()));
     } else {
         for (int index = 0; index < (int)fromLanes.size(); ++index) {
             if (fromEdge->getNumLanes() <= fromLanes[index]) {

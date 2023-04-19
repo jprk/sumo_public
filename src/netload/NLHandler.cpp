@@ -75,7 +75,7 @@ NLHandler::NLHandler(const std::string& file, MSNet& net,
     myHaveSeenNeighs(false),
     myHaveSeenAdditionalSpeedRestrictions(false),
     myHaveSeenMesoEdgeType(false),
-    myNetworkVersion(0),
+    myNetworkVersion(0, 0),
     myNetIsLoaded(false) {
 }
 
@@ -92,7 +92,7 @@ NLHandler::myStartElement(int element,
                 bool ok;
                 MSGlobals::gLefthand = attrs.getOpt<bool>(SUMO_ATTR_LEFTHAND, nullptr, ok, false);
                 myHaveJunctionHigherSpeeds = attrs.getOpt<bool>(SUMO_ATTR_HIGHER_SPEED, nullptr, ok, false);
-                myNetworkVersion = attrs.get<double>(SUMO_ATTR_VERSION, nullptr, ok, false);
+                myNetworkVersion = StringUtils::toVersion(attrs.get<std::string>(SUMO_ATTR_VERSION, nullptr, ok, false));
                 break;
             }
             case SUMO_TAG_EDGE:
@@ -125,6 +125,9 @@ NLHandler::myStartElement(int element,
                 break;
             case SUMO_TAG_CONNECTION:
                 addConnection(attrs);
+                break;
+            case SUMO_TAG_CONFLICT:
+                addConflict(attrs);
                 break;
             case SUMO_TAG_TLLOGIC:
                 initTrafficLightLogic(attrs);
@@ -385,11 +388,11 @@ NLHandler::myEndElement(int element) {
                 MSJunction* from = myJunctionControlBuilder.retrieve(it->second.first);
                 MSJunction* to = myJunctionControlBuilder.retrieve(it->second.second);
                 if (from == nullptr) {
-                    WRITE_ERROR("Unknown from-node '" + it->second.first + "' for edge '" + it->first + "'.");
+                    WRITE_ERRORF(TL("Unknown from-node '%' for edge '%'."), it->second.first, it->first);
                     return;
                 }
                 if (to == nullptr) {
-                    WRITE_ERROR("Unknown to-node '" + it->second.second + "' for edge '" + it->first + "'.");
+                    WRITE_ERRORF(TL("Unknown to-node '%' for edge '%'."), it->second.second, it->first);
                     return;
                 }
                 if (edge != nullptr) {
@@ -529,7 +532,7 @@ NLHandler::addLane(const SUMOSAXAttributes& attrs) {
     const bool isRampAccel = attrs.getOpt<bool>(SUMO_ATTR_ACCELERATION, id.c_str(), ok, false);
     const std::string type = attrs.getOpt<std::string>(SUMO_ATTR_TYPE, id.c_str(), ok, "");
     if (shape.size() < 2) {
-        WRITE_ERROR("Shape of lane '" + id + "' is broken.\n Can not build according edge.");
+        WRITE_ERRORF(TL("Shape of lane '%' is broken.\n Can not build according edge."), id);
         myCurrentIsBroken = true;
         return;
     }
@@ -551,7 +554,7 @@ NLHandler::addLane(const SUMOSAXAttributes& attrs) {
             // insert the lane into the lane-dictionary, checking
             if (!MSLane::dictionary(id, lane)) {
                 delete lane;
-                WRITE_ERROR("Another lane with the id '" + id + "' exists.");
+                WRITE_ERRORF(TL("Another lane with the id '%' exists."), id);
                 myCurrentIsBroken = true;
                 myLastParameterised.push_back(nullptr);
             } else {
@@ -621,7 +624,7 @@ NLHandler::parseLanes(const std::string& junctionID,
             continue;
         }
         if (lane == nullptr) {
-            WRITE_ERROR("An unknown lane ('" + laneID + "') was tried to be set as incoming to junction '" + junctionID + "'.");
+            WRITE_ERRORF(TL("An unknown lane ('%') was tried to be set as incoming to junction '%'."), laneID, junctionID);
             ok = false;
             continue;
         }
@@ -775,11 +778,11 @@ NLHandler::initTrafficLightLogic(const SUMOSAXAttributes& attrs) {
         if (SUMOXMLDefinitions::TrafficLightTypes.hasString(typeS)) {
             type = SUMOXMLDefinitions::TrafficLightTypes.get(typeS);
         } else {
-            WRITE_ERROR("Traffic light '" + id + "' has unknown type '" + typeS + "'.");
+            WRITE_ERRORF(TL("Traffic light '%' has unknown type '%'."), id, typeS);
         }
         if (MSGlobals::gUseMesoSim && (type == TrafficLightType::ACTUATED || type == TrafficLightType::NEMA)) {
             if (!myHaveWarnedAboutInvalidTLType) {
-                WRITE_WARNING("Traffic light type '" + toString(type) + "' cannot be used in mesoscopic simulation. Using '" + toString(TrafficLightType::STATIC) + "' as fallback.");
+                WRITE_WARNINGF(TL("Traffic light type '%' cannot be used in mesoscopic simulation. Using '%' as fallback."), toString(type), toString(TrafficLightType::STATIC));
                 myHaveWarnedAboutInvalidTLType = true;
             }
             type = TrafficLightType::STATIC;
@@ -883,7 +886,7 @@ NLHandler::addCondition(const SUMOSAXAttributes& attrs) {
     const std::string id = attrs.get<std::string>(SUMO_ATTR_ID, nullptr, ok);
     const std::string value = attrs.get<std::string>(SUMO_ATTR_VALUE, id.c_str(), ok);
     if (!myJunctionControlBuilder.addCondition(id, value)) {
-        WRITE_ERROR("Duplicate condition '" + id + "' in tlLogic '" + myJunctionControlBuilder.getActiveKey() + "'");
+        WRITE_ERRORF(TL("Duplicate condition '%' in tlLogic '%'"), id, myJunctionControlBuilder.getActiveKey());
     }
 }
 
@@ -936,7 +939,7 @@ NLHandler::addE1Detector(const SUMOSAXAttributes& attrs) {
         if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
             detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
         } else {
-            WRITE_ERROR("Invalid person mode '" + mode + "' in E1 detector definition '" + id + "'");
+            WRITE_ERRORF(TL("Invalid person mode '%' in E1 detector definition '%'"), mode, id);
             myCurrentIsBroken = true;
             return;
         }
@@ -1055,7 +1058,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
     const bool showDetector = attrs.getOpt<bool>(SUMO_ATTR_SHOW_DETECTOR, id.c_str(), ok, true);
     const std::string contStr = attrs.getOpt<std::string>(SUMO_ATTR_CONT, id.c_str(), ok, "");
     if (contStr != "") {
-        WRITE_WARNING("Ignoring deprecated argument 'cont' for E2 detector '" + id + "'");
+        WRITE_WARNINGF(TL("Ignoring deprecated argument 'cont' for E2 detector '%'"), id);
     }
     std::string lane = attrs.getOpt<std::string>(SUMO_ATTR_LANE, id.c_str(), ok, "");
     const std::string file = attrs.get<std::string>(SUMO_ATTR_FILE, id.c_str(), ok);
@@ -1071,7 +1074,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
         if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
             detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
         } else {
-            WRITE_ERROR("Invalid person mode '" + mode + "' in E2 detector definition '" + id + "'");
+            WRITE_ERRORF(TL("Invalid person mode '%' in E2 detector definition '%'"), mode, id);
             myCurrentIsBroken = true;
             return;
         }
@@ -1125,12 +1128,12 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
         if (!posGiven) {
             // assuming start pos == lane start
             position = 0;
-            WRITE_WARNING("Missing argument 'pos' for E2Detector '" + id + "'. Assuming detector start == lane start of lane '" + clanes[0]->getID() + "'.");
+            WRITE_WARNINGF(TL("Missing argument 'pos' for E2Detector '%'. Assuming detector start == lane start of lane '%'."), id, clanes[0]->getID());
         }
         if (!endPosGiven) {
             // assuming end pos == lane end
             endPosition = clanes[clanes.size() - 1]->getLength();
-            WRITE_WARNING("Missing argument 'endPos' for E2Detector '" + id + "'. Assuming detector end == lane end of lane '" + clanes[clanes.size() - 1]->getID() + "'.");
+            WRITE_WARNINGF(TL("Missing argument 'endPos' for E2Detector '%'. Assuming detector end == lane end of lane '%'."), id, clanes[clanes.size() - 1]->getID());
         }
 
     } else {
@@ -1199,7 +1202,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
             throw InvalidArgument("The detector '" + id + "' refers to an unknown lsa '" + lsaid + "'.");
         }
         if (period != -1) {
-            WRITE_WARNING("Ignoring argument 'period' for E2Detector '" + id + "' since argument 'tl' was given.");
+            WRITE_WARNINGF(TL("Ignoring argument 'period' for E2Detector '%' since argument 'tl' was given."), id);
             period = -1;
         }
     }
@@ -1256,7 +1259,7 @@ NLHandler::beginE3Detector(const SUMOSAXAttributes& attrs) {
         if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
             detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
         } else {
-            WRITE_ERROR("Invalid person mode '" + mode + "' in E3 detector definition '" + id + "'");
+            WRITE_ERRORF(TL("Invalid person mode '%' in E3 detector definition '%'"), mode, id);
             myCurrentIsBroken = true;
             return;
         }
@@ -1335,7 +1338,7 @@ NLHandler::addEdgeLaneMeanData(const SUMOSAXAttributes& attrs, int objecttype) {
         if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
             detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
         } else {
-            WRITE_ERROR("Invalid person mode '" + mode + "' in edgeData definition '" + id + "'");
+            WRITE_ERRORF(TL("Invalid person mode '%' in edgeData definition '%'"), mode, id);
             return;
         }
     }
@@ -1359,7 +1362,7 @@ NLHandler::addEdgeLaneMeanData(const SUMOSAXAttributes& attrs, int objecttype) {
     for (const std::string& edgeID : edgeIDs) {
         MSEdge* edge = MSEdge::dictionary(edgeID);
         if (edge == nullptr) {
-            WRITE_ERROR("Unknown edge '" + edgeID + "' in edgeData definition '" + id + "'");
+            WRITE_ERRORF(TL("Unknown edge '%' in edgeData definition '%'"), edgeID, id);
             return;
         }
         edges.push_back(edge);
@@ -1394,7 +1397,7 @@ NLHandler::addConnection(const SUMOSAXAttributes& attrs) {
         return;
     }
 
-    MSLink* link = nullptr;
+    myCurrentLink = nullptr;
     try {
         const int fromLaneIdx = attrs.get<int>(SUMO_ATTR_FROM_LANE, nullptr, ok);
         const int toLaneIdx = attrs.get<int>(SUMO_ATTR_TO_LANE, nullptr, ok);
@@ -1408,18 +1411,18 @@ NLHandler::addConnection(const SUMOSAXAttributes& attrs) {
 
         MSEdge* from = MSEdge::dictionaryHint(fromID, myPreviousEdgeIdx);
         if (from == nullptr) {
-            WRITE_ERROR("Unknown from-edge '" + fromID + "' in connection.");
+            WRITE_ERRORF(TL("Unknown from-edge '%' in connection."), fromID);
             return;
         }
         myPreviousEdgeIdx = from->getNumericalID();
         MSEdge* to = MSEdge::dictionary(toID);
         if (to == nullptr) {
-            WRITE_ERROR("Unknown to-edge '" + toID + "' in connection.");
+            WRITE_ERRORF(TL("Unknown to-edge '%' in connection."), toID);
             return;
         }
         if (fromLaneIdx < 0 || fromLaneIdx >= (int)from->getLanes().size() ||
                 toLaneIdx < 0 || toLaneIdx >= (int)to->getLanes().size()) {
-            WRITE_ERROR("Invalid lane index in connection from '" + from->getID() + "' to '" + to->getID() + "'.");
+            WRITE_ERRORF(TL("Invalid lane index in connection from '%' to '%'."), from->getID(), to->getID());
             return;
         }
         MSLane* fromLane = from->getLanes()[fromLaneIdx];
@@ -1460,26 +1463,64 @@ NLHandler::addConnection(const SUMOSAXAttributes& attrs) {
         } else {
             length = fromLane->getShape()[-1].distanceTo(toLane->getShape()[0]);
         }
-        link = new MSLink(fromLane, toLane, via, dir, state, length, foeVisibilityDistance, keepClear, logic, tlLinkIdx, indirect);
+        myCurrentLink = new MSLink(fromLane, toLane, via, dir, state, length, foeVisibilityDistance, keepClear, logic, tlLinkIdx, indirect);
         if (via != nullptr) {
-            via->addIncomingLane(fromLane, link);
+            via->addIncomingLane(fromLane, myCurrentLink);
         } else {
-            toLane->addIncomingLane(fromLane, link);
+            toLane->addIncomingLane(fromLane, myCurrentLink);
         }
-        toLane->addApproachingLane(fromLane, myNetworkVersion < 0.25);
+        toLane->addApproachingLane(fromLane, myNetworkVersion < MMVersion(0, 25));
 
         // if a traffic light is responsible for it, inform the traffic light
         // check whether this link is controlled by a traffic light
         // we can not reuse logic here because it might be an inactive one
         if (tlID != "") {
-            myJunctionControlBuilder.getTLLogic(tlID).addLink(link, fromLane, tlLinkIdx);
+            myJunctionControlBuilder.getTLLogic(tlID).addLink(myCurrentLink, fromLane, tlLinkIdx);
         }
         // add the link
-        fromLane->addLink(link);
+        fromLane->addLink(myCurrentLink);
 
     } catch (InvalidArgument& e) {
         WRITE_ERROR(e.what());
     }
+}
+
+
+void
+NLHandler::addConflict(const SUMOSAXAttributes& attrs) {
+    if (myCurrentLink == nullptr) {
+        throw InvalidArgument(toString(SUMO_TAG_CONFLICT) + " must occur within a " + toString(SUMO_TAG_CONNECTION) + " element");
+    }
+    if (!MSGlobals::gUsingInternalLanes) {
+        return;
+    }
+    bool ok = true;
+    const std::string fromID = attrs.get<std::string>(SUMO_ATTR_FROM, nullptr, ok);
+    const std::string toID = attrs.get<std::string>(SUMO_ATTR_TO, nullptr, ok);
+    const int fromLaneIdx = attrs.get<int>(SUMO_ATTR_FROM_LANE, nullptr, ok);
+    const int toLaneIdx = attrs.get<int>(SUMO_ATTR_TO_LANE, nullptr, ok);
+    double startPos = attrs.get<double>(SUMO_ATTR_STARTPOS, nullptr, ok);
+    double endPos = attrs.get<double>(SUMO_ATTR_ENDPOS, nullptr, ok);
+    MSEdge* from = MSEdge::dictionary(fromID);
+    if (from == nullptr) {
+        WRITE_ERRORF(TL("Unknown from-edge '%' in conflict."), fromID);
+        return;
+    }
+    MSEdge* to = MSEdge::dictionary(toID);
+    if (to == nullptr) {
+        WRITE_ERRORF(TL("Unknown to-edge '%' in connflict."), toID);
+        return;
+    }
+    if (fromLaneIdx < 0 || fromLaneIdx >= (int)from->getLanes().size() ||
+            toLaneIdx < 0 || toLaneIdx >= (int)to->getLanes().size()) {
+        WRITE_ERRORF(TL("Invalid lane index in conflict with '%' to '%'."), from->getID(), to->getID());
+        return;
+    }
+    MSLane* fromLane = from->getLanes()[fromLaneIdx];
+    MSLane* toLane = to->getLanes()[toLaneIdx];
+    assert(fromLane);
+    assert(toLane);
+    myCurrentLink->addCustomConflict(fromLane, toLane, startPos, endPos);
 }
 
 
@@ -1595,7 +1636,7 @@ NLHandler::addDistrict(const SUMOSAXAttributes& attrs) {
             const bool fill = attrs.getOpt<bool>(SUMO_ATTR_FILL, myCurrentDistrictID.c_str(), ok, false);
             if (shape.size() != 0) {
                 if (!myNet.getShapeContainer().addPolygon(myCurrentDistrictID, "taz", color, 0, 0, "", false, shape, false, fill, 1.0, false, name)) {
-                    WRITE_WARNING("Skipping visualization of taz '" + myCurrentDistrictID + "', polygon already exists.");
+                    WRITE_WARNINGF(TL("Skipping visualization of taz '%', polygon already exists."), myCurrentDistrictID);
                 } else {
                     myLastParameterised.push_back(myNet.getShapeContainer().getPolygons().get(myCurrentDistrictID));
                     myCurrentIsBroken = false;
@@ -1626,7 +1667,7 @@ NLHandler::addDistrictEdge(const SUMOSAXAttributes& attrs, bool isSource) {
             succ->addSuccessor(MSEdge::dictionary(myCurrentDistrictID + "-sink"));
         }
     } else {
-        WRITE_ERROR("At district '" + myCurrentDistrictID + "': succeeding edge '" + id + "' does not exist.");
+        WRITE_ERRORF(TL("At district '%': succeeding edge '%' does not exist."), myCurrentDistrictID, id);
     }
 }
 
@@ -1639,7 +1680,7 @@ NLHandler::addRoundabout(const SUMOSAXAttributes& attrs) {
         for (const std::string& eID : edgeIDs) {
             MSEdge* edge = MSEdge::dictionary(eID);
             if (edge == nullptr) {
-                WRITE_ERROR("Unknown edge '" + eID + "' in roundabout");
+                WRITE_ERRORF(TL("Unknown edge '%' in roundabout"), eID);
             } else {
                 edge->markAsRoundabout();
             }
@@ -1700,7 +1741,7 @@ Position
 NLShapeHandler::getLanePos(const std::string& poiID, const std::string& laneID, double lanePos, bool friendlyPos, double lanePosLat) {
     MSLane* lane = MSLane::dictionary(laneID);
     if (lane == nullptr) {
-        WRITE_ERROR("Lane '" + laneID + "' to place poi '" + poiID + "' on is not known.");
+        WRITE_ERRORF(TL("Lane '%' to place poi '%' on is not known."), laneID, poiID);
         return Position::INVALID;
     }
     if (lanePos < 0) {
@@ -1713,7 +1754,7 @@ NLShapeHandler::getLanePos(const std::string& poiID, const std::string& laneID, 
         lanePos = lane->getLength();
     }
     if (lanePos < 0 || lanePos > lane->getLength()) {
-        WRITE_WARNING("lane position " + toString(lanePos) + " for poi '" + poiID + "' is not valid.");
+        WRITE_WARNINGF(TL("lane position % for poi '%' is not valid."), toString(lanePos), poiID);
     }
     return lane->geometryPositionAtOffset(lanePos, -lanePosLat);
 }

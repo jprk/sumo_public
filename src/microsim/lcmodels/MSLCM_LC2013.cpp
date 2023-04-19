@@ -275,8 +275,8 @@ MSLCM_LC2013::_patchSpeed(double min, const double wanted, double max, const MSC
     }
 
     const double coopWeight = MAX2(0.0, MIN2(1.0, myCooperativeSpeed));
-    for (std::vector<double>::const_iterator i = myLCAccelerationAdvices.begin(); i != myLCAccelerationAdvices.end(); ++i) {
-        double a = (*i);
+    for (auto i : myLCAccelerationAdvices) {
+        double a = i.first;
         double v = myVehicle.getSpeed() + ACCEL2SPEED(a);
 
         if (v >= min && v <= max && (MSGlobals::gSemiImplicitEulerUpdate
@@ -286,7 +286,12 @@ MSLCM_LC2013::_patchSpeed(double min, const double wanted, double max, const MSC
                                      //      VERY rarely (whenever a requested help-acceleration is really indicated by v=-1)
                                      //      this can lead to failing lane-change attempts, though)
                                      || v != -1)) {
-            nVSafe = MIN2(v * coopWeight + (1 - coopWeight) * wanted, nVSafe);
+            if (i.second) {
+                // own advice, no scaling needed
+                nVSafe = MIN2(v, nVSafe);
+            } else {
+                nVSafe = MIN2(v * coopWeight + (1 - coopWeight) * wanted, nVSafe);
+            }
             gotOne = true;
 #ifdef DEBUG_PATCH_SPEED
             if (DEBUG_COND) {
@@ -426,7 +431,7 @@ MSLCM_LC2013::inform(void* info, MSVehicle* sender) {
     UNUSED_PARAMETER(sender);
     Info* pinfo = (Info*)info;
     assert(pinfo->first >= 0 || !MSGlobals::gSemiImplicitEulerUpdate);
-    addLCSpeedAdvice(pinfo->first);
+    addLCSpeedAdvice(pinfo->first, false);
     myOwnState |= pinfo->second;
 #ifdef DEBUG_INFORMED
     if (DEBUG_COND) {
@@ -466,8 +471,8 @@ MSLCM_LC2013::informLeader(MSAbstractLaneChangeModel::MSLCMessager& msgPass,
         plannedSpeed = MIN2(plannedSpeed,
                             myVehicle.getCarFollowModel().stopSpeed(&myVehicle, myVehicle.getSpeed(), myLeftSpace - myLeadingBlockerLength));
     }
-    for (std::vector<double>::const_iterator i = myLCAccelerationAdvices.begin(); i != myLCAccelerationAdvices.end(); ++i) {
-        const double a = *i;
+    for (auto i : myLCAccelerationAdvices) {
+        const double a = i.first;
         if (a >= -myVehicle.getCarFollowModel().getMaxDecel()) {
             plannedSpeed = MIN2(plannedSpeed, myVehicle.getSpeed() + ACCEL2SPEED(a));
         }
@@ -981,7 +986,7 @@ MSLCM_LC2013::informFollower(MSAbstractLaneChangeModel::MSLCMessager& msgPass,
                           << " vneigh=" << nv->getSpeed()
                           << " vhelp=" << vhelp
                           << " needDV=" << needDV
-                          << " vsafe=" << myLCAccelerationAdvices.back()
+                          << " vsafe=" << myLCAccelerationAdvices.back().first
                           << "\n";
             }
 #endif
@@ -1036,6 +1041,8 @@ MSLCM_LC2013::prepareStep() {
         }
         myVehicle.setLateralPositionOnLane(oldPosLat + scaledDelta);
         setSpeedLat(DIST2SPEED(scaledDelta));
+    } else {
+        resetSpeedLat();
     }
 }
 
@@ -1231,8 +1238,15 @@ MSLCM_LC2013::_wantsChange(
     double laDist = myLookAheadSpeed * LOOK_FORWARD * myStrategicParam * (right ? 1 : myLookaheadLeft);
     laDist += myVehicle.getVehicleType().getLengthWithGap() *  2.;
     const bool hasStoppedLeader = leader.first != 0 && leader.first->isStopped() && leader.second < (currentDist - posOnLane);
+    const bool hasBidiLeader = (myVehicle.getLane()->getBidiLane() != nullptr
+                                && leader.first != nullptr
+                                && leader.first->getLane()->getBidiLane() != nullptr
+                                && std::find(curr.bestContinuations.begin(), curr.bestContinuations.end(), leader.first->getLane()->getBidiLane()) != curr.bestContinuations.end());
 
-    if (bestLaneOffset == 0 && hasStoppedLeader) {
+    if (bestLaneOffset == 0 && hasBidiLeader) {
+        // getting out of the way is enough to clear the blockage
+        laDist = 0;
+    } else if (bestLaneOffset == 0 && hasStoppedLeader) {
         // react to a stopped leader on the current lane
         // The value of laDist is doubled below for the check whether the lc-maneuver can be taken out
         // on the remaining distance (because the vehicle has to change back and forth). Therefore multiply with 0.5.
@@ -1351,7 +1365,7 @@ MSLCM_LC2013::_wantsChange(
                               << " deltaV=" << deltaV
                               << " nvSpeed=" << nv->getSpeed()
                               << " mySpeedGainProbability=" << mySpeedGainProbability
-                              << " planned acceleration =" << myLCAccelerationAdvices.back()
+                              << " planned acceleration =" << myLCAccelerationAdvices.back().first
                               << "\n";
                 }
 #endif
@@ -1360,7 +1374,7 @@ MSLCM_LC2013::_wantsChange(
         const bool currFreeUntilNeighEnd = leader.first == nullptr || neighDist - posOnLane <= leader.second;
         const double overtakeDist = (leader.first == 0 ? -1 :
                                      leader.second + myVehicle.getVehicleType().getLength() + leader.first->getVehicleType().getLengthWithGap());
-        if (leader.first != 0 && leader.first->isStopped() && leader.second < REACT_TO_STOPPED_DISTANCE
+        if (leader.first != 0 && (leader.first->isStopped() || hasBidiLeader) && leader.second < REACT_TO_STOPPED_DISTANCE
                 // current destination leaves enough space to overtake the leader
                 && MIN2(neighDist, currentDist) - posOnLane > overtakeDist
                 // maybe do not overtake on the right at high speed
@@ -1942,7 +1956,7 @@ MSLCM_LC2013::slowDownForBlocked(MSVehicle** blocked, int state) {
                 addLCSpeedAdvice(getCarFollowModel().followSpeed(
                                      &myVehicle, myVehicle.getSpeed(),
                                      gap - POSITION_EPS, (*blocked)->getSpeed(),
-                                     (*blocked)->getCarFollowModel().getMaxDecel()));
+                                     (*blocked)->getCarFollowModel().getMaxDecel()), false);
 
                 //(*blocked) = 0; // VARIANT_14 (furtherBlock)
 #ifdef DEBUG_SLOW_DOWN
@@ -1951,7 +1965,7 @@ MSLCM_LC2013::slowDownForBlocked(MSVehicle** blocked, int state) {
                               << " veh=" << myVehicle.getID()
                               << " slowing down for"
                               << " blocked=" << Named::getIDSecure(*blocked)
-                              << " helpSpeed=" << myLCAccelerationAdvices.back()
+                              << " helpSpeed=" << myLCAccelerationAdvices.back().first
                               << "\n";
                 }
 #endif
@@ -1990,12 +2004,6 @@ MSLCM_LC2013::adaptSpeedToPedestrians(const MSLane* lane, double& v) {
 #endif
         }
     }
-}
-
-
-void MSLCM_LC2013::addLCSpeedAdvice(const double vSafe) {
-    const double accel = SPEED2ACCEL(vSafe - myVehicle.getSpeed());
-    myLCAccelerationAdvices.push_back(accel);
 }
 
 

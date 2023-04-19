@@ -28,29 +28,20 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# show demand elements in network mode
-netedit.changeEditMode(netedit.attrs.modes.network.showDemandElements)
-
-# force save demand elements
-netedit.forceSaveDemandElements()
-
-# Go to demand mode
-netedit.supermodeDemand()
-
-# save routes
-netedit.saveRoutes(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # fix
 netedit.fixDemandElement(netedit.attrs.fix.demandElements.routes.selectInvalidRoutes)
 
+# Go to demand mode
+netedit.supermodeDemand()
+
 # press supr key to remove invalid routes
 netedit.deleteUsingSuprKey()
 
-# save routes
-netedit.saveRoutes(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

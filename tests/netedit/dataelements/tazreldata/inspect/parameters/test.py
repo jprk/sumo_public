@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # Go to data supermode
 netedit.supermodeData()
 
@@ -57,14 +54,8 @@ netedit.leftClick(referencePosition, 300, 250)
 # check double parameters
 netedit.checkDoubleParameters(referencePosition, netedit.attrs.TAZRelData.inspect.parameters, False, 0, 30)
 
-# save data elements
-netedit.saveDatas(referencePosition, True, 0, 30)
-
-# save network
-netedit.saveNetwork(referencePosition, True, 0, 30)
-
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

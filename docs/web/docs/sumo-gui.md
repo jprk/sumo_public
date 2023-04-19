@@ -129,14 +129,17 @@ are listed below:
 - Ctrl-LeftClick: toggle selection status of object under cursor
 - Arrow Keys: move the view
 - Ctrl + Arrow keys: move the view less
-- PageUp / PageDow: move the view up/down (a lot)
-- Shift + PageUp / PageDow: move the view left/right (a lot)
+- Alt + Arrow keys: move the view a lot
+- PageUp / PageDow: change simulation delay
 - \+/-, Keypad +/-: zoom in/out
 - Home/Keypad Home: recenter view
 - F9: open view settings dialog
 - Shift-LeftClick: 
   - vehicle: start tracking
   - rerouter: change routeProbReroute probabilities
+- Double-LeftClick: stop tracking
+- Ctrl + J: toggle 'show junction shapes'
+- Ctrl + K: toggle 'show secondary edge shape' (loaded with option **--alternative-net-file**)
 
 ## Object Properties / Right-Click-Functions
 
@@ -980,7 +983,7 @@ cannot be used, it is replaced by a cone shape pointing to the direction of trav
 
 # Visualizing edge-related data
 
-Several applications generated edge-related measures for one or more
+Several applications generate edge-related measures for one or more
 time-intervals.
 
 - [edgeData-output files](Simulation/Output/Lane-_or_Edge-based_Traffic_Measures.md)  
@@ -1032,6 +1035,11 @@ coloring scheme that spans the loaded data range for the selected attribute.
     edgeData is time based so it will only be shown when the simulation time has advance to the begin time of the respective data interval. Make sure to advance the simulation to time 0 (step once) or to whatever begin time was used for edgeData generation before using *Recalibrate Rainbow*. To see further data frames, advance the simulation by using delay or breakpoints.
 
 When defining a color scheme, a dedicated color for missing data ('No Data') can always be configured.
+
+## Scaling by Data
+
+To make use of the loaded data for increasing the visual width of the roads, street scaling must be set to **scale width by
+edgeData** in the visualization settings dialog. After the scaling scheme has been selected, an attribute selection element becomes active which lists all the available edgeData attributes and must be used to pick the desired attribute for scaling.
 
 # Usage Examples
 

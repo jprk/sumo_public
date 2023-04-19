@@ -957,12 +957,12 @@ AdditionalHandler::parseE2Attributes(const SUMOSAXAttributes& attrs) {
     bool parsedOk = true;
     // check that lane and length are defined together
     if (attrs.hasAttribute(SUMO_ATTR_LANE) && !attrs.hasAttribute(SUMO_ATTR_LENGTH)) {
-        writeError("'lane' and 'length' must be defined together in a lane area detector.");
+        writeError(TL("'lane' and 'length' must be defined together in a lane area detector."));
         parsedOk = false;
     }
     // check that lanes and endPos are defined together
     if (attrs.hasAttribute(SUMO_ATTR_LANES) && !attrs.hasAttribute(SUMO_ATTR_ENDPOS)) {
-        writeError("'lanes' and 'endPos' must be defined together in a lane area detector.");
+        writeError(TL("'lanes' and 'endPos' must be defined together in a lane area detector."));
         parsedOk = false;
     }
     // needed attributes
@@ -1125,7 +1125,7 @@ AdditionalHandler::parseTAZAttributes(const SUMOSAXAttributes& attrs) {
     const std::string id = attrs.get<std::string>(SUMO_ATTR_ID, "", parsedOk);
     // optional attributes
     const PositionVector shape = attrs.getOpt<PositionVector>(SUMO_ATTR_SHAPE, id.c_str(), parsedOk, PositionVector());
-    const Position center = attrs.getOpt<Position>(SUMO_ATTR_CENTER, id.c_str(), parsedOk, shape.size() > 0 ? shape.getCentroid() : Position());
+    const Position center = attrs.getOpt<Position>(SUMO_ATTR_CENTER, id.c_str(), parsedOk, shape.size() > 0 ? shape.getCentroid() : Position::INVALID);
     const bool fill = attrs.getOpt<bool>(SUMO_ATTR_FILL, id.c_str(), parsedOk, false);
     const std::vector<std::string> edges = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_EDGES, id.c_str(), parsedOk, std::vector<std::string>());
     const RGBColor color = attrs.getOpt<RGBColor>(SUMO_ATTR_COLOR, id.c_str(), parsedOk, RGBColor::RED);
@@ -1239,7 +1239,7 @@ AdditionalHandler::parseCalibratorAttributes(const SUMOSAXAttributes& attrs) {
     // check that frecuency and trafficLight aren't defined together
     if ((attrs.hasAttribute(SUMO_ATTR_EDGE) && attrs.hasAttribute(SUMO_ATTR_LANE)) ||
             (!attrs.hasAttribute(SUMO_ATTR_EDGE) && !attrs.hasAttribute(SUMO_ATTR_LANE))) {
-        writeError("Calibrators need either an edge or a lane");
+        writeError(TL("Calibrators need either an edge or a lane"));
         parsedOk = false;
     }
     // needed attributes
@@ -1286,7 +1286,7 @@ AdditionalHandler::parseCalibratorFlowAttributes(const SUMOSAXAttributes& attrs)
             myCommonXMLStructure.getCurrentSumoBaseObject()->getParentSumoBaseObject()->getTag() != SUMO_TAG_ROOTFILE) {
         // check that frecuency and trafficLight aren't defined together
         if (!attrs.hasAttribute(SUMO_ATTR_TYPE) && !attrs.hasAttribute(SUMO_ATTR_VEHSPERHOUR) && !attrs.hasAttribute(SUMO_ATTR_SPEED)) {
-            writeError("CalibratorFlows need either the attribute vehsPerHour or speed or type (or any combination of these)");
+            writeError(TL("CalibratorFlows need either the attribute vehsPerHour or speed or type (or any combination of these)"));
         }
         // first parse flow
         SUMOVehicleParameter* flowParameter = SUMOVehicleParserHelper::parseVehicleAttributes(SUMO_TAG_FLOW, attrs, false, true, true);
@@ -1425,7 +1425,7 @@ AdditionalHandler::parseDestProbRerouteAttributes(const SUMOSAXAttributes& attrs
     // continue if flag is ok
     if (parsedOk) {
         if (probability < 0) {
-            writeError("Probability of " + toString(SUMO_TAG_DEST_PROB_REROUTE) + " must be equal or greater than 0");
+            writeError(TLF("Probability of % must be equal or greater than 0", toString(SUMO_TAG_DEST_PROB_REROUTE)));
         } else {
             // set tag
             myCommonXMLStructure.getCurrentSumoBaseObject()->setTag(SUMO_TAG_DEST_PROB_REROUTE);
@@ -1451,7 +1451,7 @@ AdditionalHandler::parseParkingAreaRerouteAttributes(const SUMOSAXAttributes& at
     // continue if flag is ok
     if (parsedOk) {
         if (probability < 0) {
-            writeError("Probability of " + toString(SUMO_TAG_PARKING_AREA_REROUTE) + " must be equal or greater than 0");
+            writeError(TLF("Probability of % must be equal or greater than 0", toString(SUMO_TAG_PARKING_AREA_REROUTE)));
         } else {
             // set tag
             myCommonXMLStructure.getCurrentSumoBaseObject()->setTag(SUMO_TAG_PARKING_AREA_REROUTE);
@@ -1476,7 +1476,7 @@ AdditionalHandler::parseRouteProbRerouteAttributes(const SUMOSAXAttributes& attr
     // continue if flag is ok
     if (parsedOk) {
         if (probability < 0) {
-            writeError("Probability of " + toString(SUMO_TAG_ROUTE_PROB_REROUTE) + " must be equal or greater than 0");
+            writeError(TLF("Probability of % must be equal or greater than 0", toString(SUMO_TAG_ROUTE_PROB_REROUTE)));
         } else {
             // set tag
             myCommonXMLStructure.getCurrentSumoBaseObject()->setTag(SUMO_TAG_ROUTE_PROB_REROUTE);
@@ -1662,19 +1662,19 @@ AdditionalHandler::parsePOIAttributes(const SUMOSAXAttributes& attrs) {
     // check that x and y are defined together
     if ((attrs.hasAttribute(SUMO_ATTR_X) && !attrs.hasAttribute(SUMO_ATTR_Y)) ||
             (!attrs.hasAttribute(SUMO_ATTR_X) && attrs.hasAttribute(SUMO_ATTR_Y))) {
-        writeError("X and Y must be be defined together in POIs");
+        writeError(TL("X and Y must be be defined together in POIs"));
         parsedOk = false;
     }
     // check that lane and pos are defined together
     if ((attrs.hasAttribute(SUMO_ATTR_LANE) && !attrs.hasAttribute(SUMO_ATTR_POSITION)) ||
             (!attrs.hasAttribute(SUMO_ATTR_LANE) && attrs.hasAttribute(SUMO_ATTR_POSITION))) {
-        writeError("lane and position must be be defined together in POIs");
+        writeError(TL("lane and position must be be defined together in POIs"));
         parsedOk = false;
     }
     // check that lon and lat are defined together
     if ((attrs.hasAttribute(SUMO_ATTR_LON) && !attrs.hasAttribute(SUMO_ATTR_LAT)) ||
             (!attrs.hasAttribute(SUMO_ATTR_LON) && attrs.hasAttribute(SUMO_ATTR_LAT))) {
-        writeError("lon and lat must be be defined together in POIs");
+        writeError(TL("lon and lat must be be defined together in POIs"));
         parsedOk = false;
     }
     // needed attributes
@@ -1740,11 +1740,11 @@ AdditionalHandler::parseParameters(const SUMOSAXAttributes& attrs) {
     CommonXMLStructure::SumoBaseObject* SumoBaseObjectParent = myCommonXMLStructure.getCurrentSumoBaseObject()->getParentSumoBaseObject();
     // check parent
     if (SumoBaseObjectParent == nullptr) {
-        writeError("Parameters must be defined within an object.");
+        writeError(TL("Parameters must be defined within an object."));
     } else if (SumoBaseObjectParent->getTag() == SUMO_TAG_ROOTFILE) {
-        writeError("Parameters cannot be defined in the additional file's root.");
+        writeError(TL("Parameters cannot be defined in the additional file's root."));
     } else if (SumoBaseObjectParent->getTag() == SUMO_TAG_PARAM) {
-        writeError("Parameters cannot be defined within another parameter.");
+        writeError(TL("Parameters cannot be defined within another parameter."));
     } else if (parsedOk) {
         // get tag str
         const std::string parentTagStr = toString(SumoBaseObjectParent->getTag());
@@ -1752,9 +1752,9 @@ AdditionalHandler::parseParameters(const SUMOSAXAttributes& attrs) {
         const std::string value = attrs.hasAttribute(SUMO_ATTR_VALUE) ? attrs.getString(SUMO_ATTR_VALUE) : "";
         // show warnings if values are invalid
         if (key.empty()) {
-            WRITE_WARNING("Error parsing key from " + parentTagStr + " generic parameter. Key cannot be empty.");
+            WRITE_WARNINGF(TL("Error parsing key from % generic parameter. Key cannot be empty."), parentTagStr);
         } else if (!SUMOXMLDefinitions::isValidParameterKey(key)) {
-            WRITE_WARNING("Error parsing key from " + parentTagStr + " generic parameter. Key contains invalid characters.");
+            WRITE_WARNINGF(TL("Error parsing key from % generic parameter. Key contains invalid characters."), parentTagStr);
         } else {
             WRITE_DEBUG("Inserting generic parameter '" + key + "|" + value + "' into " + parentTagStr);
             // insert parameter in SumoBaseObjectParent

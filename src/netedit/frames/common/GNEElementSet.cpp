@@ -51,7 +51,7 @@ GNEElementSet::GNEElementSet(GNESelectorFrame* selectorFrameParent, Supermode su
     myMatchGenericDataAttribute(nullptr),
     myCurrentSet(Type::INVALID) {
     // Create MatchTagBox for tags and fill it
-    mySetComboBox = new MFXIconComboBox(getCollapsableFrame(), GUIDesignComboBoxNCol, true, this, MID_CHOOSEN_ELEMENTS, GUIDesignComboBox);
+    mySetComboBox = new MFXComboBoxIcon(getCollapsableFrame(), GUIDesignComboBoxNCol, true, this, MID_CHOOSEN_ELEMENTS, GUIDesignComboBox);
     // continue depending of supermode
     if (supermode == Supermode::NETWORK) {
         // append elements
@@ -72,7 +72,7 @@ GNEElementSet::GNEElementSet(GNESelectorFrame* selectorFrameParent, Supermode su
         // set default set
         myCurrentSet = Type::GENERICDATA;
     } else {
-        throw ProcessError("Invalid supermode");
+        throw ProcessError(TL("Invalid supermode"));
     }
     // build MatchAttribute
     myMatchAttribute = new GNEMatchAttribute(this, defaultTag, defaultAttr, defaultValue);

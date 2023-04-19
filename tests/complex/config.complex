@@ -51,6 +51,7 @@ copy_test_path:vtype.map
 copy_test_path:vtype2.map
 copy_test_path:vtype3.map
 copy_test_path:img.jpeg
+copy_test_path:fcd.xml
 test_data_ignore:.svn
 
 [collate_file]
@@ -65,6 +66,8 @@ vss:vss.xml
 rawdump:rawdump.xml
 fcd:fcd.xml
 fcd2:fcd2.xml
+fcd3:fcd3.xml
+fcd4:fcd4.xml
 lanechanges:lanechanges.xml
 results:results.csv
 tls_state:tls_state.xml
@@ -107,7 +110,6 @@ output:Running main\(\) from .*gtest_main.cc{REPLACE Running main() from gtest_m
 output: test case{REPLACE  test suite}
 output:function .* called at .*
 output:function .* finished after .*
-output:SUMO_HOME: .* --xml-validation{REPLACE SUMO_HOME: <SUMO_HOME> --xml-validation}
 output:Cannot read local schema .*,{REPLACE Cannot read local schema <schema>,}
 output:version .* started via libsumo {REPLACE started }
 output:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
@@ -124,6 +126,8 @@ tripinfo2:<!--{[->]}-->
 rawdump:<!--{[->]}-->
 fcd:<!--{[->]}-->
 fcd2:<!--{[->]}-->
+fcd3:<!--{[->]}-->
+fcd4:<!--{[->]}-->
 stops:<!--{[->]}-->
 stopinfos:<!--{[->]}-->
 collisions:<!--{[->]}-->
@@ -131,6 +135,8 @@ ssm:<!--{[->]}-->
 summary:<!--{[->]}-->
 statistics:<!--{[->]}-->
 statistics2:<!--{[->]}-->
+statistics:<performance 
+statistics2:<performance 
 lanechanges:<!--{[->]}-->
 state:<!--{[->]}-->
 state2:<!--{[->]}-->

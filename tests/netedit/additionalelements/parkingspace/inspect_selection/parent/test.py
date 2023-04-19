@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect parking spaces
-netedit.leftClick(referencePosition, 230, 260)
+netedit.leftClick(referencePosition, 679, 141)
 
 # Change parameter parent with a non valid value (dummy)
 netedit.modifyAttribute(netedit.attrs.parkingSpace.inspectSelection.parent, "dummyParent", False)
@@ -50,14 +50,11 @@ netedit.modifyAttribute(netedit.attrs.parkingSpace.inspectSelection.parent, "", 
 netedit.modifyAttribute(netedit.attrs.parkingSpace.inspectSelection.parent, "parkingArea_B", False)
 
 # Check undos and redos
-netedit.undo(referencePosition, 5)
-netedit.redo(referencePosition, 5)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

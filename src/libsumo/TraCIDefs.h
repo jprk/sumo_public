@@ -173,12 +173,16 @@ struct TraCIResult {
 };
 
 /** @struct TraCIPosition
- * @brief A 3D-position
+ * @brief A 2D or 3D-position, for 2D positions z == INVALID_DOUBLE_VALUE
  */
 struct TraCIPosition : TraCIResult {
     std::string getString() const {
         std::ostringstream os;
-        os << "TraCIPosition(" << x << "," << y << "," << z << ")";
+        os << "TraCIPosition(" << x << "," << y;
+        if (z != INVALID_DOUBLE_VALUE) {
+            os << "," << z;
+        }
+        os << ")";
         return os.str();
     }
     double x = INVALID_DOUBLE_VALUE, y = INVALID_DOUBLE_VALUE, z = INVALID_DOUBLE_VALUE;
@@ -667,6 +671,20 @@ struct TraCISignalConstraint {
         os << "TraCISignalConstraint(signalId=" << signalId << ", tripid=" << tripId << ", foeSignal=" << foeSignal << ", foeId=" << foeId << ")";
         return os.str();
     }
+};
+
+
+struct TraCIJunctionFoe {
+    /// @brief the id of the vehicle with intersecting trajectory
+    std::string foeId;
+    double egoDist;
+    double foeDist;
+    double egoExitDist;
+    double foeExitDist;
+    std::string egoLane;
+    std::string foeLane;
+    bool egoResponse;
+    bool foeResponse;
 };
 
 }

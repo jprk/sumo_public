@@ -42,6 +42,7 @@ GeoConvHelper GeoConvHelper::myProcessing("!", Position(), Boundary(), Boundary(
 GeoConvHelper GeoConvHelper::myLoaded("!", Position(), Boundary(), Boundary());
 GeoConvHelper GeoConvHelper::myFinal("!", Position(), Boundary(), Boundary());
 int GeoConvHelper::myNumLoaded = 0;
+std::map<std::string, std::pair<std::string, Position> > GeoConvHelper::myLoadedPlain;
 
 // ===========================================================================
 // method definitions
@@ -89,7 +90,7 @@ GeoConvHelper::GeoConvHelper(const std::string& proj, const Position& offset,
         }
         if (myProjection == nullptr) {
             // !!! check pj_errno
-            throw ProcessError("Could not build projection!");
+            throw ProcessError(TL("Could not build projection!"));
         }
 #endif
     }
@@ -257,9 +258,26 @@ void
 GeoConvHelper::init(const std::string& proj, const Position& offset, const Boundary& orig,
                     const Boundary& conv, double scale) {
     myProcessing = GeoConvHelper(proj, offset, orig, conv, scale);
+    myProcessing.resolveAbstractProjection();
     myFinal = myProcessing;
 }
 
+void
+GeoConvHelper::resolveAbstractProjection() {
+#ifdef PROJ_API_FILE
+    if (myProjection == nullptr &&
+            myProjectionMethod != NONE && myProjectionMethod != SIMPLE) {
+        const std::string origProj = myProjString;
+        // try to initialized projection based on origBoundary
+        Position tmp = myOrigBoundary.getCenter();
+        x2cartesian(tmp, false);
+        if (myProjection == nullptr) {
+            WRITE_WARNING("Failed to intialized projection '" + origProj + "' based on origBoundary centered on '" + toString(myOrigBoundary.getCenter()) + "'");
+            myProjectionMethod = NONE;
+        }
+    }
+#endif
+}
 
 void
 GeoConvHelper::addProjectionOptions(OptionsCont& oc) {
@@ -267,29 +285,29 @@ GeoConvHelper::addProjectionOptions(OptionsCont& oc) {
 
     oc.doRegister("simple-projection", new Option_Bool(false));
     oc.addSynonyme("simple-projection", "proj.simple", true);
-    oc.addDescription("simple-projection", "Projection", "Uses a simple method for projection");
+    oc.addDescription("simple-projection", "Projection", TL("Uses a simple method for projection"));
 
     oc.doRegister("proj.scale", new Option_Float(1.0));
-    oc.addDescription("proj.scale", "Projection", "Scaling factor for input coordinates");
+    oc.addDescription("proj.scale", "Projection", TL("Scaling factor for input coordinates"));
 
     oc.doRegister("proj.rotate", new Option_Float(0.0));
-    oc.addDescription("proj.rotate", "Projection", "Rotation (clockwise degrees) for input coordinates");
+    oc.addDescription("proj.rotate", "Projection", TL("Rotation (clockwise degrees) for input coordinates"));
 
 #ifdef PROJ_API_FILE
     oc.doRegister("proj.utm", new Option_Bool(false));
-    oc.addDescription("proj.utm", "Projection", "Determine the UTM zone (for a universal transversal mercator projection based on the WGS84 ellipsoid)");
+    oc.addDescription("proj.utm", "Projection", TL("Determine the UTM zone (for a universal transversal mercator projection based on the WGS84 ellipsoid)"));
 
     oc.doRegister("proj.dhdn", new Option_Bool(false));
     oc.addDescription("proj.dhdn", "Projection", "Determine the DHDN zone (for a transversal mercator projection based on the bessel ellipsoid, \"Gauss-Krueger\")");
 
     oc.doRegister("proj", new Option_String("!"));
-    oc.addDescription("proj", "Projection", "Uses STR as proj.4 definition for projection");
+    oc.addDescription("proj", "Projection", TL("Uses STR as proj.4 definition for projection"));
 
     oc.doRegister("proj.inverse", new Option_Bool(false));
-    oc.addDescription("proj.inverse", "Projection", "Inverses projection");
+    oc.addDescription("proj.inverse", "Projection", TL("Inverses projection"));
 
     oc.doRegister("proj.dhdnutm", new Option_Bool(false));
-    oc.addDescription("proj.dhdnutm", "Projection", "Convert from Gauss-Krueger to UTM");
+    oc.addDescription("proj.dhdnutm", "Projection", TL("Convert from Gauss-Krueger to UTM"));
 #endif // PROJ_API_FILE
 }
 
@@ -413,7 +431,7 @@ GeoConvHelper::x2cartesian(Position& from, bool includeInBoundary) {
         double x = from.x();
         double y = from.y();
         if (pj_transform(myInverseProjection, myGeoProjection, 1, 1, &x, &y, nullptr)) {
-            WRITE_WARNING("Could not transform (" + toString(x) + "," + toString(y) + ")");
+            WRITE_WARNINGF(TL("Could not transform (%,%)"), toString(x), toString(y));
         }
         from.set(double(x * RAD_TO_DEG), double(y * RAD_TO_DEG));
 #endif
@@ -557,7 +575,7 @@ void
 GeoConvHelper::setLoaded(const GeoConvHelper& loaded) {
     myNumLoaded++;
     if (myNumLoaded > 1) {
-        WRITE_WARNING("Ignoring loaded location attribute nr. " + toString(myNumLoaded) + " for tracking of original location");
+        WRITE_WARNINGF(TL("Ignoring loaded location attribute nr. % for tracking of original location"), toString(myNumLoaded));
     } else {
         myLoaded = loaded;
     }
@@ -565,8 +583,27 @@ GeoConvHelper::setLoaded(const GeoConvHelper& loaded) {
 
 
 void
+GeoConvHelper::setLoadedPlain(const std::string& nodFile, const GeoConvHelper& loaded) {
+    myLoadedPlain[nodFile] = {loaded.getProjString(), loaded.getOffset()};
+}
+
+
+GeoConvHelper*
+GeoConvHelper::getLoadedPlain(const std::string& edgFile) {
+    std::string nodFile = StringUtils::replace(edgFile, ".edg.xml", ".nod.xml");
+    auto it = myLoadedPlain.find(nodFile);
+    if (it != myLoadedPlain.end()) {
+        return new GeoConvHelper(it->second.first, it->second.second, Boundary(), Boundary());
+    } else {
+        return nullptr;
+    }
+}
+
+
+void
 GeoConvHelper::resetLoaded() {
     myNumLoaded = 0;
+    myLoadedPlain.clear();
 }
 
 

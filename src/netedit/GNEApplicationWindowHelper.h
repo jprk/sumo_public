@@ -15,7 +15,7 @@
 /// @author  Pablo Alvarez Lopez
 /// @date    mar 2020
 ///
-// Functions from main window of NETEDIT
+// Functions from main window of netedit
 /****************************************************************************/
 #pragma once
 #include <config.h>
@@ -37,15 +37,20 @@
 // ===========================================================================
 // class declarations
 // ===========================================================================
+
 class GNEApplicationWindow;
 class GNELoadThread;
+class GNENet;
+class GNEPythonTool;
+class GNEPythonToolDialog;
+class GNENetgenerateDialog;
+class GNERunPythonToolDialog;
+class GNERunNetgenerateDialog;
 class GNEUndoList;
 class GNEUndoListDialog;
-class GNENet;
 class GNEViewNet;
 class GUIEvent;
 class MFXMenuCheckIcon;
-
 
 // ===========================================================================
 // class definition
@@ -69,44 +74,44 @@ struct GNEApplicationWindowHelper {
         void destroyParentToolbarsGrips();
 
         /// @brief The application menu bar (for file, edit, processing...)
-        FXMenuBar* menu;
+        FXMenuBar* menu = nullptr;
 
-        /// @brief The application menu bar for supermodes (network and demand)
-        FXMenuBar* superModes;
+        /// @brief The application menu bar for supermodes (network, demand and data)
+        FXMenuBar* superModes = nullptr;
 
-        /// @brief The application menu bar for save elements (NetworkElements, additionals and demand elements)
-        FXMenuBar* saveElements;
+        /// @brief The application menu bar for save elements
+        FXMenuBar* saveElements = nullptr;
 
         /// @brief The application menu bar for navigation (zoom, coloring...)
-        FXMenuBar* navigation;
+        FXMenuBar* navigation = nullptr;
 
         /// @brief The application menu bar (for select, inspect...)
-        FXMenuBar* modes;
+        FXMenuBar* modes = nullptr;
 
         /// @brief The application menu bar for mode options (show connections, select edges...)
-        FXMenuBar* intervalBar;
+        FXMenuBar* intervalBar = nullptr;
 
     private:
         /// @brief pointer to current GNEApplicationWindow
         GNEApplicationWindow* myGNEApp;
 
         /// @brief menu bar drag (for file, edit, processing...)
-        FXToolBarShell* myToolBarShellMenu;
+        FXToolBarShell* myPythonToolBarShellMenu = nullptr;
 
-        /// @brief menu bar drag for modes (network and demand)
-        FXToolBarShell* myToolBarShellSuperModes;
+        /// @brief menu bar drag for super modes (network, demand and data)
+        FXToolBarShell* myPythonToolBarShellSuperModes = nullptr;
 
-        /// @brief menu bar drag for save elements (NetworkElements, additionals and demand elements)
-        FXToolBarShell* myToolBarShellSaveElements;
+        /// @brief menu bar drag for save elements
+        FXToolBarShell* myPythonToolBarShellSaveElements = nullptr;
 
         /// @brief menu bar drag for navigation (Zoom, coloring...)
-        FXToolBarShell* myToolBarShellNavigation;
+        FXToolBarShell* myPythonToolBarShellNavigation = nullptr;
 
         /// @brief menu bar drag for modes (select, inspect, delete...)
-        FXToolBarShell* myToolBarShellModes;
+        FXToolBarShell* myPythonToolBarShellModes = nullptr;
 
         /// @brief menu bar drag for interval bar
-        FXToolBarShell* myToolBarShellIntervalBar;
+        FXToolBarShell* myPythonToolBarShellIntervalBar = nullptr;
 
         /// @brief Invalidated copy constructor.
         ToolbarsGrip(const ToolbarsGrip&) = delete;
@@ -151,7 +156,7 @@ struct GNEApplicationWindowHelper {
         FileMenuCommands(GNEApplicationWindow* GNEApp);
 
         /// @brief build menu commands
-        void buildFileMenuCommands(FXMenuPane* fileMenu, FXMenuPane* fileMenuNEEDITConfig, FXMenuPane* fileMenuSUMOConfig,
+        void buildFileMenuCommands(FXMenuPane* fileMenu, FXMenuPane* fileMenuNEEDITConfig, FXMenuPane* fileMenuSumoConfig,
                                    FXMenuPane* fileMenuTLS, FXMenuPane* fileMenuEdgeTypes, FXMenuPane* fileMenuAdditionals,
                                    FXMenuPane* fileMenuDemandElements, FXMenuPane* fileMenuDataElements,
                                    FXMenuPane* fileMenuMeanDataElements);
@@ -163,11 +168,11 @@ struct GNEApplicationWindowHelper {
         void disableMenuCascades();
 
     private:
-        /// @brief build NETEDIT Config section
-        void buildNETEDITConfigSection(FXMenuPane* menuPane);
+        /// @brief build netedit config section
+        void buildNeteditConfigSection(FXMenuPane* menuPane);
 
         /// @brief build SUMO Config section
-        void buildSUMOConfigSection(FXMenuPane* menuPane);
+        void buildSumoConfigSection(FXMenuPane* menuPane);
 
         /// @brief build traffic light section
         void buildTrafficLightSection(FXMenuPane* menuPane);
@@ -190,11 +195,11 @@ struct GNEApplicationWindowHelper {
         /// @brief pointer to current GNEApplicationWindows
         GNEApplicationWindow* myGNEApp = nullptr;
 
-        /// @brief FXMenuCascade for NETEDITConfig
-        FXMenuCascade* myNETEDITConfigMenuCascade = nullptr;
+        /// @brief FXMenuCascade for neteditConfig
+        FXMenuCascade* myNeteditConfigMenuCascade = nullptr;
 
-        /// @brief FXMenuCascade for SUMOConfig
-        FXMenuCascade* mySUMOConfigMenuCascade = nullptr;
+        /// @brief FXMenuCascade for SumoConfig
+        FXMenuCascade* mySumoConfigMenuCascade = nullptr;
 
         /// @brief FXMenuCascade for TLS
         FXMenuCascade* myTLSMenuCascade = nullptr;
@@ -951,10 +956,43 @@ struct GNEApplicationWindowHelper {
         /// @brief constructor
         ToolsMenuCommands(GNEApplicationWindow* GNEApp);
 
-        /// @brief build menu commands
-        void buildToolsMenuCommands(FXMenuPane* locateMenu);
+        /// @brief destructor
+        ~ToolsMenuCommands();
+
+        /// @brief build tools (and menu commands)
+        void buildTools(FXMenuPane* toolsMenu, const std::map<std::string, FXMenuPane*>& menuPaneToolMaps);
+
+        /// @brief show tool
+        long showTool(FXObject* menuCommand) const;
+
+        /// @brief show netgenerate dialog
+        long showNetgenerateDialog() const;
+
+        /// @brief run tool dialog
+        long runToolDialog(FXObject* menuCommand) const;
+
+        /// @brief run postprocessing
+        long postProcessing(FXObject* menuCommand) const;
+
+        /// @brief run netgenerate dialog
+        long runNetgenerateDialog(const OptionsCont* netgenerateOptions) const;
 
     private:
+        /// @brief map with python tools
+        std::vector<GNEPythonTool*> myPythonTools;
+
+        /// @brief python tool dialog
+        GNEPythonToolDialog* myPythonToolDialog = nullptr;
+
+        /// @brief netgenerate dialog
+        GNENetgenerateDialog* myNetgenerateDialog = nullptr;
+
+        /// @brief run python tool dialog
+        GNERunPythonToolDialog* myRunPythonToolDialog = nullptr;
+
+        /// @brief run netgenerate dialog
+        GNERunNetgenerateDialog* myRunNetgenerateDialog = nullptr;
+
         /// @brief pointer to current GNEApplicationWindows
         GNEApplicationWindow* myGNEApp;
 
@@ -983,6 +1021,26 @@ struct GNEApplicationWindowHelper {
 
         /// @brief Invalidated assignment operator.
         WindowsMenuCommands& operator=(const WindowsMenuCommands&) = delete;
+    };
+
+    /// @brief struct for help menu commands
+    struct HelpMenuCommands {
+
+        /// @brief constructor
+        HelpMenuCommands(GNEApplicationWindow* GNEApp);
+
+        /// @brief build menu commands
+        void buildHelpMenuCommands(FXMenuPane* helpMenu);
+
+    private:
+        /// @brief pointer to current GNEApplicationWindow
+        GNEApplicationWindow* myGNEApp;
+
+        /// @brief Invalidated copy constructor.
+        HelpMenuCommands(const HelpMenuCommands&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        HelpMenuCommands& operator=(const HelpMenuCommands&) = delete;
     };
 
     /// @brief struct for supermode commands
@@ -1021,14 +1079,14 @@ struct GNEApplicationWindowHelper {
     };
 
     /// @brief SUMO config handler
-    class GNESUMOConfigHandler {
+    class GNESumoConfigHandler {
 
     public:
         /// @brief Constructor
-        GNESUMOConfigHandler(OptionsCont& sumoOptions, const std::string& file);
+        GNESumoConfigHandler(OptionsCont& sumoOptions, const std::string& file);
 
         /// @brief load SUMO config
-        bool loadSUMOConfig();
+        bool loadSumoConfig();
 
     private:
         /// @brief sumo options
@@ -1038,18 +1096,18 @@ struct GNEApplicationWindowHelper {
         const std::string myFile;
     };
 
-    /// @brief NETEDIT config handler
-    class GNENETEDITConfigHandler {
+    /// @brief netedit config handler
+    class GNENeteditConfigHandler {
 
     public:
         /// @brief Constructor
-        GNENETEDITConfigHandler(const std::string& file);
+        GNENeteditConfigHandler(const std::string& file);
 
-        /// @brief load NETEDIT config
-        bool loadNETEDITConfig();
+        /// @brief load netedit config
+        bool loadNeteditConfig();
 
     private:
-        /// @brief NETEDIT config file
+        /// @brief netedit config file
         const std::string myFile;
     };
 
@@ -1068,6 +1126,9 @@ struct GNEApplicationWindowHelper {
     /// @brief check if a string ends with another string
     static bool stringEndsWith(const std::string& str, const std::string& suffix);
 
+    /// @brief open general file dialog
+    static std::string openFileDialog(FXWindow* window, const bool save);
+
     /// @brief open netconvert file dialog
     static std::string openNetworkFileDialog(FXWindow* window, const bool save);
 
@@ -1080,14 +1141,17 @@ struct GNEApplicationWindowHelper {
     /// @brief open joined junctions file dialog
     static std::string saveJoinedJunctionsFileDialog(FXWindow* window);
 
+    /// @brief open tool file dialog
+    static std::string saveToolLog(FXWindow* window);
+
     /// @brief open OSM file dialog
     static std::string openOSMFileDialog(FXWindow* window);
 
-    /// @brief open NETEDIT config file dialog
-    static std::string openNETEDITConfigFileDialog(FXWindow* window, const bool save);
+    /// @brief open netedit config file dialog
+    static std::string openNeteditConfigFileDialog(FXWindow* window, const bool save);
 
     /// @brief open SUMO config file dialog
-    static std::string openSUMOConfigFileDialog(FXWindow* window, const bool save);
+    static std::string openSumoConfigFileDialog(FXWindow* window, const bool save);
 
     /// @brief open TLS file dialog
     static std::string openTLSFileDialog(FXWindow* window, const bool save);
@@ -1106,6 +1170,9 @@ struct GNEApplicationWindowHelper {
 
     /// @brief open meandata filename dialog
     static std::string openMeanDataDialog(FXWindow* window, const bool save);
+
+    /// @brief open option dialog
+    static std::string openOptionFileDialog(FXWindow* window, const bool save);
 
 private:
     /// @brief open filename dialog

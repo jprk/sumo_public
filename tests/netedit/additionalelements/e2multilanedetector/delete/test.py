@@ -38,29 +38,25 @@ netedit.additionalMode()
 netedit.changeElement("multiLaneAreaDetector")
 
 # create E2 with default parameters
-netedit.leftClick(referencePosition, 190, 240)
-netedit.leftClick(referencePosition, 440, 240)
-netedit.leftClick(referencePosition, 440, 215)
+netedit.leftClick(referencePosition, 426, 253)
+netedit.leftClick(referencePosition, 496, 208)
 netedit.typeEnter()
 
 # Change to delete
 netedit.deleteMode()
 
 # delete loaded E2
-netedit.leftClick(referencePosition, 250, 215)
+netedit.leftClick(referencePosition, 495, 252)
 
 # delete created E2
-netedit.leftClick(referencePosition, 250, 240)
+netedit.leftClick(referencePosition, 270, 216)
 
 # Check undo redo
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

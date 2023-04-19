@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E2s
-netedit.leftClick(referencePosition, 350, 310)
+netedit.leftClick(referencePosition, 582, 180)
 
 # Change parameter length with a non valid value(dummy)
 netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.length, "dummyLength", True)
@@ -56,14 +56,11 @@ netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.length, "500", True)
 netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.length, "5", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 3)
+netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -27,16 +27,16 @@ import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(
-    neteditTestRoot, ['--sidewalks.guess', '--crossings.guess', '--gui-testing-debug-gl'])
+    neteditTestRoot, ['--sidewalks.guess', '--crossings.guess'])
 
 # Recompute with volatile options
 netedit.rebuildNetworkWithVolatileOptions()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# fix positions
+netedit.typeSpace()
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

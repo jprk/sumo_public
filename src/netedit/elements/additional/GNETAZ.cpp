@@ -183,6 +183,24 @@ GNETAZ::writeAdditional(OutputDevice& device) const {
 }
 
 
+bool
+GNETAZ::isAdditionalValid() const {
+    return true;
+}
+
+
+std::string
+GNETAZ::getAdditionalProblem() const {
+    return "";
+}
+
+
+void
+GNETAZ::fixAdditionalProblem() {
+    // nothing to fix
+}
+
+
 void
 GNETAZ::updateGeometry() {
     // just update geometry
@@ -219,7 +237,9 @@ GNETAZ::updateCenteringBoundary(const bool updateGrid) {
     // use shape as boundary
     myAdditionalBoundary = myShape.getBoxBoundary();
     // add center
-    myAdditionalBoundary.add(myTAZCenter);
+    if (myTAZCenter != Position::INVALID) {
+        myAdditionalBoundary.add(myTAZCenter);
+    }
     // grow boundary
     myAdditionalBoundary.grow(10);
     // add object into net
@@ -259,7 +279,7 @@ GNETAZ::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
     if (index != -1) {
         // check if we're in network mode
         if (myNet->getViewNet()->getEditModes().networkEditMode == NetworkEditMode::NETWORK_MOVE) {
-            GUIDesigns::buildFXMenuCommand(ret, "Set custom Geometry Point", nullptr, &parent, MID_GNE_CUSTOM_GEOMETRYPOINT);
+            GUIDesigns::buildFXMenuCommand(ret, TL("Set custom Geometry Point"), nullptr, &parent, MID_GNE_CUSTOM_GEOMETRYPOINT);
         }
     }
     return ret;
@@ -356,7 +376,7 @@ GNETAZ::drawGL(const GUIVisualizationSettings& s) const {
             // push center matrix
             GLHelper::pushMatrix();
             // move to vertex
-            glTranslated(myTAZCenter.x(), myTAZCenter.y(), 0.3);
+            glTranslated(myTAZCenter.x(), myTAZCenter.y(), GLO_JUNCTION + 0.3);
             // set color
             GLHelper::setColor(darkerColor);
             // draw circle

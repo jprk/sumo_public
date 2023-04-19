@@ -35,17 +35,14 @@ netedit.additionalMode()
 netedit.changeElement("laneAreaDetector")
 
 # create E2 with default parameters
-netedit.leftClick(referencePosition, 125, 250)
+netedit.leftClick(referencePosition, 427, 253)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

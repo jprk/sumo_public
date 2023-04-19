@@ -47,7 +47,7 @@ MSCFModel_Rail::MSCFModel_Rail(const MSVehicleType* vtype) :
     } else if (trainType.compare("ICE3") == 0) {
         myTrainParams = initICE3Params();
     } else {
-        WRITE_ERROR("Unknown train type: " + trainType + ". Exiting!");
+        WRITE_ERRORF(TL("Unknown train type: %. Exiting!"), trainType);
         throw ProcessError();
     }
     // override with user values
@@ -208,7 +208,7 @@ double MSCFModel_Rail::getSpeedAfterMaxDecel(double /* speed */) const {
 //    double a = 0;//trainParams.decl - gr/trainParams.rotWeight;
 //
 //    return speed + a * DELTA_T / 1000.;
-    WRITE_ERROR(TL("function call not allowed for rail model. Exiting!"));
+    WRITE_ERROR("function call not allowed for rail model. Exiting!");
     throw ProcessError();
 }
 

@@ -233,6 +233,9 @@ public:
     // @brief convert RGBColor 0..255 RGBA values to osg::Vec4 0..1 vector
     static osg::Vec4d toOSGColorVector(RGBColor c, bool useAlpha = false);
 
+    // @brief Overwrite the HUD text
+    void updateHUDText(const std::string text);
+
 protected:
     /// @brief Store the normalized OSG window cursor coordinates
     void setWindowCursorPosition(float x, float y);
@@ -255,6 +258,9 @@ protected:
 
 private:
     double calculateRotation(const osg::Vec3d& lookFrom, const osg::Vec3d& lookAt, const osg::Vec3d& up);
+
+    /// @brief inform HUD about the current window size to let it reposition
+    void updateHUDPosition(int width, int height);
 
     class FXOSGAdapter : public osgViewer::GraphicsWindow {
     public:
@@ -282,8 +288,15 @@ private:
             return true;
         }
         void requestWarpPointer(float x, float y) {
-            myParent->setCursorPosition(int(x), int(y));
-            getEventQueue()->mouseWarped(x, y);
+            int xRound = std::lround(x);
+            int yRound = std::lround(y);
+            int xPrev, yPrev;
+            unsigned int buttons;
+            myParent->getCursorPosition(xPrev, yPrev, buttons);
+            if (xRound - xPrev != 0 || yRound - yPrev != 0) {
+                myParent->setCursorPosition(xRound, yRound);
+                getEventQueue()->mouseWarped(x, y);
+            }
         }
 
     protected:
@@ -329,7 +342,7 @@ private:
 
     class ExcludeFromNearFarComputationCallback : public osg::NodeCallback {
         virtual void operator()(osg::Node* node, osg::NodeVisitor* nv) {
-            osgUtil::CullVisitor *cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
+            osgUtil::CullVisitor* cv = dynamic_cast<osgUtil::CullVisitor*>(nv);
             // Default value
             osg::CullSettings::ComputeNearFarMode oldMode = osg::CullSettings::COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES;
             if (cv) {
@@ -352,6 +365,9 @@ protected:
     osg::ref_ptr<osgViewer::Viewer> myViewer;
     osg::ref_ptr<osg::Group> myRoot;
     osg::ref_ptr<osg::MatrixTransform> myPlane;
+    osg::ref_ptr<osg::Camera> myHUD;
+    osg::ref_ptr<osg::Geode> myTextNode;
+    osg::ref_ptr<osgText::Text> myText;
 
 private:
     GUIVehicle* myTracked;

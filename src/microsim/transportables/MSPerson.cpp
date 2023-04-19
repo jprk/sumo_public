@@ -131,7 +131,7 @@ MSPerson::MSPersonStage_Walking::proceed(MSNet* net, MSTransportable* person, SU
         for (MSMoveReminder* rem : lane->getMoveReminders()) {
             if (rem->notifyEnter(*person, MSMoveReminder::NOTIFICATION_DEPARTED, lane)) {
                 myMoveReminders.push_back(rem);
-            };
+            }
         }
     }
     if (OptionsCont::getOptions().getBool("vehroute-output.exit-times")) {
@@ -459,6 +459,7 @@ MSPerson::MSPersonStage_Access::proceed(MSNet* net, MSTransportable* person, SUM
     myDeparted = now;
     myEstimatedArrival = now + TIME2STEPS(myDist / person->getMaxSpeed());
     net->getBeginOfTimestepEvents()->addEvent(new ProceedCmd(person, &myDestinationStop->getLane().getEdge()), myEstimatedArrival);
+    net->getPersonControl().startedAccess();
     myDestinationStop->getLane().getEdge().addTransportable(person);
 }
 
@@ -506,6 +507,7 @@ MSPerson::MSPersonStage_Access::tripInfoOutput(OutputDevice& os, const MSTranspo
 
 SUMOTime
 MSPerson::MSPersonStage_Access::ProceedCmd::execute(SUMOTime currentTime) {
+    MSNet::getInstance()->getPersonControl().endedAccess();
     myStopEdge->removeTransportable(myPerson);
     if (!myPerson->proceed(MSNet::getInstance(), currentTime)) {
         MSNet::getInstance()->getPersonControl().erase(myPerson);

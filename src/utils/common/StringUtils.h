@@ -28,7 +28,6 @@
 #include <iomanip>
 #include <xercesc/util/XMLString.hpp>
 #include <utils/common/StdDefs.h>
-#include <utils/common/UtilExceptions.h>
 
 
 // ===========================================================================
@@ -133,6 +132,8 @@ public:
      * @throw BoolFormatException in any other case
      */
     static bool toBool(const std::string& sData);
+
+    static MMVersion toVersion(const std::string& sData);
 
     /**@brief converts a 0-terminated XMLCh* array (usually UTF-16, stemming from Xerces) into std::string in UTF-8
      * @throw an EmptyData - exception if the given pointer is 0

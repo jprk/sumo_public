@@ -57,13 +57,16 @@ RONet::getInstance(void) {
     if (myInstance != nullptr) {
         return myInstance;
     }
-    throw ProcessError("A network was not yet constructed.");
+    throw ProcessError(TL("A network was not yet constructed."));
 }
 
 
 RONet::RONet() :
     myVehicleTypes(), myDefaultVTypeMayBeDeleted(true),
-    myDefaultPedTypeMayBeDeleted(true), myDefaultBikeTypeMayBeDeleted(true),
+    myDefaultPedTypeMayBeDeleted(true),
+    myDefaultBikeTypeMayBeDeleted(true),
+    myDefaultTaxiTypeMayBeDeleted(true),
+    myDefaultRailTypeMayBeDeleted(true),
     myHaveActiveFlows(true),
     myRoutesOutput(nullptr), myRouteAlternativesOutput(nullptr), myTypesOutput(nullptr),
     myReadRouteNo(0), myDiscardedRouteNo(0), myWrittenRouteNo(0),
@@ -77,7 +80,7 @@ RONet::RONet() :
                   || OptionsCont::getOptions().getBool("ptline-routing")),
     myHasBidiEdges(false) {
     if (myInstance != nullptr) {
-        throw ProcessError("A network was already constructed.");
+        throw ProcessError(TL("A network was already constructed."));
     }
     SUMOVTypeParameter* type = new SUMOVTypeParameter(DEFAULT_VTYPE_ID, SVC_PASSENGER);
     type->onlyReferenced = true;
@@ -97,6 +100,11 @@ RONet::RONet() :
     defTaxiType->onlyReferenced = true;
     defTaxiType->parametersSet |= VTYPEPARS_VEHICLECLASS_SET;
     myVehicleTypes.add(defTaxiType->id, defTaxiType);
+
+    SUMOVTypeParameter* defRailType = new SUMOVTypeParameter(DEFAULT_RAILTYPE_ID, SVC_RAIL);
+    defRailType->onlyReferenced = true;
+    defRailType->parametersSet |= VTYPEPARS_VEHICLECLASS_SET;
+    myVehicleTypes.add(defRailType->id, defRailType);
 
     myInstance = this;
 }
@@ -151,7 +159,7 @@ RONet::getRestrictions(const std::string& id) const {
 bool
 RONet::addEdge(ROEdge* edge) {
     if (!myEdges.add(edge->getID(), edge)) {
-        WRITE_ERROR("The edge '" + edge->getID() + "' occurs at least twice.");
+        WRITE_ERRORF(TL("The edge '%' occurs at least twice."), edge->getID());
         delete edge;
         return false;
     }
@@ -165,7 +173,7 @@ RONet::addEdge(ROEdge* edge) {
 bool
 RONet::addDistrict(const std::string id, ROEdge* source, ROEdge* sink) {
     if (myDistricts.count(id) > 0) {
-        WRITE_ERROR("The TAZ '" + id + "' occurs at least twice.");
+        WRITE_ERRORF(TL("The TAZ '%' occurs at least twice."), id);
         delete source;
         delete sink;
         return false;
@@ -188,12 +196,12 @@ RONet::addDistrict(const std::string id, ROEdge* source, ROEdge* sink) {
 bool
 RONet::addDistrictEdge(const std::string tazID, const std::string edgeID, const bool isSource) {
     if (myDistricts.count(tazID) == 0) {
-        WRITE_ERROR("The TAZ '" + tazID + "' is unknown.");
+        WRITE_ERRORF(TL("The TAZ '%' is unknown."), tazID);
         return false;
     }
     ROEdge* edge = getEdge(edgeID);
     if (edge == nullptr) {
-        WRITE_ERROR("The edge '" + edgeID + "' for TAZ '" + tazID + "' is unknown.");
+        WRITE_ERRORF(TL("The edge '%' for TAZ '%' is unknown."), edgeID, tazID);
         return false;
     }
     if (isSource) {
@@ -248,7 +256,7 @@ RONet::setBidiEdges(const std::map<ROEdge*, std::string>& bidiMap) {
     for (const auto& item : bidiMap) {
         ROEdge* bidi = myEdges.get(item.second);
         if (bidi == nullptr) {
-            WRITE_ERROR("The bidi edge '" + item.second + "' is not known.");
+            WRITE_ERRORF(TL("The bidi edge '%' is not known."), item.second);
         }
         item.first->setBidiEdge(bidi);
         myHasBidiEdges = true;
@@ -259,7 +267,7 @@ RONet::setBidiEdges(const std::map<ROEdge*, std::string>& bidiMap) {
 void
 RONet::addNode(RONode* node) {
     if (!myNodes.add(node->getID(), node)) {
-        WRITE_ERROR("The node '" + node->getID() + "' occurs at least twice.");
+        WRITE_ERRORF(TL("The node '%' occurs at least twice."), node->getID());
         delete node;
     }
 }
@@ -268,7 +276,7 @@ RONet::addNode(RONode* node) {
 void
 RONet::addStoppingPlace(const std::string& id, const SumoXMLTag category, SUMOVehicleParameter::Stop* stop) {
     if (!myStoppingPlaces[category == SUMO_TAG_TRAIN_STOP ? SUMO_TAG_BUS_STOP : category].add(id, stop)) {
-        WRITE_ERROR("The " + toString(category) + " '" + id + "' occurs at least twice.");
+        WRITE_ERRORF(TL("The % '%' occurs at least twice."), toString(category), id);
         delete stop;
     }
 }
@@ -358,12 +366,14 @@ RONet::getVehicleTypeSecure(const std::string& id) {
     SUMOVTypeParameter* type = myVehicleTypes.get(id);
     if (id == DEFAULT_VTYPE_ID) {
         myDefaultVTypeMayBeDeleted = false;
-    }
-    if (id == DEFAULT_PEDTYPE_ID) {
+    } else if (id == DEFAULT_PEDTYPE_ID) {
         myDefaultPedTypeMayBeDeleted = false;
-    }
-    if (id == DEFAULT_BIKETYPE_ID) {
+    } else if (id == DEFAULT_BIKETYPE_ID) {
         myDefaultBikeTypeMayBeDeleted = false;
+    } else if (id == DEFAULT_TAXITYPE_ID) {
+        myDefaultTaxiTypeMayBeDeleted = false;
+    } else if (id == DEFAULT_RAILTYPE_ID) {
+        myDefaultRailTypeMayBeDeleted = false;
     }
     if (type != nullptr) {
         return type;
@@ -398,6 +408,27 @@ RONet::checkVType(const std::string& id) {
         } else {
             return false;
         }
+    } else if (id == DEFAULT_BIKETYPE_ID) {
+        if (myDefaultBikeTypeMayBeDeleted) {
+            myVehicleTypes.remove(id);
+            myDefaultBikeTypeMayBeDeleted = false;
+        } else {
+            return false;
+        }
+    } else if (id == DEFAULT_TAXITYPE_ID) {
+        if (myDefaultTaxiTypeMayBeDeleted) {
+            myVehicleTypes.remove(id);
+            myDefaultTaxiTypeMayBeDeleted = false;
+        } else {
+            return false;
+        }
+    } else if (id == DEFAULT_RAILTYPE_ID) {
+        if (myDefaultRailTypeMayBeDeleted) {
+            myVehicleTypes.remove(id);
+            myDefaultRailTypeMayBeDeleted = false;
+        } else {
+            return false;
+        }
     } else {
         if (myVehicleTypes.get(id) != 0 || myVTypeDistDict.find(id) != myVTypeDistDict.end()) {
             return false;
@@ -412,7 +443,7 @@ RONet::addVehicleType(SUMOVTypeParameter* type) {
     if (checkVType(type->id)) {
         myVehicleTypes.add(type->id, type);
     } else {
-        WRITE_ERROR("The vehicle type '" + type->id + "' occurs at least twice.");
+        WRITE_ERRORF(TL("The vehicle type '%' occurs at least twice."), type->id);
         delete type;
         return false;
     }
@@ -447,7 +478,7 @@ RONet::addVehicle(const std::string& id, ROVehicle* veh) {
         myRoutables[veh->getDepart()].push_back(veh);
         return true;
     }
-    WRITE_ERROR("Another vehicle with the id '" + id + "' exists.");
+    WRITE_ERRORF(TL("Another vehicle with the id '%' exists."), id);
     delete veh;
     return false;
 }
@@ -464,7 +495,7 @@ RONet::getDeparture(const std::string& vehID) const {
     if (it != myVehIDs.end()) {
         return it->second;
     } else {
-        throw ProcessError("Requesting departure time for unknown vehicle '" + vehID + "'");
+        throw ProcessError(TLF("Requesting departure time for unknown vehicle '%'", vehID));
     }
 }
 
@@ -494,7 +525,7 @@ RONet::addPerson(ROPerson* person) {
         myRoutables[person->getDepart()].push_back(person);
         return true;
     }
-    WRITE_ERROR("Another person with the id '" + person->getID() + "' exists.");
+    WRITE_ERRORF(TL("Another person with the id '%' exists."), person->getID());
     return false;
 }
 
@@ -603,10 +634,10 @@ RONet::createBulkRouteRequests(const RORouterProvider& provider, const SUMOTime 
             bulkVehs[depEdge->getNumericalID()].push_back(routable);
             RORoutable* const first = bulkVehs[depEdge->getNumericalID()].front();
             if (first->getMaxSpeed() != routable->getMaxSpeed()) {
-                WRITE_WARNING("Bulking different maximum speeds ('" + first->getID() + "' and '" + routable->getID() + "') may lead to suboptimal routes.");
+                WRITE_WARNINGF(TL("Bulking different maximum speeds ('%' and '%') may lead to suboptimal routes."), first->getID(), routable->getID());
             }
             if (first->getVClass() != routable->getVClass()) {
-                WRITE_WARNING("Bulking different vehicle classes ('" + first->getID() + "' and '" + routable->getID() + "') may lead to invalid routes.");
+                WRITE_WARNINGF(TL("Bulking different vehicle classes ('%' and '%') may lead to invalid routes."), first->getID(), routable->getID());
             }
         }
     }

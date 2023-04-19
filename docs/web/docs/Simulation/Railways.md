@@ -81,22 +81,21 @@ will restrict it's usage to one direction at a time.
 
 ### Bidirectional rails in [sumo-gui](../sumo-gui.md)
 
-sumo-gui automatically shows only one of both edges to avoid duplicate
-drawing of cross-ties. The visualization option *show lane direction*
-can be used to identify superposed edges. (arrows in both directions
-will be show).
+Visualization of bidirectional tracks has a distinct [style and dedicated settings](#network).
 
 ### Working with bidirectional tracks in [netedit](../Netedit/index.md)
 
 - To show both edges that constitute a bidirectional track, activate
-  edge visualization option *spread superposed*. Both edges will be
+  edge visualization option *spread bidirectional railways/roads*. Both edges will be
   drawn narrower and with a side-offset to make them both visible
   without overlap.
+   - this is highly recommended when using connection mode to define connections among bidirectional tracks as it's otherwise hard to distinguish the affected edges
+   - the pre-defined gui setting scheme 'rail' automatically activates the *spread ...* setting.
 - To find (and highlight) all bidirectional tracks, use [attribute
   selection](../Netedit/index.md#match_attribute) and search for
   attribute *bidi* with a value of *1*
 - Create bidirectional tracks [as explained
-  here](../Netedit/index.md#creating_bidirectional_railway_tracks)
+  here](../Netedit/neteditUsageExamples.md#creating_bidirectional_railway_tracks)
 
 ### Routing in bidirectional networks
 When computing train routes in a network with parallel tracks which are usable in both directions, it may be
@@ -137,6 +136,8 @@ Signaling](https://en.wikipedia.org/wiki/Automatic_block_signaling).
 By setting the [netconvert](../netconvert.md)-option **--railway.signals.discard** all signals
 can be removed from a network.
 
+When working with bidirectional tracks, rail signals will affect both directions of travel by default. This can be [changed in netedit](../Netedit/neteditUsageExamples.md#define_rail_signals_that_only_affect_one_track_direction).
+
 ## Rail Crossings
 
 The [node type](../Networks/PlainXML.md#node_descriptions)
@@ -163,17 +164,17 @@ Time values are in seconds.
 - opening-time : time for opening the crossing (indicated by red-yellow state 'u') (default 3)
 - yellow-time : time for closing the crossing (default 3)
 
-When setting parameters, 'id' indicates the id of the rail-crossing junction and programID is always '0'.
+When setting parameters, `id` indicates the id of the rail-crossing junction and `programID` is always '0'.
 
-```
-additional_file.xsd">
+```xml
+<additional>
     <tlLogic id="C" programID="0">
-        <param key="time-gap" value="15.0"
-        <param key="space-gap" value="-1.0"
-        <param key="min-green-time" value="5.0"
+        <param key="time-gap" value="15.0"/>
+        <param key="space-gap" value="-1.0"/>
+        <param key="min-green-time" value="5.0"/>
         <param key="opening-delay" value="3.0"/>
         <param key="opening-time" value="3.0"/>
-        <param key="yellow-time" value="3.0"/>
+        <param key="yellow-time" value="5.0"/>
     </tlLogic>
 </additional>
 ```
@@ -275,7 +276,7 @@ Trains can be split and joined (divided and coupled) at stops.
 
 ## Splitting a train
 To split a train, the following input definition can be used. The rear half of the train is defined as a new vehicle which depart value **split**. The train train that is being split must define the 'split' attribute in its stop definition referencing the id of the rear half.
-```
+```xml
 <vType id="train" vClass="rail"/>
     <vType id="splitTrain" vClass="rail" length="50"/>
     <trip id="t0" type="train" depart="0.00" from="a" to="c">
@@ -290,7 +291,7 @@ When defined this way, The rear part of the train will be created as a new simul
 ## Joining two trains
 To join two trains, the following input definition can be used. The front half of the train must define a stop trigger with value **join**. The rear half of the other train must define the attribute 'join' referencing the id of the front half.
 
-```
+```xml
 <vType id="train" vClass="rail"/>
     <vType id="splitTrain" vClass="rail" length="50"/>
     <trip id="t0" type="splitTrain" depart="0.00" from="a" to="c">
@@ -319,7 +320,7 @@ Rail signals perform the following safety functions automatically
 Functionality **a)** corresponds to the "classic" safety behavior of rail signals ([PZB](https://en.wikipedia.org/wiki/Punktf%C3%B6rmige_Zugbeeinflussung)). When option **--railsignal-moving-block** is set or individual signals are configured with parameter *moving-block* (see below), feature **a)** is disabled and trains will use their configured carFollowModel (i.e. 'Rail') for distance keeping. This is similar to the [LZB](https://en.wikipedia.org/wiki/Linienzugbeeinflussung) safety system when used with extremely short virtual blocks.
 
 To switch a single signal into moving-block-mode, the following additional file may be loaded:
-```
+```xml
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://sumo.dlr.de/xsd/additional_file.xsd">
     <tlLogic id="gneJ8" programID="0">
         <param key="moving-block" value="true"/>
@@ -333,7 +334,7 @@ Parameter *moving-block* may also be updated at runtime with `traci.trafficlight
 Additionally, rail signals can enforce train ordering to ensure that a [scheduled order at stations](Public_Transport.md#public_transport_schedules) can be kept.
 To make use of this, the following elements can be loaded from an additional file:
 
-```
+```xml
    <railSignalConstraints id="A">
         <predecessor tripId="t0" tl="D" foes="t1" limit="2"/>
         <predecessor tripId="t0" tl="C" foes="t2"/>        
@@ -388,6 +389,8 @@ Constraints can be queried and modified via TraCI:
 
 # Visualization
 
+## Trains
+
 The length of railway carriages, locomotive and the gap between the
 carriages can be configured using the following [generic vType
 parameters](../Simulation/GenericParameters.md):
@@ -397,6 +400,37 @@ parameters](../Simulation/GenericParameters.md):
 - carriageGap
 
 These parameters control the appearance of trains in [sumo-gui](../sumo-gui.md) when drawing vehicles with the style 'simple shapes'.
+
+## Network
+
+By default, railway tracks are shown in [sumo-gui](../sumo-gui.md) in a distinct style:
+
+- tracks and crossties are rendendered instead of filled shapes when zoomed in (configurable with visualization setting *show rails*)
+- turning arrows are not shown
+- the [white bar that indicates right of way](../sumo-gui.md#right_of_way) is not drawn
+- junction shapes are not shown and the internal edges that make up a railway switch are always visible (can be changed setting junction coloring to any scheme other than *uniform*)
+- traffic light (rail signal) indicators are drawn with an offset to the right to indicate the direction in which the signal is applied
+- for each pair of edges that make up a bidirectional track, only of is drawn to avoid artefacts. To make both edges visible (i.e. for selecting or otherwise interacting with that edge), the visualization setting *spread bidirectional railways/roads* in the *Streets* tab can be activated
+- the pre-defined gui setting scheme *"Rail"* can be used to activate the following settings that are helpful for diagnosing a railway simualation
+  - *spread bidirectional railways/roads*
+  - coloring junctions *by type* (making rail signals more visible)
+  - constant junction size (making rail signals bigger when zoomed out)
+  - show lane direction (direction is otherwise hard to judge for uni-directional tracks)
+  - vehicles are shown as *simple shapes* to ensure articulated train shapes follow curves
+
+## Abstract Networks
+
+Road networks are most often modelled according to their actual layout in [cartesian space](../Geo-Coordinates.md). Such networks have all distances and angles in the same proportions as those of geographical map.
+
+In the railway domain it is often useful to work with schematic (also called abstract) networks instead of (or in addition to) geographical networks.
+Such abstract networks can make it easiert so see all tracks and switches on a single screen without zooming and panning. SUMO supports working with abstract maps in the following ways:
+
+- all roads and tracks can have a custom "length" value that differs from their visual length. This allows to separate the visualization of the network from it's simulation behavior (w.r.t. distance travelled).
+- sumo-gui supports loading an abstract map of a network along with a geographical map by using options **-n geo.net.xml -N abstract.net.xml**. The two networks must have the exact same topology and may only differ in their geometry.
+  - The user may switch between the visualization of either geometry via the hotkey **CTRL+K** or by setting Street visualization setting *secondary shape*.
+  - All outputs that include geometry information (i.e. [fcd-output](Output/FCDOutput.md)) will be according the the network loaded with option **-n**
+ - the tool [abstractRail.py](../Tools/Net.md#abstractrailpy) can be used to convert geographic rail networks in abstract rail networks
+ 
 
 # Miscellaneous
 - Error checking for [railway schedules](Public_Transport.md#single_vehicles_and_trips) can be done with the tool [checkStopOrder.py](../Tools/Routes.md#checkstoporderpy) 

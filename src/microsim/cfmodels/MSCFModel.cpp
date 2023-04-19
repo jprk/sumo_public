@@ -200,13 +200,13 @@ MSCFModel::finalizeSpeed(MSVehicle* const veh, double vPos) const {
     // aMax: Maximal admissible acceleration until the next action step, such that the vehicle's maximal
     // desired speed on the current lane will not be exceeded when the
     // acceleration is maintained until the next action step.
-    double aMax = (veh->getLane()->getVehicleMaxSpeed(veh) * factor - oldV) / veh->getActionStepLengthSecs();
+    double aMax = (MAX2(veh->getLane()->getVehicleMaxSpeed(veh), vPos) * factor - oldV) / veh->getActionStepLengthSecs();
     // apply planned speed constraints and acceleration constraints
     double vMax = MIN3(oldV + ACCEL2SPEED(aMax), maxNextSpeed(oldV, veh), vStop);
     // do not exceed max decel even if it is unsafe
 #ifdef _DEBUG
     //if (vMin > vMax) {
-    //    WRITE_WARNING("Maximum speed of vehicle '" + veh->getID() + "' is lower than the minimum speed (min: " + toString(vMin) + ", max: " + toString(vMax) + ").");
+    //    WRITE_WARNINGF(TL("Maximum speed of vehicle '%' is lower than the minimum speed (min: %, max: %)."), veh->getID(), toString(vMin), toString(vMax));
     //}
 #endif
 
@@ -675,7 +675,7 @@ MSCFModel::passingTime(const double lastPos, const double passedPos, const doubl
         const double extrapolated = passedPos > currentPos ? TS * (passedPos - lastPos) / lastCoveredDist : TS * (currentPos - passedPos) / lastCoveredDist;
         return extrapolated;
     } else if (currentSpeed < 0) {
-        WRITE_ERROR(TL("passingTime(): given argument 'currentSpeed' is negative. This case is not handled yet."));
+        WRITE_ERROR("passingTime(): given argument 'currentSpeed' is negative. This case is not handled yet.");
         return -1;
     }
 
@@ -1046,6 +1046,14 @@ MSCFModel::calculateEmergencyDeceleration(double gap, double egoSpeed, double pr
     return b2;
 }
 
+
+void
+MSCFModel::applyOwnSpeedPerceptionError(const MSVehicle* const veh, double& speed) const {
+    if (!veh->hasDriverState()) {
+        return;
+    }
+    speed = veh->getDriverState()->getPerceivedOwnSpeed(speed);
+}
 
 
 void

@@ -38,41 +38,38 @@ netedit.changeElement("parkingArea")
 netedit.changeDefaultValue(netedit.attrs.parkingArea.create.angle, "dummyHeight")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 220, 250)
+netedit.leftClick(referencePosition, 475, 256)
 
 # set invalid angle (empty)
 netedit.changeDefaultValue(netedit.attrs.parkingArea.create.angle, "")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 220, 250)
+netedit.leftClick(referencePosition, 475, 256)
 
 # set valid angle (negative)
 netedit.changeDefaultValue(netedit.attrs.parkingArea.create.angle, "-4")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 230, 250)
+netedit.leftClick(referencePosition, 475, 256)
 
 # set valid angle (>360)
 netedit.changeDefaultValue(netedit.attrs.parkingArea.create.angle, "500")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 240, 250)
+netedit.leftClick(referencePosition, 475, 256)
 
 # set valid angle
 netedit.changeDefaultValue(netedit.attrs.parkingArea.create.angle, "120")
 
 # create parkingArea in mode "reference left"
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 475, 256)
 
 # Check undo redo
-netedit.undo(referencePosition, 3)
-netedit.redo(referencePosition, 3)
+netedit.undo(referencePosition, 2)
+netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

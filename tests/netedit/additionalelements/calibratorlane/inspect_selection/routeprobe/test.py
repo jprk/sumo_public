@@ -37,8 +37,8 @@ netedit.selectionInvert()
 # go to inspect mode
 netedit.inspectMode()
 
-# inspect calibrator
-netedit.leftClick(referencePosition, 300, 100)
+# inspect calibratorLane
+netedit.leftClick(referencePosition, 514, 284)
 
 # Change parameter id with a non valid value (invalid characters)
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.routeProbe, "///;;", True)
@@ -47,14 +47,11 @@ netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.routeProbe, "/
 netedit.modifyAttribute(netedit.attrs.calibrator.inspectSelection.routeProbe, "customRouteProbeName", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 4)
-netedit.redo(referencePosition, 4)
+netedit.undo(referencePosition, 2)
+netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

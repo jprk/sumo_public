@@ -31,6 +31,7 @@
 #include <netedit/elements/network/GNELaneTemplate.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/windows/GUIAppEnum.h>
+#include <utils/options/OptionsCont.h>
 
 
 #include "GNECreateEdgeFrame.h"
@@ -78,7 +79,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::EdgeTypeSelector(GNECreateEdgeFrame* creat
     // checkboxes
     myNoPedestriansCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Disallow for pedestrians"),
             this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
-    myAddSidewalkCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Add Sidewalk"),
+    myAddSidewalkCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Add sidewalk"),
             this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     // use custom edge radio button
     myUseCustomEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Use edgeType/template"),
@@ -89,13 +90,13 @@ GNECreateEdgeFrame::EdgeTypeSelector::EdgeTypeSelector(GNECreateEdgeFrame* creat
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameButtons = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create new edge type button
-    myAddEdgeTypeButton = new FXButton(horizontalFrameButtons, TL("Add\t\tAdd edge type"), GUIIconSubSys::getIcon(GUIIcon::ADD),
+    myAddEdgeTypeButton = new FXButton(horizontalFrameButtons, (TL("Add") + std::string("\t\t") + TL("Add edge type")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ADD),
                                        this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
     // create delete edge type button
-    myDeleteEdgeTypeButton = new FXButton(horizontalFrameButtons, TL("Delete\t\tDelete edge type"), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
+    myDeleteEdgeTypeButton = new FXButton(horizontalFrameButtons, (TL("Delete") + std::string("\t\t") + TL("Delete edge type")).c_str(), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
                                           this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
     // create delete edge type button
-    myCreateFromTemplate = new FXButton(getCollapsableFrame(), TL("Create from template\t\tCreate edgeType from template"), GUIIconSubSys::getIcon(GUIIcon::EDGE),
+    myCreateFromTemplate = new FXButton(getCollapsableFrame(), (TL("Create from template") + std::string("\t\t") + TL("Create edgeType from template")).c_str(), GUIIconSubSys::getIcon(GUIIcon::EDGE),
                                         this, MID_GNE_CREATEEDGEFRAME_CREATEFROMTEMPLATE, GUIDesignButton);
     // by default, create custom edge
     myUseDefaultEdgeType->setCheck(TRUE);
@@ -314,7 +315,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::onCmdAddEdgeType(FXObject*, FXSelector, vo
     // create new edge type
     GNEEdgeType* edgeType = new GNEEdgeType(myCreateEdgeFrameParent->getViewNet()->getNet());
     // add it using undoList
-    myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, "create new edge type");
+    myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, TL("create new edge type"));
     myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(edgeType, true), true);
     myCreateEdgeFrameParent->getViewNet()->getUndoList()->end();
     // update myEdgeTypeSelected
@@ -336,7 +337,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::onCmdDeleteEdgeType(FXObject*, FXSelector,
     // get edgeType to remove
     GNEEdgeType* edgeType = myCreateEdgeFrameParent->getViewNet()->getNet()->getAttributeCarriers()->retrieveEdgeType(myEdgeTypesComboBox->getText().text());
     // remove it using undoList
-    myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, "delete edge type");
+    myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, TL("delete edge type"));
     myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(edgeType, false), true);
     myCreateEdgeFrameParent->getViewNet()->getUndoList()->end();
     // refresh EdgeTypeSelector
@@ -363,7 +364,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::onCmdCreateFromTemplate(FXObject*, FXSelec
         // copy all template values
         edgeType->copyTemplate(myCreateEdgeFrameParent->getViewNet()->getViewParent()->getInspectorFrame()->getTemplateEditor()->getEdgeTemplate());
         // add it using undoList
-        myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, "create new edge type");
+        myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::EDGE, TL("create new edge type"));
         myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(edgeType, true), true);
         myCreateEdgeFrameParent->getViewNet()->getUndoList()->end();
         // update myEdgeTypeSelected
@@ -401,7 +402,7 @@ GNECreateEdgeFrame::EdgeTypeSelector::fillComboBox() {
     myEdgeTypesComboBox->setTextColor(FXRGB(0, 0, 0));
     // add template
     if (templateEditor->getEdgeTemplate()) {
-        myEdgeTypesComboBox->appendItem(("template: " + templateEditor->getEdgeTemplate()->getID()).c_str(), nullptr);
+        myEdgeTypesComboBox->appendItem((TL("template: ") + templateEditor->getEdgeTemplate()->getID()).c_str(), nullptr);
     }
     // add edge types
     for (const auto& edgeType : edgeTypes) {
@@ -433,10 +434,10 @@ GNECreateEdgeFrame::LaneTypeSelector::LaneTypeSelector(GNECreateEdgeFrame* creat
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameButtons = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create new lane type button
-    myAddLaneTypeButton = new FXButton(horizontalFrameButtons, TL("Add\t\tAdd lane type"), GUIIconSubSys::getIcon(GUIIcon::ADD),
+    myAddLaneTypeButton = new FXButton(horizontalFrameButtons, (TL("Add") + std::string("\t\t") + TL("Add lane type")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ADD),
                                        this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
     // create delete lane type button
-    myDeleteLaneTypeButton = new FXButton(horizontalFrameButtons, TL("Delete\t\tDelete lane type"), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
+    myDeleteLaneTypeButton = new FXButton(horizontalFrameButtons, (TL("Delete") + std::string("\t\t") + TL("Delete lane type")).c_str(), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
                                           this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
 }
 
@@ -533,7 +534,7 @@ GNECreateEdgeFrame::LaneTypeSelector::onCmdAddLaneType(FXObject*, FXSelector, vo
             // add new lane
             newEdgeType->addLaneType(new GNELaneType(newEdgeType));
             // remove old edgeTyp und and newEdgeType
-            myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::LANE, "add laneType");
+            myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::LANE, TL("add laneType"));
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(edgeType, false), true);
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(newEdgeType, true), true);
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->end();
@@ -570,7 +571,7 @@ GNECreateEdgeFrame::LaneTypeSelector::onCmdDeleteLaneType(FXObject*, FXSelector,
                 }
             }
             // remove old edgeTyp und and newEdgeType
-            myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::LANE, "remove laneType");
+            myCreateEdgeFrameParent->getViewNet()->getUndoList()->begin(GUIIcon::LANE, TL("remove laneType"));
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(edgeType, false), true);
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->add(new GNEChange_EdgeType(newEdgeType, true), true);
             myCreateEdgeFrameParent->getViewNet()->getUndoList()->end();
@@ -639,7 +640,7 @@ GNECreateEdgeFrame::Legend::~Legend() {}
 // ---------------------------------------------------------------------------
 
 GNECreateEdgeFrame::GNECreateEdgeFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
-    GNEFrame(viewParent, viewNet, "Create Edge"),
+    GNEFrame(viewParent, viewNet, TL("Create Edge")),
     myObjectsUnderSnappedCursor(viewNet),
     myCreateEdgeSource(nullptr) {
     // create custom edge selector
@@ -678,7 +679,7 @@ GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewN
         }
         // begin undo list
         if (!myViewNet->getUndoList()->hasCommandGroup()) {
-            myViewNet->getUndoList()->begin(GUIIcon::EDGE, "create new " + toString(SUMO_TAG_EDGE));
+            myViewNet->getUndoList()->begin(GUIIcon::EDGE, TL("create new edge"));
         }
         // if we didn't clicked over another junction, then create a new
         if (junction == nullptr) {
@@ -737,21 +738,21 @@ GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewN
                     if (myViewNet->getUndoList()->hasCommandGroup()) {
                         myViewNet->getUndoList()->end();
                     } else {
-                        std::cout << "edge created without an open CommandGroup )-:\n";
+                        std::cout << "edge created without an open CommandGroup" << std::endl;
                     }
                     // if we're creating edges in chain mode, mark junction as junction edge source
                     if (chainEdge) {
                         myCreateEdgeSource = junction;
                         myCreateEdgeSource->markAsCreateEdgeSource();
-                        myViewNet->getUndoList()->begin(GUIIcon::EDGE, "create new " + toString(SUMO_TAG_EDGE));
+                        myViewNet->getUndoList()->begin(GUIIcon::EDGE, TL("create new edge"));
                     } else {
                         myCreateEdgeSource = nullptr;
                     }
                 } else {
-                    myViewNet->setStatusBarText("An " + toString(SUMO_TAG_EDGE) + " with the same geometry already exists!");
+                    myViewNet->setStatusBarText(TL("An edge with the same geometry already exists!"));
                 }
             } else {
-                myViewNet->setStatusBarText("Start- and endpoint for an " + toString(SUMO_TAG_EDGE) + " must be distinct!");
+                myViewNet->setStatusBarText(TL("Start- and endpoint for an edge must be distinct!"));
             }
             update();
         }
@@ -864,6 +865,8 @@ GNECreateEdgeFrame::addSidewalk(GNEEdge* edge) const {
         edge->setAttribute(SUMO_ATTR_NUMLANES, toString(edge->getLanes().size() + 1), myViewNet->getUndoList());
         // set last lane allow attribute
         edge->getLanes().front()->setAttribute(SUMO_ATTR_ALLOW, "pedestrian", myViewNet->getUndoList());
+        // set width
+        edge->getLanes().front()->setAttribute(SUMO_ATTR_WIDTH, toString(OptionsCont::getOptions().getFloat("default.sidewalk-width")), myViewNet->getUndoList());
     }
 }
 

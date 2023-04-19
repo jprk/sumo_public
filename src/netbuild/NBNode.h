@@ -65,7 +65,7 @@ class OutputDevice;
  */
 class NBNode : public Named, public Parameterised {
     friend class NBNodeCont;
-    friend class GNEJunction;            // < used for visualization (NETEDIT)
+    friend class GNEJunction;            // < used for visualization (netedit)
     friend class NBNodesEdgesSorter;     // < sorts the edges
     friend class NBNodeTypeComputer;     // < computes type
     friend class NBEdgePriorityComputer; // < computes priorities of edges per intersection
@@ -200,6 +200,8 @@ public:
         int minNextCrossingEdges = std::numeric_limits<int>::max();
         /// @brief minimum number of edges crossed by incoming crossings
         int minPrevCrossingEdges = std::numeric_limits<int>::max();
+        /// @brief reference edges that uniquely identify this walkingarea
+        std::set<const NBEdge*, ComparatorIdLess> refEdges;
     };
 
     struct WalkingAreaCustomShape {
@@ -542,6 +544,11 @@ public:
     /// @brief set the junction shape
     void setCustomShape(const PositionVector& shape);
 
+    /// @brief reset node shape
+    void resetShape() {
+        myPoly.clear();
+    }
+
     /// @brief set the turning radius
     void setRadius(double radius) {
         myRadius = radius;
@@ -649,6 +656,7 @@ public:
 
     /* @brief check whether a crossing should be build for the candiate edges and build 0 to n crossings
      * @param[in] candidates The candidate vector of edges to be crossed
+     * @param[in] checkOnly Whether only checking (of user supplied) crossings shall be performed
      * @return The number of crossings built
      * */
     int checkCrossing(EdgeVector candidates, bool checkOnly = false);
@@ -855,7 +863,7 @@ private:
     void displaceShapeAtWidthChange(const NBEdge* from, const NBEdge::Connection& con, PositionVector& fromShape, PositionVector& toShape) const;
 
     /// @brief returns whether sub is a subset of super
-    static bool includes(const std::set<NBEdge*, ComparatorIdLess>& super,
+    static bool includes(const std::set<const NBEdge*, ComparatorIdLess>& super,
                          const std::set<const NBEdge*, ComparatorIdLess>& sub);
 
     NBEdge* getNextCompatibleOutgoing(const NBEdge* incoming, SVCPermissions vehPerm, EdgeVector::const_iterator start, bool clockwise) const;

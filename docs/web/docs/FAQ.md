@@ -945,7 +945,7 @@ of a 1km highway, do the following:
 - you can use insertion method 'last' which places vehicles at their
   desired headway for a given speed (repeat for every lane):
 
-```
+```xml
 <flow id="lane0" from="startEdge" to="destEdge" begin="0" end="1" number="65" departPos="last" departSpeed="7.885" departLane="0"/>
 ```
 
@@ -956,7 +956,7 @@ density:
   equilibrium speed from above: 15.385m / 7.885m/s = 1.951s
 - use the equilibrium speed as departSpeed
 
-```
+```xml
 <flow id="lane0" from="startEdge" to="destEdge" begin="0" end="3600" period="1.951" departPos="base" departSpeed="7.885" departLane="0"/>
 ```
 !!! caution
@@ -1011,7 +1011,7 @@ Calculated as ` 24 * 3600 * 80000 / 1800 = 3840000 `
 By default, the same configuration will result in the same behavior even though many parts of the simulation are [randomized](Simulation/Randomness.md).
 To change this, either option **--seed** or option **--random** must be used.
 In order to collect distinct output from multiple runs, it is advisable to set option **--output-prefix**.
-Running a simulation 3 times with differen results could be done in a batch file like this:
+Running a simulation 3 times with different results could be done in a batch file like this:
 
 ```
 sumo -c run.sumocfg --seed 1 --output-prefix 1.
@@ -1019,12 +1019,13 @@ sumo -c run.sumocfg --seed 2 --output-prefix 2.
 sumo -c run.sumocfg --seed 3 --output-prefix 3.
 ```
 
-The tool [runSeeds.py](Tools/Misc.md#runseedspy) can be used to automate this. 
+The tool [runSeeds.py](Tools/Misc.md#runseedspy) can be used to automate this, parallelize it and even add output options to avoid modifying the .sumocfg:
+
+`tools/runSeeds.py -a sumo -k run.sumocfg --seeds 1:4 --threads 4 --statistic-output stats.xml`
 
 The tool [attributeStats.py](Tools/Output.md#attributestatspy) can be used to generated statistics for multiple runs:
-i.e. if *run.sumocfg* contains the option `<statistic-output value="stats.xml">/`, the command 
-`tools/output/attributeStats.py -e vehicleTripStatistics -a timeLoss *.stats.xml` 
-will generate timeLoss statistics for all runs
+i.e. if simulations where run with the option `<statistic-output value="stats.xml">/`, the command 
+`tools/output/attributeStats.py *.stats.xml` will generate statistics on each of the attributes in the statistic-output file over all runs.
 
 ## Visualization
 
@@ -1123,7 +1124,7 @@ to set the integrated graphics as preferred. (Thanks @palvarezlopez for finding 
 There is a know problem in Windows 10 with scaling and flickering in certain applications. 
 If scaling is greater than 100%, a flickering may appear in SUMO-GUI and NETEDIT during mouse movement.
 The only known solution is leaving Scaling at 100%. Another cause is the use of a modern graphics card. 
-If your computer supports it, run SUMO using the integrated graphics card (Control panel->NVidia Control Panel->Select integrated graphid card->apply)
+If your computer supports it, run SUMO using the integrated graphics card (Control panel->NVidia Control Panel->Select integrated graphic card->apply)
 
 ### Missing Characters in Parameter Dialogs (i.e. Chinese Street names) on Linux
 
@@ -1209,6 +1210,11 @@ This can happen with an outdated version of python 2.7. Updating to
 
 Also have a look at the output in the shell window that opens. If it reports missing or outdated 
 SSL certificates try: `pip install certifi`.
+
+### [osmWebWizard.py](Tools/Import/OSM.md#osmWebWizard.py) fails to load the browser page on Linux
+
+This happens when you are using a version of Firefox that was installed from a [snap package](https://en.wikipedia.org/wiki/Snap_(software)) (Which is the default since Ubuntu 22.04).
+As a work-around you can [install a .deb package](https://askubuntu.com/questions/1399383/how-to-install-firefox-as-a-traditional-deb-package-without-snap-in-ubuntu-22).
 
 ## (Communication) Network Simulators
 

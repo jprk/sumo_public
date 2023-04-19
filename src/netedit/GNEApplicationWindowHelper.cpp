@@ -17,16 +17,24 @@
 ///
 // The main window of Netedit (adapted from GUIApplicationWindow)
 /****************************************************************************/
+
+#include <netedit/tools/GNENetDiffTool.h>
+#include <netedit/dialogs/tools/GNEPythonToolDialog.h>
+#include <netedit/dialogs/tools/GNENetgenerateDialog.h>
+#include <netedit/dialogs/tools/GNERunPythonToolDialog.h>
+#include <netedit/dialogs/tools/GNERunNetgenerateDialog.h>
 #include <netedit/elements/GNEAttributeCarrier.h>
-#include <utils/gui/div/GUIDesigns.h>
-#include <utils/foxtools/MFXMenuCheckIcon.h>
+#include <netedit/templates.h>
 #include <utils/common/FileHelpers.h>
+#include <utils/foxtools/MFXMenuCheckIcon.h>
+#include <utils/gui/div/GUIDesigns.h>
+#include <utils/handlers/TemplateHandler.h>
 #include <utils/options/OptionsLoader.h>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/sax/AttributeList.hpp>
-#include <xercesc/sax/SAXParseException.hpp>
-#include <xercesc/sax/SAXException.hpp>
 #include <xercesc/parsers/SAXParser.hpp>
+#include <xercesc/sax/AttributeList.hpp>
+#include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/sax/SAXException.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
 
 #include <regex>
 
@@ -39,27 +47,15 @@
 // ===========================================================================
 
 GNEApplicationWindowHelper::ToolbarsGrip::ToolbarsGrip(GNEApplicationWindow* GNEApp) :
-    menu(nullptr),
-    superModes(nullptr),
-    saveElements(nullptr),
-    navigation(nullptr),
-    modes(nullptr),
-    intervalBar(nullptr),
-    myGNEApp(GNEApp),
-    myToolBarShellMenu(nullptr),
-    myToolBarShellSuperModes(nullptr),
-    myToolBarShellSaveElements(nullptr),
-    myToolBarShellNavigation(nullptr),
-    myToolBarShellModes(nullptr),
-    myToolBarShellIntervalBar(nullptr) {
+    myGNEApp(GNEApp) {
 }
 
 
 void
 GNEApplicationWindowHelper::ToolbarsGrip::buildMenuToolbarsGrip() {
     // build menu bar (for File, edit, processing...) using specify design
-    myToolBarShellMenu = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    menu = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellMenu, GUIDesignToolbarMenuBarNetedit);
+    myPythonToolBarShellMenu = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    menu = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellMenu, GUIDesignToolbarMenuBarNetedit);
     // declare toolbar grip for menu bar
     new FXToolBarGrip(menu, menu, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
 }
@@ -67,35 +63,29 @@ GNEApplicationWindowHelper::ToolbarsGrip::buildMenuToolbarsGrip() {
 
 void
 GNEApplicationWindowHelper::ToolbarsGrip::buildViewParentToolbarsGrips() {
-    // build menu bar for supermodes (next to menu bar)
-    myToolBarShellSuperModes = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    superModes = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellSuperModes, GUIDesignToolBarRaisedSame);
-    // declare toolbar grip for menu bar superModes
-    new FXToolBarGrip(superModes, superModes, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
-    // build menu bar for save elements (bot to menu bar)
-    myToolBarShellSaveElements = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    saveElements = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellSaveElements, GUIDesignToolBarRaisedNext);
-    // declare toolbar grip for menu bar saveElements
-    new FXToolBarGrip(saveElements, saveElements, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
-    // build menu bar for navigation
-    myToolBarShellNavigation = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    navigation = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellNavigation, GUIDesignToolBarRaisedSame);
-    // declare toolbar grip for menu bar navigation
-    new FXToolBarGrip(navigation, navigation, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
-    // build menu bar for modes
-    myToolBarShellModes = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    // create modes depending of option "gui-testing" (note: Used for NETEDIT test)
+    // build toolbar shells
+    myPythonToolBarShellSuperModes = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    myPythonToolBarShellSaveElements = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    myPythonToolBarShellNavigation = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    myPythonToolBarShellModes = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    myPythonToolBarShellIntervalBar = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
+    // build menu bars
+    superModes = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellSuperModes, GUIDesignToolBarRaisedSame);
     if (OptionsCont::getOptions().getBool("gui-testing")) {
-        modes = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellModes, GUIDesignToolBarRaisedNext);
+        saveElements = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellSaveElements, GUIDesignToolBarRaisedNext);
+        navigation = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellNavigation, GUIDesignToolBarRaisedSame);
+        modes = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellModes, GUIDesignToolBarRaisedNext);
     } else {
-        modes = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellModes, GUIDesignToolBarRaisedSame);
+        saveElements = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellSaveElements, GUIDesignToolBarRaisedNext);
+        navigation = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellNavigation, GUIDesignToolBarRaisedSame);
+        modes = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellModes, GUIDesignToolBarRaisedSame);
     }
-    // declare toolbar grip for menu bar modes
+    intervalBar = new FXMenuBar(myGNEApp->getTopDock(), myPythonToolBarShellIntervalBar, GUIDesignToolBarRaisedNext);
+    // build FXToolBarGrip
+    new FXToolBarGrip(superModes, superModes, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
+    new FXToolBarGrip(saveElements, saveElements, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
+    new FXToolBarGrip(navigation, navigation, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
     new FXToolBarGrip(modes, modes, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
-    // build menu bar for interval
-    myToolBarShellIntervalBar = new FXToolBarShell(myGNEApp, GUIDesignToolBar);
-    intervalBar = new FXMenuBar(myGNEApp->getTopDock(), myToolBarShellIntervalBar, GUIDesignToolBarRaisedNext);
-    // declare toolbar grip for menu bar modes
     new FXToolBarGrip(intervalBar, intervalBar, FXMenuBar::ID_TOOLBARGRIP, GUIDesignToolBarGrip);
     // create menu bars
     superModes->create();
@@ -104,11 +94,11 @@ GNEApplicationWindowHelper::ToolbarsGrip::buildViewParentToolbarsGrips() {
     modes->create();
     intervalBar->create();
     // create toolbar shells
-    myToolBarShellSuperModes->create();
-    myToolBarShellSaveElements->create();
-    myToolBarShellNavigation->create();
-    myToolBarShellModes->create();
-    myToolBarShellIntervalBar->create();
+    myPythonToolBarShellSuperModes->create();
+    myPythonToolBarShellSaveElements->create();
+    myPythonToolBarShellNavigation->create();
+    myPythonToolBarShellModes->create();
+    myPythonToolBarShellIntervalBar->create();
     // recalc top dop after creating elements
     myGNEApp->getTopDock()->recalc();
 }
@@ -123,11 +113,11 @@ GNEApplicationWindowHelper::ToolbarsGrip::destroyParentToolbarsGrips() {
     delete modes;
     delete intervalBar;
     // also delete toolbar shells to avoid floating windows
-    delete myToolBarShellSuperModes;
-    delete myToolBarShellSaveElements;
-    delete myToolBarShellNavigation;
-    delete myToolBarShellModes;
-    delete myToolBarShellIntervalBar;
+    delete myPythonToolBarShellSuperModes;
+    delete myPythonToolBarShellSaveElements;
+    delete myPythonToolBarShellNavigation;
+    delete myPythonToolBarShellModes;
+    delete myPythonToolBarShellIntervalBar;
     // recalc top dop after deleting elements
     myGNEApp->getTopDock()->recalc();
 }
@@ -198,83 +188,87 @@ GNEApplicationWindowHelper::FileMenuCommands::FileMenuCommands(GNEApplicationWin
 
 
 void
-GNEApplicationWindowHelper::FileMenuCommands::buildFileMenuCommands(FXMenuPane* fileMenu, FXMenuPane* fileMenuNETEDITConfig,
-        FXMenuPane* fileMenuSUMOConfig, FXMenuPane* fileMenuTLS, FXMenuPane* fileMenuEdgeTypes, FXMenuPane* fileMenuAdditionals,
+GNEApplicationWindowHelper::FileMenuCommands::buildFileMenuCommands(FXMenuPane* fileMenu, FXMenuPane* fileMenuNeteditConfig,
+        FXMenuPane* fileMenuSumoConfig, FXMenuPane* fileMenuTLS, FXMenuPane* fileMenuEdgeTypes, FXMenuPane* fileMenuAdditionals,
         FXMenuPane* fileMenuDemandElements, FXMenuPane* fileMenuDataElements, FXMenuPane* fileMenuMeanDataElements) {
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("&New Network"), "Ctrl+N", TL("Create a new network."),
-        GUIIconSubSys::getIcon(GUIIcon::NEW_NET), myGNEApp, MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK);
+                                           TL("&New Network"), "Ctrl+N", TL("Create a new network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::NEW_NET), myGNEApp, MID_HOTKEY_CTRL_N_OPENNETWORK_NEWNETWORK);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("New Window"), "Ctrl+Shift+N", TL("Open a new netedit window."),
-        nullptr, myGNEApp, MID_HOTKEY_CTRL_SHIFT_N_NEWWINDOW);
+                                           TL("New Window"), "Ctrl+Shift+N", TL("Open a new netedit window."),
+                                           nullptr, myGNEApp, MID_HOTKEY_CTRL_SHIFT_N_NEWWINDOW);
+
+    GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
+                                           TL("Generate Network"), "", TL("Create network using netgenerate."),
+                                           GUIIconSubSys::getIcon(GUIIcon::NETGENERATE), myGNEApp, MID_GNE_NETGENERATE);
 
     // load sumo/netedit configs
     new FXMenuSeparator(fileMenu);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Load Netedit config..."), "Ctrl+E", TL("Load a netedit configuration file."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_NETEDITCONFIG), myGNEApp, MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG);
+                                           TL("Load Netedit config..."), "Ctrl+E", TL("Load a netedit configuration file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NETEDITCONFIG), myGNEApp, MID_HOTKEY_CTRL_E_EDITSELECTION_LOADNETEDITCONFIG);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Load Sumo config..."), "Ctrl+M", TL("Load a SUMO configuration file."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_SUMOCONFIG), myGNEApp, MID_HOTKEY_CTRL_M_OPENSUMOCONFIG);
+                                           TL("Load Sumo config..."), "Ctrl+M", TL("Load a SUMO configuration file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_SUMOCONFIG), myGNEApp, MID_HOTKEY_CTRL_M_OPENSUMOCONFIG);
 
     // load networks
     new FXMenuSeparator(fileMenu);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("&Open Network..."), "Ctrl+O", TL("Open a SUMO network."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), myGNEApp, MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK);
+                                           TL("&Open Network..."), "Ctrl+O", TL("Open a SUMO network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), myGNEApp, MID_HOTKEY_CTRL_O_OPENSIMULATION_OPENNETWORK);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Open Netconvert Configura&tion..."), "Ctrl+Shift+O", TL("Open a configuration file with NETCONVERT options."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN), myGNEApp, MID_HOTKEY_CTRL_SHIFT_O_OPENNETCONVERTFILE);
+                                           TL("Open Netconvert Configura&tion..."), "Ctrl+Shift+O", TL("Open a configuration file with NETCONVERT options."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN), myGNEApp, MID_HOTKEY_CTRL_SHIFT_O_OPENNETCONVERTFILE);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Import &Foreign Network..."), "", TL("Import a foreign network such as OSM."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), myGNEApp, MID_GNE_TOOLBARFILE_OPENFOREIGN);
+                                           TL("Import &Foreign Network..."), "", TL("Import a foreign network such as OSM."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_NET), myGNEApp, MID_GNE_TOOLBARFILE_OPENFOREIGN);
 
     // save networks
     new FXMenuSeparator(fileMenu);
-   
-    GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("&Save Network"), "Ctrl+S", TL("Save the network."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_NETWORKELEMENTS), myGNEApp, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Save Net&work As..."), "", TL("Save the network to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_NETWORKELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVENETWORK_AS);
+                                           TL("&Save Network"), "Ctrl+S", TL("Save the network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_NETWORKELEMENTS), myGNEApp, MID_HOTKEY_CTRL_S_STOPSIMULATION_SAVENETWORK);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Save Plain XM&L..."), "Ctrl+L", TL("Save a plain XML representation of the network."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_L_SAVEASPLAINXML);
+                                           TL("Save Net&work As..."), "", TL("Save the network to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_NETWORKELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVENETWORK_AS);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Save &Joined Junctions..."), "", TL("Save log of joined junctions (allows reproduction of joins)."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_SAVEJOINEDJUNCTIONS);
+                                           TL("Save Plain XM&L..."), "Ctrl+L", TL("Save a plain XML representation of the network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_L_SAVEASPLAINXML);
+
+    GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
+                                           TL("Save &Joined Junctions..."), "", TL("Save log of joined junctions (allows reproduction of joins)."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_SAVEJOINEDJUNCTIONS);
 
     // reload
     new FXMenuSeparator(fileMenu);
 
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("&Reload"), "Ctrl+R", TL("Reload the network."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_HOTKEY_CTRL_R_RELOAD);
-    
+                                           TL("&Reload"), "Ctrl+R", TL("Reload the network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_HOTKEY_CTRL_R_RELOAD);
+
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Reload Network"), "", TL("Reload the network."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOADNETWORK);
+                                           TL("Reload Network"), "", TL("Reload the network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOADNETWORK);
 
     new FXMenuSeparator(fileMenu);
 
-    // create NETEDITConfig menu options
-    buildNETEDITConfigSection(fileMenuNETEDITConfig);
-    myNETEDITConfigMenuCascade = new FXMenuCascade(fileMenu, TL("Netedit Config"), GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), fileMenuNETEDITConfig);
-   
-    // create SUMOConfig menu options
-    buildSUMOConfigSection(fileMenuSUMOConfig);
-    mySUMOConfigMenuCascade = new FXMenuCascade(fileMenu, TL("Sumo Config"), GUIIconSubSys::getIcon(GUIIcon::SUMO_MINI), fileMenuSUMOConfig);
+    // create netedit config menu options
+    buildNeteditConfigSection(fileMenuNeteditConfig);
+    myNeteditConfigMenuCascade = new FXMenuCascade(fileMenu, TL("Netedit Config"), GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), fileMenuNeteditConfig);
+
+    // create SumoConfig menu options
+    buildSumoConfigSection(fileMenuSumoConfig);
+    mySumoConfigMenuCascade = new FXMenuCascade(fileMenu, TL("Sumo Config"), GUIIconSubSys::getIcon(GUIIcon::SUMO_MINI), fileMenuSumoConfig);
 
     // create TLS menu options
     buildTrafficLightSection(fileMenuTLS);
@@ -303,15 +297,15 @@ GNEApplicationWindowHelper::FileMenuCommands::buildFileMenuCommands(FXMenuPane* 
     // close network
     new FXMenuSeparator(fileMenu);
     GUIDesigns::buildFXMenuCommandShortcut(fileMenu,
-        TL("Close"), "Ctrl+W", TL("Close the network."),
-        GUIIconSubSys::getIcon(GUIIcon::CLOSE), myGNEApp, MID_HOTKEY_CTRL_W_CLOSESIMULATION);
+                                           TL("Close"), "Ctrl+W", TL("Close the network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::CLOSE), myGNEApp, MID_HOTKEY_CTRL_W_CLOSESIMULATION);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::enableMenuCascades() {
-    mySUMOConfigMenuCascade->enable();
-    myNETEDITConfigMenuCascade->enable();
+    mySumoConfigMenuCascade->enable();
+    myNeteditConfigMenuCascade->enable();
     myTLSMenuCascade->enable();
     myEdgeTypesMenuCascade->enable();
     myAdditionalMenuCascade->enable();
@@ -323,8 +317,8 @@ GNEApplicationWindowHelper::FileMenuCommands::enableMenuCascades() {
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::disableMenuCascades() {
-    mySUMOConfigMenuCascade->disable();
-    myNETEDITConfigMenuCascade->disable();
+    mySumoConfigMenuCascade->disable();
+    myNeteditConfigMenuCascade->disable();
     myTLSMenuCascade->disable();
     myEdgeTypesMenuCascade->disable();
     myAdditionalMenuCascade->disable();
@@ -335,182 +329,182 @@ GNEApplicationWindowHelper::FileMenuCommands::disableMenuCascades() {
 
 
 void
-GNEApplicationWindowHelper::FileMenuCommands::buildNETEDITConfigSection(FXMenuPane* menuPane) {
+GNEApplicationWindowHelper::FileMenuCommands::buildNeteditConfigSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Netedit Config"), "Ctrl+Shift+E", TL("Save netedit configuration file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_NETEDITCONFIG), myGNEApp, MID_HOTKEY_CTRL_SHIFT_E_SAVENETEDITCONFIG);
+                                           TL("Save Netedit Config"), "Ctrl+Shift+E", TL("Save netedit configuration file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_NETEDITCONFIG), myGNEApp, MID_HOTKEY_CTRL_SHIFT_E_SAVENETEDITCONFIG);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Netedit Config As..."), "", TL("Save netedit configuration in a new file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_NETEDITCONFIG), myGNEApp, MID_GNE_TOOLBARFILE_SAVENETEDITCONFIG_AS);
+                                           TL("Save Netedit Config As..."), "", TL("Save netedit configuration in a new file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_NETEDITCONFIG), myGNEApp, MID_GNE_TOOLBARFILE_SAVENETEDITCONFIG_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload Netedit Config"), "", TL("Reload netedit configuration."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_NETEDITCONFIG);
+                                           TL("Reload Netedit Config"), "", TL("Reload netedit configuration."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_NETEDITCONFIG);
 }
 
 
 void
-GNEApplicationWindowHelper::FileMenuCommands::buildSUMOConfigSection(FXMenuPane* menuPane) {
+GNEApplicationWindowHelper::FileMenuCommands::buildSumoConfigSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Sumo Config"), "Ctrl+Shift+S", TL("Save sumo configuration file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_SUMOCONFIG), myGNEApp, MID_HOTKEY_CTRL_SHIFT_S_SAVESUMOCONFIG);
+                                           TL("Save Sumo Config"), "Ctrl+Shift+S", TL("Save sumo configuration file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_SUMOCONFIG), myGNEApp, MID_HOTKEY_CTRL_SHIFT_S_SAVESUMOCONFIG);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Sumo Config As..."), "", TL("Save sumo configuration in a new file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_SUMOCONFIG), myGNEApp, MID_GNE_TOOLBARFILE_SAVESUMOCONFIG_AS);
+                                           TL("Save Sumo Config As..."), "", TL("Save sumo configuration in a new file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_SUMOCONFIG), myGNEApp, MID_GNE_TOOLBARFILE_SAVESUMOCONFIG_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload Sumo Config"), "", TL("Reload sumo configuration."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_SUMOCONFIG);
+                                           TL("Reload Sumo Config"), "", TL("Reload sumo configuration."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_SUMOCONFIG);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildTrafficLightSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load TLS Programs..."), "Ctrl+K", TL("Load programs for traffic lights in the current net."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_TLSPROGRAMS), myGNEApp, MID_HOTKEY_CTRL_K_OPENTLSPROGRAMS);
+                                           TL("Load TLS Programs..."), "Ctrl+K", TL("Load programs for traffic lights in the current net."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_TLSPROGRAMS), myGNEApp, MID_HOTKEY_CTRL_K_OPENTLSPROGRAMS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save TLS Programs"), "Ctrl+Shift+K", TL("Save all traffic light programs of the current network."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_SHIFT_K_SAVETLS);
+                                           TL("Save TLS Programs"), "Ctrl+Shift+K", TL("Save all traffic light programs of the current network."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_SHIFT_K_SAVETLS);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save TLS Programs As..."), "", TL("Save all traffic light programs of the current network to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_TOOLBARFILE_SAVETLSPROGRAMS_AS);
+                                           TL("Save TLS Programs As..."), "", TL("Save all traffic light programs of the current network to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_TOOLBARFILE_SAVETLSPROGRAMS_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload TLS Programs"), "", TL("Reload TLS Programs."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_TLSPROGRAMS);
+                                           TL("Reload TLS Programs"), "", TL("Reload TLS Programs."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_TLSPROGRAMS);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildEdgeTypeSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load Edge Types..."), "Ctrl+H", TL("Load edge types in the current net."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_TLSPROGRAMS), myGNEApp, MID_HOTKEY_CTRL_H_APPSETTINGS_OPENEDGETYPES);
+                                           TL("Load Edge Types..."), "Ctrl+H", TL("Load edge types in the current net."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_TLSPROGRAMS), myGNEApp, MID_HOTKEY_CTRL_H_APPSETTINGS_OPENEDGETYPES);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Edge Types"), "Ctrl+Shift+H", TL("Save edge types of the current net."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_SHIFT_H_SAVEEDGETYPES);
+                                           TL("Save Edge Types"), "Ctrl+Shift+H", TL("Save edge types of the current net."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_HOTKEY_CTRL_SHIFT_H_SAVEEDGETYPES);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Edge Types As..."), "", TL("Save edge types of the current net to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_TOOLBARFILE_SAVEEDGETYPES_AS);
+                                           TL("Save Edge Types As..."), "", TL("Save edge types of the current net to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE), myGNEApp, MID_GNE_TOOLBARFILE_SAVEEDGETYPES_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload edge types"), "", TL("Reload edge types."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_EDGETYPES);
+                                           TL("Reload edge types"), "", TL("Reload edge types."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_EDGETYPES);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildAdditionalSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load Additionals..."), "Ctrl+A", TL("Load additionals and shapes."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS);
+                                           TL("Load Additionals..."), "Ctrl+A", TL("Load additionals and shapes."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Additionals"), "Ctrl+Shift+A", TL("Save additionals and shapes."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_ADDITIONALELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_A_SAVEADDITIONALS);
+                                           TL("Save Additionals"), "Ctrl+Shift+A", TL("Save additionals and shapes."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_ADDITIONALELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_A_SAVEADDITIONALS);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Additionals As..."), "", TL("Save additional elements to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_ADDITIONALELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEADDITIONALS_AS);
+                                           TL("Save Additionals As..."), "", TL("Save additional elements to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_ADDITIONALELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEADDITIONALS_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload Additionals"), "", TL("Reload additionals."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_ADDITIONALS);
+                                           TL("Reload Additionals"), "", TL("Reload additionals."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_ADDITIONALS);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildDemandSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load Demand Elements..."), "Ctrl+D", TL("Load demand elements."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS);
+                                           TL("Load Demand Elements..."), "Ctrl+D", TL("Load demand elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Demand Elements"), "Ctrl+Shift+D", TL("Save demand elements."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_DEMANDELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_D_SAVEDEMANDELEMENTS);
+                                           TL("Save Demand Elements"), "Ctrl+Shift+D", TL("Save demand elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_DEMANDELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_D_SAVEDEMANDELEMENTS);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Demand Elements As..."), "", TL("Save demand elements to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_DEMANDELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEDEMAND_AS);
+                                           TL("Save Demand Elements As..."), "", TL("Save demand elements to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_DEMANDELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEDEMAND_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload Demand Elements"), "", TL("Reload demand elements."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_DEMANDELEMENTS);
+                                           TL("Reload Demand Elements"), "", TL("Reload demand elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_DEMANDELEMENTS);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildDataSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load Data Elements..."), "Ctrl+B", TL("Load data elements."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS);
+                                           TL("Load Data Elements..."), "Ctrl+B", TL("Load data elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_ADDITIONALS), myGNEApp, MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Data Elements"), "Ctrl+Shift+B", TL("Save data elements."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_DATAELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_B_SAVEDATAELEMENTS);
+                                           TL("Save Data Elements"), "Ctrl+Shift+B", TL("Save data elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_DATAELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_B_SAVEDATAELEMENTS);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save Data Elements As..."), "", TL("Save data elements to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_DATAELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEDATA_AS);
+                                           TL("Save Data Elements As..."), "", TL("Save data elements to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_DATAELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEDATA_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload Data Elements"), "", TL("Reload data elements."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_DATAELEMENTS);
+                                           TL("Reload Data Elements"), "", TL("Reload data elements."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_DATAELEMENTS);
 }
 
 
 void
 GNEApplicationWindowHelper::FileMenuCommands::buildMeanDataSection(FXMenuPane* menuPane) {
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Load MeanDatas..."), "", TL("Load meanDatas and shapes."),
-        GUIIconSubSys::getIcon(GUIIcon::OPEN_MEANDATAS), myGNEApp, MID_GNE_TOOLBARFILE_OPENMEANDATAS);
+                                           TL("Load MeanDatas..."), "", TL("Load meanDatas and shapes."),
+                                           GUIIconSubSys::getIcon(GUIIcon::OPEN_MEANDATAS), myGNEApp, MID_GNE_TOOLBARFILE_OPENMEANDATAS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save MeanDatas"), "", TL("Save meanDatas and shapes."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_MEANDATAELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_M_SAVEMEANDATAS);
+                                           TL("Save MeanDatas"), "", TL("Save meanDatas and shapes."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_MEANDATAELEMENTS), myGNEApp, MID_HOTKEY_CTRL_SHIFT_M_SAVEMEANDATAS);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Save MeanDatas As..."), "Ctrl+Shift+M", TL("Save meanData elements to another file."),
-        GUIIconSubSys::getIcon(GUIIcon::SAVE_MEANDATAELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEMEANDATAS_AS);
+                                           TL("Save MeanDatas As..."), "Ctrl+Shift+M", TL("Save meanData elements to another file."),
+                                           GUIIconSubSys::getIcon(GUIIcon::SAVE_MEANDATAELEMENTS), myGNEApp, MID_GNE_TOOLBARFILE_SAVEMEANDATAS_AS);
 
     new FXMenuSeparator(menuPane);
 
     GUIDesigns::buildFXMenuCommandShortcut(menuPane,
-        TL("Reload MeanDatas"), "", TL("Reload meanDatas."),
-        GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_MEANDATAS);
+                                           TL("Reload MeanDatas"), "", TL("Reload meanDatas."),
+                                           GUIIconSubSys::getIcon(GUIIcon::RELOAD), myGNEApp, MID_GNE_TOOLBARFILE_RELOAD_MEANDATAS);
 }
 
 // ---------------------------------------------------------------------------
@@ -1274,7 +1268,7 @@ GNEApplicationWindowHelper::EditMenuCommands::buildViewMenuCommands(FXMenuPane* 
                      TL("Edit Visualisation"), "F9", TL("Opens a dialog for editing visualization settings."),
                      GUIIconSubSys::getIcon(GUIIcon::COLORWHEEL), myGNEApp, MID_HOTKEY_F9_EDIT_VIEWSCHEME);
     editViewPort = GUIDesigns::buildFXMenuCommandShortcut(editMenu,
-                   TL("Edit Viewport"), "Ctrl+I", TL("Opens a dialog for editing viewing are, zoom and rotation."),
+                   TL("Edit Viewport"), "Ctrl+I", TL("Opens a dialog for editing viewing area, zoom and rotation."),
                    GUIIconSubSys::getIcon(GUIIcon::EDITVIEWPORT), myGNEApp, MID_HOTKEY_CTRL_I_EDITVIEWPORT);
 }
 
@@ -1292,11 +1286,11 @@ void
 GNEApplicationWindowHelper::EditMenuCommands::buildOpenSUMOMenuCommands(FXMenuPane* editMenu) {
     // add open in sumo options
     loadAdditionalsInSUMOGUI = new FXMenuCheck(editMenu,
-            TL("Load additionals in sumo-gui\t\tLoad additionals in sumo-gui."),
+            (TL("Load additionals in sumo-gui") + std::string("\t\t") + TL("Load additionals in sumo-gui.")).c_str(),
             myGNEApp, MID_GNE_TOOLBAREDIT_LOADADDITIONALS);
     loadAdditionalsInSUMOGUI->setCheck(TRUE);
     loadDemandInSUMOGUI = new FXMenuCheck(editMenu,
-                                          TL("Load demand in sumo-gui\t\tLoad demand in sumo-gui."),
+                                          (TL("Load demand in sumo-gui") + std::string("\t\t") + TL("Load demand in sumo-gui.")).c_str(),
                                           myGNEApp, MID_GNE_TOOLBAREDIT_LOADDEMAND);
     loadDemandInSUMOGUI->setCheck(TRUE);
     openInSUMOGUI = GUIDesigns::buildFXMenuCommandShortcut(editMenu,
@@ -1808,7 +1802,7 @@ GNEApplicationWindowHelper::ProcessingMenuCommands::buildProcessingMenuCommands(
                                  TL("Recompute Network in Data Mode"), "", "",
                                  GUIIconSubSys::getIcon(GUIIcon::SUPERMODEDATA), myGNEApp, MID_GNE_TOGGLE_COMPUTE_NETWORK_DATA);
     // set default value
-    menuCheckRecomputeDataMode->setCheck(myGNEApp->getApp()->reg().readBoolEntry("NETEDIT", TL("RecomputeData"), true));
+    menuCheckRecomputeDataMode->setCheck(myGNEApp->getApp()->reg().readBoolEntry("netedit", "RecomputeData", true));
     // build demand  processing menu commands
     computeDemand = GUIDesigns::buildFXMenuCommandShortcut(processingMenu,
                     TL("Compute demand"), "F5", TL("Computes demand elements."),
@@ -1829,13 +1823,13 @@ GNEApplicationWindowHelper::ProcessingMenuCommands::buildProcessingMenuCommands(
     myOptionsSeparator = new FXMenuSeparator(processingMenu);
     // create optionmenus
     optionMenus = GUIDesigns::buildFXMenuCommandShortcut(processingMenu,
-                  TL("SUMO options"), "Shift+F10", TL("Configure SUMO Options."),
+                  TL("Sumo options"), "Shift+F10", TL("Configure sumo Options."),
                   GUIIconSubSys::getIcon(GUIIcon::SUMO_MINI), myGNEApp, MID_HOTKEY_SHIFT_F10_SUMOOPTIONSMENU);
     // add separator
     myOptionsSeparator = new FXMenuSeparator(processingMenu);
     // create optionmenus
     optionMenus = GUIDesigns::buildFXMenuCommandShortcut(processingMenu,
-                  TL("Options"), "F10", TL("Configure NETEDIT Options."),
+                  TL("Options"), "F10", TL("Configure netedit Options."),
                   GUIIconSubSys::getIcon(GUIIcon::OPTIONS), myGNEApp, MID_HOTKEY_F10_OPTIONSMENU);
 }
 
@@ -1975,7 +1969,7 @@ GNEApplicationWindowHelper::LocateMenuCommands::buildLocateMenuCommands(FXMenuPa
                                            TL("&Additional"), "Shift+A", TL("Open a dialog for locating an Additional Structure."),
                                            GUIIconSubSys::getIcon(GUIIcon::LOCATEADD), myGNEApp, MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL);
     GUIDesigns::buildFXMenuCommandShortcut(locateMenu,
-                                           TL("P&oI"), "Shift+O",TL( "Open a dialog for locating a Point of Interest."),
+                                           TL("P&oI"), "Shift+O", TL("Open a dialog for locating a Point of Interest."),
                                            GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI), myGNEApp, MID_HOTKEY_SHIFT_O_LOCATEPOI);
     GUIDesigns::buildFXMenuCommandShortcut(locateMenu,
                                            TL("Po&lygon"), "Shift+L", TL("Open a dialog for locating a Polygon."),
@@ -1991,12 +1985,94 @@ GNEApplicationWindowHelper::ToolsMenuCommands::ToolsMenuCommands(GNEApplicationW
 }
 
 
+GNEApplicationWindowHelper::ToolsMenuCommands::~ToolsMenuCommands() {
+    // delete all tools
+    for (const auto& tool : myPythonTools) {
+        delete tool;
+    }
+    // delete dialogs
+    delete myPythonToolDialog;
+    delete myNetgenerateDialog;
+    delete myRunPythonToolDialog;
+    delete myRunNetgenerateDialog;
+}
+
+
 void
-GNEApplicationWindowHelper::ToolsMenuCommands::buildToolsMenuCommands(FXMenuPane* locateMenu) {
-    // build locate menu commands
-    GUIDesigns::buildFXMenuCommandShortcut(locateMenu,
-                                           TL("&NetDiff"), "", "Execute NetDiff.",
-                                           GUIIconSubSys::getIcon(GUIIcon::TOOL_NETDIFF), myGNEApp, MID_GNE_TOOLBARTOOLS_NETDIFF);
+GNEApplicationWindowHelper::ToolsMenuCommands::buildTools(FXMenuPane* toolsMenu,
+        const std::map<std::string, FXMenuPane*>& menuPaneToolMaps) {
+    // build template tools
+    for (const auto& templateTool : templateTools) {
+        if (templateTool.name == "netdiff") {
+            myPythonTools.push_back(new GNENetDiffTool(myGNEApp, templateTool.pythonPath,
+                                    menuPaneToolMaps.at(templateTool.subfolder)));
+        } else if (menuPaneToolMaps.count(templateTool.subfolder) > 0) {
+            myPythonTools.push_back(new GNEPythonTool(myGNEApp, templateTool.pythonPath,
+                                    templateTool.templateStr, menuPaneToolMaps.at(templateTool.subfolder)));
+        } else {
+            myPythonTools.push_back(new GNEPythonTool(myGNEApp, templateTool.pythonPath,
+                                    templateTool.templateStr, toolsMenu));
+        }
+    }
+    // build dialogs
+    myPythonToolDialog = new GNEPythonToolDialog(myGNEApp);
+    myNetgenerateDialog = new GNENetgenerateDialog(myGNEApp);
+    myRunPythonToolDialog = new GNERunPythonToolDialog(myGNEApp);
+    myRunNetgenerateDialog = new GNERunNetgenerateDialog(myGNEApp);
+}
+
+
+long
+GNEApplicationWindowHelper::ToolsMenuCommands::showTool(FXObject* menuCommand) const {
+    // iterate over all tools and find menu command
+    for (const auto& tool : myPythonTools) {
+        if (tool->getMenuCommand() == menuCommand) {
+            myPythonToolDialog->openDialog(tool);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+long
+GNEApplicationWindowHelper::ToolsMenuCommands::showNetgenerateDialog() const {
+    myNetgenerateDialog->openDialog();
+    return 1;
+}
+
+
+long
+GNEApplicationWindowHelper::ToolsMenuCommands::runToolDialog(FXObject* menuCommand) const {
+    // iterate over all tools and find menu command
+    for (const auto& tool : myPythonTools) {
+        if (tool->getMenuCommand() == menuCommand) {
+            myRunPythonToolDialog->runTool(tool);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+long
+GNEApplicationWindowHelper::ToolsMenuCommands::postProcessing(FXObject* menuCommand) const {
+    // iterate over all tools and find menu command
+    for (const auto& tool : myPythonTools) {
+        if (tool->getMenuCommand() == menuCommand) {
+            // execute postProcessing
+            tool->postProcessing();
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+long
+GNEApplicationWindowHelper::ToolsMenuCommands::runNetgenerateDialog(const OptionsCont* netgenerateOptions) const {
+    myRunNetgenerateDialog->run(netgenerateOptions);
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -2009,7 +2085,8 @@ GNEApplicationWindowHelper::WindowsMenuCommands::WindowsMenuCommands(GNEApplicat
 
 
 void
-GNEApplicationWindowHelper::WindowsMenuCommands::buildWindowsMenuCommands(FXMenuPane* windowsMenu, FXStatusBar* statusbar, GUIMessageWindow* messageWindow) {
+GNEApplicationWindowHelper::WindowsMenuCommands::buildWindowsMenuCommands(FXMenuPane* windowsMenu,
+        FXStatusBar* statusbar, GUIMessageWindow* messageWindow) {
     // build windows menu commands
     GUIDesigns::buildFXMenuCheckbox(windowsMenu,
                                     TL("Show Status Line"), TL("Toggle this Status Bar on/off."),
@@ -2021,6 +2098,34 @@ GNEApplicationWindowHelper::WindowsMenuCommands::buildWindowsMenuCommands(FXMenu
     GUIDesigns::buildFXMenuCommandShortcut(windowsMenu,
                                            TL("Clear Message Window"), "", TL("Clear the Message Window."),
                                            GUIIconSubSys::getIcon(GUIIcon::CLEARMESSAGEWINDOW), myGNEApp, MID_CLEARMESSAGEWINDOW);
+}
+
+// ---------------------------------------------------------------------------
+// GNEApplicationWindowHelper::WindowsMenuCommands - methods
+// ---------------------------------------------------------------------------
+
+GNEApplicationWindowHelper::HelpMenuCommands::HelpMenuCommands(GNEApplicationWindow* GNEApp) :
+    myGNEApp(GNEApp) {
+}
+
+
+void
+GNEApplicationWindowHelper::HelpMenuCommands::buildHelpMenuCommands(FXMenuPane* helpMenu) {
+    // build windows menu commands
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&Online Documentation"), "F1", TL("Open Online documentation."),
+                                           nullptr, myGNEApp, MID_HOTKEY_F1_ONLINEDOCUMENTATION);
+    new FXMenuSeparator(helpMenu);
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&Changelog"), "", TL("Open Changelog."),
+                                           nullptr, myGNEApp, MID_CHANGELOG);
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&Hotkeys"), "", TL("Open Hotkeys."),
+                                           nullptr, myGNEApp, MID_HOTKEYS);
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&Tutorial"), "", TL("Open Tutorial."),
+                                           nullptr, myGNEApp, MID_TUTORIAL);
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&Feedback"), "", TL("Open feedback channels."),
+                                           nullptr, myGNEApp, MID_FEEDBACK);
+    new FXMenuSeparator(helpMenu);
+    GUIDesigns::buildFXMenuCommandShortcut(helpMenu, TL("&About"), "F12", TL("About netedit."),
+                                           GUIIconSubSys::getIcon(GUIIcon::NETEDIT_MINI), myGNEApp, MID_HOTKEY_F12_ABOUT);
 }
 
 // ---------------------------------------------------------------------------
@@ -2066,17 +2171,17 @@ GNEApplicationWindowHelper::SupermodeCommands::buildSupermodeCommands(FXMenuPane
 }
 
 // ---------------------------------------------------------------------------
-// GNESUMOConfigHandler - methods
+// GNESumoConfigHandler - methods
 // ---------------------------------------------------------------------------
 
-GNEApplicationWindowHelper::GNESUMOConfigHandler::GNESUMOConfigHandler(OptionsCont& sumoOptions, const std::string& file) :
+GNEApplicationWindowHelper::GNESumoConfigHandler::GNESumoConfigHandler(OptionsCont& sumoOptions, const std::string& file) :
     mySumoOptions(sumoOptions),
     myFile(file) {
 }
 
 
 bool
-GNEApplicationWindowHelper::GNESUMOConfigHandler::loadSUMOConfig() {
+GNEApplicationWindowHelper::GNESumoConfigHandler::loadSumoConfig() {
     // get options
     auto& neteditOptions = OptionsCont::getOptions();
     // make all options writables
@@ -2117,16 +2222,16 @@ GNEApplicationWindowHelper::GNESUMOConfigHandler::loadSUMOConfig() {
 }
 
 // ---------------------------------------------------------------------------
-// GNENETEDITConfigHandler - methods
+// GNENeteditConfigHandler - methods
 // ---------------------------------------------------------------------------
 
-GNEApplicationWindowHelper::GNENETEDITConfigHandler::GNENETEDITConfigHandler(const std::string& file) :
+GNEApplicationWindowHelper::GNENeteditConfigHandler::GNENeteditConfigHandler(const std::string& file) :
     myFile(file) {
 }
 
 
 bool
-GNEApplicationWindowHelper::GNENETEDITConfigHandler::loadNETEDITConfig() {
+GNEApplicationWindowHelper::GNENeteditConfigHandler::loadNeteditConfig() {
     // get options
     auto& neteditOptions = OptionsCont::getOptions();
     // make all options writables
@@ -2142,11 +2247,11 @@ GNEApplicationWindowHelper::GNENETEDITConfigHandler::loadNETEDITConfig() {
         parser.setErrorHandler(&handler);
         parser.parse(StringUtils::transcodeToLocal(myFile).c_str());
         if (handler.errorOccurred()) {
-            WRITE_ERROR(TL("Could not load NETEDIT configuration '") + myFile + "'.");
+            WRITE_ERROR(TL("Could not load netedit configuration '") + myFile + "'.");
             return false;
         }
     } catch (const XERCES_CPP_NAMESPACE::XMLException& e) {
-        WRITE_ERROR(TL("Could not load NETEDIT configuration '") + myFile + "':\n " + StringUtils::transcode(e.getMessage()));
+        WRITE_ERROR(TL("Could not load netedit configuration '") + myFile + "':\n " + StringUtils::transcode(e.getMessage()));
         return false;
     }
     // relocate files
@@ -2165,7 +2270,8 @@ GNEApplicationWindowHelper::GNENETEDITConfigHandler::loadNETEDITConfig() {
 // ---------------------------------------------------------------------------
 
 bool
-GNEApplicationWindowHelper::toggleEditOptionsNetwork(GNEViewNet* viewNet, const MFXCheckableButton* menuCheck, const int numericalKeyPressed, FXObject* obj, FXSelector sel) {
+GNEApplicationWindowHelper::toggleEditOptionsNetwork(GNEViewNet* viewNet, const MFXCheckableButton* menuCheck,
+        const int numericalKeyPressed, FXObject* obj, FXSelector sel) {
     // finally function correspond to visibleMenuCommands[numericalKeyPressed]
     if (menuCheck == viewNet->getNetworkViewOptions().menuCheckToggleGrid) {
         // Toggle menuCheckToggleGrid
@@ -2589,13 +2695,31 @@ GNEApplicationWindowHelper::stringEndsWith(const std::string& str, const std::st
 
 
 std::string
+GNEApplicationWindowHelper::openFileDialog(FXWindow* window, const bool save) {
+    if (save) {
+        return openFileDialog(window, TL("Save file as"), GUIIcon::SAVE,
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
+    } else {
+        return openFileDialog(window, TL("Open file"), GUIIcon::OPEN_SUMOCONFIG,
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
+    }
+}
+
+
+std::string
 GNEApplicationWindowHelper::openNetworkFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save Network file as"), GUIIcon::SAVE_NETWORKELEMENTS,
-            "SUMO Network files (*.net.xml)\nSUMO Network files zipped (*.net.xml.gz)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("SUMO Network files (*.net.xml)") + std::string("\n") +
+                              TL("SUMO Network files zipped (*.net.xml.gz)") + std::string("\n") +
+                              TL("XML files (*.xml)\nAll files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open Network file"), GUIIcon::OPEN_NET,
-            "SUMO Network files (*.net.xml,*.net.xml.gz)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("SUMO Network files (*.net.xml,*.net.xml.gz)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2603,7 +2727,9 @@ GNEApplicationWindowHelper::openNetworkFileDialog(FXWindow* window, const bool s
 std::string
 GNEApplicationWindowHelper::openNetconvertFileDialog(FXWindow* window) {
     return openFileDialog(window, TL("Open NetConvert file"), GUIIcon::OPEN_NET,
-        "Netconvert files (*.netccfg)\nXML files (*.xml)\nAll files (*)", false);
+                          TL("Netconvert files (*.netccfg)") + std::string("\n") +
+                          TL("XML files (*.xml)") + std::string("\n") +
+                          TL("All files (*)"), false);
 }
 
 
@@ -2616,37 +2742,51 @@ GNEApplicationWindowHelper::savePlainXMLFileDialog(FXWindow* window) {
 std::string
 GNEApplicationWindowHelper::saveJoinedJunctionsFileDialog(FXWindow* window) {
     return openFileDialog(window, TL("Save joined Junctions as"), GUIIcon::SAVE,
-        "Junction files (*.nod.xml)\nXML files (*.xml)\nAll files (*)", true);
+                          TL("Junction files (*.nod.xml)") + std::string("\n") +
+                          TL("XML files (*.xml)") + std::string("\n") +
+                          TL("All files (*)"), true);
+}
+
+
+std::string
+GNEApplicationWindowHelper::saveToolLog(FXWindow* window) {
+    return openFileDialog(window, TL("Save tool log"), GUIIcon::SAVE,
+                          TL("Text file (*.txt)") + std::string("\n") +
+                          TL("All files (*)"), true);
 }
 
 
 std::string
 GNEApplicationWindowHelper::openOSMFileDialog(FXWindow* window) {
     return openFileDialog(window, TL("Open OSM file"), GUIIcon::OPEN_NET,
-        "OSM net (*.osm.xml,*.osm)", false);
+                          TL("OSM net (*.osm.xml,*.osm)"), false);
 }
 
 
 std::string
-GNEApplicationWindowHelper::openNETEDITConfigFileDialog(FXWindow* window, const bool save) {
+GNEApplicationWindowHelper::openNeteditConfigFileDialog(FXWindow* window, const bool save) {
     if (save) {
-        return openFileDialog(window, TL("Save NETEDIT Config file as"), GUIIcon::SAVE_NETEDITCONFIG,
-            "NETEDIT Config files (*.neteditcfg)\nAll files (*)", true);
+        return openFileDialog(window, TL("Save netedit Config file as"), GUIIcon::SAVE_NETEDITCONFIG,
+                              TL("Netedit Config files (*.neteditcfg)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
-        return openFileDialog(window, TL("Open NETEDIT Config file"), GUIIcon::OPEN_NETEDITCONFIG,
-            "NETEDIT Config files (*.neteditcfg)\nAll files (*)", false);
+        return openFileDialog(window, TL("Open netedit Config file"), GUIIcon::OPEN_NETEDITCONFIG,
+                              TL("Netedit Config files (*.neteditcfg)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
 
 std::string
-GNEApplicationWindowHelper::openSUMOConfigFileDialog(FXWindow* window, const bool save) {
+GNEApplicationWindowHelper::openSumoConfigFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save SUMO Config file as"), GUIIcon::SAVE_SUMOCONFIG,
-            "SUMO Config files (*.sumocfg)\nAll files (*)", true);
+                              TL("SUMO Config files (*.sumocfg)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open SUMO Config file"), GUIIcon::OPEN_SUMOCONFIG,
-            "SUMO Config files (*.sumocfg)\nAll files (*)", false);
+                              TL("SUMO Config files (*.sumocfg)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2655,10 +2795,14 @@ std::string
 GNEApplicationWindowHelper::openTLSFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save TLS file as"), GUIIcon::SAVE_NETWORKELEMENTS,
-        "TLS files (*.tll.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("TLS files (*.tll.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open TLS file"), GUIIcon::OPEN_TLSPROGRAMS,
-        "TLS files (*.tll.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("TLS files (*.tll.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2667,10 +2811,14 @@ std::string
 GNEApplicationWindowHelper::openEdgeTypeFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save EdgeType file as"), GUIIcon::SAVE_NETWORKELEMENTS,
-        "EdgeType files (*.tll.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("EdgeType files (*.tll.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open EdgeType file"), GUIIcon::OPEN_NET,
-        "EdgeType files (*.typ.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("EdgeType files (*.typ.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2679,10 +2827,14 @@ std::string
 GNEApplicationWindowHelper::openAdditionalFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save Additionals file as"), GUIIcon::SAVE_ADDITIONALELEMENTS,
-            "Additional files (*.add.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("Additional files (*.add.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open Additionals file"), GUIIcon::MODEADDITIONAL,
-            "Additional files (*.add.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("Additional files (*.add.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2691,10 +2843,14 @@ std::string
 GNEApplicationWindowHelper::openRouteFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save Route file as"), GUIIcon::SAVE_DEMANDELEMENTS,
-            "Route files (*.rou.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("Route files (*.rou.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open Route file"), GUIIcon::SUPERMODEDEMAND,
-            "Route files (*.rou.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("Route files (*.rou.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2703,10 +2859,14 @@ std::string
 GNEApplicationWindowHelper::openDataFileDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save Data file as"), GUIIcon::SAVE_DATAELEMENTS,
-            "Data files (*.dat.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("Data files (*.dat.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open Data file"), GUIIcon::SUPERMODEDATA,
-            "Data files (*.dat.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("Data files (*.dat.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
@@ -2715,16 +2875,34 @@ std::string
 GNEApplicationWindowHelper::openMeanDataDialog(FXWindow* window, const bool save) {
     if (save) {
         return openFileDialog(window, TL("Save MeanData file as"), GUIIcon::SAVE_MEANDATAELEMENTS,
-            "Meandata files (*.add.xml)\nXML files (*.xml)\nAll files (*)", true);
+                              TL("Meandata files (*.add.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
     } else {
         return openFileDialog(window, TL("Open MeanData file"), GUIIcon::MODEMEANDATA,
-            "Meandata files (*.add.xml)\nXML files (*.xml)\nAll files (*)", false);
+                              TL("Meandata files (*.add.xml)") + std::string("\n") +
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
     }
 }
 
 
 std::string
-GNEApplicationWindowHelper::openFileDialog(FXWindow* window, const std::string title, 
+GNEApplicationWindowHelper::openOptionFileDialog(FXWindow* window, const bool save) {
+    if (save) {
+        return openFileDialog(window, TL("Save options file as"), GUIIcon::SAVE,
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), true);
+    } else {
+        return openFileDialog(window, TL("Open options file"), GUIIcon::OPEN,
+                              TL("XML files (*.xml)") + std::string("\n") +
+                              TL("All files (*)"), false);
+    }
+}
+
+
+std::string
+GNEApplicationWindowHelper::openFileDialog(FXWindow* window, const std::string title,
         GUIIcon icon, const std::string patternList, const bool save) {
     // write title information
     WRITE_DEBUG(title);
@@ -2755,7 +2933,7 @@ GNEApplicationWindowHelper::openFileDialog(FXWindow* window, const std::string t
                 gCurrentFolder = opendialog.getDirectory();
                 // assureExtension
                 return MFXUtils::assureExtension(opendialog.getFilename(),
-                    opendialog.getPatternText(opendialog.getCurrentPattern()).after('.').before(')')).text();
+                                                 opendialog.getPatternText(opendialog.getCurrentPattern()).after('.').before(')')).text();
             } else {
                 // close additional dialog
                 WRITE_DEBUG("Abort overwritte file");
@@ -2779,4 +2957,3 @@ GNEApplicationWindowHelper::openFileDialog(FXWindow* window, const std::string t
 }
 
 /****************************************************************************/
-

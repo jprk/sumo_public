@@ -53,9 +53,9 @@ FXIMPLEMENT(GNETAZRelDataFrame::ConfirmTAZRelation, MFXGroupBoxModule, ConfirmTA
 GNETAZRelDataFrame::ConfirmTAZRelation::ConfirmTAZRelation(GNETAZRelDataFrame* TAZRelDataFrame) :
     MFXGroupBoxModule(TAZRelDataFrame, TL("Confirm TAZRelation")),
     myTAZRelDataFrame(TAZRelDataFrame) {
-    myConfirmTAZButton = new FXButton(getCollapsableFrame(), TL("Create TAZRelation\t\tClick fromTaz and toTaz (confirm hotkey <ENTER>)"), GUIIconSubSys::getIcon(GUIIcon::TAZRELDATA), this, MID_GNE_CREATE, GUIDesignButton);
+    myConfirmTAZButton = new FXButton(getCollapsableFrame(), (TL("Create TAZRelation") + std::string("\t\t") + TL("Click fromTaz and toTaz (confirm hotkey <ENTER>)")).c_str(), GUIIconSubSys::getIcon(GUIIcon::TAZRELDATA), this, MID_GNE_CREATE, GUIDesignButton);
     myConfirmTAZButton->disable();
-    myClearTAZButton = new FXButton(getCollapsableFrame(), TL("Clear selection\t\tClear selected TAZs (hotkey <ESC>)"), GUIIconSubSys::getIcon(GUIIcon::CLEARMESSAGEWINDOW), this, MID_GNE_ABORT, GUIDesignButton);
+    myClearTAZButton = new FXButton(getCollapsableFrame(), (TL("Clear selection") + std::string("\t\t") + TL("Clear selected TAZs (hotkey <ESC>)")).c_str(), GUIIconSubSys::getIcon(GUIIcon::CLEARMESSAGEWINDOW), this, MID_GNE_ABORT, GUIDesignButton);
     myClearTAZButton->disable();
 }
 
@@ -102,10 +102,10 @@ GNETAZRelDataFrame::Legend::Legend(GNETAZRelDataFrame* TAZRelDataFrame) :
     myFromTAZLabel(nullptr),
     myToTAZLabel(nullptr) {
     // create from TAZ label
-    myFromTAZLabel = new FXLabel(getCollapsableFrame(), "From TAZ", 0, GUIDesignLabelLeft);
+    myFromTAZLabel = new FXLabel(getCollapsableFrame(), "From TAZ", 0, GUIDesignLabel(JUSTIFY_LEFT));
     myFromTAZLabel->setBackColor(MFXUtils::getFXColor(RGBColor::GREEN));
     // create to TAZ Label
-    myToTAZLabel = new FXLabel(getCollapsableFrame(), "To TAZ", 0, GUIDesignLabelLeft);
+    myToTAZLabel = new FXLabel(getCollapsableFrame(), "To TAZ", 0, GUIDesignLabel(JUSTIFY_LEFT));
     myToTAZLabel->setBackColor(MFXUtils::getFXColor(RGBColor::MAGENTA));
 }
 
@@ -174,11 +174,11 @@ GNETAZRelDataFrame::buildTAZRelationData() {
     // check conditions
     if (myFirstTAZ && mySecondTAZ) {
         if (!myIntervalSelector->getDataInterval()) {
-            WRITE_WARNING("A " + toString(SUMO_TAG_TAZREL) + " must be defined within an interval.");
+            WRITE_WARNINGF(TL("A % must be defined within an interval."), toString(SUMO_TAG_TAZREL));
         } else if ((myFirstTAZ == mySecondTAZ) && myIntervalSelector->getDataInterval()->TAZRelExists(myFirstTAZ)) {
-            WRITE_WARNING("There is already a " + toString(SUMO_TAG_TAZREL) + " defined in TAZ'" + myFirstTAZ->getID() + "'.");
+            WRITE_WARNINGF(TL("There is already a % defined in TAZ'%'."), toString(SUMO_TAG_TAZREL), myFirstTAZ->getID());
         } else if ((myFirstTAZ != mySecondTAZ) && myIntervalSelector->getDataInterval()->TAZRelExists(myFirstTAZ, mySecondTAZ)) {
-            WRITE_WARNING("There is already a " + toString(SUMO_TAG_TAZREL) + " defined between TAZ'" + myFirstTAZ->getID() + "' and '" + mySecondTAZ->getID() + "'.");
+            WRITE_WARNINGF(TL("There is already a % defined between TAZ'%' and '%'."), toString(SUMO_TAG_TAZREL), myFirstTAZ->getID(), mySecondTAZ->getID());
         } else if (myGenericDataAttributes->areAttributesValid()) {
             // declare data handler
             GNEDataHandler dataHandler(myViewNet->getNet(), "", true, false);

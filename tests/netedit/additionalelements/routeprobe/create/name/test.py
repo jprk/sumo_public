@@ -38,23 +38,20 @@ netedit.changeElement("routeProbe")
 netedit.changeDefaultValue(netedit.attrs.routeProbe.create.name, "\"\"\"")
 
 # try to create RouteProbe with invalid name
-netedit.leftClick(referencePosition, 250, 235)
+netedit.leftClick(referencePosition, 315, 253)
 
 # set valid name
 netedit.changeDefaultValue(netedit.attrs.routeProbe.create.name, "customName")
 
 # create RouteProbe with valid name
-netedit.leftClick(referencePosition, 250, 235)
+netedit.leftClick(referencePosition, 325, 253)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -95,6 +95,8 @@ GNEChange_Attribute::undo() {
             myAC->getNet()->getSavingStatus()->requireSaveDemandElements();
         } else if (myAC->getTagProperty().isDataElement()) {
             myAC->getNet()->getSavingStatus()->requireSaveDataElements();
+        } else if (myAC->getTagProperty().isMeanData()) {
+            myAC->getNet()->getSavingStatus()->requireSaveMeanDatas();
         }
     }
 }
@@ -127,6 +129,8 @@ GNEChange_Attribute::redo() {
             myAC->getNet()->getSavingStatus()->requireSaveDemandElements();
         } else if (myAC->getTagProperty().isDataElement()) {
             myAC->getNet()->getSavingStatus()->requireSaveDataElements();
+        } else if (myAC->getTagProperty().isMeanData()) {
+            myAC->getNet()->getSavingStatus()->requireSaveMeanDatas();
         }
     }
 }
@@ -151,13 +155,13 @@ GNEChange_Attribute::trueChange() {
 
 std::string
 GNEChange_Attribute::undoName() const {
-    return ("Undo change " + myAC->getTagStr() + " attribute");
+    return (TL("Undo change ") + myAC->getTagStr() + " attribute");
 }
 
 
 std::string
 GNEChange_Attribute::redoName() const {
-    return ("Redo change " + myAC->getTagStr() + " attribute");
+    return (TL("Redo change ") + myAC->getTagStr() + " attribute");
 }
 
 /****************************************************************************/

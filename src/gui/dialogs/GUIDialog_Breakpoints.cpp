@@ -66,7 +66,7 @@ FXIMPLEMENT(GUIDialog_Breakpoints, FXMainWindow, GUIDialog_BreakpointsMap, ARRAY
 // ===========================================================================
 
 GUIDialog_Breakpoints::GUIDialog_Breakpoints(GUIApplicationWindow* parent, std::vector<SUMOTime>& breakpoints, FXMutex& breakpointLock) :
-    FXMainWindow(parent->getApp(), "Breakpoints Editor", GUIIconSubSys::getIcon(GUIIcon::APP_BREAKPOINTS), nullptr, GUIDesignChooserDialog),
+    FXMainWindow(parent->getApp(), TL("Breakpoints Editor"), GUIIconSubSys::getIcon(GUIIcon::APP_BREAKPOINTS), nullptr, GUIDesignChooserDialog),
     GUIPersistentWindowPos(this, "DIALOG_BREAKPOINTS", true, 20, 40, 300, 350),
     myParent(parent), myBreakpoints(&breakpoints), myBreakpointLock(&breakpointLock) {
     // build main Frame
@@ -86,15 +86,15 @@ GUIDialog_Breakpoints::GUIDialog_Breakpoints(GUIApplicationWindow* parent, std::
     FXVerticalFrame* layoutRight = new FXVerticalFrame(hbox, GUIDesignChooserLayoutRight);
     // create buttons ('&' in the label creates a hot key)
     // "Load"
-    new FXButton(layoutRight, TL("&Load\t\t"), GUIIconSubSys::getIcon(GUIIcon::OPEN), this, MID_CHOOSEN_LOAD, GUIDesignChooserButtons);
+    new FXButton(layoutRight, (TL("&Load") + std::string("\t\t")).c_str(), GUIIconSubSys::getIcon(GUIIcon::OPEN), this, MID_CHOOSEN_LOAD, GUIDesignChooserButtons);
     // "Save"
-    new FXButton(layoutRight, TL("&Save\t\t"), GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_CHOOSEN_SAVE, GUIDesignChooserButtons);
+    new FXButton(layoutRight, (TL("&Save") + std::string("\t\t")).c_str(), GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_CHOOSEN_SAVE, GUIDesignChooserButtons);
     new FXHorizontalSeparator(layoutRight, GUIDesignHorizontalSeparator);
     // "Clear List"
-    new FXButton(layoutRight, TL("Clea&r\t\t"), GUIIconSubSys::getIcon(GUIIcon::CLEANJUNCTIONS), this, MID_CHOOSEN_CLEAR, GUIDesignChooserButtons);
+    new FXButton(layoutRight, (TL("Clea&r") + std::string("\t\t")).c_str(), GUIIconSubSys::getIcon(GUIIcon::CLEANJUNCTIONS), this, MID_CHOOSEN_CLEAR, GUIDesignChooserButtons);
     new FXHorizontalSeparator(layoutRight, GUIDesignHorizontalSeparator);
     // "Close"
-    new FXButton(layoutRight, TL("&Close\t\t"), GUIIconSubSys::getIcon(GUIIcon::NO), this, MID_CANCEL, GUIDesignChooserButtons);
+    new FXButton(layoutRight, (TL("&Close") + std::string("\t\t")).c_str(), GUIIconSubSys::getIcon(GUIIcon::NO), this, MID_CANCEL, GUIDesignChooserButtons);
     // add this dialog as child of GUIMainWindow parent
     myParent->addChild(this);
     loadWindowPos();
@@ -123,7 +123,7 @@ GUIDialog_Breakpoints::rebuildList() {
     sort(myBreakpoints->begin(), myBreakpoints->end());
     // set table attributes
     myTable->setTableSize((FXint)myBreakpoints->size() + 1, 1);
-    myTable->setColumnText(0, "Time");
+    myTable->setColumnText(0, TL("Time"));
     FXHeader* header = myTable->getColumnHeader();
     header->setHeight(GUIDesignHeight);
     header->setItemJustify(0, JUSTIFY_CENTER_X);

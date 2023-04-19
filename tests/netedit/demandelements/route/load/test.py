@@ -31,17 +31,11 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # go to demand mode (For undo-redo)
 netedit.supermodeDemand()
 
-# force save demand elements
-netedit.forceSaveDemandElements()
-
 # Recompute
 netedit.rebuildNetwork()
 
-# save routes
-netedit.saveRoutes(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

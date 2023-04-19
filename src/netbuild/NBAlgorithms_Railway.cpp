@@ -170,9 +170,9 @@ NBRailwayTopologyAnalyzer::makeAllBidi(NBEdgeCont& ec) {
             }
         }
     }
-    WRITE_MESSAGE("Added " + toString(numAddedBidiEdges) + " bidi-edges to ensure that all tracks are usable in both directions.");
+    WRITE_MESSAGEF(TL("Added % bidi-edges to ensure that all tracks are usable in both directions."), toString(numAddedBidiEdges));
     if (numNotCenterEdges) {
-        WRITE_WARNING("Ignore " + toString(numNotCenterEdges) + " edges because they have the wrong spreadType");
+        WRITE_WARNINGF(TL("Ignore % edges because they have the wrong spreadType"), toString(numNotCenterEdges));
     }
     return numAddedBidiEdges;
 }
@@ -367,7 +367,7 @@ NBRailwayTopologyAnalyzer::getBrokenRailNodes(NBEdgeCont& ec, bool verbose) {
                       + " C=" + toString(numBrokenC)
                       + " D=" + toString(numBrokenD)
                       + ")");
-        WRITE_MESSAGE("Found " + toString(numBufferStops) + " railway nodes marked as buffer_stop");
+        WRITE_MESSAGEF(TL("Found % railway nodes marked as buffer_stop"), toString(numBufferStops));
     }
 
     for (NBEdge* e : bidiEdges) {
@@ -377,7 +377,7 @@ NBRailwayTopologyAnalyzer::getBrokenRailNodes(NBEdgeCont& ec, bool verbose) {
         device.closeTag();
     }
     if (verbose) {
-        WRITE_MESSAGE("Found " + toString(bidiEdges.size()) + " bidirectional rail edges");
+        WRITE_MESSAGEF(TL("Found % bidirectional rail edges"), toString(bidiEdges.size()));
     }
 
     device.close();
@@ -403,7 +403,7 @@ NBRailwayTopologyAnalyzer::getRailNodes(NBEdgeCont& ec, bool verbose) {
         }
     }
     if (verbose) {
-        WRITE_MESSAGE("Found " + toString(numRailEdges) + " railway edges and " + toString(railNodes.size()) + " railway nodes (" + toString(numRailSignals) + " signals).");
+        WRITE_MESSAGEF(TL("Found % railway edges and % railway nodes (% signals)."), toString(numRailEdges), toString(railNodes.size()), toString(numRailSignals));
     }
     return railNodes;
 }
@@ -520,7 +520,7 @@ NBRailwayTopologyAnalyzer::extendBidiEdges(NBEdgeCont& ec) {
         }
     }
     if (added > 0) {
-        WRITE_MESSAGE("Added " + toString(added) + " bidi-edges as extension of existing bidi edges.");
+        WRITE_MESSAGEF(TL("Added % bidi-edges as extension of existing bidi edges."), toString(added));
     }
     return added;
 }
@@ -531,7 +531,7 @@ NBRailwayTopologyAnalyzer::extendBidiEdges(NBEdgeCont& ec, NBNode* node, NBEdge*
     assert(bidiIn->getToNode() == node);
     NBEdge* bidiOut = bidiIn->getTurnDestination(true);
     if (bidiOut == nullptr) {
-        WRITE_WARNING("Could not find bidi-edge for edge '" + bidiIn->getID() + "'");
+        WRITE_WARNINGF(TL("Could not find bidi-edge for edge '%'"), bidiIn->getID());
         return 0;
     }
     EdgeVector tmpBidiOut;
@@ -636,7 +636,7 @@ NBRailwayTopologyAnalyzer::reverseEdges(NBEdgeCont& ec, NBPTStopCont& sc) {
     }
     // sort by sequence length
     if (seqsToReverse.size() > 0) {
-        WRITE_MESSAGE("Found " + toString(seqsToReverse.size()) + " reversible edge sequences between broken rail nodes");
+        WRITE_MESSAGEF(TL("Found % reversible edge sequences between broken rail nodes"), toString(seqsToReverse.size()));
     }
     std::sort(seqsToReverse.begin(), seqsToReverse.end(),
     [](const EdgeVector & a, const EdgeVector & b) {
@@ -665,7 +665,7 @@ NBRailwayTopologyAnalyzer::reverseEdges(NBEdgeCont& ec, NBPTStopCont& sc) {
         }
     }
     if (numReversed > 0) {
-        WRITE_MESSAGE("Reversed " + toString(numReversed) + " sequences (count by length: " + joinToString(seqLengths, " ", ":") + ")");
+        WRITE_MESSAGEF(TL("Reversed % sequences (count by length: %)"), toString(numReversed), joinToString(seqLengths, " ", ":"));
         for (auto& item : sc.getStops()) {
             if (reversedIDs.count(item.second->getEdgeId())) {
                 item.second->findLaneAndComputeBusStopExtent(ec);
@@ -738,12 +738,12 @@ NBRailwayTopologyAnalyzer::addBidiEdgesForBufferStops(NBEdgeCont& ec) {
                 getRailEdges(node, inRail, outRail);
             }
             //if (numAddedBidi > 0) {
-            //    WRITE_MESSAGE(" added " + toString(numAddedBidi) + " edges between buffer stop junction '" + bufferStop->getID() + "' and junction '" + node->getID() + "'");
+            //    WRITE_MESSAGEF(TL(" added % edges between buffer stop junction '%' and junction '%'"), toString(numAddedBidi), bufferStop->getID(), node->getID());
             //}
         }
     }
     if (numAddedBidiTotal > 0) {
-        WRITE_MESSAGE("Added " + toString(numAddedBidiTotal) + " edges to connect " + toString(numBufferStops) + " buffer stops in both directions.");
+        WRITE_MESSAGEF(TL("Added % edges to connect % buffer stops in both directions."), toString(numAddedBidiTotal), toString(numBufferStops));
     }
     return numAddedBidiTotal;
 }
@@ -824,7 +824,7 @@ NBRailwayTopologyAnalyzer::addBidiEdgesBetweenSwitches(NBEdgeCont& ec) {
         }
     }
     if (seqLengths.size() > 0) {
-        WRITE_MESSAGE("Added " + toString(numAdded) + " bidi-edges between " + toString(numSeqs) + " pairs of railway switches (count by length: " + joinToString(seqLengths, " ", ":") + ")");
+        WRITE_MESSAGEF(TL("Added % bidi-edges between % pairs of railway switches (count by length: %)"), toString(numAdded), toString(numSeqs), joinToString(seqLengths, " ", ":"));
     }
     return numAdded;
 }
@@ -1144,9 +1144,9 @@ NBRailwayTopologyAnalyzer::addBidiEdgesForStraightConnectivity(NBEdgeCont& ec, b
     }
     if (added > 0) {
         if (geometryLike) {
-            WRITE_MESSAGE("Added " + toString(added) + " bidi-edges to ensure connectivity of straight tracks at geometry-like nodes.");
+            WRITE_MESSAGEF(TL("Added % bidi-edges to ensure connectivity of straight tracks at geometry-like nodes."), toString(added));
         } else {
-            WRITE_MESSAGE("Added " + toString(added) + " bidi-edges to ensure connectivity of straight tracks at switches.");
+            WRITE_MESSAGEF(TL("Added % bidi-edges to ensure connectivity of straight tracks at switches."), toString(added));
         }
     }
     return added;

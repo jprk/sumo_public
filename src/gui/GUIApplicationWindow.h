@@ -197,7 +197,7 @@ public:
     /// @brief Called on menu Edit->Netedit (SUMOCfg)
     long onCmdNeteditSUMOConfig(FXObject*, FXSelector, void*);
 
-    /// @brief Enable or disable open SUMOConfig in NETEDIT
+    /// @brief Enable or disable open SUMOConfig in netedit
     long onUpdNeteditSUMOConfig(FXObject*, FXSelector, void*);
 
     /// @brief Opens the application settings menu (Settings->Application Settings...)
@@ -208,6 +208,9 @@ public:
 
     /// @brief Toggle draw junction shape
     long onCmdToggleDrawJunctionShape(FXObject*, FXSelector, void*);
+
+    /// @brief Toggle draw junction shape
+    long onCmdToggleSecondaryShape(FXObject*, FXSelector, void*);
 
     /// @brief Toggle full screen mode
     long onCmdFullScreen(FXObject*, FXSelector, void*);
@@ -220,6 +223,9 @@ public:
 
     /// @brief Toggle listing of teleporting vehicles
     long onCmdListTeleporting(FXObject*, FXSelector, void*);
+
+    /// @brief Shows the feedback dialog
+    long onCmdFeedback(FXObject*, FXSelector, void*);
 
     /// @brief Shows the about dialog
     long onCmdAbout(FXObject*, FXSelector, void*);

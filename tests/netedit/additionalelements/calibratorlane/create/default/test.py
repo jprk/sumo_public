@@ -31,21 +31,18 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # go to additional mode
 netedit.additionalMode()
 
-# select calibrator
+# select calibratorLane
 netedit.changeElement("calibratorLane")
 
-# create calibrator
-netedit.leftClick(referencePosition, 240, 250)
+# create calibratorLane
+netedit.leftClick(referencePosition, 312, 250)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -38,14 +38,14 @@ netedit.setZoom("50", "50", "100")
 netedit.moveMode()
 
 # move back to another different position of initial
-netedit.moveElement(referencePosition, 60, 225, 168, 383)
+netedit.moveElement(referencePosition, 70, 225, 168, 383)
 
 # check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

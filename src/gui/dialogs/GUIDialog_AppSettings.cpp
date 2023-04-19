@@ -72,10 +72,6 @@ GUIDialog_AppSettings::GUIDialog_AppSettings(GUIMainWindow* parent)
     myBreakPointOffset = new FXRealSpinner(m1, 5, this, MID_TIMELINK_BREAKPOINT, GUIDesignViewSettingsSpinDial2 | SPIN_NOMIN);
     myBreakPointOffset->setValue(STEPS2TIME(GUIMessageWindow::getBreakPointOffset()));
     new FXLabel(m1, TL("Breakpoint offset when clicking on time message"), nullptr, GUIDesignViewSettingsLabel1);
-    myLanguageField = new FXTextField(m1, 5, this, MID_GNE_SET_ATTRIBUTE, TEXTFIELD_NORMAL | LAYOUT_RIGHT, 0, 0, 0, 0, 4, 2, 0, 2);
-    myLanguageField->setText(gLanguage.c_str());
-    new FXLabel(m1, TL("Language (needs restart)"), nullptr, GUIDesignViewSettingsLabel1);
-
     myTable = new FXTable(f1, this, MID_TABLE, GUIDesignBreakpointTable);
     const auto& onlineMaps = parent->getOnlineMaps();
     const int numRows = (int)onlineMaps.size() + 1;
@@ -132,11 +128,6 @@ GUIDialog_AppSettings::onCmdOk(FXObject*, FXSelector, void*) {
         }
     }
     getApp()->reg().writeStringEntry("gui", "onlineMaps", maps.text());
-    const std::string lang = myLanguageField->getText().text();
-    if (lang != gLanguage) {
-        gLanguage = lang;
-        getApp()->reg().writeStringEntry("gui", "language", lang.c_str());
-    }
     destroy();
     return 1;
 }

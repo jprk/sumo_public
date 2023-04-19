@@ -50,6 +50,7 @@ MSTransportableControl::MSTransportableControl(const bool isPerson):
     myWaitingForDepartureNumber(0),
     myWaitingForVehicleNumber(0),
     myWaitingUntilNumber(0),
+    myAccessNumber(0),
     myEndedNumber(0),
     myArrivedNumber(0),
     myTeleportsAbortWait(0),
@@ -65,7 +66,7 @@ MSTransportableControl::MSTransportableControl(const bool isPerson):
         } else if (model == "nonInteracting") {
             myMovementModel = myNonInteractingModel;
         } else {
-            throw ProcessError("Unknown pedestrian model '" + model + "'");
+            throw ProcessError(TLF("Unknown pedestrian model '%'", model));
         }
     } else {
         myMovementModel = myNonInteractingModel = new MSPModel_NonInteracting(oc, net);
@@ -76,6 +77,9 @@ MSTransportableControl::MSTransportableControl(const bool isPerson):
     if (oc.isSet("personroute-output")) {
         OutputDevice::createDeviceByOption("personroute-output", "routes", "routes_file.xsd");
         myRouteInfos.routeOut = &OutputDevice::getDeviceByOption("personroute-output");
+    }
+    if (oc.isSet("personinfo-output")) {
+        OutputDevice::createDeviceByOption("personinfo-output", "tripinfos", "tripinfo_file.xsd");
     }
     myAbortWaitingTimeout = string2time(oc.getString("time-to-teleport.ride"));
 }
@@ -136,7 +140,9 @@ MSTransportableControl::get(const std::string& id) const {
 void
 MSTransportableControl::erase(MSTransportable* transportable) {
     const OptionsCont& oc = OptionsCont::getOptions();
-    if (oc.isSet("tripinfo-output")) {
+    if (oc.isSet("personinfo-output")) {
+        transportable->tripInfoOutput(OutputDevice::getDeviceByOption("personinfo-output"));
+    } else if (oc.isSet("tripinfo-output")) {
         transportable->tripInfoOutput(OutputDevice::getDeviceByOption("tripinfo-output"));
     } else if (oc.getBool("duration-log.statistics")) {
         // collecting statistics is a sideffect
@@ -317,7 +323,7 @@ MSTransportableControl::hasTransportables() const {
 
 bool
 MSTransportableControl::hasNonWaiting() const {
-    return !myWaiting4Departure.empty() || myWaitingForVehicleNumber < myRunningNumber || myHaveNewWaiting;
+    return !myWaiting4Departure.empty() || getMovingNumber() > 0 || myWaitingUntilNumber > 0 || myHaveNewWaiting;
 }
 
 
@@ -329,7 +335,7 @@ MSTransportableControl::getActiveCount() {
 
 int
 MSTransportableControl::getMovingNumber() const {
-    return myMovementModel->getActiveNumber();
+    return myMovementModel->getActiveNumber() + myAccessNumber;
 }
 
 

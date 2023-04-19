@@ -22,6 +22,7 @@
 // A single child window which contains a view of the simulation area
 /****************************************************************************/
 
+#include <utils/common/MsgHandler.h>
 #include <utils/foxtools/MFXCheckableButton.h>
 #include <utils/foxtools/MFXMenuButtonTooltip.h>
 #include <utils/gui/globjects/GUIShapeContainer.h>
@@ -81,7 +82,7 @@ GUISUMOViewParent::GUISUMOViewParent(FXMDIClient* p, FXMDIMenu* mdimenu,
                                      FXint x, FXint y, FXint w, FXint h) :
     GUIGlChildWindow(p, parentWindow, mdimenu, name, nullptr, ic, opts, x, y, w, h) {
     buildSpeedControlToolbar();
-    myParent->addGLChild(this);
+    myGUIMainWindowParent->addGLChild(this);
 }
 
 
@@ -90,16 +91,16 @@ GUISUMOViewParent::init(FXGLCanvas* share, GUINet& net, GUISUMOViewParent::ViewT
     switch (type) {
         default:
         case VIEW_2D_OPENGL:
-            myView = new GUIViewTraffic(myChildWindowContentFrame, *myParent, this, net, myParent->getGLVisual(), share);
+            myView = new GUIViewTraffic(myChildWindowContentFrame, *myGUIMainWindowParent, this, net, myGUIMainWindowParent->getGLVisual(), share);
             break;
 #ifdef HAVE_OSG
         case VIEW_3D_OSG:
-            myView = new GUIOSGView(myChildWindowContentFrame, *myParent, this, net, myParent->getGLVisual(), share);
+            myView = new GUIOSGView(myChildWindowContentFrame, *myGUIMainWindowParent, this, net, myGUIMainWindowParent->getGLVisual(), share);
             break;
 #endif
     }
     myView->buildViewToolBars(this);
-    if (myParent->isGaming()) {
+    if (myGUIMainWindowParent->isGaming()) {
         myStaticNavigationToolBar->hide();
     }
     return myView;
@@ -107,7 +108,7 @@ GUISUMOViewParent::init(FXGLCanvas* share, GUINet& net, GUISUMOViewParent::ViewT
 
 
 GUISUMOViewParent::~GUISUMOViewParent() {
-    myParent->removeGLChild(this);
+    myGUIMainWindowParent->removeGLChild(this);
 }
 
 
@@ -182,16 +183,16 @@ std::vector<GUIGlID>
 GUISUMOViewParent::getObjectIDs(int messageId) const {
     switch (messageId) {
         case MID_HOTKEY_SHIFT_J_LOCATEJUNCTION:
-            return static_cast<GUINet*>(GUINet::getInstance())->getJunctionIDs(myParent->listInternal());
+            return static_cast<GUINet*>(GUINet::getInstance())->getJunctionIDs(myGUIMainWindowParent->listInternal());
         case MID_HOTKEY_SHIFT_E_LOCATEEDGE:
-            return GUIEdge::getIDs(myParent->listInternal());
+            return GUIEdge::getIDs(myGUIMainWindowParent->listInternal());
         case MID_HOTKEY_SHIFT_V_LOCATEVEHICLE: {
             std::vector<GUIGlID> vehicles;
             if (MSGlobals::gUseMesoSim) {
                 static_cast<GUIMEVehicleControl*>(static_cast<GUINet*>(MSNet::getInstance())->getGUIMEVehicleControl())->insertVehicleIDs(vehicles);
             } else {
                 static_cast<GUIVehicleControl&>(MSNet::getInstance()->getVehicleControl()).insertVehicleIDs(
-                    vehicles, myParent->listParking(), myParent->listTeleporting());
+                    vehicles, myGUIMainWindowParent->listParking(), myGUIMainWindowParent->listTeleporting());
             }
             return vehicles;
         }
@@ -215,7 +216,7 @@ GUISUMOViewParent::getObjectIDs(int messageId) const {
         case MID_HOTKEY_SHIFT_L_LOCATEPOLY:
             return static_cast<GUIShapeContainer&>(GUINet::getInstance()->getShapeContainer()).getPolygonIDs();
         default:
-            throw ProcessError("Unknown Message ID in onCmdLocate");
+            throw ProcessError(TL("Unknown Message ID in onCmdLocate"));
     }
 }
 
@@ -229,42 +230,42 @@ GUISUMOViewParent::onCmdLocate(FXObject*, FXSelector sel, void*) {
         switch (messageId) {
             case MID_HOTKEY_SHIFT_J_LOCATEJUNCTION:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEJUNCTION);
-                titleString = "Junction Chooser";
+                titleString = TL("Junction Chooser");
                 break;
             case MID_HOTKEY_SHIFT_E_LOCATEEDGE:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEEDGE);
-                titleString = "Edge Chooser";
+                titleString = TL("Edge Chooser");
                 break;
             case MID_HOTKEY_SHIFT_V_LOCATEVEHICLE:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEVEHICLE);
-                titleString = "Vehicle Chooser";
+                titleString = TL("Vehicle Chooser");
                 break;
             case MID_HOTKEY_SHIFT_P_LOCATEPERSON:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON);
-                titleString = "Person Chooser";
+                titleString = TL("Person Chooser");
                 break;
             case MID_HOTKEY_SHIFT_C_LOCATECONTAINER:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER);
-                titleString = "Container Chooser";
+                titleString = TL("Container Chooser");
                 break;
             case MID_HOTKEY_SHIFT_T_LOCATETLS:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATETLS);
-                titleString = "Traffic Lights Chooser";
+                titleString = TL("Traffic Lights Chooser");
                 break;
             case MID_HOTKEY_SHIFT_A_LOCATEADDITIONAL:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEADD);
-                titleString = "Additional Objects Chooser";
+                titleString = TL("Additional Objects Chooser");
                 break;
             case MID_HOTKEY_SHIFT_O_LOCATEPOI:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEPOI);
-                titleString = "POI Chooser";
+                titleString = TL("POI Chooser");
                 break;
             case MID_HOTKEY_SHIFT_L_LOCATEPOLY:
                 icon = GUIIconSubSys::getIcon(GUIIcon::LOCATEPOLY);
-                titleString = "Polygon Chooser";
+                titleString = TL("Polygon Chooser");
                 break;
             default:
-                throw ProcessError("Unknown Message ID in onCmdLocate");
+                throw ProcessError(TL("Unknown Message ID in onCmdLocate"));
         }
 
         myGLObjChooser[messageId] = new GUIDialog_GLObjChooser(this, messageId, icon, titleString.c_str(), getObjectIDs(messageId), GUIGlObjectStorage::gIDStorage);

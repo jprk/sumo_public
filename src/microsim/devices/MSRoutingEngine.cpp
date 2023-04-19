@@ -145,7 +145,7 @@ MSRoutingEngine::_initEdgeWeights(std::vector<double>& edgeSpeeds, std::vector<s
         myLastAdaptation = MSNet::getInstance()->getCurrentTimeStep();
         myPriorityFactor = oc.getFloat("weights.priority-factor");
         if (myPriorityFactor < 0) {
-            throw ProcessError("weights.priority-factor cannot be negative.");
+            throw ProcessError(TL("weights.priority-factor cannot be negative."));
         }
         if (myPriorityFactor > 0) {
             if (myEdgePriorityRange == 0) {
@@ -408,7 +408,7 @@ MSRoutingEngine::initRouter(SUMOVehicle* vehicle) {
             MSEdge::getAllEdges(), true, myEffortFunc,
             string2time(oc.getString("begin")), string2time(oc.getString("end")), weightPeriod, hasPermissions, oc.getInt("device.rerouting.threads"));
     } else {
-        throw ProcessError("Unknown routing algorithm '" + routingAlgorithm + "'!");
+        throw ProcessError(TLF("Unknown routing algorithm '%'!", routingAlgorithm));
     }
 
     RailwayRouter<MSEdge, SUMOVehicle>* railRouter = nullptr;

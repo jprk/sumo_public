@@ -31,9 +31,6 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 # recompute
 netedit.rebuildNetwork()
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # toggle select lanes
 netedit.changeEditMode(netedit.attrs.modes.network.selectLane)
 
@@ -55,11 +52,8 @@ netedit.leftClick(referencePosition, 250, 95)
 # check parameters
 netedit.checkParameters(referencePosition, netedit.attrs.lane.inspectSelection.parameters, True)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

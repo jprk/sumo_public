@@ -183,9 +183,9 @@ std::ostream& operator<<(std::ostream& out, MSDevice_SSM::EncounterType type) {
 
 std::set<MSDevice_SSM*, ComparatorNumericalIdLess>* MSDevice_SSM::myInstances = new std::set<MSDevice_SSM*, ComparatorNumericalIdLess>();
 
-std::set<std::string> MSDevice_SSM::createdOutputFiles;
+std::set<std::string> MSDevice_SSM::myCreatedOutputFiles;
 
-int MSDevice_SSM::issuedParameterWarnFlags = 0;
+int MSDevice_SSM::myIssuedParameterWarnFlags = 0;
 
 const std::set<MSDevice_SSM*, ComparatorNumericalIdLess>&
 MSDevice_SSM::getInstances() {
@@ -203,10 +203,10 @@ MSDevice_SSM::cleanup() {
         }
         myInstances->clear();
     }
-    for (auto& fn : createdOutputFiles) {
-        OutputDevice* file = &OutputDevice::getDevice(fn);
-        file->closeTag();
+    for (const std::string& fn : myCreatedOutputFiles) {
+        OutputDevice::getDevice(fn).closeTag();
     }
+    myCreatedOutputFiles.clear();
 }
 
 
@@ -217,23 +217,23 @@ MSDevice_SSM::insertOptions(OptionsCont& oc) {
 
     // custom options
     oc.doRegister("device.ssm.measures", new Option_String(""));
-    oc.addDescription("device.ssm.measures", "SSM Device", "Specifies which measures will be logged (as a space or comma-separated sequence of IDs in ('TTC', 'DRAC', 'PET'))");
+    oc.addDescription("device.ssm.measures", "SSM Device", TL("Specifies which measures will be logged (as a space or comma-separated sequence of IDs in ('TTC', 'DRAC', 'PET'))"));
     oc.doRegister("device.ssm.thresholds", new Option_String(""));
-    oc.addDescription("device.ssm.thresholds", "SSM Device", "Specifies space or comma-separated thresholds corresponding to the specified measures (see documentation and watch the order!). Only events exceeding the thresholds will be logged.");
+    oc.addDescription("device.ssm.thresholds", "SSM Device", TL("Specifies space or comma-separated thresholds corresponding to the specified measures (see documentation and watch the order!). Only events exceeding the thresholds will be logged."));
     oc.doRegister("device.ssm.trajectories",  new Option_Bool(false));
-    oc.addDescription("device.ssm.trajectories", "SSM Device", "Specifies whether trajectories will be logged (if false, only the extremal values and times are reported).");
+    oc.addDescription("device.ssm.trajectories", "SSM Device", TL("Specifies whether trajectories will be logged (if false, only the extremal values and times are reported)."));
     oc.doRegister("device.ssm.range", new Option_Float(50.));
-    oc.addDescription("device.ssm.range", "SSM Device", "Specifies the detection range in meters. For vehicles below this distance from the equipped vehicle, SSM values are traced.");
+    oc.addDescription("device.ssm.range", "SSM Device", TL("Specifies the detection range in meters. For vehicles below this distance from the equipped vehicle, SSM values are traced."));
     oc.doRegister("device.ssm.extratime", new Option_Float(DEFAULT_EXTRA_TIME));
-    oc.addDescription("device.ssm.extratime", "SSM Device", "Specifies the time in seconds to be logged after a conflict is over. Required >0 if PET is to be calculated for crossing conflicts.");
+    oc.addDescription("device.ssm.extratime", "SSM Device", TL("Specifies the time in seconds to be logged after a conflict is over. Required >0 if PET is to be calculated for crossing conflicts."));
     oc.doRegister("device.ssm.file", new Option_String(""));
-    oc.addDescription("device.ssm.file", "SSM Device", "Give a global default filename for the SSM output");
+    oc.addDescription("device.ssm.file", "SSM Device", TL("Give a global default filename for the SSM output"));
     oc.doRegister("device.ssm.geo", new Option_Bool(false));
-    oc.addDescription("device.ssm.geo", "SSM Device", "Whether to use coordinates of the original reference system in output");
+    oc.addDescription("device.ssm.geo", "SSM Device", TL("Whether to use coordinates of the original reference system in output"));
     oc.doRegister("device.ssm.write-positions", new Option_Bool(false));
-    oc.addDescription("device.ssm.write-positions", "SSM Device", "Whether to write positions (coordinates) for each timestep");
+    oc.addDescription("device.ssm.write-positions", "SSM Device", TL("Whether to write positions (coordinates) for each timestep"));
     oc.doRegister("device.ssm.write-lane-positions", new Option_Bool(false));
-    oc.addDescription("device.ssm.write-lane-positions", "SSM Device", "Whether to write lanes and their positions for each timestep");
+    oc.addDescription("device.ssm.write-lane-positions", "SSM Device", TL("Whether to write lanes and their positions for each timestep"));
 }
 
 
@@ -244,7 +244,7 @@ MSDevice_SSM::initEdgeFilter() {
         const std::string file = OptionsCont::getOptions().getString("device.ssm.filter-edges.input-file");
         std::ifstream strm(file.c_str());
         if (!strm.good()) {
-            throw ProcessError("Could not load names of edges for filtering SSM device output from '" + file + "'.");
+            throw ProcessError(TLF("Could not load names of edges for filtering SSM device output from '%'.", file));
         }
         myEdgeFilterActive = true;
         while (strm.good()) {
@@ -2674,7 +2674,7 @@ MSDevice_SSM::flushGlobalMeasures() {
                 if (myUseGeoCoords) {
                     toGeo(myMaxBR.first.second);
                 }
-                myOutputFile->openTag("maxBR").writeAttr("time", myMaxBR.first.first).writeAttr("position", ::toString(myMaxBR.first.second)).writeAttr("value", myMaxBR.second).closeTag();
+                myOutputFile->openTag("maxBR").writeAttr("time", myMaxBR.first.first).writeAttr("position", makeStringWithNAs(myMaxBR.first.second)).writeAttr("value", myMaxBR.second).closeTag();
             }
         }
 
@@ -2685,7 +2685,7 @@ MSDevice_SSM::flushGlobalMeasures() {
                     toGeo(myMinSGAP.first.first.second);
                 }
                 myOutputFile->openTag("minSGAP").writeAttr("time", myMinSGAP.first.first.first)
-                .writeAttr("position", ::toString(myMinSGAP.first.first.second))
+                .writeAttr("position", makeStringWithNAs(myMinSGAP.first.first.second))
                 .writeAttr("value", myMinSGAP.first.second)
                 .writeAttr("leader", myMinSGAP.second).closeTag();
             }
@@ -2698,7 +2698,7 @@ MSDevice_SSM::flushGlobalMeasures() {
                     toGeo(myMinTGAP.first.first.second);
                 }
                 myOutputFile->openTag("minTGAP").writeAttr("time", myMinTGAP.first.first.first)
-                .writeAttr("position", ::toString(myMinTGAP.first.first.second))
+                .writeAttr("position", makeStringWithNAs(myMinTGAP.first.first.second))
                 .writeAttr("value", myMinTGAP.first.second)
                 .writeAttr("leader", myMinTGAP.second).closeTag();
             }
@@ -2759,7 +2759,7 @@ MSDevice_SSM::writeOutConflict(Encounter* e) {
         }
         myOutputFile->openTag("foeVelocity").writeAttr("values", ::toString(e->foeTrajectory.v)).closeTag();
 
-        myOutputFile->openTag("conflictPoint").writeAttr("values", makeStringWithNAs(e->conflictPointSpan, myUseGeoCoords ? gPrecisionGeo : gPrecision)).closeTag();
+        myOutputFile->openTag("conflictPoint").writeAttr("values", makeStringWithNAs(e->conflictPointSpan)).closeTag();
     }
 
     if (myComputeTTC) {
@@ -2775,7 +2775,7 @@ MSDevice_SSM::writeOutConflict(Encounter* e) {
             if (myUseGeoCoords) {
                 toGeo(e->minTTC.pos);
             }
-            std::string position = ::toString(e->minTTC.pos, myUseGeoCoords ? gPrecisionGeo : gPrecision);
+            std::string position = makeStringWithNAs(e->minTTC.pos);
             myOutputFile->openTag("minTTC").writeAttr("time", time).writeAttr("position", position).writeAttr("type", type).writeAttr("value", value).closeTag();
         }
     }
@@ -2792,7 +2792,7 @@ MSDevice_SSM::writeOutConflict(Encounter* e) {
             if (myUseGeoCoords) {
                 toGeo(e->maxDRAC.pos);
             }
-            std::string position = ::toString(e->maxDRAC.pos, myUseGeoCoords ? gPrecisionGeo : gPrecision);
+            std::string position = makeStringWithNAs(e->maxDRAC.pos);
             myOutputFile->openTag("maxDRAC").writeAttr("time", time).writeAttr("position", position).writeAttr("type", type).writeAttr("value", value).closeTag();
         }
     }
@@ -2832,12 +2832,19 @@ MSDevice_SSM::makeStringWithNAs(const std::vector<double>& v, const std::vector<
 }
 
 std::string
-MSDevice_SSM::makeStringWithNAs(const PositionVector& v, const int precision) {
+MSDevice_SSM::makeStringWithNAs(const PositionVector& v) {
+    const int precision = myUseGeoCoords ? gPrecisionGeo : gPrecision;
     std::string res = "";
     for (PositionVector::const_iterator i = v.begin(); i != v.end(); ++i) {
         res += (i == v.begin() ? "" : " ") + (*i == Position::INVALID ? "NA" : ::toString(*i, precision));
     }
     return res;
+}
+
+std::string
+MSDevice_SSM::makeStringWithNAs(const Position& p) {
+    const int precision = myUseGeoCoords ? gPrecisionGeo : gPrecision;
+    return p == Position::INVALID ? "NA" : toString(p, precision);
 }
 
 
@@ -2876,9 +2883,9 @@ MSDevice_SSM::MSDevice_SSM(SUMOVehicle& holder, const std::string& id, std::stri
     myOutputFile = &OutputDevice::getDevice(outputFilename);
 //    TODO: make xsd, include header
 //    myOutputFile.writeXMLHeader("SSMLog", "SSMLog.xsd");
-    if (createdOutputFiles.count(outputFilename) == 0) {
+    if (myCreatedOutputFiles.count(outputFilename) == 0) {
         myOutputFile->writeXMLHeader("SSMLog", "");
-        createdOutputFiles.insert(outputFilename);
+        myCreatedOutputFiles.insert(outputFilename);
     }
     // register at static instance container
     myInstances->insert(this);
@@ -3487,19 +3494,19 @@ MSDevice_SSM::getOutputFilename(const SUMOVehicle& v, std::string deviceID) {
         try {
             file = v.getParameter().getParameter("device.ssm.file", file);
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.file", file) + "'for vehicle parameter 'ssm.measures'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.measures'."), v.getParameter().getParameter("device.ssm.file", file));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.file")) {
         try {
             file = v.getVehicleType().getParameter().getParameter("device.ssm.file", file);
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.file", file) + "'for vType parameter 'ssm.measures'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.measures'."), v.getVehicleType().getParameter().getParameter("device.ssm.file", file));
         }
     } else {
         file = oc.getString("device.ssm.file") == "" ? file : oc.getString("device.ssm.file");
-        if (oc.isDefault("device.ssm.file") && (issuedParameterWarnFlags & SSM_WARN_FILE) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.file'. Using default of '" + file + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_FILE;
+        if (oc.isDefault("device.ssm.file") && (myIssuedParameterWarnFlags & SSM_WARN_FILE) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.file'. Using default of '%'."), v.getID(), file);
+            myIssuedParameterWarnFlags |= SSM_WARN_FILE;
         }
     }
     if (OptionsCont::getOptions().isSet("configuration-file")) {
@@ -3521,19 +3528,19 @@ MSDevice_SSM::useGeoCoords(const SUMOVehicle& v) {
         try {
             useGeo = StringUtils::toBool(v.getParameter().getParameter("device.ssm.geo", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.geo", "no") + "'for vehicle parameter 'ssm.geo'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.geo'."), v.getParameter().getParameter("device.ssm.geo", "no"));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.geo")) {
         try {
             useGeo = StringUtils::toBool(v.getVehicleType().getParameter().getParameter("device.ssm.geo", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.geo", "no") + "'for vType parameter 'ssm.geo'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.geo'."), v.getVehicleType().getParameter().getParameter("device.ssm.geo", "no"));
         }
     } else {
         useGeo = oc.getBool("device.ssm.geo");
-        if (oc.isDefault("device.ssm.geo") && (issuedParameterWarnFlags & SSM_WARN_GEO) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.geo'. Using default of '" + toString(useGeo) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_GEO;
+        if (oc.isDefault("device.ssm.geo") && (myIssuedParameterWarnFlags & SSM_WARN_GEO) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.geo'. Using default of '%'."), v.getID(), toString(useGeo));
+            myIssuedParameterWarnFlags |= SSM_WARN_GEO;
         }
     }
     return useGeo;
@@ -3548,19 +3555,19 @@ MSDevice_SSM::writePositions(const SUMOVehicle& v) {
         try {
             writePos = StringUtils::toBool(v.getParameter().getParameter("device.ssm.write-positions", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.write-positions", "no") + "'for vehicle parameter 'ssm.write-positions'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.write-positions'."), v.getParameter().getParameter("device.ssm.write-positions", "no"));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.write-positions")) {
         try {
             writePos = StringUtils::toBool(v.getVehicleType().getParameter().getParameter("device.ssm.write-positions", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.write-positions", "no") + "'for vType parameter 'ssm.write-positions'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.write-positions'."), v.getVehicleType().getParameter().getParameter("device.ssm.write-positions", "no"));
         }
     } else {
         writePos = oc.getBool("device.ssm.write-positions");
-        if (oc.isDefault("device.ssm.write-positions") && (issuedParameterWarnFlags & SSM_WARN_POS) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.write-positions'. Using default of '" + toString(writePos) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_POS;
+        if (oc.isDefault("device.ssm.write-positions") && (myIssuedParameterWarnFlags & SSM_WARN_POS) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.write-positions'. Using default of '%'."), v.getID(), toString(writePos));
+            myIssuedParameterWarnFlags |= SSM_WARN_POS;
         }
     }
     return writePos;
@@ -3575,19 +3582,19 @@ MSDevice_SSM::writeLanesPositions(const SUMOVehicle& v) {
         try {
             writeLanesPos = StringUtils::toBool(v.getParameter().getParameter("device.ssm.write-lane-positions", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.write-lane-positions", "no") + "'for vehicle parameter 'ssm.write-lane-positions'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.write-lane-positions'."), v.getParameter().getParameter("device.ssm.write-lane-positions", "no"));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.write-lane-positions")) {
         try {
             writeLanesPos = StringUtils::toBool(v.getVehicleType().getParameter().getParameter("device.ssm.write-lane-positions", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.write-lane-positions", "no") + "'for vType parameter 'ssm.write-lane-positions'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.write-lane-positions'."), v.getVehicleType().getParameter().getParameter("device.ssm.write-lane-positions", "no"));
         }
     } else {
         writeLanesPos = oc.getBool("device.ssm.write-lane-positions");
-        if (oc.isDefault("device.ssm.write-lane-positions") && (issuedParameterWarnFlags & SSM_WARN_LANEPOS) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.write-positions'. Using default of '" + toString(writeLanesPos) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_LANEPOS;
+        if (oc.isDefault("device.ssm.write-lane-positions") && (myIssuedParameterWarnFlags & SSM_WARN_LANEPOS) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.write-positions'. Using default of '%'."), v.getID(), toString(writeLanesPos));
+            myIssuedParameterWarnFlags |= SSM_WARN_LANEPOS;
         }
     }
     return writeLanesPos;
@@ -3602,19 +3609,19 @@ MSDevice_SSM::getDetectionRange(const SUMOVehicle& v) {
         try {
             range = StringUtils::toDouble(v.getParameter().getParameter("device.ssm.range", ""));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.range", "") + "'for vehicle parameter 'ssm.range'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.range'."), v.getParameter().getParameter("device.ssm.range", ""));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.range")) {
         try {
             range = StringUtils::toDouble(v.getVehicleType().getParameter().getParameter("device.ssm.range", ""));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.range", "") + "'for vType parameter 'ssm.range'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.range'."), v.getVehicleType().getParameter().getParameter("device.ssm.range", ""));
         }
     } else {
         range = oc.getFloat("device.ssm.range");
-        if (oc.isDefault("device.ssm.range") && (issuedParameterWarnFlags & SSM_WARN_RANGE) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.range'. Using default of '" + toString(range) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_RANGE;
+        if (oc.isDefault("device.ssm.range") && (myIssuedParameterWarnFlags & SSM_WARN_RANGE) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.range'. Using default of '%'."), v.getID(), toString(range));
+            myIssuedParameterWarnFlags |= SSM_WARN_RANGE;
         }
     }
     return range;
@@ -3629,24 +3636,24 @@ MSDevice_SSM::getExtraTime(const SUMOVehicle& v) {
         try {
             extraTime = StringUtils::toDouble(v.getParameter().getParameter("device.ssm.extratime", ""));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.extratime", "") + "'for vehicle parameter 'ssm.extratime'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.extratime'."), v.getParameter().getParameter("device.ssm.extratime", ""));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.extratime")) {
         try {
             extraTime = StringUtils::toDouble(v.getVehicleType().getParameter().getParameter("device.ssm.extratime", ""));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.extratime", "") + "'for vType parameter 'ssm.extratime'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.extratime'."), v.getVehicleType().getParameter().getParameter("device.ssm.extratime", ""));
         }
     } else {
         extraTime = oc.getFloat("device.ssm.extratime");
-        if (oc.isDefault("device.ssm.extratime") && (issuedParameterWarnFlags & SSM_WARN_EXTRATIME) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.extratime'. Using default of '" + toString(extraTime) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_EXTRATIME;
+        if (oc.isDefault("device.ssm.extratime") && (myIssuedParameterWarnFlags & SSM_WARN_EXTRATIME) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.extratime'. Using default of '%'."), v.getID(), toString(extraTime));
+            myIssuedParameterWarnFlags |= SSM_WARN_EXTRATIME;
         }
     }
     if (extraTime < 0.) {
         extraTime = DEFAULT_EXTRA_TIME;
-        WRITE_WARNING("Negative (or no) value encountered for vehicle parameter 'device.ssm.extratime' in vehicle '" + v.getID() + "' using default value " + ::toString(extraTime) + " instead.");
+        WRITE_WARNINGF(TL("Negative (or no) value encountered for vehicle parameter 'device.ssm.extratime' in vehicle '%' using default value % instead."), v.getID(), ::toString(extraTime));
     }
     return extraTime;
 }
@@ -3660,19 +3667,19 @@ MSDevice_SSM::requestsTrajectories(const SUMOVehicle& v) {
         try {
             trajectories = StringUtils::toBool(v.getParameter().getParameter("device.ssm.trajectories", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.trajectories", "no") + "'for vehicle parameter 'ssm.trajectories'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.trajectories'."), v.getParameter().getParameter("device.ssm.trajectories", "no"));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.trajectories")) {
         try {
             trajectories = StringUtils::toBool(v.getVehicleType().getParameter().getParameter("device.ssm.trajectories", "no"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.trajectories", "no") + "'for vType parameter 'ssm.trajectories'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.trajectories'."), v.getVehicleType().getParameter().getParameter("device.ssm.trajectories", "no"));
         }
     } else {
         trajectories = oc.getBool("device.ssm.trajectories");
-        if (oc.isDefault("device.ssm.trajectories") && (issuedParameterWarnFlags & SSM_WARN_TRAJECTORIES) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.trajectories'. Using default of '" + toString(trajectories) + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_TRAJECTORIES;
+        if (oc.isDefault("device.ssm.trajectories") && (myIssuedParameterWarnFlags & SSM_WARN_TRAJECTORIES) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.trajectories'. Using default of '%'."), v.getID(), toString(trajectories));
+            myIssuedParameterWarnFlags |= SSM_WARN_TRAJECTORIES;
         }
     }
     return trajectories;
@@ -3689,19 +3696,19 @@ MSDevice_SSM::getMeasuresAndThresholds(const SUMOVehicle& v, std::string deviceI
         try {
             measures_str = v.getParameter().getParameter("device.ssm.measures", "");
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.measures", "") + "'for vehicle parameter 'ssm.measures'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.measures'."), v.getParameter().getParameter("device.ssm.measures", ""));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.measures")) {
         try {
             measures_str = v.getVehicleType().getParameter().getParameter("device.ssm.measures", "");
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.measures", "") + "'for vType parameter 'ssm.measures'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.measures'."), v.getVehicleType().getParameter().getParameter("device.ssm.measures", ""));
         }
     } else {
         measures_str = oc.getString("device.ssm.measures");
-        if (oc.isDefault("device.ssm.measures") && (issuedParameterWarnFlags & SSM_WARN_MEASURES) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.measures'. Using default of '" + measures_str + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_MEASURES;
+        if (oc.isDefault("device.ssm.measures") && (myIssuedParameterWarnFlags & SSM_WARN_MEASURES) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.measures'. Using default of '%'."), v.getID(), measures_str);
+            myIssuedParameterWarnFlags |= SSM_WARN_MEASURES;
         }
     }
 
@@ -3717,7 +3724,7 @@ MSDevice_SSM::getMeasuresAndThresholds(const SUMOVehicle& v, std::string deviceI
     for (std::vector<std::string>::const_iterator i = measures.begin(); i != measures.end(); ++i) {
         if (std::find(available.begin(), available.end(), *i) == available.end()) {
             // Given identifier is unknown
-            WRITE_ERROR("SSM identifier '" + *i + "' is not supported. Aborting construction of SSM device '" + deviceID + "'.");
+            WRITE_ERRORF(TL("SSM identifier '%' is not supported. Aborting construction of SSM device '%'."), *i, deviceID);
             return false;
         }
     }
@@ -3728,19 +3735,19 @@ MSDevice_SSM::getMeasuresAndThresholds(const SUMOVehicle& v, std::string deviceI
         try {
             thresholds_str = v.getParameter().getParameter("device.ssm.thresholds", "");
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getParameter().getParameter("device.ssm.thresholds", "") + "'for vehicle parameter 'ssm.thresholds'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vehicle parameter 'ssm.thresholds'."), v.getParameter().getParameter("device.ssm.thresholds", ""));
         }
     } else if (v.getVehicleType().getParameter().knowsParameter("device.ssm.thresholds")) {
         try {
             thresholds_str = v.getVehicleType().getParameter().getParameter("device.ssm.thresholds", "");
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + v.getVehicleType().getParameter().getParameter("device.ssm.thresholds", "") + "'for vType parameter 'ssm.thresholds'.");
+            WRITE_WARNINGF(TL("Invalid value '%'for vType parameter 'ssm.thresholds'."), v.getVehicleType().getParameter().getParameter("device.ssm.thresholds", ""));
         }
     } else {
         thresholds_str = oc.getString("device.ssm.thresholds");
-        if (oc.isDefault("device.ssm.thresholds") && (issuedParameterWarnFlags & SSM_WARN_THRESHOLDS) == 0) {
-            WRITE_MESSAGE("Vehicle '" + v.getID() + "' does not supply vehicle parameter 'device.ssm.thresholds'. Using default of '" + thresholds_str + "'.");
-            issuedParameterWarnFlags |= SSM_WARN_THRESHOLDS;
+        if (oc.isDefault("device.ssm.thresholds") && (myIssuedParameterWarnFlags & SSM_WARN_THRESHOLDS) == 0) {
+            WRITE_MESSAGEF(TL("Vehicle '%' does not supply vehicle parameter 'device.ssm.thresholds'. Using default of '%'."), v.getID(), thresholds_str);
+            myIssuedParameterWarnFlags |= SSM_WARN_THRESHOLDS;
         }
     }
 
@@ -3754,7 +3761,7 @@ MSDevice_SSM::getMeasuresAndThresholds(const SUMOVehicle& v, std::string deviceI
             ++count;
         }
         if (thresholds.size() < measures.size() || st.hasNext()) {
-            WRITE_ERROR("Given list of thresholds ('" + thresholds_str + "') is not of the same size as the list of measures ('" + measures_str + "').\nPlease specify exactly one threshold for each measure.");
+            WRITE_ERRORF(TL("Given list of thresholds ('%') is not of the same size as the list of measures ('%').\nPlease specify exactly one threshold for each measure."), thresholds_str, measures_str);
             return false;
         }
     } else {

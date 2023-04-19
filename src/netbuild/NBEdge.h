@@ -92,7 +92,7 @@ public:
 class NBEdge : public Named, public Parameterised, public NBRouterEdge {
     friend class NBEdgeCont;
 
-    /** used for visualization (NETEDIT) */
+    /** used for visualization (netedit) */
     friend class GNELane;
     friend class GNEEdge;
     friend class GNEJunction;
@@ -314,6 +314,7 @@ public:
         double getSpeed() const {
             return vmax;
         }
+        // @brief needed for NBRouterEdge
         double getLength() const {
             return shape.length() + viaShape.length();
         }
@@ -885,7 +886,7 @@ public:
      * @param[in] dest The connection's destination edge
      * @return Whether the connection was valid
      */
-    bool addEdge2EdgeConnection(NBEdge* dest, bool overrideRemoval = false);
+    bool addEdge2EdgeConnection(NBEdge* dest, bool overrideRemoval = false, SVCPermissions permission = SVC_UNSPECIFIED);
 
     /** @brief Adds a connection between the specified this edge's lane and an approached one
      *
@@ -1010,7 +1011,7 @@ public:
      * @param[in] fromLane If a value >= 0 is given, only return true if a connection from the given lane exists
      * @return whether a connection to the specified lane exists
      */
-    bool hasConnectionTo(NBEdge* destEdge, int destLane, int fromLane = -1) const;
+    bool hasConnectionTo(const NBEdge* destEdge, int destLane, int fromLane = -1) const;
 
     /** @brief Returns the information whethe a connection to the given edge has been added (or computed)
      *
@@ -1352,8 +1353,8 @@ public:
     /// @brief set disallowed class for the given lane or for all lanes if -1 is given
     void disallowVehicleClass(int lane, SUMOVehicleClass vclass);
 
-    /// @brief prefer certain vehicle class
-    void preferVehicleClass(int lane, SUMOVehicleClass vclass);
+    /// @brief prefer certain vehicle classes for the given lane or for all lanes if -1 is given (ensures also permissions)
+    void preferVehicleClass(int lane, SVCPermissions vclasses);
 
     /// @brief set lane specific width (negative lane implies set for all lanes)
     void setLaneWidth(int lane, double width);
@@ -1405,14 +1406,19 @@ public:
         myIsBidi = isBidi;
     }
 
-    // @brief returns a reference to the internal structure for the convenience of NETEDIT
+    /// @brief return whether this edge should be a bidi edge
+    bool isBidi() {
+        return myIsBidi;
+    }
+
+    // @brief returns a reference to the internal structure for the convenience of netedit
     Lane& getLaneStruct(int lane) {
         assert(lane >= 0);
         assert(lane < (int)myLanes.size());
         return myLanes[lane];
     }
 
-    // @brief returns a reference to the internal structure for the convenience of NETEDIT
+    // @brief returns a reference to the internal structure for the convenience of netedit
     const Lane& getLaneStruct(int lane) const {
         assert(lane >= 0);
         assert(lane < (int)myLanes.size());
@@ -1853,7 +1859,7 @@ public:
     class connections_toedgelane_finder {
     public:
         /// @brief constructor
-        connections_toedgelane_finder(NBEdge* const edge2find, int lane2find, int fromLane2find) :
+        connections_toedgelane_finder(const NBEdge* const edge2find, int lane2find, int fromLane2find) :
             myEdge2Find(edge2find),
             myLane2Find(lane2find),
             myFromLane2Find(fromLane2find) { }
@@ -1865,7 +1871,7 @@ public:
 
     private:
         /// @brief edge to find
-        NBEdge* const myEdge2Find;
+        const NBEdge* const myEdge2Find;
 
         /// @brief lane to find
         int myLane2Find;

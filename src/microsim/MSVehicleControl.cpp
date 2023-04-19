@@ -58,6 +58,7 @@ MSVehicleControl::MSVehicleControl() :
     myWaitingForTransportable(0),
     myMaxSpeedFactor(1),
     myMinDeceleration(SUMOVTypeParameter::getDefaultDecel(SVC_IGNORING)),
+    myMinDecelerationRail(SUMOVTypeParameter::getDefaultDecel(SVC_RAIL)),
     myPendingRemovals(MSGlobals::gNumSimThreads > 1) {
 
     initDefaultTypes();
@@ -86,6 +87,10 @@ MSVehicleControl::initDefaultTypes() {
     SUMOVTypeParameter defTaxiType(DEFAULT_TAXITYPE_ID, SVC_TAXI);
     defTaxiType.parametersSet |= VTYPEPARS_VEHICLECLASS_SET;
     myVTypeDict[DEFAULT_TAXITYPE_ID] = MSVehicleType::build(defTaxiType);
+
+    SUMOVTypeParameter defRailType(DEFAULT_RAILTYPE_ID, SVC_RAIL);
+    defRailType.parametersSet |= VTYPEPARS_VEHICLECLASS_SET;
+    myVTypeDict[DEFAULT_RAILTYPE_ID] = MSVehicleType::build(defRailType);
 
     SUMOVTypeParameter defContainerType(DEFAULT_CONTAINERTYPE_ID, SVC_IGNORING);
     // ISO Container TEU (cannot set this based on vClass)
@@ -186,6 +191,8 @@ MSVehicleControl::vehicleDeparted(const SUMOVehicle& v) {
     if ((v.getVClass() & (SVC_PEDESTRIAN | SVC_NON_ROAD)) == 0) {
         // only  worry about deceleration of road users
         myMinDeceleration = MIN2(myMinDeceleration, v.getVehicleType().getCarFollowModel().getMaxDecel());
+    } else if ((v.getVClass() & SVC_RAIL_CLASSES) != 0) {
+        myMinDecelerationRail = MIN2(myMinDecelerationRail, v.getVehicleType().getCarFollowModel().getMaxDecel());
     }
 }
 

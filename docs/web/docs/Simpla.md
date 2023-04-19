@@ -61,7 +61,7 @@ configuration file could look like this (a more complete example, which
 serves as a template can be found in the installation directory
 `<SUMO_HOME>/tools/simpla`):
 
-```
+```xml
 <configuration>
     <vehicleSelectors value="pkw" />
     <vTypeMap original="simple_pkw" leader="simple_pkw_as_platoon_leader"  follower="simple_pkw_as_platoon_follower"/>
@@ -75,7 +75,6 @@ The following table summarizes all admissible configuration parameters:
 | -------------------------- | ----------------------------------------------------------------------------- | ------------------------------------- |
 | **vehicleSelectors**       | string                                                                        | A vehicle is controlled by simpla if its vehicle type id has a given vehicle selector string as a substring. The given value may be a comma-separated list of selectors. Defaults to an empty string, which selects all vehicles for control.                                                                                                                                                                                                       |
 | **controlRate**            | float                                                                         | The number of the updates (per seconds) for the platoon management logic. Defaults to 1.0 sec. <br>**Note:** The rate cannot be increased beyond 1/timestep.                                                                                                                                                                                                                                                                                        |
-
 | **maxVehicles**            | int                                                                         | Maximum number of vehicles within a platoon. Defaults to 10.                                                                                                                                                                                                                                                                                           |
 | **maxPlatoonGap**          | float                                                                         | Gap (in m.) below which vehicles are considered as a platoon (if their vType parameters allow safe traveling for the actual situation). Defaults to 15 m.                                                                                                                                                                                                                                                                                           |
 | **maxPlatoonHeadway**      | float                                                                         | Headway (in secs.) below which vehicles are considered as a platoon (if their vType parameters allow safe traveling for the actual situation). Defaults to 1.5 s. At standstill, maxPlatoonGap is used.                                                                                                                                                                                                                                             |
@@ -105,7 +104,7 @@ above](#configuration). Assuming such a file named
 `simpla.cfg` is located in your working directory, all you have to do is
 importing simpla as a python module:
 
-```
+```python
 import simpla
 ```
 
@@ -113,7 +112,7 @@ and, after [establishing a
 TraCI-connection](TraCI/Interfacing_TraCI_from_Python.md#first_steps)
 to SUMO, load your configuration.
 
-```
+```python
 traci.start(...)
 ...
 simpla.load("simpla.cfg")
@@ -164,6 +163,45 @@ GapCreator is created to manage the vehicle state and is added to traci
 as a
 [stepListener](TraCI/Interfacing_TraCI_from_Python.md#adding_a_steplistener).
 
+# Statistic Helper Functions
+
+There are some statistical helper functions to get information about the existing platoons listed below. 
+They are available after starting simpla like [explained above](#integrating_simpla_into_your_traci_script).
+
+## getAveragePlatoonLength()
+The function computes the average platoon length in terms of vehicles across all currently formed platoons:
+```python
+avgLength = simpla.getAveragePlatoonLength()
+```
+
+## getAveragePlatoonSpeed()
+The function computes the average speed of vehicles across all currently formed platoons:
+```python
+avgSpeed = simpla.getAveragePlatoonSpeed()
+```
+
+## getPlatoonLeaderIDList()
+This utility function returns the leader vehicles' IDs of all current platoons managed by simpla:
+```python
+currentLeaderIDs = simpla.getPlatoonLeaderIDList()
+```
+
+## getPlatoonIDList() and getPlatoonInfo()
+Platoons can be found by their position on the road network using the edge ID in question.
+The function returns IDs of platoons which currently have at least one member vehicle on the edge given by its **edgeID**. 
+The platoon ID can be used to receive updates using getPlatoonInfo even when the platoon has left the edge:
+```python
+platoonIDs = simpla.getPlatoonIDList(edgeID)
+if len(platoonIDs) > 0:
+    platoonInfo = simpla.getPlatoonInfo(platoonIDs[0])
+    platoonSize = len(platoonInfo["members"])
+```
+The function getPlatoonInfo returns a dictionary of values regarding the platoon, using the keys from the table below:
+
+| Key name          | Value Type     | Description                                                                         |
+| ------------------| -------------- | ----------------------------------------------------------------------------------- |
+| **laneID**        | string         | The ID of the lane the leader vehicle is currently on.                              |
+| **members**       | list(string)   | The IDs of the vehicles in the platoon.                                             |
 
 # Example
 

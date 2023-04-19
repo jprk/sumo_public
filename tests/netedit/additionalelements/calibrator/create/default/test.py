@@ -35,17 +35,14 @@ netedit.additionalMode()
 netedit.changeElement("calibrator")
 
 # create calibrator
-netedit.leftClick(referencePosition, 240, 250)
+netedit.leftClick(referencePosition, 312, 250)
 
 # Check undo redo
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

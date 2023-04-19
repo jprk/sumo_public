@@ -65,8 +65,8 @@ ROJTRTurnDefLoader::myStartElement(int element,
         case SUMO_TAG_FROMEDGE:
             if (!myHaveWarnedAboutDeprecatedFormat) {
                 myHaveWarnedAboutDeprecatedFormat = true;
-                WRITE_WARNING("The turn-file format with elements " + toString(SUMO_TAG_FROMEDGE) + ", " + toString(SUMO_TAG_TOEDGE) + " is deprecated,"
-                              + " please use " + toString(SUMO_TAG_EDGEREL) + " instead.");
+                WRITE_WARNINGF(TL("The turn-file format with elements %, % is deprecated, please use % instead."),
+                               toString(SUMO_TAG_FROMEDGE), toString(SUMO_TAG_TOEDGE), toString(SUMO_TAG_EDGEREL));
             }
             beginFromEdge(attrs);
             break;
@@ -84,7 +84,7 @@ ROJTRTurnDefLoader::myStartElement(int element,
                     std::string id = st.next();
                     ROEdge* edge = myNet.getEdge(id);
                     if (edge == nullptr) {
-                        throw ProcessError("The edge '" + id + "' declared as a sink is not known.");
+                        throw ProcessError(TLF("The edge '%' declared as a sink is not known.", id));
                     }
                     edge->setSink();
                 }
@@ -125,7 +125,7 @@ ROJTRTurnDefLoader::myStartElement(int element,
                     std::string id = st.next();
                     ROEdge* edge = myNet.getEdge(id);
                     if (edge == nullptr) {
-                        throw ProcessError("The edge '" + id + "' declared as a source is not known.");
+                        throw ProcessError(TLF("The edge '%' declared as a source is not known.", id));
                     }
                     edge->setSource();
                 }
@@ -149,7 +149,7 @@ ROJTRTurnDefLoader::beginFromEdge(const SUMOSAXAttributes& attrs) {
     //
     myEdge = static_cast<ROJTREdge*>(myNet.getEdge(id));
     if (myEdge == nullptr) {
-        WRITE_ERROR("The edge '" + id + "' is not known within the network (within a 'from-edge' tag).");
+        WRITE_ERRORF(TL("The edge '%' is not known within the network (within a 'from-edge' tag)."), id);
         return;
     }
 }
@@ -169,13 +169,13 @@ ROJTRTurnDefLoader::addToEdge(const SUMOSAXAttributes& attrs) {
     //
     ROJTREdge* edge = static_cast<ROJTREdge*>(myNet.getEdge(id));
     if (edge == nullptr) {
-        WRITE_ERROR("The edge '" + id + "' is not known within the network (within a 'to-edge' tag).");
+        WRITE_ERRORF(TL("The edge '%' is not known within the network (within a 'to-edge' tag)."), id);
         return;
     }
     const double probability = attrs.get<double>(SUMO_ATTR_PROB, id.c_str(), ok);
     if (ok) {
         if (probability < 0) {
-            WRITE_ERROR("'probability' must be positive (in definition of to-edge '" + id + "').");
+            WRITE_ERRORF(TL("'probability' must be positive (in definition of to-edge '%')."), id);
         } else {
             myEdge->addFollowerProbability(edge, myIntervalBegin, myIntervalEnd, probability);
         }
@@ -198,16 +198,16 @@ ROJTRTurnDefLoader::addEdgeRel(const SUMOSAXAttributes& attrs) {
     //
     ROJTREdge* from = static_cast<ROJTREdge*>(myNet.getEdge(fromID));
     if (from == nullptr) {
-        WRITE_ERROR("The edge '" + fromID + "' is not known.");
+        WRITE_ERRORF(TL("The edge '%' is not known."), fromID);
         return;
     }
     ROJTREdge* to = static_cast<ROJTREdge*>(myNet.getEdge(toID));
     if (to == nullptr) {
-        WRITE_ERROR("The edge '" + toID + "' is not known.");
+        WRITE_ERRORF(TL("The edge '%' is not known."), toID);
         return;
     }
     if (probability < 0) {
-        WRITE_ERROR("'probability' must be positive (in edgeRelation from '" + fromID + "' to '" + toID + "'.");
+        WRITE_ERRORF(TL("'probability' must be positive (in edgeRelation from '%' to '%'."), fromID, toID);
     } else {
         from->addFollowerProbability(to, myIntervalBegin, myIntervalEnd, probability);
     }

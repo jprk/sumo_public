@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# apply zoom
-netedit.setZoom("25", "20", "25")
-
 # go to additional mode
 netedit.additionalMode()
 
@@ -38,20 +35,20 @@ netedit.additionalMode()
 netedit.changeElement("busStop")
 
 # create BusStop with default parameters
-netedit.leftClick(referencePosition, 375, 250)
+netedit.leftClick(referencePosition, 428, 257)
 
 # select Access
 netedit.changeElement("access")
 
 # Create Access
 netedit.selectAdditionalChild(netedit.attrs.access.create.parent, 0)
-netedit.leftClick(referencePosition, 200, 280)
+netedit.leftClick(referencePosition, 153, 95)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # delete Access
-netedit.leftClick(referencePosition, 208, 280)
+netedit.leftClick(referencePosition, 153, 95)
 
 # Change friendly position
 netedit.modifyBoolAttribute(netedit.attrs.access.inspect.friendlyPos, True)
@@ -60,11 +57,8 @@ netedit.modifyBoolAttribute(netedit.attrs.access.inspect.friendlyPos, True)
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -16,7 +16,7 @@
 # @date    2023-01-11
 
 """
-Replay an fcd-file as moving POIs on top of a simulation (or emtpy network)
+Replay an fcd-file as moving POIs on top of a simulation (or empty network)
 """
 
 from __future__ import print_function
@@ -30,14 +30,17 @@ import traci  # noqa
 
 def main():
     parser = sumolib.options.ArgumentParser()
-    parser.add_argument("-k", "--sumo-config", default="sumo.sumocfg", help="sumo config file")
-    parser.add_argument("-f", "--fcd-files", dest="fcdFiles", help="the fcd files to replay")
-    parser.add_argument("--geo", action="store_true", default=False, help="use fcd data in lon,lat format")
-    parser.add_argument("-v", "--verbose", action="store_true", default=False, help="tell me what you are doing")
-    options, args = parser.parse_known_args()
+    parser.add_argument("-k", "--sumo-config", category="input", default="sumo.sumocfg", help="sumo config file")
+    parser.add_argument("-f", "--fcd-files", category="processing", dest="fcdFiles", help="the fcd files to replay")
+    parser.add_argument("--geo",  category="processing", action="store_true", default=False,
+                        help="use fcd data in lon,lat format")
+    parser.add_argument("-v", "--verbose", category="processing", action="store_true", default=False,
+                        help="tell me what you are doing")
+    parser.add_argument("sumo_args", nargs="*", catch_all=True, help="additional sumo arguments")
+    options = parser.parse_args()
 
     sumoBinary = sumolib.checkBinary("sumo-gui")
-    traci.start([sumoBinary, "-c", options.sumo_config] + args)
+    traci.start([sumoBinary, "-c", options.sumo_config] + options.sumo_args)
     t = traci.simulation.getTime()
     deltaT = traci.simulation.getDeltaT()
 

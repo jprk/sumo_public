@@ -28,9 +28,6 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
 # go to demand mode
 netedit.supermodeDemand()
 
@@ -65,14 +62,9 @@ netedit.modifyAttribute(netedit.attrs.personFlow.inspectSelection.type, "typeC",
 netedit.undo(referencePosition, 2)
 netedit.redo(referencePosition, 2)
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # save persons
-netedit.saveRoutes(referencePosition)
-
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
 # quit netedit
 netedit.quit(neteditProcess)

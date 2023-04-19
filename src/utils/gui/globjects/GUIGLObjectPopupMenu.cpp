@@ -167,7 +167,7 @@ GUIGLObjectPopupMenu::onCmdCopyEdgeName(FXObject*, FXSelector, void*) {
     if (myObject == nullptr) {
         throw ProcessError("Object is NULL");
     } else if (myObject->getType() != GLO_LANE) {
-        throw ProcessError("Object must be a lane");
+        throw ProcessError(TL("Object must be a lane"));
     } else {
         GUIUserIO::copyToClipboard(*myParent->getApp(), myObject->getParentName());
     }

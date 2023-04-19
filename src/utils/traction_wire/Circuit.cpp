@@ -41,7 +41,7 @@ static std::mutex circuit_lock;
 
 Node* Circuit::addNode(std::string name) {
     if (getNode(name) != nullptr) {
-        WRITE_ERROR("The node: '" + name + "' already exists.");
+        WRITE_ERRORF(TL("The node: '%' already exists."), name);
         return nullptr;
     }
 
@@ -805,7 +805,7 @@ Element* Circuit::addElement(std::string name, double value, Node* pNode, Node* 
     Element* e = getElement(name);
 
     if (e != nullptr) {
-        //WRITE_ERROR("The element: '" + name + "' already exists.");
+        //WRITE_ERRORF(TL("The element: '%' already exists."), name);
         std::cout << "The element: '" + name + "' already exists.";
         return nullptr;
     }
@@ -916,7 +916,7 @@ bool Circuit::checkCircuit(std::string substationId) {
     for (std::vector<Element*>::iterator it = voltageSources->begin(); it != voltageSources->end(); it++) {
         if ((*it)->getPosNode() == nullptr || (*it)->getNegNode() == nullptr) {
             //cout << "ERROR: Voltage Source [" << (*it)->getName() << "] is connected to less than two nodes, please enter the other end.\n";
-            WRITE_ERROR("Circuit Voltage Source '" + (*it)->getName() + "' is connected to less than two nodes, please adjust the definition of the section (with substation '" + substationId + "').");
+            WRITE_ERRORF(TL("Circuit Voltage Source '%' is connected to less than two nodes, please adjust the definition of the section (with substation '%')."), (*it)->getName(), substationId);
             return false;
         }
     }
@@ -924,7 +924,7 @@ bool Circuit::checkCircuit(std::string substationId) {
     for (std::vector<Element*>::iterator it = elements->begin(); it != elements->end(); it++) {
         if ((*it)->getPosNode() == nullptr || (*it)->getNegNode() == nullptr) {
             //cout << "ERROR: Element [" << (*it)->getName() << "] is connected to less than two nodes, please enter the other end.\n";
-            WRITE_ERROR("Circuit Element '" + (*it)->getName() + "' is connected to less than two nodes, please adjust the definition of the section (with substation '" + substationId + "').");
+            WRITE_ERRORF(TL("Circuit Element '%' is connected to less than two nodes, please adjust the definition of the section (with substation '%')."), (*it)->getName(), substationId);
             return false;
         }
     }
@@ -939,7 +939,7 @@ bool Circuit::checkCircuit(std::string substationId) {
     // int id = -1;
     if (!getNode(-1)->isGround()) {
         //cout << "ERROR: Node id -1 is not the ground \n";
-        WRITE_ERROR("Circuit Node with id '-1' is not the grounded, please adjust the definition of the section (with substation '" + substationId + "').");
+        WRITE_ERRORF(TL("Circuit Node with id '-1' is not the grounded, please adjust the definition of the section (with substation '%')."), substationId);
     }
     std::vector<Node*>* queue = new std::vector<Node*>(0);
     Node* node = nullptr;
@@ -963,7 +963,7 @@ bool Circuit::checkCircuit(std::string substationId) {
                     nodesVisited[(*it)->getId()] = 1;
                 } else if ((*it)->getType() == Element::ElementType::RESISTOR_traction_wire) {
                     //cout << "ERROR: The resistor type connects the ground \n";
-                    WRITE_ERROR("A Circuit Resistor Element connects the ground, please adjust the definition of the section (with substation '" + substationId + "').");
+                    WRITE_ERRORF(TL("A Circuit Resistor Element connects the ground, please adjust the definition of the section (with substation '%')."), substationId);
                 }
             }
         }
@@ -972,7 +972,7 @@ bool Circuit::checkCircuit(std::string substationId) {
     for (int i = 0; i < num; i++) {
         if (nodesVisited[i] == 0) {
             //cout << "ERROR: Node or voltage source with id " << (i) << " has been not visited during checking of the circuit => Disconnectivity of the circuit. \n";
-            WRITE_WARNING("Circuit Node or Voltage Source with internal id '" + toString(i) + "' has been not visited during checking of the circuit. The circuit is disconnected, please adjust the definition of the section (with substation '" + substationId + "').");
+            WRITE_WARNINGF(TL("Circuit Node or Voltage Source with internal id '%' has been not visited during checking of the circuit. The circuit is disconnected, please adjust the definition of the section (with substation '%')."), toString(i), substationId);
         }
     }
 

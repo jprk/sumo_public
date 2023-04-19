@@ -145,7 +145,8 @@ def splitNet(options):
                 if "railway." + mode in seenTypes:
                     edgeFilter = ["--keep-edges.by-type", "railway." + mode]
             elif mode == "train":
-                edgeFilter = ["--keep-edges.by-type", "railway.rail,railway.light_rail"]
+                if "railway.rail" in seenTypes or "railway.light_rail" in seenTypes:
+                    edgeFilter = ["--keep-edges.by-type", "railway.rail,railway.light_rail"]
             elif mode in ("tram", "bus"):
                 edgeFilter = ["--keep-edges.by-vclass", mode]
             if edgeFilter:
@@ -153,7 +154,10 @@ def splitNet(options):
                         os.path.getmtime(netPrefix + ".net.xml") > os.path.getmtime(numIdNet)):
                     print("Reusing old", netPrefix + ".net.xml")
                 else:
-                    subprocess.call(netcCall + ["-s", numIdNet, "-o", netPrefix + ".net.xml"] + edgeFilter)
+                    if subprocess.call(netcCall + ["-s", numIdNet, "-o", netPrefix + ".net.xml"] + edgeFilter):
+                        print("Error generating %s.net.xml, maybe it does not contain infrastructure for '%s'." %
+                              (netPrefix, mode))
+                        continue
                     if doNavteqOut:
                         subprocess.call(netcCall + ["-s", netPrefix + ".net.xml", "-o", "NUL", "--dismiss-vclasses"
                                                     "--dlr-navteq-output", netPrefix])
@@ -352,28 +356,27 @@ def main(options):
         # Import PT from GTFS and OSM routes
         gtfsZip = zipfile.ZipFile(sumolib.openz(options.gtfs, mode="rb", tryGZip=False))
         routes, trips_on_day, shapes, stops, stop_times = gtfs2osm.import_gtfs(options, gtfsZip)
+        gtfsZip.fp.close()
 
         if routes.empty or trips_on_day.empty:
             return
         if shapes is None:
-            print('Warning: Importing OSM routes currently requires a GTFS file with shapes.', file=sys.stderr)
-            options.osm_routes = None
-        else:
-            (gtfs_data, trip_list,
-             filtered_stops,
-             shapes, shapes_dict) = gtfs2osm.filter_gtfs(options, routes,
-                                                         trips_on_day, shapes,
-                                                         stops, stop_times)
+            print('Warning: GTFS shapes file not found! Continuing mapping without shapes.', file=sys.stderr)
+        (gtfs_data, trip_list,
+            filtered_stops,
+            shapes, shapes_dict) = gtfs2osm.filter_gtfs(options, routes,
+                                                        trips_on_day, shapes,
+                                                        stops, stop_times)
 
-            osm_routes = gtfs2osm.import_osm(options, net)
+        osm_routes = gtfs2osm.import_osm(options, net)
 
-            (mapped_routes, mapped_stops,
-             missing_stops, missing_lines) = gtfs2osm.map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes,
-                                                                   shapes_dict, filtered_stops)
+        (mapped_routes, mapped_stops,
+            missing_stops, missing_lines) = gtfs2osm.map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes,
+                                                                  shapes_dict, filtered_stops)
 
-            gtfs2osm.write_gtfs_osm_outputs(options, mapped_routes, mapped_stops,
-                                            missing_stops, missing_lines,
-                                            gtfs_data, trip_list, shapes_dict, net)
+        gtfs2osm.write_gtfs_osm_outputs(options, mapped_routes, mapped_stops,
+                                        missing_stops, missing_lines,
+                                        gtfs_data, trip_list, shapes_dict, net)
     if not options.osm_routes:
         # Import PT from GTFS
         if not options.skip_fcd:

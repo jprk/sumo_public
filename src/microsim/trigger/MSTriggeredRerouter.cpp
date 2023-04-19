@@ -124,7 +124,7 @@ MSTriggeredRerouter::myStartElement(int element,
         // get the destination edge
         std::string dest = attrs.getStringSecure(SUMO_ATTR_ID, "");
         if (dest == "") {
-            throw ProcessError("MSTriggeredRerouter " + getID() + ": No destination edge id given.");
+            throw ProcessError(TLF("MSTriggeredRerouter %: No destination edge id given.", getID()));
         }
         MSEdge* to = MSEdge::dictionary(dest);
         if (to == nullptr) {
@@ -189,7 +189,7 @@ MSTriggeredRerouter::myStartElement(int element,
         // check if route exists
         std::string routeStr = attrs.getStringSecure(SUMO_ATTR_ID, "");
         if (routeStr == "") {
-            throw ProcessError("MSTriggeredRerouter " + getID() + ": No route id given.");
+            throw ProcessError(TLF("MSTriggeredRerouter %: No route id given.", getID()));
         }
         ConstMSRoutePtr route = MSRoute::dictionary(routeStr);
         if (route == nullptr) {
@@ -214,7 +214,7 @@ MSTriggeredRerouter::myStartElement(int element,
         // get the destination edge
         std::string parkingarea = attrs.getStringSecure(SUMO_ATTR_ID, "");
         if (parkingarea == "") {
-            throw ProcessError("MSTriggeredRerouter " + getID() + ": No parking area id given.");
+            throw ProcessError(TLF("MSTriggeredRerouter %: No parking area id given.", getID()));
         }
         MSParkingArea* pa = static_cast<MSParkingArea*>(MSNet::getInstance()->getStoppingPlace(parkingarea, SUMO_TAG_PARKING_AREA));
         if (pa == nullptr) {
@@ -502,7 +502,7 @@ MSTriggeredRerouter::notifyEnter(SUMOTrafficObject& tObject, MSMoveReminder::Not
                 // if permissions aren't set vehicles will simply drive through
                 // the closing unless terminated. If the permissions are specified, assume that the user wants
                 // vehicles to stand and wait until the closing ends
-                WRITE_WARNING("Cannot keep destination edge '" + lastEdge->getID() + "' for vehicle '" + veh.getID() + "' due to closed edges. Terminating route.");
+                WRITE_WARNINGF(TL("Cannot keep destination edge '%' for vehicle '%' due to closed edges. Terminating route."), lastEdge->getID(), veh.getID());
                 newEdge = veh.getEdge();
             } else {
                 newEdge = lastEdge;
@@ -601,7 +601,7 @@ MSTriggeredRerouter::getWeight(SUMOVehicle& veh, const std::string param, const 
         try {
             return StringUtils::toDouble(veh.getParameter().getParameter(param, "-1"));
         } catch (...) {
-            WRITE_WARNING("Invalid value '" + veh.getParameter().getParameter(param, "-1") + "' for vehicle parameter '" + param + "'");
+            WRITE_WARNINGF(TL("Invalid value '%' for vehicle parameter '%'"), veh.getParameter().getParameter(param, "-1"), param);
         }
     } else {
         // get custom vType parameter
@@ -609,7 +609,7 @@ MSTriggeredRerouter::getWeight(SUMOVehicle& veh, const std::string param, const 
             try {
                 return StringUtils::toDouble(veh.getVehicleType().getParameter().getParameter(param, "-1"));
             } catch (...) {
-                WRITE_WARNING("Invalid value '" + veh.getVehicleType().getParameter().getParameter(param, "-1") + "' for vType parameter '" + param + "'");
+                WRITE_WARNINGF(TL("Invalid value '%' for vType parameter '%'"), veh.getVehicleType().getParameter().getParameter(param, "-1"), param);
             }
         }
     }
@@ -781,7 +781,7 @@ MSTriggeredRerouter::rerouteParkingArea(const MSTriggeredRerouter::RerouteInterv
             } else {
                 bool valid = addParkValues(veh, brakeGap, newDestination, onTheWay, onTheWay->getLastStepOccupancy(), 1, router, parkAreas, newRoutes, parkApproaches, maxValues);
                 if (!valid) {
-                    WRITE_WARNING("Parkingarea '" + onTheWay->getID() + "' along the way cannot be used by vehicle '" + veh.getID() + "' for unknown reason");
+                    WRITE_WARNINGF(TL("Parkingarea '%' along the way cannot be used by vehicle '%' for unknown reason"), onTheWay->getID(), veh.getID());
                     return nullptr;
                 }
                 newRoute = newRoutes[onTheWay];
@@ -1029,7 +1029,7 @@ MSTriggeredRerouter::addParkValues(SUMOVehicle& veh, double brakeGap, bool newDe
     // Compute the route from the current edge to the parking area edge
     ConstMSEdgeVector edgesToPark;
     const double parkPos = pa->getLastFreePos(veh);
-    const MSEdge* rerouteOrigin = veh.getRerouteOrigin();
+    const MSEdge* rerouteOrigin = *veh.getRerouteOrigin();
     router.compute(rerouteOrigin, veh.getPositionOnLane(), parkEdge, parkPos, &veh, MSNet::getInstance()->getCurrentTimeStep(), edgesToPark, true);
 
 #ifdef DEBUG_PARKING

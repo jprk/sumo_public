@@ -26,6 +26,8 @@
 #include "GNEAttributeProperties.h"
 #include "GNETagProperties.h"
 
+#include "GNEAttributeCarrier.h"
+
 
 // ===========================================================================
 // method definitions
@@ -65,6 +67,29 @@ GNEAttributeProperties::~GNEAttributeProperties() {}
 
 void
 GNEAttributeProperties::checkAttributeIntegrity() const {
+    // check integrity only in debug mode
+#ifdef DEBUG
+    // check that default values can be parsed (only in debug mode)
+    if (hasDefaultValue()) {
+        if (isInt() && !GNEAttributeCarrier::canParse<int>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to int");
+        }
+        if (isFloat() && !GNEAttributeCarrier::canParse<double>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to float");
+        }
+        if (isSUMOTime() && !GNEAttributeCarrier::canParse<SUMOTime>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to SUMOTime");
+        }
+        if (isBool() && !GNEAttributeCarrier::canParse<bool>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to bool");
+        }
+        if (isPosition() && (myDefaultValue.size() > 0) && !GNEAttributeCarrier::canParse<Position>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to position");
+        }
+        if (isColor() && !GNEAttributeCarrier::canParse<RGBColor>(myDefaultValue)) {
+            throw FormatException("Default value cannot be parsed to color");
+        }
+    }
     // check that positive attributes correspond only to a int, floats or SUMOTimes
     if (isPositive() && !(isInt() || isFloat() || isSUMOTime())) {
         throw FormatException("Only int, floats or SUMOTimes can be positive");
@@ -87,6 +112,7 @@ GNEAttributeProperties::checkAttributeIntegrity() const {
             throw FormatException("invalid range");
         }
     }
+#endif // DEBUG
 }
 
 
@@ -344,7 +370,7 @@ GNEAttributeProperties::isString() const {
 
 
 bool
-GNEAttributeProperties::isposition() const {
+GNEAttributeProperties::isPosition() const {
     return (myAttributeProperty & POSITION) != 0;
 }
 

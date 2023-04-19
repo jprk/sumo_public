@@ -28,20 +28,11 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
-# force save additionals
-netedit.forceSaveAdditionals()
-
-# force save demand elements
-netedit.forceSaveDemandElements()
-
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
 # save routes
 netedit.saveRoutes(referencePosition)
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

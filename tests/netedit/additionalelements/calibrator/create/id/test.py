@@ -38,35 +38,32 @@ netedit.changeElement("calibrator")
 netedit.changeDefaultBoolValue(netedit.attrs.calibrator.create.center)
 
 # create calibrator
-netedit.leftClick(referencePosition, 240, 250)
+netedit.leftClick(referencePosition, 312, 250)
 
 # set invalid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.id, ";;;;;")
 
 # create calibrator
-netedit.leftClick(referencePosition, 241, 250)
+netedit.leftClick(referencePosition, 322, 250)
 
 # set invalid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.id, "ca_0")
 
 # create calibrator
-netedit.leftClick(referencePosition, 250, 250)
+netedit.leftClick(referencePosition, 332, 250)
 
 # set invalid value
 netedit.changeDefaultValue(netedit.attrs.calibrator.create.id, "customID")
 
 # create calibrator
-netedit.leftClick(referencePosition, 260, 250)
+netedit.leftClick(referencePosition, 342, 250)
 
 # Check undo redo
 netedit.undo(referencePosition, 2)
 netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

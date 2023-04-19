@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-01-12 13:09:30 by Eclipse SUMO netconvert Version v1_15_0+1595-d32acb9
+<!-- generated on 2023-03-02 07:43:39 by Eclipse SUMO netconvert Version v1_16_0+0875-d196e53626f
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
@@ -110,7 +110,7 @@
         <ptline.match-dist value="100" type="FLOAT" help="Matches stops outside the road network to the referencing pt line when below the given distance"/>
         <ptstop-output.no-bidi value="false" type="BOOL" help="Skips automatic generation of stops on the bidi-edge of a loaded stop"/>
         <geometry.max-grade value="10" type="FLOAT" help="Warn about edge geometries with a grade in % above FLOAT."/>
-        <geometry.max-grade.fix value="true" type="BOOL" help="Smooth edge edge geometries with a grade in above the warning threshold."/>
+        <geometry.max-grade.fix value="true" type="BOOL" help="Smooth edge geometries with a grade above the warning threshold."/>
         <offset.disable-normalization value="false" synonymes="disable-normalize-node-positions" type="BOOL" help="Turn off normalizing node positions"/>
         <offset.x value="0" synonymes="x-offset-to-apply" type="FLOAT" help="Adds FLOAT to net x-positions"/>
         <offset.y value="0" synonymes="y-offset-to-apply" type="FLOAT" help="Adds FLOAT to net y-positions"/>
@@ -141,6 +141,8 @@
         <default.sidewalk-width value="2" type="FLOAT" help="The default width of added sidewalks"/>
         <default.bikelane-width value="1" type="FLOAT" help="The default width of added bike lanes"/>
         <default.crossing-width value="4" type="FLOAT" help="The default width of a pedestrian crossing"/>
+        <default.crossing-speed value="2.78" type="FLOAT" help="The default speed &apos;limit&apos; on a pedestrian crossing (in m/s)"/>
+        <default.walkingarea-speed value="2.78" type="FLOAT" help="The default speed &apos;limit&apos; on a pedestrian walkingarea (in m/s)"/>
         <default.allow value="" type="STR" help="The default for allowed vehicle classes"/>
         <default.disallow value="" type="STR" help="The default for disallowed vehicle classes"/>
         <default.junctions.keep-clear value="true" type="BOOL" help="Whether junctions should be kept clear by default"/>
@@ -323,6 +325,8 @@
         <shapefile.type-id value="" synonymes="arcview.type-id" type="STR" help="Read type ids from column STR"/>
         <shapefile.laneNumber value="" type="STR" help="Read lane number from column STR"/>
         <shapefile.speed value="" type="STR" help="Read speed from column STR"/>
+        <shapefile.length value="" type="STR" help="Read custom edge length from column STR"/>
+        <shapefile.width value="" type="STR" help="Read total edge width from column STR"/>
         <shapefile.name value="" type="STR" help="Read (non-unique) name from column STR"/>
         <shapefile.node-join-dist value="0" type="FLOAT" help="Distance threshold for determining whether distinct shapes are connected (used when from-id and to-id are not available)"/>
         <shapefile.add-params value="" type="STR[]" help="Add the list of field names as edge params"/>

@@ -17,9 +17,10 @@
 ///
 // Button similar to FXButton but with the possibility of showing tooltips
 /****************************************************************************/
-#ifndef MFXButtonTooltip_h
-#define MFXButtonTooltip_h
+#pragma once
 #include <config.h>
+
+#include <string>
 
 #include "fxheader.h"
 #include "MFXStaticToolTip.h"
@@ -33,7 +34,7 @@ class MFXButtonTooltip : public FXButton {
 
 public:
     /// @brief constructor (Exactly like the FXButton constructor)
-    MFXButtonTooltip(FXComposite* p, MFXStaticToolTip* staticToolTip, const FXString& text, FXIcon* ic = NULL,
+    MFXButtonTooltip(FXComposite* p, MFXStaticToolTip* staticToolTip, const std::string& text, FXIcon* ic = NULL,
                      FXObject* tgt = NULL, FXSelector sel = 0, FXuint opts = BUTTON_NORMAL,
                      FXint x = 0, FXint y = 0, FXint w = 0, FXint h = 0,
                      FXint pl = DEFAULT_PAD, FXint pr = DEFAULT_PAD, FXint pt = DEFAULT_PAD, FXint pb = DEFAULT_PAD);
@@ -68,6 +69,3 @@ private:
     /// @brief Invalidated assignment operator.
     MFXButtonTooltip& operator=(const MFXButtonTooltip&) = delete;
 };
-
-
-#endif

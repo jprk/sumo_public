@@ -72,7 +72,7 @@ Connection::readOutput() {
         result << buffer.data();
         std::string line;
         while (std::getline(result, line)) {
-            if ((errout && line[0] == ' ') || line.compare(0, 6, "Error:") == 0 || line.compare(0, 8, "Warning:") == 0) {
+            if ((errout && (line.empty() || line[0] == ' ')) || line.compare(0, 6, "Error:") == 0 || line.compare(0, 8, "Warning:") == 0) {
                 std::cerr << line << std::endl;
                 errout = true;
             } else {
@@ -274,9 +274,6 @@ Connection::check_resultState(tcpip::Storage& inMsg, int command, bool ignoreCom
         cmdStart = inMsg.position();
         cmdLength = inMsg.readUnsignedByte();
         cmdId = inMsg.readUnsignedByte();
-        if (command != cmdId && !ignoreCommandId) {
-            throw libsumo::TraCIException("#Error: received status response to command: " + toString(cmdId) + " but expected: " + toString(command));
-        }
         resultType = inMsg.readUnsignedByte();
         msg = inMsg.readString();
     } catch (std::invalid_argument&) {
@@ -286,17 +283,20 @@ Connection::check_resultState(tcpip::Storage& inMsg, int command, bool ignoreCom
         case libsumo::RTYPE_ERR:
             throw libsumo::TraCIException(msg);
         case libsumo::RTYPE_NOTIMPLEMENTED:
-            throw libsumo::TraCIException(".. Sent command is not implemented (" + toString(command) + "), [description: " + msg + "]");
+            throw libsumo::TraCIException(".. Sent command is not implemented (" + toHex(command) + "), [description: " + msg + "]");
         case libsumo::RTYPE_OK:
             if (acknowledgement != nullptr) {
-                (*acknowledgement) = ".. Command acknowledged (" + toString(command) + "), [description: " + msg + "]";
+                (*acknowledgement) = ".. Command acknowledged (" + toHex(command) + "), [description: " + msg + "]";
             }
             break;
         default:
-            throw libsumo::TraCIException(".. Answered with unknown result code(" + toString(resultType) + ") to command(" + toString(command) + "), [description: " + msg + "]");
+            throw libsumo::TraCIException(".. Answered with unknown result code(" + toHex(resultType) + ") to command(" + toHex(command) + "), [description: " + msg + "]");
+    }
+    if (command != cmdId && !ignoreCommandId) {
+        throw libsumo::TraCIException("#Error: received status response to command: " + toHex(cmdId) + " but expected: " + toHex(command));
     }
     if ((cmdStart + cmdLength) != (int) inMsg.position()) {
-        throw libsumo::TraCIException("#Error: command at position " + toString(cmdStart) + " has wrong length");
+        throw libsumo::TraCIException("#Error: command at position " + toHex(cmdStart) + " has wrong length");
     }
 }
 
@@ -325,12 +325,14 @@ Connection::check_commandGetResult(tcpip::Storage& inMsg, int command, int expec
 
 
 tcpip::Storage&
-Connection::doCommand(int command, int var, const std::string& id, tcpip::Storage* add) {
-    std::unique_lock<std::mutex> lock{ myMutex };
+Connection::doCommand(int command, int var, const std::string& id, tcpip::Storage* add, int expectedType) {
     createCommand(command, var, &id, add);
     mySocket.sendExact(myOutput);
     myInput.reset();
     check_resultState(myInput, command);
+    if (expectedType >= 0) {
+        check_commandGetResult(myInput, command, expectedType);
+    }
     return myInput;
 }
 
@@ -365,7 +367,6 @@ Connection::readVariables(tcpip::Storage& inMsg, const std::string& objectID, in
                     auto p = std::make_shared<libsumo::TraCIPosition>();
                     p->x = inMsg.readDouble();
                     p->y = inMsg.readDouble();
-                    p->z = 0.;
                     into[objectID][variableID] = p;
                     break;
                 }

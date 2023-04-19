@@ -235,6 +235,7 @@
         <xsd:attribute name="startupDelay" type="nonNegativeFloatType"/>
         <xsd:attribute name="timeToTeleport" type="xsd:float"/>
         <xsd:attribute name="timeToTeleportBidi" type="xsd:float"/>
+        <xsd:attribute name="speedFactorPremature" type="xsd:float"/>
     </xsd:complexType>
 
     <xsd:complexType name="cfIDMType">
@@ -595,6 +596,7 @@
                     <xsd:enumeration value="triggered"/>
                     <xsd:enumeration value="containerTriggered"/>
                     <xsd:enumeration value="split"/>
+                    <xsd:enumeration value="begin"/>
                 </xsd:restriction>
             </xsd:simpleType> 
         </xsd:union>
@@ -773,7 +775,7 @@
         <xsd:attribute name="reason" type="xsd:string"/>
         <xsd:attribute name="replacedOnEdge" type="xsd:string"/>
         <xsd:attribute name="replacedOnIndex" type="nonNegativeFloatTypeWithErrorValue"/>
-        <xsd:attribute name="replacedAtTime" type="nonNegativeFloatType"/>
+        <xsd:attribute name="replacedAtTime" type="timeType"/>
         <xsd:attribute name="routeLength" type="nonNegativeFloatType" use="optional"/>
     </xsd:complexType>
 
@@ -835,6 +837,7 @@
         </xsd:sequence>
         <xsd:attribute name="id" type="idType" use="required"/>
         <xsd:attribute name="vTypes" type="xsd:string" use="optional"/>
+        <xsd:attribute name="probabilities" type="xsd:string" use="optional"/>
         <xsd:attribute name="deterministic" type="xsd:int" use="optional"/>
     </xsd:complexType>
 
@@ -924,6 +927,7 @@
                     <xsd:attribute name="depart" type="timeType" use="optional"/>
                     <xsd:attribute name="routeLength" type="xsd:float"/>
                     <xsd:attribute name="group" type="xsd:string" use="optional"/>
+                    <xsd:attribute name="vehicle" type="xsd:string" use="optional"/>
                     <xsd:attribute name="started" type="timeTypeWithErrorValue"/>
                     <xsd:attribute name="ended" type="timeTypeWithErrorValue"/>
                 </xsd:complexType>
@@ -1011,6 +1015,7 @@
                     <xsd:attribute name="depart" type="timeType" use="optional"/>
                     <xsd:attribute name="routeLength" type="xsd:float"/>
                     <xsd:attribute name="group" type="xsd:string" use="optional"/>
+                    <xsd:attribute name="vehicle" type="xsd:string" use="optional"/>
                     <xsd:attribute name="started" type="timeTypeWithErrorValue"/>
                     <xsd:attribute name="ended" type="timeTypeWithErrorValue"/>
                 </xsd:complexType>

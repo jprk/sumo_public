@@ -26,7 +26,7 @@ sys.path.append(neteditTestRoot)
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot, ['--new', ])
+neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
 # Change to create edge mode
 netedit.createEdgeMode()
@@ -35,8 +35,8 @@ netedit.createEdgeMode()
 netedit.changeEditMode(netedit.attrs.modes.network.twoWayMode)
 
 # Create two way edges
-netedit.leftClick(referencePosition, 325, 27)
-netedit.leftClick(referencePosition, 430, 27)
+netedit.leftClick(referencePosition, 315, 17)
+netedit.leftClick(referencePosition, 420, 17)
 
 # rebuild network
 netedit.rebuildNetwork()
@@ -45,8 +45,8 @@ netedit.rebuildNetwork()
 netedit.undo(referencePosition, 1)
 netedit.redo(referencePosition, 1)
 
-# save network
-netedit.saveNetwork(referencePosition)
+# save Netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -580,7 +580,7 @@ struct GUIVisualizationDetailSettings {
     /// @brief details for draw person as person shapes
     static const double personShapes;
 
-    /// @brief Exaggeration for persons (only used in NETEDIT)
+    /// @brief Exaggeration for persons (only used in netedit)
     static const double personExaggeration;
 };
 
@@ -719,7 +719,7 @@ public:
     bool showRails;
 
     // Setting bundles for optional drawing names with size and color
-    GUIVisualizationTextSettings edgeName, internalEdgeName, cwaEdgeName, streetName, edgeValue;
+    GUIVisualizationTextSettings edgeName, internalEdgeName, cwaEdgeName, streetName, edgeValue, edgeScaleValue;
 
     /// @brief flag to show or hide connectors
     bool hideConnectors;
@@ -752,6 +752,8 @@ public:
     std::string edgeData;
     /// @brief id for coloring by live edgeData
     std::string edgeDataID;
+    /// @brief key for scaling by edgeData
+    std::string edgeDataScaling;
 
     /// @brief threshold below which edge data value should not be rendered
     bool edgeValueHideCheck;
@@ -980,7 +982,7 @@ public:
     /// @brief enable or disable draw boundaries
     bool drawBoundaries;
 
-    /// @brief the current selection scaling in NETEDIT (set in SelectorFrame)
+    /// @brief the current selection scaling in netedit (set in SelectorFrame)
     double selectorFrameScale;
 
     /// @brief whether drawing is performed for the purpose of selecting objects with a single click
@@ -995,11 +997,14 @@ public:
     /// @brief flag to force draw for rectangle selection (see drawForRectangleSelection)
     bool forceDrawForRectangleSelection;
 
-    /// @brief flag for disable dotted contours in NETEDIT
+    /// @brief flag for disable dotted contours in netedit
     bool disableDottedContours;
 
     // Setting bundles for optional drawing geometry point indices
     GUIVisualizationTextSettings geometryIndices;
+
+    /// @brief whether secondary lane shape shall be drawn
+    bool secondaryShape;
 
     /**@brief whether drawing is performed in left-hand networks
      * @note used to avoid calls to OptionsCont::getOptions() in every drawgl(...) function, and
@@ -1056,6 +1061,9 @@ public:
 
     /// @brief detail settings
     GUIVisualizationDetailSettings detailSettings;
+
+    /// @brief alt key pressed (only used for draw polygons under other elements in SUMO-GUI, store is not needed)
+    bool altKeyPressed = false;
 
 private:
     /// @brief set copy constructor private

@@ -14,6 +14,7 @@
 /// @file    Vehicle.cpp
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
+/// @author  Mirko Barthauer
 /// @date    30.05.2012
 ///
 // C++ TraCI client API implementation
@@ -224,6 +225,7 @@ std::pair<std::string, double>
 Vehicle::getLeader(const std::string& vehID, double dist) {
     tcpip::Storage content;
     StoHelp::writeTypedDouble(content, dist);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     tcpip::Storage& ret = Dom::get(libsumo::VAR_LEADER, vehID, &content);
     ret.readInt(); // components
     ret.readUnsignedByte();
@@ -238,6 +240,7 @@ std::pair<std::string, double>
 Vehicle::getFollower(const std::string& vehID, double dist) {
     tcpip::Storage content;
     StoHelp::writeTypedDouble(content, dist);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     tcpip::Storage& ret = Dom::get(libsumo::VAR_FOLLOWER, vehID, &content);
     ret.readInt(); // components
     ret.readUnsignedByte();
@@ -245,6 +248,23 @@ Vehicle::getFollower(const std::string& vehID, double dist) {
     ret.readUnsignedByte();
     const double gap = ret.readDouble();
     return std::make_pair(leaderID, gap);
+}
+
+
+std::vector<libsumo::TraCIJunctionFoe>
+Vehicle::getJunctionFoes(const std::string& vehID, double dist) {
+    std::vector<libsumo::TraCIJunctionFoe> result;
+    tcpip::Storage content;
+    StoHelp::writeTypedDouble(content, dist);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
+    tcpip::Storage& ret = Dom::get(libsumo::VAR_FOES, vehID, &content);
+    const int n = ret.readInt(); // number of foe informations
+    for (int i = 0; i < n; ++i) {
+        libsumo::TraCIJunctionFoe info;
+        // TODO implement server side and result retrieval
+        result.push_back(info);
+    }
+    return result;
 }
 
 
@@ -300,6 +320,7 @@ Vehicle::getSignals(const std::string& vehID) {
 
 std::vector<libsumo::TraCIBestLanesData>
 Vehicle::getBestLanes(const std::string& vehID) {
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     std::vector<libsumo::TraCIBestLanesData> result;
     tcpip::Storage& ret = Dom::get(libsumo::VAR_BEST_LANES, vehID);
     ret.readInt();
@@ -336,6 +357,7 @@ Vehicle::getBestLanes(const std::string& vehID) {
 
 std::vector<libsumo::TraCINextTLSData>
 Vehicle::getNextTLS(const std::string& vehID) {
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     std::vector<libsumo::TraCINextTLSData> result;
     tcpip::Storage& ret = Dom::get(libsumo::VAR_NEXT_TLS, vehID);
     ret.readInt(); // components
@@ -366,11 +388,61 @@ Vehicle::getNextStops(const std::string& vehID) {
     return getStops(vehID, 0);
 }
 
+std::vector<libsumo::TraCIConnection>
+Vehicle::getNextLinks(const std::string& vehID) {
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
+    std::vector<libsumo::TraCIConnection> result;
+    tcpip::Storage& ret = Dom::get(libsumo::VAR_NEXT_LINKS, vehID);
+    ret.readInt(); // components
+    // number of items
+    ret.readUnsignedByte();
+    ret.readInt();
+
+    int linkNo = ret.readInt();
+    for (int i = 0; i < linkNo; ++i) {
+
+        ret.readUnsignedByte();
+        std::string approachedLane = ret.readString();
+
+        ret.readUnsignedByte();
+        std::string approachedLaneInternal = ret.readString();
+
+        ret.readUnsignedByte();
+        bool hasPrio = ret.readUnsignedByte() != 0;
+
+        ret.readUnsignedByte();
+        bool isOpen = ret.readUnsignedByte() != 0;
+
+        ret.readUnsignedByte();
+        bool hasFoe = ret.readUnsignedByte() != 0;
+
+        ret.readUnsignedByte();
+        std::string state = ret.readString();
+
+        ret.readUnsignedByte();
+        std::string direction = ret.readString();
+
+        ret.readUnsignedByte();
+        double length = ret.readDouble();
+
+        result.push_back(libsumo::TraCIConnection(approachedLane,
+                         hasPrio,
+                         isOpen,
+                         hasFoe,
+                         approachedLaneInternal,
+                         state,
+                         direction,
+                         length));
+    }
+    return result;
+}
+
 std::vector<libsumo::TraCINextStopData>
 Vehicle::getStops(const std::string& vehID, int limit) {
     std::vector<libsumo::TraCINextStopData> result;
     tcpip::Storage content;
     StoHelp::writeTypedInt(content, limit);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     tcpip::Storage& ret = Dom::get(libsumo::VAR_NEXT_STOPS2, vehID, &content);
     ret.readInt(); // components
     // number of items
@@ -491,6 +563,7 @@ std::pair<int, int>
 Vehicle::getLaneChangeState(const std::string& vehID, int direction) {
     tcpip::Storage content;
     StoHelp::writeTypedInt(content, direction);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     tcpip::Storage& ret = Dom::get(libsumo::CMD_CHANGELANE, vehID, &content);
     ret.readInt(); // components
     ret.readUnsignedByte();
@@ -507,6 +580,7 @@ Vehicle::getNeighbors(const std::string& vehID, const int mode) {
     tcpip::Storage content;
     content.writeUnsignedByte(libsumo::TYPE_UBYTE);
     content.writeUnsignedByte(mode);
+    std::unique_lock<std::mutex> lock{ libtraci::Connection::getActive().getMutex() };
     tcpip::Storage& ret = Dom::get(libsumo::VAR_NEIGHBORS, vehID, &content);
     const int items = ret.readInt(); // components
     for (int i = 0; i < items; i++) {
@@ -982,6 +1056,11 @@ Vehicle::setRoute(const std::string& vehID, const std::string& edgeID) {
 void
 Vehicle::setRoute(const std::string& vehID, const std::vector<std::string>& edgeIDs) {
     Dom::setStringVector(libsumo::VAR_ROUTE, vehID, edgeIDs);
+}
+
+void
+Vehicle::setLateralLanePosition(const std::string& vehID, double posLat) {
+    Dom::setDouble(libsumo::VAR_LANEPOSITION_LAT, vehID, posLat);
 }
 
 void

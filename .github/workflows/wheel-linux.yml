@@ -4,6 +4,9 @@ on:
   push:            # run on push events
     paths-ignore:  # but ignore everything in the docs subfolder 
       - 'docs/**'
+      - 'src/gui*/**'
+      - 'src/netedit/**'
+      - 'tests/netedit/**'
     branches:
       - '**'
     tags:
@@ -32,26 +35,30 @@ jobs:
     - name: Building helper wheels for later tests
       run: |
         cd tools
-        python build/setup-sumolib.py bdist_wheel
-        python build/setup-traci.py bdist_wheel
-
-    - name: Uploading artifacts (Helper wheels)
-      uses: actions/upload-artifact@v3
-      with:
-        name: helper-wheels
-        path: tools/dist
-
-    # - name: Building Python wheels (fixed manylinux docker)
-    #   if: github.repository == 'eclipse/sumo'
-    #   uses: docker://quay.io/pypa/manylinux2014_x86_64:2022-11-14-1226cfc
-    #   with:
-    #     entrypoint: tools/build/build_wheels.sh
+        python -m pip install build
+        python build/version.py build/setup-sumolib.py ./setup.py
+        python -m build --wheel -o ../wheelhouse
+        python build/version.py build/setup-traci.py ./setup.py
+        python -m build --wheel -o ../wheelhouse
 
     - name: Building Python wheels (latest manylinux docker)
       # if: github.repository == 'DLR-TS/sumo'
       uses: docker://quay.io/pypa/manylinux2014_x86_64
       with:
         entrypoint: tools/build/build_wheels.sh
+
+    # the next two steps are only needed when we debug the manylinux build
+    # - name: Building Python wheels (fixed manylinux docker)
+    #   if: github.repository == 'eclipse/sumo'
+    #   uses: docker://quay.io/pypa/manylinux2014_x86_64:2022-11-14-1226cfc
+    #   with:
+    #     entrypoint: tools/build/build_wheels.sh
+
+    # - name: Uploading raw wheels (without auditwheel being applied)
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: manylinux-raw-wheels
+    #     path: dist
 
     - name: Uploading artifacts (Python wheels)
       uses: actions/upload-artifact@v3
@@ -100,7 +107,7 @@ jobs:
 
     - name: Running libsumo tests
       run: |
-        python -m pip install helper-wheels/sumolib-* helper-wheels/traci-*
+        python -m pip install manylinux-wheels/sumolib-* manylinux-wheels/traci-*
         PYTHON_VERSION=${{ matrix.python }}
         python -m pip install manylinux-wheels/libsumo-*cp3${PYTHON_VERSION:2}*
         cd tests
@@ -128,23 +135,17 @@ jobs:
     - name: Downloading Wheels artifact
       uses: actions/download-artifact@v3
 
-    # this step removes the pypy versions to save some space (can be reenabled if someone needs them)
-    - name: Moving artifacts
-      run: |
-        ls -lR
-        mkdir dist
-        mv ./*-wheels/* dist
-        rm -f dist/libsumo*-pypy* dist/libtraci*-pypy*
-
     - name: Publish to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
-        skip_existing: true
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+        packages-dir: manylinux-wheels/
 
     - name: Publish to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_TOKEN }}
+        packages-dir: manylinux-wheels/

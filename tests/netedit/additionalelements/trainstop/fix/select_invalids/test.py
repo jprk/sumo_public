@@ -28,6 +28,9 @@ import neteditTestFunctions as netedit  # noqa
 # Open netedit
 neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 
+# recompute
+netedit.rebuildNetwork()
+
 # go to select mode
 netedit.selectMode()
 
@@ -38,10 +41,10 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect trainstops
-netedit.leftClick(referencePosition, 278, 195)
+netedit.leftClick(referencePosition, 441, 172)
 
 # disable friendlyPos
-netedit.modifyBoolAttribute(netedit.attrs.trainStop.inspectSelection.friendlyPos, False)
+netedit.modifyBoolAttribute(netedit.attrs.trainStop.inspectSelection.friendlyPos, True)
 
 # go to select mode
 netedit.selectMode()
@@ -49,8 +52,8 @@ netedit.selectMode()
 # clear selection
 netedit.selectionClear()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # select invalids
 netedit.fixStoppingPlace("selectInvalids")
@@ -58,11 +61,8 @@ netedit.fixStoppingPlace("selectInvalids")
 # remove it using DEL key
 netedit.deleteUsingSuprKey()
 
-# save additionals again
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

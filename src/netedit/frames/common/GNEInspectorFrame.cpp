@@ -100,14 +100,14 @@ GNEInspectorFrame::NeteditAttributesEditor::NeteditAttributesEditor(GNEInspector
     myMarkFrontElementButton = new FXButton(getCollapsableFrame(), TL("Mark as front element"), GUIIconSubSys::getIcon(GUIIcon::FRONTELEMENT),
                                             this, MID_GNE_MARKFRONTELEMENT, GUIDesignButton);
     // Create elements for parent additional
-    myLabelParentAdditional = new FXLabel(getCollapsableFrame(), "Parent", nullptr, GUIDesignLabelCenterThick);
+    myLabelParentAdditional = new FXLabel(getCollapsableFrame(), "Parent", nullptr, GUIDesignLabelThick(JUSTIFY_NORMAL));
     myTextFieldParentAdditional = new FXTextField(getCollapsableFrame(), GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
     mySetNewParentButton = new MFXCheckableButton(false, getCollapsableFrame(),
             inspectorFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->getStaticTooltipMenu(),
             "Set new parent", nullptr, this, MID_GNE_SET_ATTRIBUTE, GUIDesignMFXCheckableButton);
     // Create elements for close shape
     myHorizontalFrameCloseShape = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
-    myLabelCloseShape = new FXLabel(myHorizontalFrameCloseShape, "Close shape", nullptr, GUIDesignLabelAttribute);
+    myLabelCloseShape = new FXLabel(myHorizontalFrameCloseShape, "Close shape", nullptr, GUIDesignLabelThickedFixed(100));
     myCheckBoxCloseShape = new FXCheckButton(myHorizontalFrameCloseShape, "", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
     // Create help button
     myHelpButton = new FXButton(getCollapsableFrame(), TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
@@ -157,10 +157,10 @@ GNEInspectorFrame::NeteditAttributesEditor::showNeteditAttributesEditor() {
             // set check box value and update label
             if (value) {
                 myCheckBoxCloseShape->setCheck(true);
-                myCheckBoxCloseShape->setText(TL("true"));
+                myCheckBoxCloseShape->setText("true");
             } else {
                 myCheckBoxCloseShape->setCheck(false);
-                myCheckBoxCloseShape->setText(TL("false"));
+                myCheckBoxCloseShape->setText("false");
             }
         }
         // Check if item has another item as parent and can be reparemt
@@ -232,10 +232,10 @@ GNEInspectorFrame::NeteditAttributesEditor::refreshNeteditAttributesEditor(bool 
             // set check box value and update label
             if (value) {
                 myCheckBoxCloseShape->setCheck(true);
-                myCheckBoxCloseShape->setText(TL("true"));
+                myCheckBoxCloseShape->setText("true");
             } else {
                 myCheckBoxCloseShape->setCheck(false);
-                myCheckBoxCloseShape->setText(TL("false"));
+                myCheckBoxCloseShape->setText("false");
             }
         }
         // Check if item has another item as parent (Currently only for single Additionals)
@@ -318,10 +318,10 @@ GNEInspectorFrame::NeteditAttributesEditor::onCmdSetNeteditAttribute(FXObject* o
             for (const auto& AC : ACs) {
                 if (myCheckBoxCloseShape->getCheck() == 1) {
                     AC->setAttribute(GNE_ATTR_CLOSE_SHAPE, "true", myInspectorFrameParent->myViewNet->getUndoList());
-                    myCheckBoxCloseShape->setText(TL("true"));
+                    myCheckBoxCloseShape->setText("true");
                 } else {
                     AC->setAttribute(GNE_ATTR_CLOSE_SHAPE, "false", myInspectorFrameParent->myViewNet->getUndoList());
-                    myCheckBoxCloseShape->setText(TL("false"));
+                    myCheckBoxCloseShape->setText("false");
                 }
             }
         } else if (obj == myTextFieldParentAdditional) {
@@ -381,7 +381,7 @@ GNEInspectorFrame::NeteditAttributesEditor::onCmdNeteditAttributeHelp(FXObject*,
     FXHorizontalFrame* myHorizontalFrameOKButton = new FXHorizontalFrame(additionalNeteditAttributesHelpDialog, GUIDesignAuxiliarHorizontalFrame);
     // Create Button Close (And two more horizontal frames to center it)
     new FXHorizontalFrame(myHorizontalFrameOKButton, GUIDesignAuxiliarHorizontalFrame);
-    new FXButton(myHorizontalFrameOKButton, TL("OK\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), additionalNeteditAttributesHelpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
+    new FXButton(myHorizontalFrameOKButton, (TL("OK") + std::string("\t\t") + TL("close")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), additionalNeteditAttributesHelpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
     new FXHorizontalFrame(myHorizontalFrameOKButton, GUIDesignAuxiliarHorizontalFrame);
     // Write Warning in console if we're in testing mode
     WRITE_DEBUG("Opening NeteditAttributesEditor help dialog");
@@ -408,13 +408,13 @@ GNEInspectorFrame::GEOAttributesEditor::GEOAttributesEditor(GNEInspectorFrame* i
 
     // Create Frame for GEOAttribute
     myGEOAttributeFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
-    myGEOAttributeLabel = new FXLabel(myGEOAttributeFrame, "Undefined GEO Attribute", nullptr, GUIDesignLabelAttribute);
+    myGEOAttributeLabel = new FXLabel(myGEOAttributeFrame, "Undefined GEO Attribute", nullptr, GUIDesignLabelThickedFixed(100));
     myGEOAttributeTextField = new FXTextField(myGEOAttributeFrame, GUIDesignTextFieldNCol, this, MID_GNE_SET_ATTRIBUTE, GUIDesignTextField);
 
     // Create Frame for use GEO
     myUseGEOFrame = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
-    myUseGEOLabel = new FXLabel(myUseGEOFrame, toString(SUMO_ATTR_GEO).c_str(), nullptr, GUIDesignLabelAttribute);
-    myUseGEOCheckButton = new FXCheckButton(myUseGEOFrame, TL("false"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
+    myUseGEOLabel = new FXLabel(myUseGEOFrame, toString(SUMO_ATTR_GEO).c_str(), nullptr, GUIDesignLabelThickedFixed(100));
+    myUseGEOCheckButton = new FXCheckButton(myUseGEOFrame, "false", this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
 
     // Create help button
     myHelpButton = new FXButton(getCollapsableFrame(), TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
@@ -449,10 +449,10 @@ GNEInspectorFrame::GEOAttributesEditor::showGEOAttributesEditor() {
                 myUseGEOCheckButton->enable();
                 if (value) {
                     myUseGEOCheckButton->setCheck(true);
-                    myUseGEOCheckButton->setText(TL("true"));
+                    myUseGEOCheckButton->setText("true");
                 } else {
                     myUseGEOCheckButton->setCheck(false);
-                    myUseGEOCheckButton->setText(TL("false"));
+                    myUseGEOCheckButton->setText("false");
                 }
             } else {
                 myUseGEOCheckButton->disable();
@@ -528,10 +528,10 @@ GNEInspectorFrame::GEOAttributesEditor::onCmdSetGEOAttribute(FXObject* obj, FXSe
             for (const auto& i : myInspectorFrameParent->myAttributesEditor->getFrameParent()->getViewNet()->getInspectedAttributeCarriers()) {
                 if (myUseGEOCheckButton->getCheck() == 1) {
                     i->setAttribute(SUMO_ATTR_GEO, "true", myInspectorFrameParent->myViewNet->getUndoList());
-                    myUseGEOCheckButton->setText(TL("true"));
+                    myUseGEOCheckButton->setText("true");
                 } else {
                     i->setAttribute(SUMO_ATTR_GEO, "false", myInspectorFrameParent->myViewNet->getUndoList());
-                    myUseGEOCheckButton->setText(TL("false"));
+                    myUseGEOCheckButton->setText("false");
                 }
             }
         }
@@ -556,7 +556,7 @@ GNEInspectorFrame::GEOAttributesEditor::onCmdGEOAttributeHelp(FXObject*, FXSelec
             << TL(" - CheckBox 'geo' enables or disables saving position in GEO coordinates\n");
     new FXLabel(helpDialog, help.str().c_str(), nullptr, GUIDesignLabelFrameInformation);
     // "OK"
-    new FXButton(helpDialog, TL("OK\t\tclose"), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), helpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
+    new FXButton(helpDialog, (TL("OK") + std::string("\t\t") + TL("close")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), helpDialog, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
     helpDialog->create();
     helpDialog->show();
     return 1;
@@ -571,7 +571,7 @@ GNEInspectorFrame::TemplateEditor::TemplateEditor(GNEInspectorFrame* inspectorFr
     myInspectorFrameParent(inspectorFrameParent),
     myEdgeTemplate(nullptr) {
     // Create set template button
-    mySetTemplateButton = new FXButton(getCollapsableFrame(), TL("Set as Template\t\t"), nullptr, this, MID_HOTKEY_SHIFT_F1_TEMPLATE_SET, GUIDesignButton);
+    mySetTemplateButton = new FXButton(getCollapsableFrame(), (TL("Set as Template") + std::string("\t\t")).c_str(), nullptr, this, MID_HOTKEY_SHIFT_F1_TEMPLATE_SET, GUIDesignButton);
     // Create copy template button
     myCopyTemplateButton = new FXButton(getCollapsableFrame(), "", nullptr, this, MID_HOTKEY_SHIFT_F2_TEMPLATE_COPY, GUIDesignButton);
     // Create copy template button
@@ -670,7 +670,7 @@ long
 GNEInspectorFrame::TemplateEditor::onCmdSetTemplate(FXObject*, FXSelector, void*) {
     // first check that there is exactly an inspected edge
     if (myInspectorFrameParent->myAttributesEditor->getFrameParent()->getViewNet()->getInspectedAttributeCarriers().size() != 1) {
-        throw ProcessError("Only one edge must be inspected");
+        throw ProcessError(TL("Only one edge must be inspected"));
     }
     // retrieve edge ID (and throw exception if edge doesn't exist)
     GNEEdge* edge = myInspectorFrameParent->myViewNet->getNet()->getAttributeCarriers()->retrieveEdge(myInspectorFrameParent->myAttributesEditor->getFrameParent()->getViewNet()->getInspectedAttributeCarriers().front()->getID());
@@ -1154,8 +1154,8 @@ GNEInspectorFrame::inspectSingleElement(GNEAttributeCarrier* AC) {
     // Use the implementation of inspect for multiple AttributeCarriers to avoid repetition of code
     std::vector<GNEAttributeCarrier*> itemsToInspect;
     if (AC != nullptr) {
-        myViewNet->setInspectedAttributeCarriers({ AC });
-        if (AC->isAttributeCarrierSelected()) {
+        myViewNet->setInspectedAttributeCarriers({AC});
+        if (AC->isAttributeCarrierSelected() && !myViewNet->getMouseButtonKeyPressed().altKeyPressed()) {
             // obtain selected ACs depending of current supermode
             const auto selectedACs = myViewNet->getNet()->getAttributeCarriers()->getSelectedAttributeCarriers(false);
             // iterate over selected ACs

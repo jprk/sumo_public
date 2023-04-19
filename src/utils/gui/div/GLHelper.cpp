@@ -181,7 +181,7 @@ void
 GLHelper::checkCounterMatrix() {
 #ifdef CHECK_PUSHPOP
     if (myMatrixCounterDebug != 0) {
-        WRITE_WARNING(TL("invalid matrix counter. Check that number of pushMatrix and popMatrix functions calls are the same"));
+        WRITE_WARNING("invalid matrix counter. Check that number of pushMatrix and popMatrix functions calls are the same");
     }
     myMatrixCounterDebug = 0;
 #endif
@@ -192,7 +192,7 @@ void
 GLHelper::checkCounterName() {
 #ifdef CHECK_PUSHPOP
     if (myNameCounter != 0) {
-        WRITE_WARNING(TL("invalid Name counter. Check that number of pushName and popName functions calls are the same"));
+        WRITE_WARNING("invalid Name counter. Check that number of pushName and popName functions calls are the same");
     }
     myNameCounter = 0;
 #endif
@@ -841,11 +841,13 @@ GLHelper::drawInverseMarkings(const PositionVector& geom,
             mw2 *= -1;
         }
         int e = (int) geom.size() - 1;
+        double offset = 0;
         for (int i = 0; i < e; ++i) {
             GLHelper::pushMatrix();
             glTranslated(geom[i].x(), geom[i].y(), 2.1);
             glRotated(rots[i], 0, 0, 1);
-            for (double t = 0; t < lengths[i]; t += spacing) {
+            double t;
+            for (t = offset; t < lengths[i]; t += spacing) {
                 const double length = MIN2((double)maxLength, lengths[i] - t);
                 glBegin(GL_QUADS);
                 glVertex2d(-mw, -t);
@@ -870,6 +872,7 @@ GLHelper::drawInverseMarkings(const PositionVector& geom,
 #endif
                 }
             }
+            offset = t - lengths[i] - spacing;
             GLHelper::popMatrix();
         }
     }

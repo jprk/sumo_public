@@ -25,6 +25,7 @@
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
 #include <xercesc/framework/XMLGrammarPoolImpl.hpp>
+#include <utils/common/FileHelpers.h>
 #include <utils/common/MsgHandler.h>
 #include <utils/common/StringUtils.h>
 #include "SUMOSAXHandler.h"
@@ -85,19 +86,38 @@ XMLSubSys::setValidation(const std::string& validationScheme, const std::string&
         parser->setFeature(XERCES_CPP_NAMESPACE::XMLUni::fgXercesHandleMultipleImports, true);
 #endif
         const char* sumoPath = std::getenv("SUMO_HOME");
-        if (sumoPath == nullptr) {
-            WRITE_WARNING(TL("Environment variable SUMO_HOME is not set, XML validation will fail or use slow website lookups."));
+        if (sumoPath == nullptr || !FileHelpers::isReadable(sumoPath + std::string("/data/xsd/net_file.xsd"))) {
+            bool needWarning = true;
+            if (validationScheme == "local") {
+                WRITE_WARNING(TL("Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups."));
+                needWarning = false;
+                myValidationScheme = "never";
+            }
+            if (netValidationScheme == "local") {
+                if (needWarning) {
+                    WRITE_WARNING(TL("Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups."));
+                    needWarning = false;
+                }
+                myNetValidationScheme = "never";
+            }
+            if (routeValidationScheme == "local") {
+                if (needWarning) {
+                    WRITE_WARNING(TL("Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups."));
+                    needWarning = false;
+                }
+                myRouteValidationScheme = "never";
+            }
+            if (needWarning) {
+                WRITE_WARNING(TL("Environment variable SUMO_HOME is not set properly, XML validation will fail or use slow website lookups."));
+            }
             return;
-        }
-        if (StringUtils::startsWith(sumoPath, "http:") || StringUtils::startsWith(sumoPath, "https:") || StringUtils::startsWith(sumoPath, "ftp:")) {
-            throw ProcessError("SUMO_HOME looks like an URL, aborting to avoid inadvertent network access.");
         }
         for (const char* const& filetype : {
                     "additional", "routes", "net"
                 }) {
             const std::string file = sumoPath + std::string("/data/xsd/") + filetype + "_file.xsd";
             if (!parser->loadGrammar(file.c_str(), XERCES_CPP_NAMESPACE::Grammar::SchemaGrammarType, true)) {
-                WRITE_WARNING("Cannot read local schema '" + file + "'.");
+                WRITE_WARNINGF(TL("Cannot read local schema '%'."), file);
             }
         }
     }
@@ -135,12 +155,17 @@ XMLSubSys::setHandler(GenericSAXHandler& handler) {
 
 bool
 XMLSubSys::runParser(GenericSAXHandler& handler, const std::string& file,
-                     const bool isNet, const bool isRoute) {
+                     const bool isNet, const bool isRoute, const bool isExternal, const bool catchExceptions) {
     MsgHandler::getErrorInstance()->clear();
+    std::string errorMsg = "";
     try {
         std::string validationScheme = isNet ? myNetValidationScheme : myValidationScheme;
         if (isRoute) {
             validationScheme = myRouteValidationScheme;
+        }
+        if (isExternal && validationScheme == "local") {
+            WRITE_MESSAGEF(TL("Disabling XML validation for external file '%'. Use 'auto' or 'always' to enable."), file);
+            validationScheme = "never";
         }
         if (myNextFreeReader == (int)myReaders.size()) {
             myReaders.push_back(new SUMOSAXReader(handler, validationScheme, myGrammarPool));
@@ -154,18 +179,27 @@ XMLSubSys::runParser(GenericSAXHandler& handler, const std::string& file,
         myReaders[myNextFreeReader - 1]->parse(file);
         handler.setFileName(prevFile);
         myNextFreeReader--;
-    } catch (ProcessError& e) {
-        WRITE_ERROR(std::string(e.what()) != std::string("") ? std::string(e.what()) : std::string("Process Error"));
-        return false;
+    } catch (const ProcessError& e) {
+        if (catchExceptions) {
+            errorMsg = std::string(e.what()) != std::string("") ? e.what() : TL("Process Error");
+        } else {
+            throw;
+        }
     } catch (const std::runtime_error& re) {
-        WRITE_ERROR("Runtime error: " + std::string(re.what()) + " while parsing '" + file + "'");
-        return false;
+        errorMsg = TLF("Runtime error: % while parsing '%'", re.what(), file);
     } catch (const std::exception& ex) {
-        WRITE_ERROR("Error occurred: " + std::string(ex.what()) + " while parsing '" + file + "'");
-        return false;
+        errorMsg = TLF("Error occurred: % while parsing '%'", ex.what(), file);
+    } catch (const XERCES_CPP_NAMESPACE::SAXException& e) {
+        errorMsg = TLF("SAX error occured while parsing '%':\n %", file, StringUtils::transcode(e.getMessage()));
     } catch (...) {
-        WRITE_ERROR("Unspecified error occurred wile parsing '" + file + "'");
-        return false;
+        errorMsg = TLF("Unspecified error occurred wile parsing '%'", file);
+    }
+    if (errorMsg != "") {
+        if (catchExceptions) {
+            WRITE_ERROR(errorMsg);
+        } else {
+            throw ProcessError(errorMsg);
+        }
     }
     return !MsgHandler::getErrorInstance()->wasInformed();
 }

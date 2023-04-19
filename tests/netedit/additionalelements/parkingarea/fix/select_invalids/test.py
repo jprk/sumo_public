@@ -38,10 +38,10 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect parking areas
-netedit.leftClick(referencePosition, 343, 190)
+netedit.leftClick(referencePosition, 566, 285)
 
 # disable friendlyPos
-netedit.modifyBoolAttribute(netedit.attrs.parkingArea.inspectSelection.friendlyPos, False)
+netedit.modifyBoolAttribute(netedit.attrs.parkingArea.inspectSelection.friendlyPos, True)
 
 # go to select mode
 netedit.selectMode()
@@ -49,8 +49,8 @@ netedit.selectMode()
 # clear selection
 netedit.selectionClear()
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # select invalids
 netedit.fixStoppingPlace("selectInvalids")
@@ -58,11 +58,8 @@ netedit.fixStoppingPlace("selectInvalids")
 # remove it using DEL key
 netedit.deleteUsingSuprKey()
 
-# save additionals again
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

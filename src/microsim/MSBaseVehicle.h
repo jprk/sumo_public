@@ -244,8 +244,8 @@ public:
      * This differs from *myCurrEdge only if the vehicle is on an internal edge
      * @return The rerouting start point
      */
-    virtual const MSEdge* getRerouteOrigin() const {
-        return *myCurrEdge;
+    virtual ConstMSEdgeVector::const_iterator getRerouteOrigin() const {
+        return myCurrEdge;
     }
 
     /** @brief Returns the time loss in seconds
@@ -876,7 +876,7 @@ public:
      */
     virtual std::pair<const MSVehicle* const, double> getLeader(double dist = 0) const {
         UNUSED_PARAMETER(dist);
-        WRITE_WARNING("getLeader not yet implemented for meso");
+        WRITE_WARNING(TL("getLeader not yet implemented for meso"));
         return std::make_pair(nullptr, -1);
     }
 
@@ -890,7 +890,7 @@ public:
      */
     virtual std::pair<const MSVehicle* const, double> getFollower(double dist = 0) const {
         UNUSED_PARAMETER(dist);
-        WRITE_WARNING("getFollwer not yet implemented for meso");
+        WRITE_WARNING(TL("getFollower not yet implemented for meso"));
         return std::make_pair(nullptr, -1);
     }
 

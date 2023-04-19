@@ -38,16 +38,16 @@ netedit.changeElement("containerStop")
 netedit.changeDefaultValue(netedit.attrs.containerStop.create.references, "reference center")
 
 # create containerStop in mode "reference center"
-netedit.leftClick(referencePosition, 250, 170)
+netedit.leftClick(referencePosition, 430, 256)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first containerStop
-netedit.leftClick(referencePosition, 250, 190)
+netedit.leftClick(referencePosition, 430, 280)
 
 # Change parameter containerCapacity with a non valid value (throw warning)
-netedit.modifyAttribute(netedit.attrs.containerStop.inspect.containerCapacity, "dummyContainerCapacity", True)
+netedit.modifyAttribute(netedit.attrs.containerStop.inspect.containerCapacity, "dummyPersonCapacity", True)
 
 # Change parameter containerCapacity with a valid value
 netedit.modifyAttribute(netedit.attrs.containerStop.inspect.containerCapacity, "-7", True)
@@ -62,11 +62,8 @@ netedit.modifyAttribute(netedit.attrs.containerStop.inspect.containerCapacity, "
 netedit.undo(referencePosition, 3)
 netedit.redo(referencePosition, 3)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)

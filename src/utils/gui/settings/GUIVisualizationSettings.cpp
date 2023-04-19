@@ -172,14 +172,14 @@ const RGBColor OSG_color_DIFFUSE(64, 64, 64, 255);
 const RGBColor OSG_color_SKY(51, 51, 102, 255);
 
 // -------------------------------------------------------------------------
-// widths of certain NETEDIT objects
+// widths of certain netedit objects
 // -------------------------------------------------------------------------
 
 const double GUIVisualizationWidthSettings::routeWidth(0.66);
 const double GUIVisualizationWidthSettings::embeddedRouteWidth(0.55);
 
 // -------------------------------------------------------------------------
-// details of certain NETEDIT objects (0 = drawn always)
+// details of certain netedit objects (0 = drawn always)
 // -------------------------------------------------------------------------
 
 const double GUIVisualizationDetailSettings::connectionsDemandMode(5);
@@ -522,12 +522,14 @@ GUIVisualizationSettings::GUIVisualizationSettings(const std::string& _name, boo
     showGrid(false), gridXSize(100), gridYSize(100),
     laneShowBorders(false), showBikeMarkings(true), showLinkDecals(true),
     realisticLinkRules(false),
-    showLinkRules(true), showRails(true),
-    edgeName(false, 60, RGBColor(255, 128, 0, 255)),
+    showLinkRules(true),
+    showRails(true),
+    edgeName(false, 60, RGBColor::ORANGE),
     internalEdgeName(false, 45, RGBColor(128, 64, 0, 255)),
     cwaEdgeName(false, 60, RGBColor::MAGENTA),
     streetName(false, 60, RGBColor::YELLOW),
     edgeValue(false, 100, RGBColor::CYAN),
+    edgeScaleValue(false, 100, RGBColor::BLUE),
     hideConnectors(false),
     laneWidthExaggeration(1),
     laneMinSize(0),
@@ -541,6 +543,7 @@ GUIVisualizationSettings::GUIVisualizationSettings(const std::string& _name, boo
     vehicleTextParam("PARAM_TEXT"),
     edgeData("speed"),
     edgeDataID(""),
+    edgeDataScaling(""),
     edgeValueHideCheck(false),
     edgeValueHideThreshold(0),
     edgeValueHideCheck2(false),
@@ -614,9 +617,10 @@ GUIVisualizationSettings::GUIVisualizationSettings(const std::string& _name, boo
     forceDrawForRectangleSelection(false),
     disableDottedContours(false),
     geometryIndices(false, 50, RGBColor(255, 0, 128, 255)),
+    secondaryShape(false),
     lefthand(false),
     disableLaneIcons(false) {
-    // init defaults depending of NETEDIT or SUMO-GUI
+    // init defaults depending of netedit or SUMO-GUI
     if (netedit) {
         initNeteditDefaults();
     } else {
@@ -1264,6 +1268,13 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
         laneScheme.addColor(10, 10.);
         laneScheme.addColor(50, 100.);
         laneScaler.addScheme(laneScheme);
+        laneScheme = GUIScaleScheme(SCHEME_NAME_EDGEDATA_NUMERICAL, 0.1, "missing data", false, MISSING_DATA);
+        laneScheme.addColor(1, 1.);
+        laneScheme.addColor(2, 10.);
+        laneScheme.addColor(5, 100.);
+        laneScheme.addColor(10, 1000.);
+        laneScheme.setAllowsNegativeValues(true);
+        laneScaler.addScheme(laneScheme);
     }
 
     /// add edge coloring schemes
@@ -1376,6 +1387,14 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
         edgeScheme.addColor(1, 1.);
         edgeScheme.addColor(10, 10.);
         edgeScheme.addColor(50, 100.);
+        edgeScaler.addScheme(edgeScheme);
+        edgeScheme = GUIScaleScheme(SCHEME_NAME_EDGEDATA_NUMERICAL, 0.1, "missing data", false, MISSING_DATA);
+        edgeScheme.addColor(1, 1.);
+        edgeScheme.addColor(2, 10.);
+        edgeScheme.addColor(5, 100.);
+        edgeScheme.addColor(10, 1000.);
+        edgeScaler.addScheme(edgeScheme);
+        edgeScheme.setAllowsNegativeValues(true);
         edgeScaler.addScheme(edgeScheme);
     }
 
@@ -1718,6 +1737,7 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("realisticLinkRules", realisticLinkRules);
     dev.writeAttr("showLinkRules", showLinkRules);
     dev.writeAttr("showRails", showRails);
+    dev.writeAttr("secondaryShape", secondaryShape);
     dev.writeAttr("hideConnectors", hideConnectors);
     dev.writeAttr("widthExaggeration", laneWidthExaggeration);
     dev.writeAttr("minSize", laneMinSize);
@@ -1731,6 +1751,7 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("vehicleTextParam", vehicleTextParam);
     dev.writeAttr("edgeData", edgeData);
     dev.writeAttr("edgeDataID", edgeDataID);
+    dev.writeAttr("edgeDataScaling", edgeDataScaling);
     dev.writeAttr("edgeValueHideCheck", edgeValueHideCheck);
     dev.writeAttr("edgeValueHideThreshold", edgeValueHideThreshold);
     dev.writeAttr("edgeValueHideCheck2", edgeValueHideCheck2);
@@ -1750,6 +1771,7 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.lf();
     dev << "               ";
     edgeValue.print(dev, "edgeValue");
+    edgeScaleValue.print(dev, "edgeScaleValue");
     laneColorer.save(dev);
     laneScaler.save(dev);
     edgeColorer.save(dev, "meso:");
@@ -2015,6 +2037,9 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
     if (showRails != v2.showRails) {
         return false;
     }
+    if (secondaryShape != v2.secondaryShape) {
+        return false;
+    }
     if (edgeName != v2.edgeName) {
         return false;
     }
@@ -2028,6 +2053,9 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
         return false;
     }
     if (edgeValue != v2.edgeValue) {
+        return false;
+    }
+    if (edgeScaleValue != v2.edgeScaleValue) {
         return false;
     }
     if (hideConnectors != v2.hideConnectors) {
@@ -2067,6 +2095,9 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
         return false;
     }
     if (edgeDataID != v2.edgeDataID) {
+        return false;
+    }
+    if (edgeDataScaling != v2.edgeDataScaling) {
         return false;
     }
     if (edgeValueHideCheck != v2.edgeValueHideCheck) {
@@ -2314,7 +2345,7 @@ GUIVisualizationSettings::getLinkColor(const LinkState& ls, bool realistic) {
         case LINKSTATE_DEADEND:
             return SUMO_color_DEADEND;
         default:
-            throw ProcessError("No color defined for LinkState '" + std::string(ls, 1) + "'");
+            throw ProcessError(TLF("No color defined for LinkState '%'", std::string(ls, 1)));
     }
 }
 
@@ -2349,7 +2380,12 @@ GUIVisualizationSettings::flippedTextAngle(double objectAngle) const {
 
 bool
 GUIVisualizationSettings::drawAdditionals(const double exaggeration) const {
-    return (scale * exaggeration) > 1.;
+    // if we're drawing for rectangle selection, draw always
+    if (drawForRectangleSelection) {
+        return true;
+    } else {
+        return (scale * exaggeration) > 1.;
+    }
 }
 
 

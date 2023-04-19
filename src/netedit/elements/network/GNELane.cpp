@@ -467,7 +467,7 @@ GNELane::drawLane2LaneConnections() const {
                 glColor3d(.75, .5, 0.25);
                 break;
             default:
-                throw ProcessError("Unexpected LinkState '" + toString(state) + "'");
+                throw ProcessError(TLF("Unexpected LinkState '%'", toString(state)));
         }
         const Position& endPos = it.toEdge->getLaneShape(it.toLane)[0];
         glBegin(GL_LINES);
@@ -807,7 +807,7 @@ GNELane::getLaneParametricLength() const  {
     if (laneParametricLength > 0) {
         return laneParametricLength;
     } else {
-        throw ProcessError("Lane Parametric Length cannot be never 0");
+        throw ProcessError(TL("Lane Parametric Length cannot be never 0"));
     }
 }
 
@@ -969,7 +969,7 @@ GNELane::isValid(SumoXMLAttr key, const std::string& value) {
                 }
                 NBEdge* edge = myParentEdge->getNBEdge();
                 if (oppEdge->getFromNode() != edge->getToNode() || oppEdge->getToNode() != edge->getFromNode()) {
-                    WRITE_WARNING("Opposite lane '" + value + "' does not connect the same nodes as edge '" + edge->getID() + "'!");
+                    WRITE_WARNINGF(TL("Opposite lane '%' does not connect the same nodes as edge '%'!"), value, edge->getID());
                     return false;
                 }
                 return true;

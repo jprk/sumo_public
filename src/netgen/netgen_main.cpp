@@ -87,7 +87,7 @@ fillOptions() {
     NWFrame::fillOptions(true);
     oc.doRegister("default-junction-type", 'j', new Option_String());
     oc.addSynonyme("default-junction-type", "junctions");
-    oc.addDescription("default-junction-type", "Building Defaults", "[traffic_light|priority|right_before_left|left_before_right|traffic_light_right_on_red|priority_stop|allway_stop|...] Determines junction type (see wiki/Networks/PlainXML#Node_types)");
+    oc.addDescription("default-junction-type", "Building Defaults", TL("[traffic_light|priority|right_before_left|left_before_right|traffic_light_right_on_red|priority_stop|allway_stop|...] Determines junction type (see wiki/Networks/PlainXML#Node_types)"));
     RandHelper::insertRandOptions();
 
     oc.doRegister("tls.discard-simple", new Option_Bool(false));
@@ -120,7 +120,7 @@ buildNetwork(NBNetBuilder& nb) {
             hadError = true;
         }
         if (oc.getInt("spider.arm-number") > 4 && oc.isDefault("spider.omit-center")) {
-            WRITE_WARNING(TL("Spider networks with many arms should use option ommit-center"));
+            WRITE_WARNING(TL("Spider networks with many arms should use option spider.omit-center"));
         }
         if (oc.getInt("spider.circle-number") < 1) {
             WRITE_ERROR(TL("Spider networks need at least one circle."));
@@ -131,7 +131,7 @@ buildNetwork(NBNetBuilder& nb) {
             WRITE_ERROR("The radius of spider networks must be at least "  + toString(POSITION_EPS));
             hadError = true;
         } else if (oc.getFloat("spider.space-radius") < minLength) {
-            WRITE_WARNING("The radius of spider networks should be at least " + toString(minLength) + " for the given lanenumber, lanewidth and junction radius");
+            WRITE_WARNINGF(TL("The radius of spider networks should be at least % for the given lanenumber, lanewidth and junction radius"), toString(minLength));
         }
         if (hadError) {
             throw ProcessError();
@@ -139,7 +139,8 @@ buildNetwork(NBNetBuilder& nb) {
         // build if everything's ok
         NGNet* net = new NGNet(nb);
         net->createSpiderWeb(oc.getInt("spider.arm-number"), oc.getInt("spider.circle-number"),
-                             oc.getFloat("spider.space-radius"), !oc.getBool("spider.omit-center"));
+                             oc.getFloat("spider.space-radius"), !oc.getBool("spider.omit-center"),
+                             oc.getFloat("spider.attach-length"));
         return net;
     }
     // grid-net
@@ -180,18 +181,18 @@ buildNetwork(NBNetBuilder& nb) {
             WRITE_ERROR("The distance between nodes must be at least " + toString(POSITION_EPS));
             hadError = true;
         } else if (xLength < minLength || yLength < minLength) {
-            WRITE_WARNING("The distance between nodes should be at least " + toString(minLength) + " for the given lanenumber, lanewidth and junction radius");
+            WRITE_WARNINGF(TL("The distance between nodes should be at least % for the given lanenumber, lanewidth and junction radius"), toString(minLength));
         }
         if (xAttachLength != 0.0 && xAttachLength < POSITION_EPS) {
             WRITE_ERROR("The length of attached streets must be at least " + toString(POSITION_EPS));
             hadError = true;
         } else if (xAttachLength != 0.0 && xAttachLength < minAttachLength) {
-            WRITE_WARNING("The length of attached streets should be at least " + toString(minAttachLength) + " for the given lanenumber, lanewidth and junction radius");
+            WRITE_WARNINGF(TL("The length of attached streets should be at least % for the given lanenumber, lanewidth and junction radius"), toString(minAttachLength));
         } else if (yAttachLength != 0.0 && yAttachLength < POSITION_EPS) {
             WRITE_ERROR("The length of attached streets must be at least " + toString(POSITION_EPS));
             hadError = true;
         } else if (yAttachLength != 0.0 && yAttachLength < minAttachLength) {
-            WRITE_WARNING("The length of attached streets should be at least " + toString(minAttachLength) + " for the given lanenumber, lanewidth and junction radius");
+            WRITE_WARNINGF(TL("The length of attached streets should be at least % for the given lanenumber, lanewidth and junction radius"), toString(minAttachLength));
         }
         if (hadError) {
             throw ProcessError();
@@ -263,13 +264,13 @@ main(int argc, char** argv) {
         delete net;
         // report generated structures
         WRITE_MESSAGE(TL(" Generation done;"));
-        WRITE_MESSAGE("   " + toString<int>(nb.getNodeCont().size()) + " nodes generated.");
-        WRITE_MESSAGE("   " + toString<int>(nb.getEdgeCont().size()) + " edges generated.");
+        WRITE_MESSAGEF(TL("   % nodes generated."), toString<int>(nb.getNodeCont().size()));
+        WRITE_MESSAGEF(TL("   % edges generated."), toString<int>(nb.getEdgeCont().size()));
         if (oc.getBool("tls.discard-simple")) {
             nb.getNodeCont().discardTrafficLights(nb.getTLLogicCont(), true, false);
             int removed = nb.getTLLogicCont().getNumExtracted();
             if (removed > 0) {
-                WRITE_MESSAGE(" Removed " + toString(removed) + " traffic lights at geometry-like nodes");
+                WRITE_MESSAGEF(TL(" Removed % traffic lights at geometry-like nodes"), toString(removed));
             }
         }
         nb.compute(oc);

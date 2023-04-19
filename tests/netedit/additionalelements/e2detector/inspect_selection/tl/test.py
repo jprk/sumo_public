@@ -38,7 +38,7 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect E2s
-netedit.leftClick(referencePosition, 350, 310)
+netedit.leftClick(referencePosition, 582, 180)
 
 # Change parameter period with a non valid value (dummy)
 netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.tl, ";;;%%%;;", True)
@@ -50,11 +50,8 @@ netedit.modifyAttribute(netedit.attrs.E2.inspectSelection.tl, "gneJ0", True)
 netedit.undo(referencePosition, 2)
 netedit.redo(referencePosition, 2)
 
-# save additionals
-netedit.saveAdditionals(referencePosition)
-
-# save network
-netedit.saveNetwork(referencePosition)
+# save netedit config
+netedit.saveNeteditConfig(referencePosition)
 
 # quit netedit
 netedit.quit(neteditProcess)
