@@ -146,9 +146,17 @@ def splitNet(options):
             edgeTypes = [sumoType]
             if "rail" in sumoType or sumoType == "subway":
                 edgeTypes = ["railway." + sumoType]
-            # TODO: Check if we have some trolleybus-specific edge types in OSM/SUMO
+            # TODO: Check if we have some trolleybus-specific edge types in OSM/SUMO. It does not seem like that at the moment.
             elif sumoType in ("tram", "bus", "trolleybus"):
-                edgeTypes = ["railway.tram"] if sumoType == "tram" else []
+                if sumoType == "tram":
+                    edgeTypes = ["railway.tram"]
+                elif sumoType == "trolleybus":
+                    # This is to address Prague - the new Palmovka station for trolleybuses. Here the trolleybuses use 
+                    # also edges that are of "highway.service" type.
+                    # TODO: This might be merged with the hwType code below in case it is valid also for buses and trams
+                    edgeTypes = ["highway.service"]
+                else:
+                    edgeTypes = []
                 for hwType in ("bus_guideway", "living_street", "motorway", "motorway_link", "primary", "primary_link",
                                "residential", "secondary", "secondary_link", "tertiary", "tertiary_link",
                                "trunk", "trunk_link", "unclassified", "unsurfaced"):
@@ -156,9 +164,10 @@ def splitNet(options):
                         edgeTypes.append("highway.%s|railway.tram" % hwType)
                     else:
                         edgeTypes.append("highway." + hwType)
-            # TODO: This eliminates edge types like "cycleway.lane|highway.secondary" even if "highway.secondary"
+            # This code would eliminate also edge types like "cycleway.lane|highway.secondary" even if "highway.secondary"
             # is present in edgeTypes
             # edgeType = ",".join(filter(lambda t: t in seenTypes, edgeTypes))
+            # Hence replaced with the following:
             filteredSeenTypes = [s for s in seenTypes for e in edgeTypes if e in s]
             edgeType = ",".join(filteredSeenTypes)
             if edgeType:
