@@ -261,8 +261,8 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
      */
     std::vector<std::string> segmentIDs;
     std::vector<MSOverheadWire*> segments;
-    const std::vector<std::string>& laneIDs = attrs.get<std::vector<std::string>>(SUMO_ATTR_LANES, substationId.c_str(), ok);
-    if (!ok) {
+
+    if (!attrs.hasAttribute(SUMO_ATTR_LANES)) {
         WRITE_WARNING("Overhead wire element '" + id + "' does not have 'lanes', falling back to old style 'segments' attribute.");
         segmentIDs = attrs.get<std::vector<std::string> >(SUMO_ATTR_OVERHEAD_WIRE_SEGMENTS, substationId.c_str(), ok);
         if (!ok) {
@@ -270,6 +270,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         }
     }
     else {
+        const std::vector<std::string>& laneIDs = attrs.get<std::vector<std::string>>(SUMO_ATTR_LANES, substationId.c_str(), ok);
         // New style overhead wire segment definition.
         // The connection points for the substation are listed using voltageSource="..." attribute
         const std::vector<std::string>& constVoltageSources = attrs.getOpt<std::vector<std::string>>(SUMO_ATTR_VOLTAGESOURCE, id.c_str(), ok);
