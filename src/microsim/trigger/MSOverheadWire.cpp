@@ -461,23 +461,12 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
 
     if (MSGlobals::gOverheadWireSolver && newOverheadWireSegment->isThereVoltageSource()) {
 #ifdef HAVE_EIGEN
-        Circuit* circuit = newOverheadWireSegment->getCircuit();
-        if (circuit->getNode("voltage_source_node_" + newOverheadWireSegment->getID()) == nullptr) {
-            circuit->addNode("voltage_source_node_" + newOverheadWireSegment->getID());
-        }
-        circuit->addElement(
+        newOverheadWireSegment->getCircuit()->addElement(
             "voltage_source_" + newOverheadWireSegment->getID(),
             mySubstationVoltage,
-            circuit->getNode("voltage_source_node_" + newOverheadWireSegment->getID()),
-            circuit->getNode("negNode_ground"),
-            Element::ElementType::VOLTAGE_SOURCE_traction_wire);
-
-        circuit->addElement(
-            "voltage_source_resistance_" + newOverheadWireSegment->getID(),
-            0.12,
             newOverheadWireSegment->getCircuitStartNodePos(),
-            circuit->getNode("voltage_source_node_" + newOverheadWireSegment->getID()),
-            Element::ElementType::RESISTOR_traction_wire);
+            newOverheadWireSegment->getCircuit()->getNode("negNode_ground"),
+            Element::ElementType::VOLTAGE_SOURCE_traction_wire);
 #else
         WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
