@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -67,8 +67,8 @@ GNERunNetgenerateDialog::GNERunNetgenerateDialog(GNEApplicationWindow* GNEApp) :
     // adjust padding
     headerFrame->setPadLeft(0);
     headerFrame->setPadRight(0);
-    new FXButton(headerFrame, (std::string("\t\t") + TL("Save output")).c_str(),
-                 GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_GNE_BUTTON_SAVE, GUIDesignButtonIcon);
+    GUIDesigns::buildFXButton(headerFrame, "", "", + TL("Save output"),
+                              GUIIconSubSys::getIcon(GUIIcon::SAVE), this, MID_GNE_BUTTON_SAVE, GUIDesignButtonIcon);
     new FXLabel(headerFrame, TL("Console output"), nullptr, GUIDesignLabelThick(JUSTIFY_LEFT));
     // create text
     auto textFrame = new FXVerticalFrame(contentFrame, GUIDesignFrameThick);
@@ -79,20 +79,20 @@ GNERunNetgenerateDialog::GNERunNetgenerateDialog(GNEApplicationWindow* GNEApp) :
     // create buttons Abort, rerun and back
     auto buttonsFrame = new FXHorizontalFrame(contentFrame, GUIDesignHorizontalFrame);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
-    myAbortButton = new FXButton(buttonsFrame, (TL("Abort") + std::string("\t\t") + TL("abort running")).c_str(),
-                                 GUIIconSubSys::getIcon(GUIIcon::STOP), this, MID_GNE_BUTTON_ABORT, GUIDesignButtonAccept);
-    myRerunButton = new FXButton(buttonsFrame, (TL("Rerun") + std::string("\t\t") + TL("rerun tool")).c_str(),
-                                 GUIIconSubSys::getIcon(GUIIcon::RESET),  this, MID_GNE_BUTTON_RERUN,  GUIDesignButtonReset);
-    myBackButton = new FXButton(buttonsFrame, (TL("Back") + std::string("\t\t") + TL("back to tool dialog")).c_str(),
-                                GUIIconSubSys::getIcon(GUIIcon::BACK), this, MID_GNE_BUTTON_BACK, GUIDesignButtonAccept);
+    myAbortButton = GUIDesigns::buildFXButton(buttonsFrame, TL("Abort"), "", TL("abort running"),
+                    GUIIconSubSys::getIcon(GUIIcon::STOP), this, MID_GNE_BUTTON_ABORT, GUIDesignButtonAccept);
+    myRerunButton = GUIDesigns::buildFXButton(buttonsFrame, TL("Rerun"), "", TL("rerun tool"),
+                    GUIIconSubSys::getIcon(GUIIcon::RESET),  this, MID_GNE_BUTTON_RERUN,  GUIDesignButtonReset);
+    myBackButton = GUIDesigns::buildFXButton(buttonsFrame, TL("Back"), "", TL("back to tool dialog"),
+                   GUIIconSubSys::getIcon(GUIIcon::BACK), this, MID_GNE_BUTTON_BACK, GUIDesignButtonAccept);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
     // add separator
     new FXSeparator(contentFrame);
     // create button ok
     buttonsFrame = new FXHorizontalFrame(contentFrame, GUIDesignHorizontalFrame);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
-    myCloseButton = new FXButton(buttonsFrame, (TL("Close") + std::string("\t\t") + TL("close dialog")).c_str(),
-                                 GUIIconSubSys::getIcon(GUIIcon::OK), this, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
+    myCloseButton = GUIDesigns::buildFXButton(buttonsFrame, TL("Close"), "", TL("close dialog"),
+                    GUIIconSubSys::getIcon(GUIIcon::OK), this, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
     new FXHorizontalFrame(buttonsFrame, GUIDesignAuxiliarHorizontalFrame);
     // resize
     resize(640, 480);
@@ -120,6 +120,8 @@ GNERunNetgenerateDialog::run(const OptionsCont* netgenerateOptions) {
     FXDialogBox::show(PLACEMENT_SCREEN);
     // set netgenerate options
     myNetgenerateOptions = netgenerateOptions;
+    // reset error flag
+    myError = false;
     // run tool
     myRunNetgenerate->run(myNetgenerateOptions);
 }
@@ -174,6 +176,7 @@ GNERunNetgenerateDialog::onCmdRerun(FXObject*, FXSelector, void*) {
     myText->appendStyledText("rerun tool\n", 1, TRUE);
     myText->layout();
     myText->update();
+    myError = false;
     // run tool
     myRunNetgenerate->run(myNetgenerateOptions);
     return 1;
@@ -192,8 +195,15 @@ long
 GNERunNetgenerateDialog::onCmdClose(FXObject*, FXSelector, void*) {
     // close run dialog and call postprocessing
     onCmdCancel(nullptr, 0, nullptr);
+    myText->setText("", 0);
     // call postprocessing dialog
-    return myGNEApp->handle(this, FXSEL(SEL_COMMAND, MID_GNE_POSTPROCESSINGNETGENERATE), nullptr);
+    if (myError) {
+        return 1;
+    } else {
+        // don't run this again
+        myError = true;
+        return myGNEApp->handle(this, FXSEL(SEL_COMMAND, MID_GNE_POSTPROCESSINGNETGENERATE), nullptr);
+    }
 }
 
 
@@ -201,13 +211,15 @@ long
 GNERunNetgenerateDialog::onCmdCancel(FXObject*, FXSelector, void*) {
     // abort tool
     myRunNetgenerate->abort();
-    // hide dialog
+    // workaround race conditionat that prevents hiding
+    show();
     hide();
     return 1;
 }
 
 long
 GNERunNetgenerateDialog::onThreadEvent(FXObject*, FXSelector, void*) {
+    bool toolFinished = false;
     while (!myEvents.empty()) {
         // get the next event
         GUIEvent* e = myEvents.top();
@@ -216,6 +228,7 @@ GNERunNetgenerateDialog::onThreadEvent(FXObject*, FXSelector, void*) {
         FXint style = -1;
         switch (e->getOwnType()) {
             case GUIEventType::TOOL_ENDED:
+                toolFinished = true;
                 break;
             case GUIEventType::MESSAGE_OCCURRED:
                 style = 1;
@@ -225,6 +238,7 @@ GNERunNetgenerateDialog::onThreadEvent(FXObject*, FXSelector, void*) {
                 break;
             case GUIEventType::ERROR_OCCURRED:
                 style = 3;
+                myError = true;
                 break;
             default:
                 break;
@@ -238,6 +252,16 @@ GNERunNetgenerateDialog::onThreadEvent(FXObject*, FXSelector, void*) {
         delete e;
         updateDialog();
     }
+
+    if (toolFinished) {
+        // check if close dialog immediately after running
+        if (myText->getText().find("Error") != -1) {
+            myError = true;
+        } else if ((myText->getText().find("Success") != -1) && (myText->getText().find("Warning") == -1)) {
+            onCmdClose(nullptr, 0, nullptr);
+        }
+    }
+
     return 1;
 }
 

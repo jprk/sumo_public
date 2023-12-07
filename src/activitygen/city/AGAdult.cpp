@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 // activitygen module
 // Copyright 2010 TUM (Technische Universitaet Muenchen, http://www.tum.de/)
@@ -70,7 +70,9 @@ AGAdult::tryToWork(double rate, std::vector<AGWorkPosition>* wps) {
             work->let();
         }
         work = newWork;
-        work->take(this);
+        if (work != nullptr) {
+            work->take(this);
+        }
     } else {
         if (work != nullptr) {
             // Also sets work = 0 with the call back lostWorkPosition

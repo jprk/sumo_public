@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -44,8 +44,8 @@ netedit.createDataInterval()
 netedit.changeDefaultValue(netedit.attrs.edgeRelData.create.parameters, "dummyValues")
 
 # create edgeRelData
-netedit.leftClick(referencePosition, 250, 90)
-netedit.leftClick(referencePosition, 450, 270)
+netedit.leftClick(referencePosition, 700, 180)
+netedit.leftClick(referencePosition, 265, 180)
 netedit.typeEnter()
 
 # set valid parameters

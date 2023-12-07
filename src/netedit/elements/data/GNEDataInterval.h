@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -79,6 +79,29 @@ public:
     /// @brief Returns element position in view
     Position getPositionInView() const;
 
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw from contour (green)
+    bool checkDrawFromContour() const;
+
+    /// @brief check if draw from contour (magenta)
+    bool checkDrawToContour() const;
+
+    /// @brief check if draw related contour (cyan)
+    bool checkDrawRelatedContour() const;
+
+    /// @brief check if draw over contour (orange)
+    bool checkDrawOverContour() const;
+
+    /// @brief check if draw delete contour (pink/white)
+    bool checkDrawDeleteContour() const;
+
+    /// @brief check if draw select contour (blue)
+    bool checkDrawSelectContour() const;
+
+    /// @}
+
     /// @name members and functions relative to write data elements into XML
     /// @{
     /// @brief check if current data element is valid to be written into XML (by default true, can be reimplemented in children)
@@ -108,6 +131,9 @@ public:
 
     /// @brief get generic data children
     const std::vector<GNEGenericData*>& getGenericDataChildren() const;
+
+    /// @brief check if there is already a edgeRel defined between two edges
+    bool edgeRelExists(const GNEEdge* fromEdge, const GNEEdge* toEdge) const;
 
     /// @brief check if there is already a TAZRel defined in one TAZ
     bool TAZRelExists(const GNEAdditional* TAZ) const;
@@ -191,4 +217,3 @@ private:
 };
 
 /****************************************************************************/
-

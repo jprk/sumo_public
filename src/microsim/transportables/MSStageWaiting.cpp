@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -142,6 +142,8 @@ MSStageWaiting::routeOutput(const bool /* isPerson */, OutputDevice& os, const b
         if (myActType != "") {
             os.writeAttr(SUMO_ATTR_ACTTYPE, myActType);
         }
+        // Write rest of parameters
+        writeParams(os);
         os.closeTag(comment);
     }
 }
@@ -210,4 +212,3 @@ MSStageWaiting::loadState(MSTransportable* transportable, std::istringstream& st
         }
     }
 }
-

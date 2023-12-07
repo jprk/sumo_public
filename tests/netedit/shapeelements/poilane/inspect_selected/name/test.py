@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -32,26 +32,25 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 netedit.selectMode()
 
 # select first POILane
-netedit.leftClick(referencePosition, 140, 210)
+netedit.leftClick(referencePosition, 649, 290)
 
 # select second POILane
-netedit.leftClick(referencePosition, 200, 210)
+netedit.leftClick(referencePosition, 714, 290)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first POILane
-netedit.leftClick(referencePosition, 140, 210)
+netedit.leftClick(referencePosition, 649, 290)
 
 # Change parameter file with a non valid value (invalid)
-netedit.modifyAttribute(netedit.attrs.POILane.inspectSelection.name, "%$$%%%%%", True)
+netedit.modifyAttribute(netedit.attrs.poiLane.inspectSelection.name, "%$$%%%%%", True)
 
 # Change parameter file with a non valid value (no exist)
-netedit.modifyAttribute(netedit.attrs.POILane.inspectSelection.name, "customName", True)
+netedit.modifyAttribute(netedit.attrs.poiLane.inspectSelection.name, "customName", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 3)
-netedit.redo(referencePosition, 3)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

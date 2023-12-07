@@ -49,6 +49,7 @@ copy_test_path:e1.add.xml
 copy_test_path:e2.add.xml
 copy_test_path:e3.add.xml
 copy_test_path:connections.con.xml
+copy_test_path:selection.txt
 copy_test_path:source.net.xml
 copy_test_path:source.nod.xml
 copy_test_path:source.edg.xml
@@ -86,6 +87,8 @@ copy_test_path:sim.sumocfg
 copy_test_path:sim2.sumocfg
 copy_test_path:gtfs.zip
 copy_test_path:battery.xml
+copy_test_path:input.dxf
+copy_test_path:log.txt
 
 [collate_file]
 scaledObj:scaledObj.rou.xml
@@ -170,8 +173,10 @@ xmlstats0:000/stats.xml
 xmlstats1:001/stats.xml
 xmlstats1:1.stats.xml
 xmlstats1:stats1.xml
+xmlstats1:sim_1.stats.xml
 xmlstats2:2.stats.xml
 xmlstats2:stats2.xml
+xmlstats2:sim2_1.stats.xml
 xmlstats3:3.stats.xml
 osmimport:*/osm.net.xml.gz
 osmstops:*/osm_stops.add.xml

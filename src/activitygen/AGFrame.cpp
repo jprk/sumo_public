@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // activitygen module
 // Copyright 2010 TUM (Technische Universitaet Muenchen, http://www.tum.de/)
@@ -65,7 +65,7 @@ void AGFrame::fillOptions() {
 
     // need to do this here to be able to check for network and route input options
     SystemFrame::addReportOptions(oc);
-    RandHelper::insertRandOptions();
+    RandHelper::insertRandOptions(oc);
 
     oc.doRegister("output-file", 'o', new Option_FileName());
     oc.addSynonyme("output-file", "output", true);

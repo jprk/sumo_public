@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -19,6 +19,7 @@
 /****************************************************************************/
 #include <config.h>
 
+#include <utils/foxtools/MFXDynamicLabel.h>
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <netedit/changes/GNEChange_Crossing.h>
@@ -99,13 +100,13 @@ GNECrossingFrame::EdgesSelector::EdgesSelector(GNECrossingFrame* crossingFramePa
     myCurrentJunction(nullptr) {
 
     // Create button for selected edges
-    myUseSelectedEdges = new FXButton(getCollapsableFrame(), TL("Use selected edges"), nullptr, this, MID_GNE_USESELECTED, GUIDesignButton);
+    myUseSelectedEdges = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Use selected edges"), "", "", nullptr, this, MID_GNE_USESELECTED, GUIDesignButton);
 
     // Create button for clear selection
-    myClearEdgesSelection = new FXButton(getCollapsableFrame(), TL("Clear edges"), nullptr, this, MID_GNE_CLEARSELECTION, GUIDesignButton);
+    myClearEdgesSelection = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Clear edges"), "", "", nullptr, this, MID_GNE_CLEARSELECTION, GUIDesignButton);
 
     // Create button for invert selection
-    myInvertEdgesSelection = new FXButton(getCollapsableFrame(), TL("Invert edges"), nullptr, this, MID_GNE_INVERTSELECTION, GUIDesignButton);
+    myInvertEdgesSelection = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Invert edges"), "", "", nullptr, this, MID_GNE_INVERTSELECTION, GUIDesignButton);
 }
 
 
@@ -219,7 +220,7 @@ GNECrossingFrame::CrossingParameters::CrossingParameters(GNECrossingFrame* cross
     myCrossingWidthLabel->disable();
     myCrossingWidth->disable();
     // Create help button
-    myHelpCrossingAttribute = new FXButton(getCollapsableFrame(), TL("Help"), nullptr, this, MID_HELP, GUIDesignButtonRectangular);
+    myHelpCrossingAttribute = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Help"), "", "", nullptr, this, MID_HELP, GUIDesignButtonRectangular);
     myHelpCrossingAttribute->disable();
 }
 
@@ -484,7 +485,7 @@ GNECrossingFrame::CreateCrossing::CreateCrossing(GNECrossingFrame* crossingFrame
     MFXGroupBoxModule(crossingFrameParent, TL("Create")),
     myCrossingFrameParent(crossingFrameParent) {
     // Create groupbox for create crossings
-    myCreateCrossingButton = new FXButton(getCollapsableFrame(), TL("Create crossing"), 0, this, MID_GNE_CREATE, GUIDesignButton);
+    myCreateCrossingButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Create crossing"), "", "", 0, this, MID_GNE_CREATE, GUIDesignButton);
     myCreateCrossingButton->disable();
 }
 
@@ -534,15 +535,8 @@ GNECrossingFrame::CreateCrossing::setCreateCrossingButton(bool value) {
 GNECrossingFrame::Information::Information(GNECrossingFrame* crossingFrameParent) :
     MFXGroupBoxModule(crossingFrameParent, TL("Information")) {
 
-    std::ostringstream information;
-    // add label for shift+click
-    information
-            << TL("-Click over junction to") << "\n"
-            << TL(" mark candidate edges.") << "\n"
-            << TL("-Click over candidate") << "\n"
-            << TL(" edges for selecting.");
     // create label
-    new FXLabel(getCollapsableFrame(), information.str().c_str(), 0, GUIDesignLabelFrameInformation);
+    new MFXDynamicLabel(getCollapsableFrame(), (std::string("- ") + TL("Click over junction to mark candidate edges.") + std::string("\n- ") + TL("Click over candidate edges for selecting.")).c_str(), 0, GUIDesignLabelFrameInformation);
     // candidate
     FXLabel* colorCandidateLabel = new FXLabel(getCollapsableFrame(), TL(" Candidate"), 0, GUIDesignLabel(JUSTIFY_LEFT));
     colorCandidateLabel->setBackColor(MFXUtils::getFXColor(crossingFrameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.possible));
@@ -565,19 +559,19 @@ GNECrossingFrame::Information::~Information() {}
 
 GNECrossingFrame::GNECrossingFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, TL("Crossings")) {
-    // create JunctionInformation modul
+    // create JunctionInformation module
     myJunctionInformation = new JunctionInformation(this);
 
-    // Create edge Selector modul
+    // Create edge Selector module
     myEdgeSelector = new EdgesSelector(this);
 
-    // Create CrossingParameters modul
+    // Create CrossingParameters module
     myCrossingParameters = new CrossingParameters(this);
 
-    // create CreateCrossing modul
+    // create CreateCrossing module
     myCreateCrossing = new CreateCrossing(this);
 
-    // create information modul
+    // create information module
     myInformation = new Information(this);
 
     // disable edge selector
@@ -630,7 +624,7 @@ GNECrossingFrame::addCrossing(const GNEViewNetHelper::ObjectsUnderCursor& object
 void
 GNECrossingFrame::createCrossingHotkey() {
     if (myEdgeSelector->getCurrentJunction()) {
-        // simply call onCmdCreateCrossing of CreateCrossing modul
+        // simply call onCmdCreateCrossing of CreateCrossing module
         myCreateCrossing->onCmdCreateCrossing(0, 0, 0);
     }
 }

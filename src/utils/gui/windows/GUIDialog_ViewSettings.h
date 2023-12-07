@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -230,7 +230,7 @@ protected:
     /// @name Dialog elements
     /// @{
 
-    FXComboBox* mySchemeName = nullptr;
+    MFXComboBoxIcon* mySchemeName = nullptr;
     FXCheckButton* myShowGrid = nullptr;
     FXRealSpinner* myGridXSizeDialer = nullptr;
     FXRealSpinner* myGridYSizeDialer = nullptr;
@@ -296,7 +296,7 @@ protected:
     FXButton* myJunctionColorRainbow = nullptr;
     FXComboBox* myParamKey = nullptr;
     FXComboBox* myScalingParamKey = nullptr;
-    FXComboBox* myMeanDataID = nullptr;
+    MFXComboBoxIcon* myMeanDataID = nullptr;
 
     /// @brief ... lane scaler
     MFXComboBoxIcon* myLaneEdgeScaleMode = nullptr;
@@ -347,6 +347,7 @@ protected:
     /*FXCheckButton* myShowLaneChangePreference = nullptr;*/
 
     FXComboBox* myVehicleParamKey = nullptr;
+    FXComboBox* myVehicleScalingParamKey = nullptr;
     FXComboBox* myVehicleTextParamKey = nullptr;
 
     /// @brief Persons
@@ -356,6 +357,8 @@ protected:
     std::vector<FXRealSpinner*> myPersonThresholds;
     std::vector<FXButton*> myPersonButtons;
     FXCheckButton* myPersonColorInterpolation = nullptr;
+    FXCheckButton* myShowPedestrianNetwork = nullptr;
+    FXColorWell* myPedestrianNetworkColor = nullptr;
 
     /// @brief Containers
     MFXComboBoxIcon* myContainerColorMode, *myContainerShapeDetail = nullptr;

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -30,7 +30,7 @@
 #include <microsim/MSLane.h>
 #include <microsim/MSEdge.h>
 #include <microsim/MSVehicle.h>
-#include "MSDevice_Tripinfo.h"
+#include "MSDevice_StationFinder.h"
 #include "MSDevice_Emissions.h"
 #include "MSDevice_Battery.h"
 
@@ -54,32 +54,40 @@ MSDevice_Battery::insertOptions(OptionsCont& oc) {
 
 
 void
-MSDevice_Battery::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into) {
+MSDevice_Battery::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into, MSDevice_StationFinder* sf) {
     // Check if vehicle should get a battery
-    if (equippedByDefaultAssignmentOptions(OptionsCont::getOptions(), "battery", v, false)) {
-        const SUMOVTypeParameter& typeParams = v.getVehicleType().getParameter();
-        // obtain maximumBatteryCapacity
-        const double maximumBatteryCapacity = typeParams.getDouble(toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY), DEFAULT_MAX_CAPACITY);
-
-        // obtain actualBatteryCapacity
-        double actualBatteryCapacity = 0;
-        if (v.getParameter().getParameter(toString(SUMO_ATTR_ACTUALBATTERYCAPACITY), "-") == "-") {
-            actualBatteryCapacity = typeParams.getDouble(toString(SUMO_ATTR_ACTUALBATTERYCAPACITY),
-                                    maximumBatteryCapacity * DEFAULT_CHARGE_RATIO);
-        } else {
-            actualBatteryCapacity = StringUtils::toDouble(v.getParameter().getParameter(toString(SUMO_ATTR_ACTUALBATTERYCAPACITY), "0"));
-        }
-
-        const double powerMax = typeParams.getDouble(toString(SUMO_ATTR_MAXIMUMPOWER), 150000.);
-        const double stoppingThreshold = typeParams.getDouble(toString(SUMO_ATTR_STOPPINGTHRESHOLD), 0.1);
+    if (sf != nullptr || equippedByDefaultAssignmentOptions(OptionsCont::getOptions(), "battery", v, false)) {
+        // obtain parameter values
+        const double maximumBatteryCapacity = readParameterValue(v, SUMO_ATTR_MAXIMUMBATTERYCAPACITY, "battery.capacity", DEFAULT_MAX_CAPACITY);
+        const double actualBatteryCapacity = readParameterValue(v, SUMO_ATTR_ACTUALBATTERYCAPACITY, "battery.chargeLevel", maximumBatteryCapacity * DEFAULT_CHARGE_RATIO);
+        const double stoppingThreshold = readParameterValue(v, SUMO_ATTR_STOPPINGTHRESHOLD, "battery.stoppingThreshold", 0.1);
 
         // battery constructor
         MSDevice_Battery* device = new MSDevice_Battery(v, "battery_" + v.getID(),
-                actualBatteryCapacity, maximumBatteryCapacity, powerMax, stoppingThreshold);
+                actualBatteryCapacity, maximumBatteryCapacity, stoppingThreshold);
 
         // Add device to vehicle
         into.push_back(device);
+
+        if (sf != nullptr) {
+            sf->setBattery(device);
+        }
     }
+}
+
+
+double
+MSDevice_Battery::readParameterValue(SUMOVehicle& v, const SumoXMLAttr& attr, const std::string& paramName, double defaultVal) {
+    const std::string& oldParam = toString(attr);
+    const SUMOVTypeParameter& typeParams = v.getVehicleType().getParameter();
+    if (v.getParameter().knowsParameter(oldParam) || typeParams.knowsParameter(oldParam)) {
+        WRITE_WARNINGF(TL("Battery device in vehicle '%s' still uses old parameter '%'. Please update to 'device.%'."), v.getID(), oldParam, paramName);
+        if (v.getParameter().getParameter(oldParam, "-") == "-") {
+            return typeParams.getDouble(oldParam, defaultVal);
+        }
+        return StringUtils::toDouble(v.getParameter().getParameter(oldParam, "0"));
+    }
+    return getFloatParam(v, OptionsCont::getOptions(), paramName, defaultVal);
 }
 
 
@@ -87,11 +95,10 @@ MSDevice_Battery::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevic
 // MSDevice_Battery-methods
 // ---------------------------------------------------------------------------
 MSDevice_Battery::MSDevice_Battery(SUMOVehicle& holder, const std::string& id, const double actualBatteryCapacity, const double maximumBatteryCapacity,
-                                   const double powerMax, const double stoppingThreshold) :
+                                   const double stoppingThreshold) :
     MSVehicleDevice(holder, id),
     myActualBatteryCapacity(0),         // [actualBatteryCapacity <= maximumBatteryCapacity]
     myMaximumBatteryCapacity(0),        // [maximumBatteryCapacity >= 0]
-    myPowerMax(0),                      // [maximumPower >= 0]
     myStoppingThreshold(0),             // [stoppingThreshold >= 0]
     myLastAngle(std::numeric_limits<double>::infinity()),
     myChargingStopped(false),           // Initially vehicle don't charge stopped
@@ -116,12 +123,6 @@ MSDevice_Battery::MSDevice_Battery(SUMOVehicle& holder, const std::string& id, c
         myActualBatteryCapacity = myMaximumBatteryCapacity;
     } else {
         myActualBatteryCapacity = actualBatteryCapacity;
-    }
-
-    if (powerMax < 0) {
-        WRITE_WARNINGF(TL("Battery builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_MAXIMUMPOWER), toString(powerMax));
-    } else {
-        myPowerMax = powerMax;
     }
 
     if (stoppingThreshold < 0) {
@@ -314,16 +315,6 @@ MSDevice_Battery::setMaximumBatteryCapacity(const double maximumBatteryCapacity)
 
 
 void
-MSDevice_Battery::setPowerMax(const double powerMax) {
-    if (myPowerMax < 0) {
-        WRITE_WARNINGF(TL("Trying to set into the battery device of vehicle '%' an invalid % (%)."), getID(), toString(SUMO_ATTR_MAXIMUMPOWER), toString(powerMax));
-    } else {
-        myPowerMax = powerMax;
-    }
-}
-
-
-void
 MSDevice_Battery::setStoppingThreshold(const double stoppingThreshold) {
     if (stoppingThreshold < 0) {
         WRITE_WARNINGF(TL("Trying to set into the battery device of vehicle '%' an invalid % (%)."), getID(), toString(SUMO_ATTR_STOPPINGTHRESHOLD), toString(stoppingThreshold));
@@ -366,12 +357,6 @@ MSDevice_Battery::getActualBatteryCapacity() const {
 double
 MSDevice_Battery::getMaximumBatteryCapacity() const {
     return myMaximumBatteryCapacity;
-}
-
-
-double
-MSDevice_Battery::getMaximumPower() const {
-    return myPowerMax;
 }
 
 

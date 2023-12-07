@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -173,7 +173,7 @@ GNETAZRelData::updateGeometry() {
         ringCenter.add(TAZA->getAttributePosition(SUMO_ATTR_CENTER));
         myTAZRelGeometryCenter.updateGeometry(ringCenter);
     } else {
-        // calculate line betwen to TAZ centers
+        // calculate line between to TAZ centers
         PositionVector line = {TAZA->getAttributePosition(SUMO_ATTR_CENTER), TAZB->getAttributePosition(SUMO_ATTR_CENTER)};
         // check line
         if (line.length() < 1) {
@@ -254,6 +254,10 @@ GNETAZRelData::drawGL(const GUIVisualizationSettings& s) const {
     const auto& color = setColor(s);
     // draw TAZRels
     if ((color.alpha() != 0) && drawTAZRel()) {
+        // check if boundary has to be drawn
+        if (s.drawBoundaries) {
+            GLHelper::drawBoundary(getCenteringBoundary());
+        }
         // get flag for only draw contour
         const bool onlyDrawContour = !isGenericDataVisible();
         // push name (needed for getGUIGlObjectsUnderCursor(...)
@@ -297,40 +301,14 @@ GNETAZRelData::drawGL(const GUIVisualizationSettings& s) const {
         }
         if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
             mouseWithinGeometry(myTAZRelGeometryCenter.getShape(), 0.5);
+            // draw dotted geometry
+            myContour.drawDottedContourExtruded(s, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true,
+                                                s.dottedContourSettings.segmentWidth);
         } else {
             mouseWithinGeometry(myTAZRelGeometry.getShape(), 0.5);
-        }
-        // inspect contour
-        if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-            if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true);
-            } else {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, myTAZRelGeometry.getShape(), 0.5, 1, true, true);
-            }
-        }
-        // front contour
-        if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-            if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true);
-            } else {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, myTAZRelGeometry.getShape(), 0.5, 1, true, true);
-            }
-        }
-        // delete contour
-        if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-            if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true);
-            } else {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, myTAZRelGeometry.getShape(), 0.5, 1, true, true);
-            }
-        }
-        // select contour
-        if (myNet->getViewNet()->drawSelectContour(this, this)) {
-            if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true);
-            } else {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, myTAZRelGeometry.getShape(), 0.5, 1, true, true);
-            }
+            // draw dotted geometry
+            myContour.drawDottedContourExtruded(s, myTAZRelGeometry.getShape(), 0.5, 1, true, true,
+                                                s.dottedContourSettings.segmentWidth);
         }
     }
 }
@@ -361,13 +339,13 @@ GNETAZRelData::computePathElement() {
 
 
 void
-GNETAZRelData::drawPartialGL(const GUIVisualizationSettings& /*s*/, const GNELane* /*lane*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
+GNETAZRelData::drawLanePartialGL(const GUIVisualizationSettings& /*s*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
     // nothing to draw
 }
 
 
 void
-GNETAZRelData::drawPartialGL(const GUIVisualizationSettings& /*s*/, const GNELane* /*fromLane*/, const GNELane* /*toLane*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
+GNETAZRelData::drawJunctionPartialGL(const GUIVisualizationSettings& /*s*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
     // nothing to draw
 }
 
@@ -440,7 +418,7 @@ GNETAZRelData::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoLi
         case SUMO_ATTR_TO:
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_PARAMETERS:
-            undoList->changeAttribute(new GNEChange_Attribute(this, key, value));
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");

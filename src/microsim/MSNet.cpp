@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -19,11 +19,10 @@
 /// @author  Eric Nicolay
 /// @author  Mario Krumnow
 /// @author  Michael Behrisch
-/// @author  Mario Krumnow
 /// @author  Christoph Sommer
 /// @date    Tue, 06 Mar 2001
 ///
-// The simulated network and simulation perfomer
+// The simulated network and simulation performer
 /****************************************************************************/
 #include <config.h>
 
@@ -297,6 +296,7 @@ MSNet::~MSNet() {
     // delete mean data
     delete myEdges;
     delete myInserter;
+    myInserter = nullptr;
     delete myLogics;
     delete myRouteLoaders;
     if (myPersonControl != nullptr) {
@@ -382,6 +382,14 @@ MSNet::getMesoType(const std::string& typeID) {
     }
     return myMesoEdgeTypes[typeID];
 }
+
+
+bool
+MSNet::hasFlow(const std::string& id) const {
+    // inserter is deleted at the end of the simulation
+    return myInserter != nullptr && myInserter->hasFlow(id);
+}
+
 
 MSNet::SimulationState
 MSNet::simulate(SUMOTime start, SUMOTime stop) {
@@ -477,6 +485,9 @@ MSNet::generateStatistics(const SUMOTime start, const long now) {
         }
         if (myVehicleControl->getEmergencyStops() > 0) {
             msg << " Emergency Stops: " << myVehicleControl->getEmergencyStops() << "\n";
+        }
+        if (myVehicleControl->getEmergencyBrakingCount() > 0) {
+            msg << " Emergency Braking: " << myVehicleControl->getEmergencyBrakingCount() << "\n";
         }
         if (myPersonControl != nullptr && myPersonControl->getLoadedNumber() > 0) {
             msg << "Persons: " << "\n"
@@ -575,6 +586,7 @@ MSNet::writeStatistics(const SUMOTime start, const long now) const {
     od.openTag("safety");
     od.writeAttr("collisions", myVehicleControl->getCollisionCount());
     od.writeAttr("emergencyStops", myVehicleControl->getEmergencyStops());
+    od.writeAttr("emergencyBraking", myVehicleControl->getEmergencyBrakingCount());
     od.closeTag();
     od.openTag("persons");
     od.writeAttr("loaded", myPersonControl != nullptr ? myPersonControl->getLoadedNumber() : 0);
@@ -750,7 +762,9 @@ MSNet::simulationStep(const bool onlyMove) {
         }
     }
     myBeginOfTimestepEvents->execute(myStep);
-    MSRailSignal::recheckGreen();
+    if (MSRailSignalControl::hasInstance()) {
+        MSRailSignalControl::getInstance().recheckGreen();
+    }
 #ifdef HAVE_FOX
     MSRoutingEngine::waitForAll();
 #endif
@@ -1589,11 +1603,11 @@ MSNet::adaptIntermodalRouter(MSIntermodalRouter& router) {
         for (const auto& i : stopType.second) {
             const MSEdge* const edge = &i.second->getLane().getEdge();
             router.getNetwork()->addAccess(i.first, edge, i.second->getBeginLanePosition(), i.second->getEndLanePosition(),
-                                           i.second->getAccessDistance(edge), element, false, taxiWait);
+                                           0., element, false, taxiWait);
             if (element == SUMO_TAG_BUS_STOP) {
                 // add access to all public transport stops
                 for (const auto& a : i.second->getAllAccessPos()) {
-                    router.getNetwork()->addAccess(i.first, &std::get<0>(a)->getEdge(), std::get<1>(a), std::get<1>(a), std::get<2>(a), element, true, taxiWait);
+                    router.getNetwork()->addAccess(i.first, &a.lane->getEdge(), a.startPos, a.endPos, a.length, element, true, taxiWait);
                 }
                 if (external != nullptr) {
                     external->addStop(router.getNetwork()->getStopEdge(i.first)->getNumericalID(), *i.second);

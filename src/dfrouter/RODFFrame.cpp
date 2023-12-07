@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2006-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -245,7 +245,7 @@ RODFFrame::fillOptions() {
     oc.doRegister("no-step-log", new Option_Bool(false));
     oc.addDescription("no-step-log", "Report", TL("Disable console output of route parsing step"));
 
-    RandHelper::insertRandOptions();
+    RandHelper::insertRandOptions(oc);
 }
 
 

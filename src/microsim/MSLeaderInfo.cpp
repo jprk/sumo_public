@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -71,7 +71,10 @@ MSLeaderInfo::addLeader(const MSVehicle* veh, bool beyond, double latOffset) {
     // map center-line based coordinates into [0, myWidth] coordinates
     int rightmost, leftmost;
     getSubLanes(veh, latOffset, rightmost, leftmost);
-    //if (gDebugFlag1) std::cout << " addLeader veh=" << veh->getID() << " beyond=" << beyond << " latOffset=" << latOffset << " rightmost=" << rightmost << " leftmost=" << leftmost << " myFreeSublanes=" << myFreeSublanes << "\n";
+    //if (gDebugFlag1) std::cout << " addLeader veh=" << veh->getID() << " beyond=" << beyond << " latOffset=" << latOffset << " sublaneOffset=" << myOffset
+    //    << " rightmost=" << rightmost << " leftmost=" << leftmost
+    //    << " eRM=" << egoRightMost << " eLM=" << egoLeftMost
+    //        << " myFreeSublanes=" << myFreeSublanes << "\n";
     for (int sublane = rightmost; sublane <= leftmost; ++sublane) {
         if ((egoRightMost < 0 || (egoRightMost <= sublane && sublane <= egoLeftMost))
                 && (!beyond || myVehicles[sublane] == 0)) {
@@ -259,6 +262,10 @@ MSLeaderDistanceInfo::addLeader(const MSVehicle* veh, double gap, double latOffs
     }
     int rightmost, leftmost;
     getSubLanes(veh, latOffset, rightmost, leftmost);
+    //if (gDebugFlag1) std::cout << " addLeader veh=" << veh->getID() << " gap=" << gap << " latOffset=" << latOffset << " sublaneOffset=" << myOffset
+    //    << " rightmost=" << rightmost << " leftmost=" << leftmost
+    //    << " eRM=" << egoRightMost << " eLM=" << egoLeftMost
+    //        << " myFreeSublanes=" << myFreeSublanes << "\n";
     for (int sublaneIdx = rightmost; sublaneIdx <= leftmost; ++sublaneIdx) {
         if ((egoRightMost < 0 || (egoRightMost <= sublaneIdx && sublaneIdx <= egoLeftMost))
                 && gap < myDistances[sublaneIdx]) {

@@ -34,6 +34,12 @@ time before the *collision action* takes place. This allows for pile-ups
 and traffic disturbance. To enable stopping, the option **--collision.stoptime** {{DT_TIME}} must be set
 with the stopping time in seconds.
 
+## Intermodal Collisions
+
+The collision action only gets triggered on vehicle-vehicle collision but not on vehicle-pedestrian collisions. Instead, intermodal collisiosn raise warning by default.
+
+The behavior can be changed by setting the options **--intermodal-collision.action** and **--intermodal-collision.stoptime** which work like the vehicle-on-vehicle collision options described above.
+
 !!! note
     The pedestrian model *striping* detects collisions between pedestrians. This only serves to detect issues with the model.
 
@@ -44,7 +50,7 @@ To create collisions in this way it is also necessary to disable safety checks u
 commands speedMode and laneChangeMode](../TraCI/Change_Vehicle_State.md).
 
 Alternatively, various models within SUMO may be configured to making driving less safe.
-This can be used to create collisions with some probability 
+This can be used to create collisions with some probability
 (or with certainty if vehicle stops are used to force unexpected braking in a critical situation).
 
 ### Collisions during car-following
@@ -67,7 +73,7 @@ Side collisions can be caused by
 - allowing lateral encroachment with vType parameter *lcPushy* (but this parameter itself will not cause collisions, only reduce lateral gaps in some situations, requires the sublane model)
 - *lcImpatience* (growing impatience permits lower lateral gaps when using the sublane model)
 
-Unsafe changing can be caused by configuringlower gap acceptance with parameter
+Unsafe changing can be caused by configuring a lower gap acceptance with parameter
 - *lcAssertive* (the acceptable gap is computed by dividing the safe gap by lcAssertive)
 
 ### Collisions at Intersections
@@ -84,7 +90,7 @@ parameters](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#junction_mod
     - vehicular foes as long as they are not in the way
     - any pedestrian foes
   - *junctionModel.ignoreIDs*: ignores all foes with the given ids  (set via [generic parameters](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#transient_parameters))
-  - *junctionModel.ignoreTypes*: ignores all foes with the given types (set via [generic parameters](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#transient_parameters))    
+  - *junctionModel.ignoreTypes*: ignores all foes with the given types (set via [generic parameters](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#transient_parameters))
 - yellow phases which are too short in relation to the vehicle speed
 (giving insufficient time to come to a stop). By default this causes
 strong braking (*Warning: emergency braking*) potentially followed
@@ -140,7 +146,7 @@ decisions during different simulation steps. During simulation steps
 without decision-making, vehicle positions are updated according to the
 previously computed acceleration. Lateral dynamics (when using the
 sublane model) use a dynamic acceleration curve that to complete the
-current lateral driving manoeuvre.
+current lateral driving manoeuver.
 
 The action step length can be defined in any of the following ways:
 

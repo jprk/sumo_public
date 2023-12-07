@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2011-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from sumolib.net import Phase
 from .domain import Domain
 from . import constants as tc
-from .exceptions import TraCIException, deprecated
+from .exceptions import TraCIException, deprecated, alias_param
 
 
 class Logic:
@@ -395,15 +395,16 @@ class TrafficLightDomain(Domain):
         """
         self._setCmd(tc.TL_PHASE_DURATION, tlsID, "d", phaseDuration)
 
-    def setProgramLogic(self, tlsID, tls):
+    @alias_param("logic", "tls")
+    def setProgramLogic(self, tlsID, logic):
         """setProgramLogic(string, Logic) -> None
 
         Sets a new program for the given tlsID from a Logic object.
         See getCompleteRedYellowGreenDefinition.
         """
         format = "tsiit"
-        values = [5, tls.programID, tls.type, tls.currentPhaseIndex, len(tls.phases)]
-        for p in tls.phases:
+        values = [5, logic.programID, logic.type, logic.currentPhaseIndex, len(logic.phases)]
+        for p in logic.phases:
             format += "tdsddt"
             values += [6, p.duration, p.state, p.minDur, p.maxDur, len(p.next)]
             for n in p.next:
@@ -413,13 +414,19 @@ class TrafficLightDomain(Domain):
             values += [p.name]
         # subparams
         format += "t"
-        values += [len(tls.subParameter)]
-        for par in tls.subParameter.items():
+        values += [len(logic.subParameter)]
+        for par in logic.subParameter.items():
             format += "l"
             values += [par]
         self._setCmd(tc.TL_COMPLETE_PROGRAM_RYG, tlsID, format, *values)
 
     setCompleteRedYellowGreenDefinition = deprecated("setCompleteRedYellowGreenDefinition")(setProgramLogic)
+
+    def addConstraint(self, tlsID, tripId, foeSignal, foeId, type=0, limit=0):
+        """addConstraint(string, string, string, string, int, int) -> None
+        Add the given constraint.
+        """
+        self._setCmd(tc.TL_CONSTRAINT_ADD, tlsID, "tsssii", 5, tripId, foeSignal, foeId, type, limit)
 
     def swapConstraints(self, tlsID, tripId, foeSignal, foeId):
         """swapConstraints(string, string, string, string) -> list(Constraint)

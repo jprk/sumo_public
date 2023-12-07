@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -460,9 +460,12 @@ struct GUIVisualizationStoppingPlaceSettings {
 struct GUIVisualizationDottedContourSettings {
 
     /// @brief width of dotted contour segments
+    static const double segmentWidth;
+
+    /// @brief width of small dotted contour segments
     static const double segmentWidthSmall;
 
-    /// @brief width of dotted contour segments
+    /// @brief width of large dotted contour segments
     static const double segmentWidthLarge;
 
     /// @brief length of dotted contour segments
@@ -582,6 +585,9 @@ struct GUIVisualizationDetailSettings {
 
     /// @brief Exaggeration for persons (only used in netedit)
     static const double personExaggeration;
+
+    /// @brief details for draw plans (only used in netedit)
+    static const double plans;
 };
 
 
@@ -826,6 +832,12 @@ public:
 
     // Setting bundles for optional drawing person names
     GUIVisualizationTextSettings personName, personValue;
+
+    /// @brief Flag for visualizing the pedestrian network generated for JuPedSim
+    bool showPedestrianNetwork;
+
+    /// @brief The color of the pedestrian network generated for JuPedSim
+    RGBColor pedestrianNetworkColor;
     /// @}
 
 

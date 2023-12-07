@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -566,7 +566,11 @@ public:
         if (myRestrictions != nullptr) {
             std::map<SUMOVehicleClass, double>::const_iterator r = myRestrictions->find(veh->getVClass());
             if (r != myRestrictions->end()) {
-                return MIN2(veh->getMaxSpeed(), r->second * veh->getChosenSpeedFactor());
+                if (mySpeedByVSS || mySpeedByTraCI) {
+                    return MIN2(myMaxSpeed, MIN2(veh->getMaxSpeed(), r->second * veh->getChosenSpeedFactor()));
+                } else {
+                    return MIN2(veh->getMaxSpeed(), r->second * veh->getChosenSpeedFactor());
+                }
             }
         }
         return MIN2(veh->getMaxSpeed(), myMaxSpeed * veh->getChosenSpeedFactor());
@@ -726,8 +730,10 @@ public:
 
     /** @brief Sets a new maximum speed for the lane (used by TraCI and MSCalibrator)
      * @param[in] val the new speed in m/s
+     * @param[in] whether a variable speed sign (VSS) imposes the speed limit
+     * @param[in] whether TraCI imposes the speed limit
      */
-    void setMaxSpeed(double val);
+    void setMaxSpeed(double val, bool byVSS = false, bool byTraCI = false);
 
     /** @brief Sets a new friction coefficient for the lane [*to be later (used by TraCI and MSCalibrator)*]
     * @param[in] val the new friction coefficient [0..1]
@@ -858,6 +864,9 @@ public:
 
     /// @brief returns the last vehicle for which this lane is responsible or 0
     MSVehicle* getLastFullVehicle() const;
+
+    /// @brief returns the first vehicle for which this lane is responsible or 0
+    MSVehicle* getFirstFullVehicle() const;
 
     /// @brief returns the last vehicle that is fully or partially on this lane
     MSVehicle* getLastAnyVehicle() const;
@@ -1321,9 +1330,14 @@ public:
     double getMaximumBrakeDist() const;
 
     static void initCollisionOptions(const OptionsCont& oc);
+    static void initCollisionAction(const OptionsCont& oc, const std::string& option, CollisionAction& myAction);
 
     static CollisionAction getCollisionAction() {
         return myCollisionAction;
+    }
+
+    static CollisionAction getIntermodalCollisionAction() {
+        return myIntermodalCollisionAction;
     }
 
     static const long CHANGE_PERMISSIONS_PERMANENT = 0;
@@ -1350,7 +1364,9 @@ protected:
 
     /// @brief detect whether a vehicle collids with pedestrians on the junction
     void detectPedestrianJunctionCollision(const MSVehicle* collider, const PositionVector& colliderBoundary, const MSLane* foeLane,
-                                           SUMOTime timestep, const std::string& stage);
+                                           SUMOTime timestep, const std::string& stage,
+                                           std::set<const MSVehicle*, ComparatorNumericalIdLess>& toRemove,
+                                           std::set<const MSVehicle*, ComparatorNumericalIdLess>& toTeleport);
 
     /// @brief detect whether there is a collision between the two vehicles
     bool detectCollisionBetween(SUMOTime timestep, const std::string& stage, MSVehicle* collider, MSVehicle* victim,
@@ -1362,6 +1378,11 @@ protected:
                                 double gap, double latGap,
                                 std::set<const MSVehicle*, ComparatorNumericalIdLess>& toRemove,
                                 std::set<const MSVehicle*, ComparatorNumericalIdLess>& toTeleport) const;
+
+    void handleIntermodalCollisionBetween(SUMOTime timestep, const std::string& stage, const MSVehicle* collider, const MSTransportable* victim,
+                                          double gap, const std::string& collisionType,
+                                          std::set<const MSVehicle*, ComparatorNumericalIdLess>& toRemove,
+                                          std::set<const MSVehicle*, ComparatorNumericalIdLess>& toTeleport) const;
 
     /* @brief determine depart speed and whether it may be patched
      * @param[in] veh The departing vehicle
@@ -1458,10 +1479,16 @@ protected:
     /// The lane's edge, for routing only.
     MSEdge* const myEdge;
 
-    /// Lane-wide speedlimit [m/s]
+    /// Lane-wide speed limit [m/s]
     double myMaxSpeed;
     /// Lane-wide friction coefficient [0..1]
     double myFrictionCoefficient;
+
+    /// @brief Whether the current speed limit is set by a variable speed sign (VSS)
+    bool mySpeedByVSS;
+
+    /// @brief Whether the current speed limit has been set through TraCI
+    bool mySpeedByTraCI;
 
     /// The vClass permissions for this lane
     SVCPermissions myPermissions;
@@ -1560,9 +1587,11 @@ private:
 
     /// @brief the action to take on collisions
     static CollisionAction myCollisionAction;
+    static CollisionAction myIntermodalCollisionAction;
     static bool myCheckJunctionCollisions;
     static double myCheckJunctionCollisionMinGap;
     static SUMOTime myCollisionStopTime;
+    static SUMOTime myIntermodalCollisionStopTime;
     static double myCollisionMinGapFactor;
     static bool myExtrapolateSubstepDepart;
 

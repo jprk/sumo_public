@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -88,7 +88,7 @@ ROJTRFrame::fillOptions() {
     oc.addDescription("discount-sources", "Processing", TL("Subtract upstream flow when inserting a new flow. When option --sources-are-sinks is set, the upstream flow is limited to the value of the source flow and the remaining part terminates."));
 
     // add rand options
-    RandHelper::insertRandOptions();
+    RandHelper::insertRandOptions(oc);
 }
 
 

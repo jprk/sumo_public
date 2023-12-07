@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -34,14 +34,14 @@ netedit.additionalMode()
 # select chargingStation
 netedit.changeElement("chargingStation")
 
-# create chargingStation in mode "reference left"
+# create chargingStation in mode "Reference Left"
 netedit.leftClick(referencePosition, 304, 244)
 
 # Change to delete
 netedit.deleteMode()
 
 # enable 'Automatically delete additionals'
-netedit.changeProtectAdditionalElements(referencePosition)
+netedit.protectElements(referencePosition)
 
 # delete created chargingStation
 netedit.leftClick(referencePosition, 344, 244)
@@ -59,7 +59,7 @@ netedit.undo(referencePosition, 3)
 netedit.deleteMode()
 
 # disable 'Automatically delete additionals'
-netedit.changeProtectAdditionalElements(referencePosition)
+netedit.protectElements(referencePosition)
 
 # try to delete lane with the second loaded charging station (doesn't allowed)
 netedit.leftClick(referencePosition, 512, 424)

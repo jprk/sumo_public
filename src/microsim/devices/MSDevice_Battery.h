@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2013-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -32,6 +32,7 @@
 // ===========================================================================
 class SUMOVehicle;
 class MSDevice_Emissions;
+class MSDevice_StationFinder;
 
 
 // ===========================================================================
@@ -58,7 +59,7 @@ public:
     * @param[in] v The vehicle for which a device may be built
     * @param[filled] into The vector to store the built device in
     */
-    static void buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into);
+    static void buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDevice*>& into, MSDevice_StationFinder* sf);
 
 public:
     /// @brief Destructor.
@@ -101,7 +102,7 @@ private:
     * @param[in] preInsertionPeriod The route search period before insertion
     */
     MSDevice_Battery(SUMOVehicle& holder, const std::string& id, const double actualBatteryCapacity, const double maximumBatteryCapacity,
-                     const double powerMax, const double stoppingThreshold);
+                     const double stoppingThreshold);
 
 public:
     /// @brief Get the actual vehicle's Battery Capacity in Wh
@@ -149,9 +150,6 @@ public:
     /// @brief Set total vehicle's Battery Capacity in kWh
     void setMaximumBatteryCapacity(const double maximumBatteryCapacity);
 
-    /// @brief Set maximum power when accelerating
-    void setPowerMax(const double new_Pmax);
-
     /// @brief Set vehicle's stopping threshold
     void setStoppingThreshold(const double stoppingThreshold);
 
@@ -168,14 +166,14 @@ public:
     void increaseVehicleStoppedTimer();
 
 protected:
+    /// @brief Read device parameters from input
+    static double readParameterValue(SUMOVehicle& v, const SumoXMLAttr& attr, const std::string& paramName, double defaultVal);
+
     /// @brief Parameter, The actual vehicles's Battery Capacity in Wh, [myActualBatteryCapacity <= myMaximumBatteryCapacity]
     double myActualBatteryCapacity;
 
     /// @brief Parameter, The total vehicles's Battery Capacity in Wh, [myMaximumBatteryCapacity >= 0]
     double myMaximumBatteryCapacity;
-
-    /// @brief Parameter, The Maximum Power when accelerating, [myPowerMax >= 0]
-    double myPowerMax;
 
     /// @brief Parameter, stopping vehicle threshold [myStoppingThreshold >= 0]
     double myStoppingThreshold;
@@ -223,5 +221,3 @@ private:
     /// @brief Invalidated assignment operator.
     MSDevice_Battery& operator=(const MSDevice_Battery&);
 };
-
-

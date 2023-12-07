@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2011-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -19,6 +19,7 @@
 /****************************************************************************/
 #include <config.h>
 
+#include <utils/foxtools/MFXDynamicLabel.h>
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <netedit/changes/GNEChange_Connection.h>
@@ -90,11 +91,11 @@ GNEConnectorFrame::ConnectionModifications::ConnectionModifications(GNEConnector
     myConnectorFrameParent(connectorFrameParent) {
 
     // Create "Cancel" button
-    myCancelButton = new FXButton(getCollapsableFrame(), (TL("Cancel") + std::string("\t\t") + TL("Discard connection modifications (Esc)")).c_str(),
-                                  GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, MID_CANCEL, GUIDesignButton);
+    myCancelButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Cancel"), "", TL("Discard connection modifications (Esc)"),
+                     GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, MID_CANCEL, GUIDesignButton);
     // Create "OK" button
-    mySaveButton = new FXButton(getCollapsableFrame(), (TL("OK") + std::string("\t\t") + TL("Save connection modifications (Enter)")).c_str(),
-                                GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_OK, GUIDesignButton);
+    mySaveButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("OK"), "", TL("Save connection modifications (Enter)"),
+                   GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_OK, GUIDesignButton);
 
     // Create checkbox for protect routes
     myProtectRoutesCheckBox = new FXCheckButton(getCollapsableFrame(), TL("Protect routes"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
@@ -123,11 +124,11 @@ GNEConnectorFrame::ConnectionModifications::onCmdSaveModifications(FXObject*, FX
     if (myConnectorFrameParent->myCurrentEditedLane != 0) {
         // check if routes has to be protected
         if (myProtectRoutesCheckBox->isEnabled() && (myProtectRoutesCheckBox->getCheck() == TRUE)) {
-            for (const auto& i : myConnectorFrameParent->myCurrentEditedLane->getParentEdge()->getChildDemandElements()) {
-                if (i->isDemandElementValid() != GNEDemandElement::Problem::OK) {
+            for (const auto& demandElement : myConnectorFrameParent->myCurrentEditedLane->getParentEdge()->getChildDemandElements()) {
+                if (demandElement->isDemandElementValid() != GNEDemandElement::Problem::OK) {
                     FXMessageBox::warning(getApp(), MBOX_OK,
                                           TL("Error saving connection operations"), "%s",
-                                          (TL("Connection edition  cannot be saved because route '") + i->getID() + TL("' is broken.")).c_str());
+                                          (TLF("Connection edition cannot be saved because route '%' is broken.", demandElement->getID()).c_str()));
                     return 1;
                 }
             }
@@ -138,6 +139,9 @@ GNEConnectorFrame::ConnectionModifications::onCmdSaveModifications(FXObject*, FX
             myConnectorFrameParent->getViewNet()->setStatusBarText(TL("Changes accepted"));
         }
         myConnectorFrameParent->cleanup();
+        // mark network for recomputing
+        myConnectorFrameParent->getViewNet()->getNet()->requireRecompute();
+        // update viewNet
         myConnectorFrameParent->getViewNet()->updateViewNet();
     }
     return 1;
@@ -152,23 +156,23 @@ GNEConnectorFrame::ConnectionOperations::ConnectionOperations(GNEConnectorFrame*
     myConnectorFrameParent(connectorFrameParent) {
 
     // Create "Select Dead Ends" button
-    mySelectDeadEndsButton = new FXButton(getCollapsableFrame(), (TL("Select Dead Ends") + std::string("\t\t") + TL("Selects all lanes that have no outgoing connection (clears previous selection)")).c_str(),
-                                          0, this, MID_GNE_CONNECTORFRAME_SELECTDEADENDS, GUIDesignButton);
+    mySelectDeadEndsButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Select Dead Ends"), "", TL("Selects all lanes that have no outgoing connection (clears previous selection)"),
+                             0, this, MID_GNE_CONNECTORFRAME_SELECTDEADENDS, GUIDesignButton);
     // Create "Select Dead Starts" button
-    mySelectDeadStartsButton = new FXButton(getCollapsableFrame(), (TL("Select Dead Starts") + std::string("\t\t") + TL("Selects all lanes that have no incoming connection (clears previous selection)")).c_str(),
-                                            0, this, MID_GNE_CONNECTORFRAME_SELECTDEADSTARTS, GUIDesignButton);
+    mySelectDeadStartsButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Select Dead Starts"), "", TL("Selects all lanes that have no incoming connection (clears previous selection)"),
+                               0, this, MID_GNE_CONNECTORFRAME_SELECTDEADSTARTS, GUIDesignButton);
     // Create "Select Conflicts" button
-    mySelectConflictsButton = new FXButton(getCollapsableFrame(), (TL("Select Conflicts") + std::string("\t\t") + TL("Selects all lanes with more than one incoming connection from the same edge (clears previous selection)")).c_str(),
-                                           0, this, MID_GNE_CONNECTORFRAME_SELECTCONFLICTS, GUIDesignButton);
+    mySelectConflictsButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Select Conflicts"), "", TL("Selects all lanes with more than one incoming connection from the same edge (clears previous selection)"),
+                              0, this, MID_GNE_CONNECTORFRAME_SELECTCONFLICTS, GUIDesignButton);
     // Create "Select Edges which may always pass" button
-    mySelectPassingButton = new FXButton(getCollapsableFrame(), (TL("Select Passing") + std::string("\t\t") + TL("Selects all lanes with a connection that has has the 'pass' attribute set")).c_str(),
-                                         0, this, MID_GNE_CONNECTORFRAME_SELECTPASS, GUIDesignButton);
+    mySelectPassingButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Select Passing"), "", TL("Selects all lanes with a connection that has the 'pass' attribute set"),
+                            0, this, MID_GNE_CONNECTORFRAME_SELECTPASS, GUIDesignButton);
     // Create "Clear Selected" button
-    myClearSelectedButton = new FXButton(getCollapsableFrame(), (TL("Clear Selected") + std::string("\t\t") + TL("Clears all connections of all selected objects")).c_str(),
-                                         0, this, MID_CHOOSEN_CLEAR, GUIDesignButton);
+    myClearSelectedButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Clear Selected"), "", TL("Clears all connections of all selected objects"),
+                            0, this, MID_CHOOSEN_CLEAR, GUIDesignButton);
     // Create "Reset Selected" button
-    myResetSelectedButton = new FXButton(getCollapsableFrame(), (TL("Reset Selected") + std::string("\t\t") + TL("Recomputes connections at all selected junctions")).c_str(),
-                                         0, this, MID_CHOOSEN_RESET, GUIDesignButton);
+    myResetSelectedButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Reset Selected"), "", TL("Recomputes connections at all selected junctions"),
+                            0, this, MID_CHOOSEN_RESET, GUIDesignButton);
 }
 
 
@@ -306,26 +310,9 @@ GNEConnectorFrame::ConnectionOperations::onCmdResetSelectedConnections(FXObject*
 
 GNEConnectorFrame::ConnectionSelection::ConnectionSelection(GNEConnectorFrame* connectorFrameParent) :
     MFXGroupBoxModule(connectorFrameParent, TL("Selection")) {
-    // create Selection Hint
-    std::ostringstream informationA;
-    // add label for shift+click
-    informationA
-            << TL("-Hold <SHIFT> while") << "\n"
-            << TL(" clicking to create") << "\n"
-            << TL(" unyielding connections") << "\n"
-            << TL(" (pass=true).");
     // create label
-    new FXLabel(getCollapsableFrame(), informationA.str().c_str(), 0, GUIDesignLabelFrameInformation);
-    std::ostringstream informationB;
-    informationB
-            << TL("-Hold <CTRL> while") << "\n"
-            << TL(" clicking to create ") << "\n"
-            << TL(" conflicting connections") << "\n"
-            << TL(" (i.e. at zipper nodes") << "\n"
-            << TL(" or with incompatible") << "\n"
-            << TL(" permissions");
-    // create label
-    new FXLabel(getCollapsableFrame(), informationB.str().c_str(), 0, GUIDesignLabelFrameInformation);
+    new MFXDynamicLabel(getCollapsableFrame(), (std::string("- ") + TL("Hold <SHIFT> while clicking to create unyielding connections (pass=true).")).c_str(), 0, GUIDesignLabelFrameInformation);
+    new MFXDynamicLabel(getCollapsableFrame(), (std::string("- ") + TL("Hold <CTRL> while clicking to create conflicting connections (i.e. at zipper nodes or with incompatible permissions)")).c_str(), 0, GUIDesignLabelFrameInformation);
 }
 
 
@@ -371,19 +358,19 @@ GNEConnectorFrame::GNEConnectorFrame(GNEViewParent* viewParent, GNEViewNet* view
     GNEFrame(viewParent, viewNet, TL("Edit Connections")),
     myCurrentEditedLane(0),
     myNumChanges(0) {
-    // create current lane modul
+    // create current lane module
     myCurrentLane = new CurrentLane(this);
 
-    // create connection modifications modul
+    // create connection modifications module
     myConnectionModifications = new ConnectionModifications(this);
 
-    // create connection operations modul
+    // create connection operations module
     myConnectionOperations = new ConnectionOperations(this);
 
-    // create connection selection modul
+    // create connection selection module
     myConnectionSelection = new ConnectionSelection(this);
 
-    // create connection legend modul
+    // create connection legend module
     myLegend = new Legend(this);
 }
 
@@ -419,7 +406,7 @@ GNEConnectorFrame::removeConnections(GNELane* lane) {
     buildConnection(lane, false, false, true); // select as current lane
     // iterate over all potential targets
     for (const auto& potentialTarget : myPotentialTargets) {
-        // remove connections using the apropiate parameters in function "buildConnection"
+        // remove connections using the appropiate parameters in function "buildConnection"
         buildConnection(potentialTarget, false, false, false);
     }
     // save modifications
@@ -507,7 +494,7 @@ void
 GNEConnectorFrame::initTargets() {
     // gather potential targets
     NBNode* nbn = myCurrentEditedLane->getParentEdge()->getToJunction()->getNBNode();
-    // get potencial targets
+    // get potential targets
     for (const auto& NBEEdge : nbn->getOutgoingEdges()) {
         GNEEdge* edge = myViewNet->getNet()->getAttributeCarriers()->retrieveEdge(NBEEdge->getID());
         for (const auto& lane : edge->getLanes()) {

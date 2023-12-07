@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -91,11 +91,36 @@ public:
 
     /// @name Functions related with geometry of element
     /// @{
+
     /// @brief update pre-computed geometry information
     void updateGeometry();
 
     /// @brief Returns position of hierarchical element in view
     Position getPositionInView() const;
+
+    /// @}
+
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw from contour (green)
+    bool checkDrawFromContour() const;
+
+    /// @brief check if draw from contour (magenta)
+    bool checkDrawToContour() const;
+
+    /// @brief check if draw related contour (cyan)
+    bool checkDrawRelatedContour() const;
+
+    /// @brief check if draw over contour (orange)
+    bool checkDrawOverContour() const;
+
+    /// @brief check if draw delete contour (pink/white)
+    bool checkDrawDeleteContour() const;
+
+    /// @brief check if draw select contour (blue)
+    bool checkDrawSelectContour() const;
+
     /// @}
 
     /// @name Functions related with move elements
@@ -261,8 +286,8 @@ public:
      * straight unless the user clicked near a geometry point */
     Position getSplitPos(const Position& clickPos);
 
-    /// @brief override to also set lane ids
-    void setMicrosimID(const std::string& newID);
+    /// @brief set edge ID
+    void setEdgeID(const std::string& newID);
 
     /// @brief check if edge has a restricted lane
     bool hasRestrictedLane(SUMOVehicleClass vclass) const;
@@ -311,10 +336,6 @@ public:
 
     // @brief update vehicle geometries
     void updateContainerStackLabels();
-
-    /// @brief draw dotted contour for the given dottedGeometries
-    static void drawDottedContourEdge(const GUIVisualizationSettings& s, const GUIDottedGeometry::DottedContourType type, const GNEEdge* edge,
-                                      const bool drawFrontExtreme, const bool drawBackExtreme, const double exaggeration = 1);
 
     /// @brief check if edge makes a convex angle [0 - 180) degrees
     bool isConvexAngle() const;

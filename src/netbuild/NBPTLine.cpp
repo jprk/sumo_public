@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -239,9 +239,17 @@ NBPTLine::getRouteEnd(const NBEdgeCont& ec) const {
 
 
 bool
-NBPTLine::isConsistent(const std::vector<NBEdge*>& stops) const {
+NBPTLine::isConsistent(std::vector<NBEdge*> stops) const {
     if (myRoute.empty() || stops.empty()) {
         return true;
+    }
+    if (stops.size() > 1 && stops.front() == stops.back()) {
+        // circular route where we don't expect the route edges to occur twice
+        if (myRoute.front() == stops.front()) {
+            stops.pop_back();
+        } else if (myRoute.back() == stops.back()) {
+            stops.erase(stops.begin());
+        }
     }
     std::vector<NBEdge*>::const_iterator stopIt = stops.begin();
     for (const NBEdge* const e : myRoute) {

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -26,6 +26,14 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <chrono>
+#ifdef WIN32
+#define NOMINMAX
+#include <windows.h>
+#undef NOMINMAX
+#else
+#include <unistd.h>
+#endif
 #include <utils/options/OptionsCont.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/common/UtilExceptions.h>
@@ -42,8 +50,12 @@ MsgHandler* MsgHandler::myErrorInstance = nullptr;
 MsgHandler* MsgHandler::myWarningInstance = nullptr;
 MsgHandler* MsgHandler::myMessageInstance = nullptr;
 bool MsgHandler::myAmProcessingProcess = false;
-bool MsgHandler::myWriteDebugMessages(false);
-bool MsgHandler::myWriteDebugGLMessages(false);
+bool MsgHandler::myWriteDebugMessages = false;
+bool MsgHandler::myWriteDebugGLMessages = false;
+bool MsgHandler::myWriteTimestamps = false;
+bool MsgHandler::myWriteProcessId = false;
+std::string MsgHandler::myErrorPrefix = "Error: ";
+std::string MsgHandler::myWarningPrefix = "Warning: ";
 
 
 // ===========================================================================
@@ -112,6 +124,31 @@ void
 MsgHandler::enableDebugGLMessages(bool enable) {
     myWriteDebugGLMessages = enable;
 }
+
+
+std::string
+MsgHandler::insertLineBreaks(std::string msg, int lineWidth) {
+    // TODO: check what FXFont::getTextWidth can do
+    //int textWidth = getApp()->getNormalFont()->getTextWidth
+    if ((int)msg.size() <= lineWidth) {
+        return msg;
+    }
+    size_t pos = 0;
+    size_t nextLineBreak = msg.find('\n');
+    size_t spaceAfterLine = msg.find(' ', lineWidth);
+    while (spaceAfterLine != std::string::npos) {
+        if (nextLineBreak == std::string::npos || nextLineBreak > spaceAfterLine) {
+            msg = msg.replace(spaceAfterLine, 1, "\n");
+            pos = spaceAfterLine + 1;
+        } else {
+            pos = nextLineBreak + 1;
+        }
+        spaceAfterLine = msg.find(' ', pos + lineWidth);
+        nextLineBreak = msg.find('\n', pos);
+    }
+    return msg;
+}
+
 
 void
 MsgHandler::inform(std::string msg, bool addType) {
@@ -270,6 +307,8 @@ MsgHandler::setupI18n(const std::string& locale) {
 #else
     UNUSED_PARAMETER(locale);
 #endif
+    myWarningPrefix = TL("Warning: ");
+    myErrorPrefix = TL("Error: ");
 }
 
 
@@ -292,6 +331,12 @@ MsgHandler::initOutputOptions() {
             getWarningInstance()->addRetriever(logFile);
         }
         getMessageInstance()->addRetriever(logFile);
+        if (oc.getBool("log.timestamps")) {
+            myWriteTimestamps = true;
+        }
+        if (oc.getBool("log.processid")) {
+            myWriteProcessId = true;
+        }
     }
     if (oc.isSet("message-log", false)) {
         OutputDevice* logFile = &OutputDevice::getDevice(oc.getString("message-log"));
@@ -322,6 +367,34 @@ MsgHandler::cleanupOnEnd() {
     myDebugInstance = nullptr;
     delete myGLDebugInstance;
     myGLDebugInstance = nullptr;
+}
+
+
+std::string
+MsgHandler::buildTimestampPrefix(void) const {
+    std::stringstream prefix;
+    const std::chrono::system_clock::time_point now_timestamp = std::chrono::system_clock::now();
+    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now_timestamp.time_since_epoch()) % 1000;
+    const std::time_t now_time_t = std::chrono::system_clock::to_time_t(now_timestamp);
+
+    char timeString[21];
+    std::strftime(timeString, 21, "[%F %T", std::localtime(&now_time_t));
+    prefix << timeString << '.' << std::setfill('0') << std::setw(3) << milliseconds.count() << "] ";
+    return prefix.str();
+}
+
+
+std::string
+MsgHandler::buildProcessIdPrefix(void) const {
+    std::stringstream prefix;
+    prefix << "[PID: ";
+#ifdef WIN32
+    prefix << GetCurrentProcessId();
+#else
+    prefix << getpid();
+#endif
+    prefix << "] ";
+    return prefix.str();
 }
 
 

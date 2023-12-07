@@ -18,14 +18,14 @@ In addition to the standard [sumo-gui shortcuts for moving the view](../sumo-gui
 | Shortcut | Network mode | Demand Mode | Data Mode |
 |:---:|:---:|:-:|:---:|
 | A | <span style="color:orange">Additional mode | <span style="color:orange">Stop Mode | <span style="color:orange">- |
-| C | <span style="color:orange">Connection Mode | <span style="color:orange">Person Plan mode | <span style="color:orange">Connection Data Mode |
+| C | <span style="color:orange">Connection Mode | <span style="color:orange">Container mode | <span style="color:orange">Connection Data Mode |
 | D | <span style="color:orange">Delete Mode | <span style="color:orange">Delete Mode | <span style="color:orange">Delete Mode |
 | E | <span style="color:orange">Edge Mode | <span style="color:orange">- | <span style="color:orange">Edge Data Mode |
-| G | <span style="color:orange">- | <span style="color:orange">Container mode | <span style="color:orange">- |
+| G | <span style="color:orange">- | <span style="color:orange">- | <span style="color:orange">- |
 | H | <span style="color:orange">Prohibition mode | <span style="color:orange">Container Plan mode | <span style="color:orange">- |
 | I | <span style="color:orange">Inspect Mode | <span style="color:orange">Inspect Mode | <span style="color:orange">Inspect Mode |
 | J | <span style="color:orange">- | <span style="color:orange">- | <span style="color:orange">Junction Data Mode |
-| L | <span style="color:orange">- | <span style="color:orange">- | <span style="color:orange">Lane Data Mode |
+| L | <span style="color:orange">- | <span style="color:orange"> Person plan mode | <span style="color:orange">Lane Data Mode |
 | M | <span style="color:orange">Move Mode | <span style="color:orange">Move Mode | <span style="color:orange">- |
 | P | <span style="color:orange">Polygon Mode | <span style="color:orange">Person Mode | <span style="color:orange">- |
 | R | <span style="color:orange">Crossing Mode | <span style="color:orange">Route Mode | <span style="color:orange">Edge Rel Data Mode |
@@ -50,7 +50,7 @@ In addition to the standard [sumo-gui shortcuts for moving the view](../sumo-gui
 | F2 | <span style="color:orange">Supermode Network |
 | F3 | <span style="color:orange">Supermode Demand |
 | F4 | <span style="color:orange">Supermode Data |
-| F9 | <span style="color:orange">Edit viewport |
+| F9 | <span style="color:orange">Visualization settings |
 | F10 | <span style="color:orange">Open Options dialog |
 | F11 | <span style="color:orange">Set / Clear front element |
 | F12 | <span style="color:orange">About dialog |
@@ -64,7 +64,7 @@ In addition to the standard [sumo-gui shortcuts for moving the view](../sumo-gui
 | Ctrl + C | <span style="color:orange">Copy |
 | Ctrl + D | <span style="color:orange">Load demand elements |
 | Ctrl + H | <span style="color:orange">Load edge type elements |
-| Ctrl + I | <span style="color:orange">Edit visualization |
+| Ctrl + I | <span style="color:orange">Edit view port |
 | Ctrl + J | <span style="color:orange">Show junction shape |
 | Ctrl + K | <span style="color:orange">Load traffic lights |
 | Ctrl + L | <span style="color:orange">Save plain XML |

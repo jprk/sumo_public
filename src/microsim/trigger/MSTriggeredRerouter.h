@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -169,10 +169,15 @@ public:
     /// Returns the rerouting probability given by the user
     double getUserProbability() const;
 
-    double getWeight(SUMOVehicle& veh, const std::string param, const double defaultWeight) const;
+    // @brief return whether this moveReminder triggers parking reroute
+    bool isParkingRerouter() const {
+        return myHaveParkProbs;
+    }
 
-    MSParkingArea* rerouteParkingArea(const MSTriggeredRerouter::RerouteInterval* rerouteDef,
-                                      SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute) const;
+    static double getWeight(SUMOVehicle& veh, const std::string param, const double defaultWeight);
+
+    static MSParkingArea* rerouteParkingArea(const MSTriggeredRerouter::RerouteInterval* rerouteDef,
+            SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute);
 
     /// @brief return all rerouter instances
     static const std::map<std::string, MSTriggeredRerouter*>& getInstances() {
@@ -217,13 +222,13 @@ protected:
     typedef std::map<MSParkingArea*, ParkingParamMap_t, ComparatorIdLess> MSParkingAreaMap_t;
 
     /// determine attributes of candiate parking area for scoring
-    bool addParkValues(SUMOVehicle& veh, double brakeGap, bool newDestination,
-                       MSParkingArea* pa, double paOccupancy, double prob,
-                       SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
-                       MSParkingAreaMap_t& parkAreas,
-                       std::map<MSParkingArea*, ConstMSEdgeVector>& newRoutes,
-                       std::map<MSParkingArea*, ConstMSEdgeVector>& parkApproaches,
-                       ParkingParamMap_t& maxValues) const;
+    static bool addParkValues(SUMOVehicle& veh, double brakeGap, bool newDestination,
+                              MSParkingArea* pa, double paOccupancy, double prob,
+                              SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
+                              MSParkingAreaMap_t& parkAreas,
+                              std::map<MSParkingArea*, ConstMSEdgeVector>& newRoutes,
+                              std::map<MSParkingArea*, ConstMSEdgeVector>& parkApproaches,
+                              ParkingParamMap_t& maxValues);
 
 protected:
     /// @brief edges where vehicles are notified
@@ -263,6 +268,8 @@ protected:
     RandomDistributor<ConstMSRoutePtr> myCurrentRouteProb;
     //@}
 
+    /// whether this rerouter has loaded parkingReroute definitions
+    bool myHaveParkProbs;
 
     /// @brief special destination values
     static MSEdge mySpecialDest_keepDestination;

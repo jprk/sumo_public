@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -379,8 +379,14 @@ MSFrame::fillOptions() {
     oc.doRegister("collision.action", new Option_String("teleport"));
     oc.addDescription("collision.action", "Processing", TL("How to deal with collisions: [none,warn,teleport,remove]"));
 
+    oc.doRegister("intermodal-collision.action", new Option_String("warn"));
+    oc.addDescription("intermodal-collision.action", "Processing", TL("How to deal with collisions between vehicle and pedestrian: [none,warn,teleport,remove]"));
+
     oc.doRegister("collision.stoptime", new Option_String("0", "TIME"));
     oc.addDescription("collision.stoptime", "Processing", TL("Let vehicle stop for TIME before performing collision.action (except for action 'none')"));
+
+    oc.doRegister("intermodal-collision.stoptime", new Option_String("0", "TIME"));
+    oc.addDescription("intermodal-collision.stoptime", "Processing", TL("Let vehicle stop for TIME before performing intermodal-collision.action (except for action 'none')"));
 
     oc.doRegister("collision.check-junctions", new Option_Bool(false));
     oc.addDescription("collision.check-junctions", "Processing", TL("Enables collisions checks on junctions"));
@@ -483,7 +489,7 @@ MSFrame::fillOptions() {
     oc.addSynonyme("default.carfollowmodel", "carfollow.model");
 
     oc.doRegister("default.speeddev", new Option_Float(-1));
-    oc.addDescription("default.speeddev", "Processing", TL("Select default speed deviation. A negative value implies vClass specific defaults (0.1 for the default passenger class"));
+    oc.addDescription("default.speeddev", "Processing", TL("Select default speed deviation. A negative value implies vClass specific defaults (0.1 for the default passenger class)"));
 
     oc.doRegister("default.emergencydecel", new Option_String("default"));
     oc.addDescription("default.emergencydecel", "Processing", TL("Select default emergencyDecel value among ('decel', 'default', FLOAT) which sets the value either to the same as the deceleration value, a vClass-class specific default or the given FLOAT in m/s^2"));
@@ -544,8 +550,11 @@ MSFrame::fillOptions() {
     oc.doRegister("pedestrian.striping.walkingarea-detail", new Option_Integer(4));
     oc.addDescription("pedestrian.striping.walkingarea-detail", "Processing", TL("Generate INT intermediate points to smooth out lanes within the walkingarea"));
 
-    oc.doRegister("pedestrian.remote.address", new Option_String("localhost:9000"));
-    oc.addDescription("pedestrian.remote.address", "Processing", TL("The address (host:port) of the external simulation"));
+    oc.doRegister("pedestrian.jupedsim.step-length", new Option_String("0.01", "TIME"));
+    oc.addDescription("pedestrian.jupedsim.step-length", "Processing", TL("The update interval of the JuPedSim simulation (in seconds)"));
+
+    oc.doRegister("pedestrian.jupedsim.exit-tolerance", new Option_Float(1.));
+    oc.addDescription("pedestrian.jupedsim.exit-tolerance", "Processing", TL("The distance to the destination point considered as arrival (in meters)"));
 
     oc.doRegister("ride.stop-tolerance", new Option_Float(10.));
     oc.addDescription("ride.stop-tolerance", "Processing", TL("Tolerance to apply when matching pedestrian and vehicle positions on boarding at individual stops"));
@@ -686,7 +695,7 @@ MSFrame::fillOptions() {
     oc.addDescription("meso-recheck", "Mesoscopic", TL("Time interval for rechecking insertion into the next segment after failure"));
 
     // add rand options
-    RandHelper::insertRandOptions();
+    RandHelper::insertRandOptions(oc);
     oc.doRegister("thread-rngs", new Option_Integer(64));
     oc.addDescription("thread-rngs", "Random Number",
                       "Number of pre-allocated random number generators to ensure repeatable multi-threaded simulations (should be at least the number of threads for repeatable simulations).");
@@ -881,7 +890,7 @@ MSFrame::checkOptions() {
             if (end > 0 && saveT >= end) {
                 WRITE_WARNINGF(TL("The save-state time=% will not be used before simulation end at %."), timeStr, time2string(end));
             } else {
-                checkStepLengthMultiple(saveT, " for save-state.times", deltaT);
+                checkStepLengthMultiple(saveT, " for save-state.times", deltaT, begin);
             }
         } catch (ProcessError& e) {
             WRITE_ERROR("Invalid time '" + timeStr + "' for option 'save-state.times'. " + e.what());
@@ -996,7 +1005,7 @@ MSFrame::checkOptions() {
     }
 
     ok &= MSDevice::checkOptions(oc);
-    ok &= SystemFrame::checkOptions();
+    ok &= SystemFrame::checkOptions(oc);
 
     return ok;
 }

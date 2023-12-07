@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -236,6 +236,30 @@ public:
      */
     virtual bool isData() const;
 
+    /** @brief Returns the information whether this option is a sumo config file
+     *
+     * Returns false. Only Option_SumoConfig overrides this method returning true.
+     *
+     * @return true if the Option is an Option_SumoConfig, false otherwise
+     */
+    virtual bool isSumoConfig() const;
+
+    /** @brief Returns the information whether this option is an edge
+     *
+     * Returns false. Only Option_Edge overrides this method returning true.
+     *
+     * @return true if the Option is an Option_Edge, false otherwise
+     */
+    virtual bool isEdge() const;
+
+    /** @brief Returns the information whether this option is a vector of edges
+     *
+     * Returns false. Only Option_EdgeVector overrides this method returning true.
+     *
+     * @return true if the Option is an Option_EdgeVector, false otherwise
+     */
+    virtual bool isEdgeVector() const;
+
     /** @brief Returns the information whether the option may be set a further time
      *
      * This method returns whether the option was not already set using command line
@@ -280,6 +304,18 @@ public:
 
     /// @brief mark option as required
     void setRequired();
+
+    /// @brief check if option is positional
+    bool isPositional() const;
+
+    /// @brief mark option as positional
+    void setPositional();
+
+    /// @brief retrieve list separator
+    const std::string& getListSeparator() const;
+
+    /// @brief set list separator
+    void setListSeparator(const std::string& listSep);
 
     /// @brief Returns the subtopic to which this option belongs
     const std::string& getSubTopic() const;
@@ -334,6 +370,12 @@ private:
 
     /// @brief this option is required (needed for python tools)
     bool myRequired = false;
+
+    /// @brief this option is positional (needed for python tools)
+    bool myPositional = false;
+
+    /// @brief the list separator for this option (needed for python tools)
+    std::string myListSeparator = "";
 
     /// @brief The subtopic to which this option belongs
     std::string mySubTopic;
@@ -688,16 +730,6 @@ public:
      * @return true
      */
     bool isNetwork() const;
-
-    /** @brief Legacy method that returns the stored filenames as a comma-separated string.
-     *
-     * @see std::string Option::getString()
-     * @see std::string StringVector::getValueString()
-     * @return Returns comma-separated string of the stored filenames
-     * @deprecated Legacy method used when Option_Network was still derived from Option_String;
-     * not in line with code style of the Options sub-system.
-     */
-    std::string getString() const;
 };
 
 // -------------------------------------------------------------------------
@@ -720,16 +752,6 @@ public:
      * @return true
      */
     bool isAdditional() const;
-
-    /** @brief Legacy method that returns the stored filenames as a comma-separated string.
-     *
-     * @see std::string Option::getString()
-     * @see std::string StringVector::getValueString()
-     * @return Returns comma-separated string of the stored filenames
-     * @deprecated Legacy method used when Option_Additional was still derived from Option_String;
-     * not in line with code style of the Options sub-system.
-     */
-    std::string getString() const;
 };
 
 // -------------------------------------------------------------------------
@@ -752,16 +774,6 @@ public:
      * @return true
      */
     bool isRoute() const;
-
-    /** @brief Legacy method that returns the stored filenames as a comma-separated string.
-     *
-     * @see std::string Option::getString()
-     * @see std::string StringVector::getValueString()
-     * @return Returns comma-separated string of the stored filenames
-     * @deprecated Legacy method used when Option_Route was still derived from Option_String;
-     * not in line with code style of the Options sub-system.
-     */
-    std::string getString() const;
 };
 
 // -------------------------------------------------------------------------
@@ -777,21 +789,77 @@ public:
      */
     Option_Data(const std::string& value);
 
-    /** @brief Returns true, the information whether this option is a file name
+    /** @brief Returns true, the information whether this option is a data file
      *
      * Returns true.
      *
      * @return true
      */
     bool isData() const;
+};
 
-    /** @brief Legacy method that returns the stored filenames as a comma-separated string.
+// -------------------------------------------------------------------------
+// Option_SumoConfig
+// -------------------------------------------------------------------------
+
+class Option_SumoConfig : public Option_String {
+
+public:
+    /** @brief Constructor for an option with a default value
      *
-     * @see std::string Option::getString()
-     * @see std::string StringVector::getValueString()
-     * @return Returns comma-separated string of the stored filenames
-     * @deprecated Legacy method used when Option_Data was still derived from Option_String;
-     * not in line with code style of the Options sub-system.
+     * @param[in] value This option's default value
      */
-    std::string getString() const;
+    Option_SumoConfig(const std::string& value);
+
+    /** @brief Returns true, the information whether this option is a sumo config name
+     *
+     * Returns true.
+     *
+     * @return true
+     */
+    bool isSumoConfig() const;
+};
+
+// -------------------------------------------------------------------------
+// Option_Edge
+// -------------------------------------------------------------------------
+
+class Option_Edge : public Option_String {
+
+public:
+    /** @brief Constructor for an option with a default value
+     *
+     * @param[in] value This option's default value
+     */
+    Option_Edge(const std::string& value);
+
+    /** @brief Returns true, the information whether this option is a list of edges
+     *
+     * Returns true.
+     *
+     * @return true
+     */
+    bool isEdge() const;
+};
+
+// -------------------------------------------------------------------------
+// Option_EdgeVector
+// -------------------------------------------------------------------------
+
+class Option_EdgeVector : public Option_String {
+
+public:
+    /** @brief Constructor for an option with a default value
+     *
+     * @param[in] value This option's default value
+     */
+    Option_EdgeVector(const std::string& value);
+
+    /** @brief Returns true, the information whether this option is a list of edges
+     *
+     * Returns true.
+     *
+     * @return true
+     */
+    bool isEdgeVector() const;
 };

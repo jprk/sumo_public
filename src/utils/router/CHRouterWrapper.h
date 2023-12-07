@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -82,7 +82,7 @@ public:
 
     virtual void prohibit(const std::vector<E*>& toProhibit) {
         if (toProhibit.size() > 0) {
-            WRITE_WARNINGF("Routing algorithm CHWrapper does not support dynamic closing of edges%", "");
+            WRITE_WARNINGF(TL("Routing algorithm CHWrapper does not support dynamic closing of edges%"), "");
         }
     }
 

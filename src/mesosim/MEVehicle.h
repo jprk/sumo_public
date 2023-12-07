@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -180,18 +180,6 @@ public:
     double getBrakeGap(bool delayed = false) const {
         UNUSED_PARAMETER(delayed);
         return 0;
-    }
-
-    /** @brief replace the current parking area stop with a new stop with merge duration
-     */
-    bool replaceParkingArea(MSParkingArea* /* parkingArea = 0 */, std::string& /*errorMsg*/) {
-        throw ProcessError(TL("parkingZoneReroute not implemented for meso"));
-    }
-
-    /** @brief get the current parking area stop
-     */
-    MSParkingArea* getNextParkingArea() {
-        throw ProcessError(TL("parkingZoneReroute not implemented for meso"));
     }
 
     /** @brief Sets the (planned) time at which the vehicle leaves its current segment

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -30,7 +30,6 @@
 #include <utils/common/SUMOTime.h>
 #include <utils/common/ToString.h>
 #include <utils/common/StringTokenizer.h>
-#include <utils/options/OptionsCont.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <microsim/MSEdgeControl.h>
 #include <microsim/MSEdge.h>
@@ -453,21 +452,20 @@ MSMeanData::init() {
         }
     }
     int index = 0;
-    const bool laneQueue = OptionsCont::getOptions().getBool("meso-lane-queue");
     for (MSEdge* edge : myEdges) {
         myMeasures.push_back(std::vector<MeanDataValues*>());
         myEdgeIndex[edge] = index++;
         const std::vector<MSLane*>& lanes = edge->getLanes();
         if (MSGlobals::gUseMesoSim) {
             MeanDataValues* data;
-            if (laneQueue && !myAmEdgeBased) {
+            if (!myAmEdgeBased) {
                 for (MSLane* const lane : lanes) {
                     data = createValues(lane, lanes[0]->getLength(), false);
                     myMeasures.back().push_back(data);
                     MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
                     while (s != nullptr) {
                         s->addDetector(data, lane->getIndex());
-                        s->prepareDetectorForWriting(*data);
+                        s->prepareDetectorForWriting(*data, lane->getIndex());
                         s = s->getNextSegment();
                     }
                     data->reset();
@@ -570,7 +568,9 @@ MSMeanData::writeAggregated(OutputDevice& dev, SUMOTime startTime, SUMOTime stop
     for (const std::vector<MeanDataValues*>& edgeValues : myMeasures) {
         for (MeanDataValues* meanData : edgeValues) {
             meanData->addTo(*sumData);
-            meanData->reset();
+            if (!MSNet::getInstance()->skipFinalReset()) {
+                meanData->reset();
+            }
         }
     }
     if (MSGlobals::gUseMesoSim) {
@@ -595,17 +595,18 @@ MSMeanData::writeAggregated(OutputDevice& dev, SUMOTime startTime, SUMOTime stop
 void
 MSMeanData::writeEdge(OutputDevice& dev,
                       const std::vector<MeanDataValues*>& edgeValues,
-                      MSEdge* edge, SUMOTime startTime, SUMOTime stopTime) {
+                      const MSEdge* const edge, SUMOTime startTime, SUMOTime stopTime) {
     if (MSGlobals::gUseMesoSim) {
-        MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
-        for (MeanDataValues* data : edgeValues) {
-            ;
+        int idx = 0;
+        for (MeanDataValues* const data : edgeValues) {
+            MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
             while (s != nullptr) {
-                s->prepareDetectorForWriting(*data);
+                s->prepareDetectorForWriting(*data, myAmEdgeBased ? -1 : idx);
                 s = s->getNextSegment();
             }
+            idx++;
         }
-        if (edgeValues.size() == 1) {
+        if (myAmEdgeBased) {
             MeanDataValues* data = edgeValues.front();
             if (writePrefix(dev, *data, SUMO_TAG_EDGE, getEdgeID(edge))) {
                 data->write(dev, myWrittenAttributes, stopTime - startTime,
@@ -613,7 +614,9 @@ MSMeanData::writeEdge(OutputDevice& dev,
                             edge->getSpeedLimit(),
                             myPrintDefaults ? edge->getLength() / edge->getSpeedLimit() : -1.);
             }
-            data->reset(true);
+            if (!MSNet::getInstance()->skipFinalReset()) {
+                data->reset(true);
+            }
             return;
         }
     }
@@ -637,7 +640,9 @@ MSMeanData::writeEdge(OutputDevice& dev,
                 meanData.write(dev, myWrittenAttributes, stopTime - startTime, 1.f, meanData.getLane()->getSpeedLimit(),
                                myPrintDefaults ? meanData.getLane()->getLength() / meanData.getLane()->getSpeedLimit() : -1.);
             }
-            meanData.reset(true);
+            if (!MSNet::getInstance()->skipFinalReset()) {
+                meanData.reset(true);
+            }
         }
         if (writeCheck) {
             dev.closeTag();
@@ -649,13 +654,17 @@ MSMeanData::writeEdge(OutputDevice& dev,
                 meanData.write(dev, myWrittenAttributes, stopTime - startTime, (double)edge->getLanes().size(), edge->getSpeedLimit(),
                                myPrintDefaults ? edge->getLength() / edge->getSpeedLimit() : -1.);
             }
-            meanData.reset(true);
+            if (!MSNet::getInstance()->skipFinalReset()) {
+                meanData.reset(true);
+            }
         } else {
             MeanDataValues* sumData = createValues(nullptr, edge->getLength(), false);
             for (lane = edgeValues.begin(); lane != edgeValues.end(); ++lane) {
                 MeanDataValues& meanData = **lane;
                 meanData.addTo(*sumData);
-                meanData.reset();
+                if (!MSNet::getInstance()->skipFinalReset()) {
+                    meanData.reset();
+                }
             }
             if (writePrefix(dev, *sumData, SUMO_TAG_EDGE, getEdgeID(edge))) {
                 sumData->write(dev, myWrittenAttributes, stopTime - startTime, (double)edge->getLanes().size(), edge->getSpeedLimit(),
@@ -723,9 +732,10 @@ MSMeanData::writeXMLOutput(OutputDevice& dev,
         if (myAggregate) {
             writeAggregated(dev, startTime, stopTime);
         } else {
-            MSEdgeVector::iterator edge = myEdges.begin();
-            for (std::vector<std::vector<MeanDataValues*> >::const_iterator i = myMeasures.begin(); i != myMeasures.end(); ++i, ++edge) {
-                writeEdge(dev, (*i), *edge, startTime, stopTime);
+            MSEdgeVector::const_iterator edge = myEdges.begin();
+            for (const std::vector<MeanDataValues*>& measures : myMeasures) {
+                writeEdge(dev, measures, *edge, startTime, stopTime);
+                ++edge;
             }
         }
         dev.closeTag();

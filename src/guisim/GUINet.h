@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -360,6 +360,10 @@ public:
     /// @brief flush outputs once the simulation has reached its end
     void flushOutputsAtEnd();
 
+    virtual bool skipFinalReset() const override {
+        return mySkipFinalReset;
+    }
+
 private:
     /// @brief Initialises the tl-logic map and wrappers
     void initTLMap();
@@ -408,6 +412,8 @@ protected:
 
     /// @brief loaded edge data for visualization
     std::map<std::string, MSEdgeWeightsStorage*> myLoadedEdgeData;
+
+    bool mySkipFinalReset = false;
 
     /// @brief class for discovering edge attributes
     class DiscoverAttributes : public SUMOSAXHandler {

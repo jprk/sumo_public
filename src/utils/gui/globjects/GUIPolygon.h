@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -67,15 +67,11 @@ public:
     /// @brief Destructor
     ~TesselatedPolygon() {}
 
-    // @brief perform the tesselation / drawing
+    /// @brief perform the tesselation / drawing
     void drawTesselation(const PositionVector& shape) const;
 
     /// @brief id of the display list for the cached tesselation
     mutable std::vector<GLPrimitive> myTesselation;
-
-    PositionVector& getShapeRef() {
-        return myShape;
-    }
 };
 
 /*
@@ -178,10 +174,21 @@ public:
                                  const int alphaOverride = -1,
                                  const bool disableText = false);
 
+    inline void activate(bool isActive) {
+        myIsActive = isActive;
+    }
+
+    inline bool isActive(void) const {
+        return myIsActive;
+    }
+
 private:
     /// The mutex used to avoid concurrent updates of the shape
     mutable FXMutex myLock;
 
     /// @brief shape rotated on the centroid, if rotation is needed, nullptr otherwise
     PositionVector* myRotatedShape;
+
+    /// @brief Is the polygon will be drawn or not
+    bool myIsActive;
 };

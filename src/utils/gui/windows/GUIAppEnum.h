@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -40,19 +40,19 @@ enum {
     /// @{
 
     /// @brief hotkey for start simulation in SUMO and set editing mode additionals AND stops in netedit
-    MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP,
-    /// @brief hotkey for mode connecting lanes ABD person plan
-    MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN,
+    MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS,
+    /// @brief hotkey for mode connecting lanes AND container
+    MID_HOTKEY_C_MODE_CONNECT_CONTAINER,
     /// @brief hotkey for perform a single simulation step in SUMO and set delete mode in netedit
     MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE,
     /// @brief hotkey for mode adding edges AND edgeDatas
     MID_HOTKEY_E_MODE_EDGE_EDGEDATA,
-    /// @brief hotkey for mode container
-    MID_HOTKEY_G_MODE_CONTAINER,
     /// @brief hotkey for mode prohibition AND container plan
     MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN,
     /// @brief hotkey for mode inspecting object attributes
     MID_HOTKEY_I_MODE_INSPECT,
+    /// @brief hotkey for mode person plan
+    MID_HOTKEY_L_MODE_PERSONPLAN,
     /// @brief hotkey for mode moving element AND mean data
     MID_HOTKEY_M_MODE_MOVE_MEANDATA,
     /// @brief hotkey for mode creating polygons
@@ -63,10 +63,12 @@ enum {
     MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA,
     /// @brief hotkey for mode editing TLS AND Vehicle Types
     MID_HOTKEY_T_MODE_TLS_TYPE,
+    /// @brief hotkey for mode decal AND type distribution
+    MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION,
     /// @brief hotkey for mode create vehicles
     MID_HOTKEY_V_MODE_VEHICLE,
-    /// @brief hotkey for mode editing overhead wires
-    MID_HOTKEY_W_MODE_WIRE,
+    /// @brief hotkey for mode editing overhead wires AND route distributions
+    MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION,
     /// @brief hotkey for mode editing TAZ and TAZRel
     MID_HOTKEY_Z_MODE_TAZ_TAZREL,
 
@@ -412,7 +414,7 @@ enum {
     /// @{
 
     /// @brief Change coloring scheme - combo
-    MID_COLOURSCHEMECHANGE,
+    MID_COLORSCHEMECHANGE,
 
     /// @}
 
@@ -664,6 +666,16 @@ enum {
 
     /// @}
 
+    /// @name toolbar edot
+    /// @{
+
+    /// @brief load additionals in sumo-gui/netedit after press ctrl+T
+    MID_TOOLBAREDIT_LOADADDITIONALS,
+    /// @brief load demand in sumo-gui/netedit after press ctrl+T
+    MID_TOOLBAREDIT_LOADDEMAND,
+
+    /// @}
+
     /// @name groupBoxModule messages
     /// @{
     /// @brief collapse groupBoxModule
@@ -699,6 +711,8 @@ enum {
     MID_GNE_TOOLBARFILE_SAVENETWORK_AS,
     /// @brief save additionals as
     MID_GNE_TOOLBARFILE_SAVEADDITIONALS_AS,
+    /// @brief save JuPedSim as
+    MID_GNE_TOOLBARFILE_SAVEJUPEDSIMELEMENTS_AS,
     /// @brief reload additionals
     MID_GNE_TOOLBARFILE_RELOAD_ADDITIONALS,
     /// @brief save TLS Programs as
@@ -754,17 +768,25 @@ enum {
 
     /// @}
 
+    /// @name Toolbar view messages
+    /// @{
+
+    /// @brief set default view
+    MID_GNE_VIEW_DEFAULT,
+    /// @brief set juPedSim view
+    MID_GNE_VIEW_JUPEDSIM,
+
+    /// @}
+
     /// @name Toolbar windows messages
     /// @{
 
-    /// @brief load additionals in SUMO-GUI after press ctrl+T
-    MID_GNE_TOOLBAREDIT_LOADADDITIONALS,
-    /// @brief load demand in SUMO-GUI after press ctrl+T
-    MID_GNE_TOOLBAREDIT_LOADDEMAND,
     /// @brief compute path manager
     MID_GNE_TOOLBAREDIT_COMPUTEPATHMANAGER,
     /// @brief enable/disable computing after switchin between supermodes
     MID_GNE_TOGGLE_COMPUTE_NETWORK_DATA,
+    /// @brief switch time format
+    MID_GNE_TOGGLE_TIMEFORMAT,
 
     /// @}
 
@@ -897,7 +919,6 @@ enum {
     /// @name GNEFrame messages
     /// @{
 
-    // MID_GNE_WIZARD,
     /// @brief attribute added
     MID_GNE_ADD_ATTRIBUTE,
     /// @brief attribute removed
@@ -940,8 +961,12 @@ enum {
     MID_GNE_SET_ATTRIBUTE_BOOL,
     /// @brief attribute edited trough dialog
     MID_GNE_SET_ATTRIBUTE_DIALOG,
-    /// @brief inspect attribute vType/vTypeDistribution
-    MID_GNE_SET_ATTRIBUTE_VTYPE,
+    /// @brief inspect attribute parent element
+    MID_GNE_SET_ATTRIBUTE_INSPECTPARENT,
+    /// @brief edit attribute allow
+    MID_GNE_SET_ATTRIBUTE_ALLOW,
+    /// @brief edit attribute color
+    MID_GNE_SET_ATTRIBUTE_COLOR,
     /// @brief open parameters dialog
     MID_GNE_OPEN_PARAMETERS_DIALOG,
     /// @brief attribute selected using button (radio button or checkbox)
@@ -994,6 +1019,14 @@ enum {
     MID_GNE_SET_ZEROFRINGEPROB,
     /// @brief use current network/additional/route/edgedata
     MID_GNE_USE_CURRENT,
+    /// @brief protect all elements
+    MID_GNE_PROTECT_ALL,
+    /// @brief unprotect all elements
+    MID_GNE_UNPROTECT_ALL,
+    /// @brief move up
+    MID_GNE_MOVEUP,
+    /// @brief move down
+    MID_GNE_MOVEDOWN,
 
     /// @}
 
@@ -1319,12 +1352,34 @@ enum {
 
     /// @brief apply distance
     MID_GNE_ROUTE_APPLY_DISTANCE,
-    /// @brief transform vehicle to another vehicle type (ej: flow to trip)
-    MID_GNE_VEHICLE_TRANSFORM,
+    /// @brief transform vehicle to trip
+    MID_GNE_VEHICLE_TRANSFORM_TRIP,
+    /// @brief transform vehicle to flow
+    MID_GNE_VEHICLE_TRANSFORM_FLOW,
+    /// @brief transform vehicle to vehicle over route
+    MID_GNE_VEHICLE_TRANSFORM_VEHICLE,
+    /// @brief transform vehicle to flow over route
+    MID_GNE_VEHICLE_TRANSFORM_ROUTEFLOW,
+    /// @brief transform vehicle to vehicle over junctions
+    MID_GNE_VEHICLE_TRANSFORM_VEHICLE_EMBEDDED,
+    /// @brief transform vehicle to flow over junctions
+    MID_GNE_VEHICLE_TRANSFORM_FLOW_EMBEDDED,
+    /// @brief transform vehicle to trip over junctions
+    MID_GNE_VEHICLE_TRANSFORM_TRIP_JUNCTIONS,
+    /// @brief transform vehicle to flow over jucntions
+    MID_GNE_VEHICLE_TRANSFORM_FLOW_JUNCTIONS,
+    /// @brief transform vehicle to trip over TAZs
+    MID_GNE_VEHICLE_TRANSFORM_TRIP_TAZS,
+    /// @brief transform vehicle to flow over TAZs
+    MID_GNE_VEHICLE_TRANSFORM_FLOW_TAZS,
     /// @brief transform person to another person type (ej: person to personflow)
     MID_GNE_PERSON_TRANSFORM,
     /// @brief transform container to another container type (ej: container to containerflow)
     MID_GNE_CONTAINER_TRANSFORM,
+    /// @brief reverse current element
+    MID_GNE_REVERSE,
+    /// @brief add reverse element
+    MID_GNE_ADDREVERSE,
     /// @}
 
     /// @name Netedit Dialogs
@@ -1356,6 +1411,12 @@ enum {
     MID_GNE_BUTTON_ABORT,
     /// @brief back button
     MID_GNE_BUTTON_BACK,
+    /// @brief default button
+    MID_GNE_BUTTON_DEFAULT,
+    /// @brief add button
+    MID_GNE_BUTTON_ADD,
+    /// @brief remove button
+    MID_GNE_BUTTON_REMOVE,
 
     /// @}
 
@@ -1472,6 +1533,14 @@ enum {
 
     /// @}
 
+    /// @name GNEOptionsDialog
+    /// @{
+
+    /// @brief use search description
+    MID_GNE_SEARCH_USEDESCRIPTION,
+
+    /// @}
+
     /// @name MFXDecalsTable
     /// @{
 
@@ -1503,6 +1572,13 @@ enum {
     MID_GNE_UNDOLIST_UPDATE,
     /// @brief check if recomputing is needed
     MID_GNE_RECOMPUTINGNEEDED,
+
+    /// @}
+
+    /// @brief callback for MFXTextFieldSearch
+    /// @{
+
+    MID_MTEXTFIELDSEARCH_UPDATED,
 
     /// @}
 

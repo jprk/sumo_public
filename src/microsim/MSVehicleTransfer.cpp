@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -164,7 +164,8 @@ MSVehicleTransfer::checkInsertions(SUMOTime time) {
             MSLane* l = (nextEdge != nullptr ? e->getFreeLane(e->allowedLanes(*nextEdge, vclass), vclass, departPos) :
                          e->getFreeLane(nullptr, vclass, departPos));
             // handle teleporting vehicles, lane may be 0 because permissions were modified by a closing rerouter or TraCI
-            if (l != nullptr && l->freeInsertion(*(desc.myVeh), MIN2(l->getSpeedLimit(), desc.myVeh->getMaxSpeed()), 0, MSMoveReminder::NOTIFICATION_TELEPORT)) {
+            const bool busyBidi = l != nullptr && l->getBidiLane() != nullptr && l->getBidiLane()->getVehicleNumberWithPartials() > 0;
+            if (l != nullptr && !busyBidi && l->freeInsertion(*(desc.myVeh), MIN2(l->getSpeedLimit(), desc.myVeh->getMaxSpeed()), 0, MSMoveReminder::NOTIFICATION_TELEPORT)) {
                 if (!desc.myJumping) {
                     WRITE_WARNINGF(TL("Vehicle '%' ends teleporting on edge '%', time=%."), desc.myVeh->getID(), e->getID(), time2string(time));
                 }
@@ -188,7 +189,7 @@ MSVehicleTransfer::checkInsertions(SUMOTime time) {
                         continue;
                     }
                     // let the vehicle move to the next edge
-                    desc.myVeh->leaveLane(MSMoveReminder::NOTIFICATION_TELEPORT);
+                    desc.myVeh->leaveLane(MSMoveReminder::NOTIFICATION_TELEPORT_CONTINUATION);
                     // active move reminders (i.e. rerouters)
                     desc.myVeh->enterLaneAtMove(desc.myVeh->succEdge(1)->getLanes()[0], true);
                     // use current travel time to determine when to move the vehicle forward

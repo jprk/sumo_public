@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -1826,18 +1826,22 @@ NBEdgeCont::joinTramEdges(NBDistrictCont& dc, NBPTStopCont& sc, NBPTLineCont& lc
     // {targetEdge, laneIndex : tramEdge}
     std::map<std::pair<NBEdge*, int>, NBEdge*, MinLaneComparatorIdLess> matches;
 
-    for (NBEdge* edge : targetEdges) {
+    for (NBEdge* const edge : targetEdges) {
         Boundary bound = edge->getGeometry().getBoxBoundary();
         bound.grow(maxDist + edge->getTotalWidth());
         float min[2] = { static_cast<float>(bound.xmin()), static_cast<float>(bound.ymin()) };
         float max[2] = { static_cast<float>(bound.xmax()), static_cast<float>(bound.ymax()) };
-        std::set<const Named*> nearby;
-        Named::StoringVisitor visitor(nearby);
+        std::set<const Named*> near;
+        Named::StoringVisitor visitor(near);
         tramTree.Search(min, max, visitor);
-        for (const Named* namedEdge : nearby) {
+        // the nearby set is actually just re-sorting according to the id to make the tests comparable
+        std::set<NBEdge*, ComparatorIdLess> nearby;
+        for (const Named* namedEdge : near) {
+            nearby.insert(const_cast<NBEdge*>(static_cast<const NBEdge*>(namedEdge)));
+        }
+        for (NBEdge* const tramEdge : nearby) {
             // find a continous stretch of tramEdge that runs along one of the
             // lanes of the road edge
-            NBEdge* tramEdge = const_cast<NBEdge*>(dynamic_cast<const NBEdge*>(namedEdge));
             const PositionVector& tramShape = tramEdge->getGeometry();
             double minEdgeDist = maxDist + 1;
             int minLane = -1;
@@ -2073,6 +2077,18 @@ NBEdgeCont::computeAngles() {
     for (auto item : myEdges) {
         item.second->computeAngle();
     }
+}
+
+
+std::set<std::string>
+NBEdgeCont::getUsedTypes() const {
+    std::set<std::string> result;
+    for (auto item : myEdges) {
+        if (item.second->getTypeID() != "") {
+            result.insert(item.second->getTypeID());
+        }
+    }
+    return result;
 }
 
 /****************************************************************************/

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -35,7 +35,7 @@
 //#define DEBUG_FIND_WAY
 //#define DEBUG_CONSTRUCT_ROUTE
 
-#define DEBUGLINEID "1986097"
+#define DEBUGLINEID ""
 #define DEBUGSTOPID ""
 
 // ===========================================================================
@@ -78,6 +78,22 @@ NBPTLineCont::process(NBEdgeCont& ec, NBPTStopCont& sc, bool routeOnly) {
                 // map stops to ways, using the constructed route for loose stops
                 reviseStops(line, ec, sc);
             }
+        }
+        // fix circular line if necessary
+        if (line->getStops().size() > 1
+                && line->getStops().front() == line->getStops().back()
+                && line->getRoute().size() > 1
+                && line->getRoute().front() != line->getRoute().back()) {
+            // we need to duplicate either the first or the last edge depending on the stop locations
+            const std::string firstStopEdge = line->getStops().front()->getEdgeId();
+            const std::string lastStopEdge = line->getStops().back()->getEdgeId();
+            std::vector<NBEdge*> edges = line->getRoute();
+            if (firstStopEdge == edges.back()->getID()) {
+                edges.insert(edges.begin(), edges.back());
+            } else if (lastStopEdge == edges.front()->getID()) {
+                edges.push_back(edges.front());
+            }
+            line->setEdges(edges);
         }
         line->deleteInvalidStops(ec, sc);
         //line->deleteDuplicateStops();
@@ -293,29 +309,42 @@ void NBPTLineCont::constructRoute(NBPTLine* pTLine, const NBEdgeCont& cont) {
     std::vector<NBEdge*> currentWayMinusEdges;
     for (auto it3 = pTLine->getWays().begin(); it3 != pTLine->getWays().end(); it3++) {
 
+        int foundForward = 0;
         if (cont.retrieve(*it3, false) != nullptr) {
             currentWayEdges.push_back(cont.retrieve(*it3, false));
+            foundForward++;
         } else {
             int i = 0;
             while (cont.retrieve(*it3 + "#" + std::to_string(i), true) != nullptr) {
                 if (cont.retrieve(*it3 + "#" + std::to_string(i), false)) {
                     currentWayEdges.push_back(cont.retrieve(*it3 + "#" + std::to_string(i), false));
+                    foundForward++;
                 }
                 i++;
             }
         }
 
+        int foundReverse = 0;
         if (cont.retrieve("-" + *it3, false) != nullptr) {
             currentWayMinusEdges.push_back(cont.retrieve("-" + *it3, false));
+            foundReverse++;
         } else {
             int i = 0;
             while (cont.retrieve("-" + *it3 + "#" + std::to_string(i), true) != nullptr) {
                 if (cont.retrieve("-" + *it3 + "#" + std::to_string(i), false)) {
                     currentWayMinusEdges.insert(currentWayMinusEdges.begin(),
                                                 cont.retrieve("-" + *it3 + "#" + std::to_string(i), false));
+                    foundReverse++;
                 }
                 i++;
             }
+        }
+        bool fakeMinus = false;
+        if (foundReverse == 0 && foundForward > 0 && isRailway(pTLine->getVClass())) {
+            // rail tracks may be used in both directions and are often not tagged as such.
+            // This can be repaired later with option --railway.topology.repair
+            currentWayMinusEdges.insert(currentWayMinusEdges.begin(), currentWayEdges.rbegin(), currentWayEdges.rbegin() + foundForward);
+            fakeMinus = true;
         }
 #ifdef DEBUG_CONSTRUCT_ROUTE
         if (pTLine->getLineID() == DEBUGLINEID) {
@@ -351,7 +380,11 @@ void NBPTLineCont::constructRoute(NBPTLine* pTLine, const NBEdgeCont& cont) {
                 continue;
             } else {
                 edges.insert(edges.end(), currentWayMinusEdges.begin(), currentWayMinusEdges.end());
-                last = currentWayMinusEdges.back()->getToNode();
+                if (fakeMinus) {
+                    last = currentWayMinusEdges.back()->getFromNode();
+                } else {
+                    last = currentWayMinusEdges.back()->getToNode();
+                }
             }
         } else if (first == currentWayEdges.front()->getFromNode() && first != nullptr) {
             edges.insert(edges.end(), prevWayMinusEdges.begin(), prevWayMinusEdges.end());

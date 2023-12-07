@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -127,6 +127,9 @@ public:
 
     /// @brief set individual junction model paramete (not type related)
     void setJunctionModelParameter(const std::string& key, const std::string& value);
+
+    /// @brief set individual carFollow model parameters (not type related)
+    void setCarFollowModelParameter(const std::string& key, const std::string& value);
 
     /** @brief Returns the current route
      * @return The route the vehicle uses
@@ -619,6 +622,17 @@ public:
         return !myStops.empty();
     }
 
+    /** @brief replace the current parking area stop with a new stop with merge duration
+     */
+    bool replaceParkingArea(MSParkingArea* parkingArea, std::string& errorMsg);
+
+    /** @brief get the upcoming parking area stop or nullptr
+     */
+    MSParkingArea* getNextParkingArea();
+
+    /** @brief get the current  parking area stop or nullptr */
+    MSParkingArea* getCurrentParkingArea();
+
     /// @brief departure position where the vehicle fits fully onto the edge (if possible)
     double basePos(const MSEdge* edge) const;
 
@@ -785,6 +799,16 @@ public:
     */
     double getStateOfCharge() const;
 
+    /** @brief Returns actual relative state of charge of battery (-)
+    * @return The actual relative battery state of charge, normalised to the maximum battery capacity.
+    */
+    double getRelativeStateOfCharge() const;
+
+    /** @brief Returns the energy charged to the battery in the current time step (Wh)
+    * @return The energy charged to the battery in the current time step.
+    */
+    double getChargedEnergy() const;
+
     /** @brief Returns actual current (A) of ElecHybrid device
     * RICE_CHECK: Is this the current consumed from the overhead wire or the current driving the powertrain of the vehicle?
     * RICE_REV_JS: It is the current drawn from the overhead wire (value if the vehicle is not connected to overhead wire?)
@@ -837,11 +861,27 @@ public:
         }
 
 
+        /// @brief return the current routing mode
+        double getExtraImpatience() const {
+            return myExtraImpatience;
+        }
+
+        /** @brief Sets routing behavior
+         * @param[in] value an enum value controlling the different modes
+         */
+        void setExtraImpatience(double value) {
+            myExtraImpatience = value;
+        }
+
+
         SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouterTT(const int rngIndex, SUMOVehicleClass svc) const;
 
     protected:
         ///@brief routing mode (see TraCIConstants.h)
         int myRoutingMode;
+
+        /// @brief dynamic impatience offset
+        double myExtraImpatience = 0;
 
     };
 
@@ -1038,7 +1078,14 @@ private:
 
     static NumericalID myCurrentNumericalIndex;
 
-    void initJunctionModelParams();
+    /// @brief init model parameters from generic params
+    void initTransientModelParams();
+
+    /// @brief reconstruct flow id from vehicle id
+    std::string getFlowID() const;
+
+    /// @brief remove route at the end of the simulation
+    void checkRouteRemoval();
 
 private:
     /// invalidated assignment operator

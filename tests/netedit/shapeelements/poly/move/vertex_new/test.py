@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -35,17 +35,19 @@ netedit.shapeMode()
 netedit.changeElement("poly")
 
 # create Shape
-netedit.createSquaredPoly(referencePosition, 372, 144, 200, True)
+netedit.createSquaredShape(referencePosition, 500, 331, 600, True)
 
 # go to move mode
 netedit.moveMode()
 
-# move new vertex Shape
-netedit.moveElement(referencePosition, 325, 130, 325, 319)
+# move vertex Shape
+netedit.moveElement(referencePosition, 500, 331, 500, 425)
+
+# move vertex Shape
+netedit.moveElement(referencePosition, 497, 45, 593, 45)
 
 # Check undo redo
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

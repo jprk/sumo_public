@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -37,6 +37,8 @@ print("lane count", traci.lane.getIDCount())
 laneID = "2fi_0"
 print("examining", laneID)
 print("length", traci.lane.getLength(laneID))
+print("angle (with default relative position)", traci.lane.getAngle(laneID))
+print("angle (with some relative position)", traci.lane.getAngle(laneID, 10))
 print("maxSpeed", traci.lane.getMaxSpeed(laneID))
 print("width", traci.lane.getWidth(laneID))
 print("allowed", traci.lane.getAllowed(laneID))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2007-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -94,9 +94,9 @@ def getOptions(args=None):
 
     # keep old presets from before integration of common options
     options.nolegend = not options.legend
-    options.blind = not options.show
-    if options.output is None:
-        options.output = "plot.png"
+    if options.show:
+        sys.stderr.write("Option --show is now set by default and will be removed in the future." +
+                         "Use --blind to disable the plot window\n")
 
     if options.filterRoute is not None:
         options.filterRoute = options.filterRoute.split(',')

@@ -14,11 +14,10 @@
 /.project
 /.pydevproject
 /.vs
-# build dir 
+/.vim
+# build dir
 /clang*
-/cmake-build*
-/cmake_build*
-/build/*
+/build
 /out
 # bin dir
 /bin/TraCITestClient*
@@ -56,6 +55,7 @@
 /bin/libsumofmi2.dylib
 # data dir
 /data/locale
+/data/templates
 /data/po/*.pot
 /data/proj
 # docs dir, make artifacts

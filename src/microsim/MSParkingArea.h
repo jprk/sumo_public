@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2015-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -76,7 +76,8 @@ public:
                   double begPos, double endPos, int capacity,
                   double width, double length, double angle, const std::string& name,
                   bool onRoad,
-                  const std::string& departPos);
+                  const std::string& departPos,
+                  bool lefthand);
 
     /// @brief Destructor
     virtual ~MSParkingArea();

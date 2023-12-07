@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -132,7 +132,7 @@ Person::getLanePosition(const std::string& personID) {
 }
 
 std::vector<TraCIReservation>
-Person::getTaxiReservations(int stateFilter) {
+Person::getTaxiReservations(int onlyNew) {
     std::vector<TraCIReservation> result;
     MSDispatch* dispatcher = MSDevice_Taxi::getDispatchAlgorithm();
     if (dispatcher != nullptr) {
@@ -141,16 +141,16 @@ Person::getTaxiReservations(int stateFilter) {
             throw TraCIException("device.taxi.dispatch-algorithm 'traci' has not been loaded");
         }
         for (Reservation* res : dispatcher->getReservations()) {
-            if (filterReservation(stateFilter, res, result)) {
+            if (filterReservation(onlyNew, res, result)) {
                 if (res->state == Reservation::NEW) {
                     res->state = Reservation::RETRIEVED;
                 }
             }
         }
-        const bool includeRunning = stateFilter == 0 || (stateFilter & (Reservation::ASSIGNED | Reservation::ONBOARD)) != 0;
+        const bool includeRunning = onlyNew == 0 || (onlyNew & (Reservation::ASSIGNED | Reservation::ONBOARD)) != 0;
         if (includeRunning) {
             for (const Reservation* res : dispatcher->getRunningReservations()) {
-                filterReservation(stateFilter, res, result);
+                filterReservation(onlyNew, res, result);
             }
         }
     }
@@ -177,8 +177,8 @@ Person::splitTaxiReservation(std::string reservationID, const std::vector<std::s
 }
 
 bool
-Person::filterReservation(int stateFilter, const Reservation* res, std::vector<libsumo::TraCIReservation>& reservations) {
-    if (stateFilter != 0 && (stateFilter & res->state) == 0) {
+Person::filterReservation(int onlyNew, const Reservation* res, std::vector<libsumo::TraCIReservation>& reservations) {
+    if (onlyNew != 0 && (onlyNew & res->state) == 0) {
         return false;
     }
     std::vector<std::string> personIDs;
@@ -470,9 +470,14 @@ Person::getPersonCapacity(const std::string& personID) {
 
 double
 Person::getBoardingDuration(const std::string& personID) {
-    return STEPS2TIME(getPerson(personID)->getVehicleType().getLoadingDuration(true));
+    return STEPS2TIME(getPerson(personID)->getVehicleType().getBoardingDuration(true));
 }
 
+
+double
+Person::getImpatience(const std::string& personID) {
+    return getPerson(personID)->getImpatience();
+}
 
 
 void
@@ -926,7 +931,7 @@ Person::moveToXY(const std::string& personID, const std::string& edgeID, const d
                 try {
                     tmp.move2side(-lanePosLat); // moved to left
                 } catch (ProcessError&) {
-                    WRITE_WARNINGF(TL("Could not determine position on lane '% at lateral position %."), lane->getID(), toString(-lanePosLat));
+                    WRITE_WARNINGF(TL("Could not determine position on lane '%' at lateral position %."), lane->getID(), toString(-lanePosLat));
                 }
                 //std::cout << " lane=" << lane->getID() << " posLat=" << lanePosLat << " shape=" << lane->getShape() << " tmp=" << tmp << " tmpDist=" << tmp.distance2D(pos) << "\n";
                 if (tmp.distance2D(pos) > perpDist) {
@@ -1088,6 +1093,19 @@ Person::setImperfection(const std::string& personID, double imperfection) {
 
 
 void
+Person::setBoardingDuration(const std::string& personID, double boardingDuration)  {
+    Helper::getPerson(personID)->getSingularType().setBoardingDuration(TIME2STEPS(boardingDuration));
+}
+
+
+void
+Person::setImpatience(const std::string& personID, double impatience)  {
+    Helper::getVehicle(personID)->getSingularType().setImpatience(impatience);
+}
+
+
+
+void
 Person::setTau(const std::string& personID, double tau) {
     getPerson(personID)->getSingularType().setTau(tau);
 }
@@ -1195,6 +1213,8 @@ Person::handleVariable(const std::string& objID, const int variable, VariableWra
             return wrapper->wrapColor(objID, variable, getColor(objID));
         case VAR_WAITING_TIME:
             return wrapper->wrapDouble(objID, variable, getWaitingTime(objID));
+        case VAR_IMPATIENCE:
+            return wrapper->wrapDouble(objID, variable, getImpatience(objID));
         case VAR_TYPE:
             return wrapper->wrapString(objID, variable, getTypeID(objID));
         case VAR_SPEED_FACTOR:

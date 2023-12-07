@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -39,11 +39,19 @@
 // ===========================================================================
 
 FXDEFMAP(GNEDeleteFrame::DeleteOptions) DeleteOptionsMap[] = {
-    FXMAPFUNC(SEL_COMMAND, MID_GNE_SET_ATTRIBUTE, GNEDeleteFrame::DeleteOptions::onCmdSetOption),
+    FXMAPFUNC(SEL_COMMAND,  MID_GNE_SET_ATTRIBUTE,  GNEDeleteFrame::DeleteOptions::onCmdSetOption),
+};
+
+FXDEFMAP(GNEDeleteFrame::ProtectElements) ProtectElementsMap[] = {
+    FXMAPFUNC(SEL_COMMAND,  MID_GNE_PROTECT_ALL,    GNEDeleteFrame::ProtectElements::onCmdProtectAll),
+    FXMAPFUNC(SEL_UPDATE,   MID_GNE_PROTECT_ALL,    GNEDeleteFrame::ProtectElements::onUpdProtectAll),
+    FXMAPFUNC(SEL_COMMAND,  MID_GNE_UNPROTECT_ALL,  GNEDeleteFrame::ProtectElements::onCmdUnprotectAll),
+    FXMAPFUNC(SEL_UPDATE,   MID_GNE_UNPROTECT_ALL,  GNEDeleteFrame::ProtectElements::onUpdUnprotectAll),
 };
 
 // Object implementation
-FXIMPLEMENT(GNEDeleteFrame::DeleteOptions,      MFXGroupBoxModule, DeleteOptionsMap,      ARRAYNUMBER(DeleteOptionsMap))
+FXIMPLEMENT(GNEDeleteFrame::DeleteOptions,      MFXGroupBoxModule, DeleteOptionsMap,    ARRAYNUMBER(DeleteOptionsMap))
+FXIMPLEMENT(GNEDeleteFrame::ProtectElements,    MFXGroupBoxModule, ProtectElementsMap,  ARRAYNUMBER(ProtectElementsMap))
 
 // ---------------------------------------------------------------------------
 // GNEDeleteFrame::DeleteOptions - methods
@@ -228,6 +236,10 @@ GNEDeleteFrame::SubordinatedElements::openWarningDialog(const std::string& type,
 
 GNEDeleteFrame::ProtectElements::ProtectElements(GNEDeleteFrame* deleteFrameParent) :
     MFXGroupBoxModule(deleteFrameParent, TL("Protect Elements")) {
+    // Create "Protect all" Button
+    GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Protect all"), "", TL("Protect all elements"), nullptr, this, MID_GNE_PROTECT_ALL, GUIDesignButton);
+    // Create "Unprotect all" Button
+    GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Unprotect all"), "", TL("Unprotect all elements"), nullptr, this, MID_GNE_UNPROTECT_ALL, GUIDesignButton);
     // Create checkbox for enable/disable delete only geomtery point(by default, disabled)
     myProtectAdditionals = new FXCheckButton(getCollapsableFrame(), TL("Protect additional elements"), deleteFrameParent, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
     myProtectAdditionals->setCheck(TRUE);
@@ -269,15 +281,57 @@ GNEDeleteFrame::ProtectElements::protectGenericDatas() const {
     return (myProtectGenericDatas->getCheck() == TRUE);
 }
 
+
+long
+GNEDeleteFrame::ProtectElements::onCmdProtectAll(FXObject*, FXSelector, void*) {
+    myProtectAdditionals->setCheck(TRUE);
+    myProtectTAZs->setCheck(TRUE);
+    myProtectDemandElements->setCheck(TRUE);
+    myProtectGenericDatas->setCheck(TRUE);
+    return 1;
+}
+
+
+long
+GNEDeleteFrame::ProtectElements::onCmdUnprotectAll(FXObject*, FXSelector, void*) {
+    myProtectAdditionals->setCheck(FALSE);
+    myProtectTAZs->setCheck(FALSE);
+    myProtectDemandElements->setCheck(FALSE);
+    myProtectGenericDatas->setCheck(FALSE);
+    return 1;
+}
+
+
+long
+GNEDeleteFrame::ProtectElements::onUpdProtectAll(FXObject* sender, FXSelector, void*) {
+    if (myProtectAdditionals->getCheck() && myProtectTAZs->getCheck() &&
+            myProtectDemandElements->getCheck() && myProtectGenericDatas->getCheck()) {
+        return sender->handle(this, FXSEL(SEL_COMMAND, ID_DISABLE), nullptr);
+    } else {
+        return sender->handle(this, FXSEL(SEL_COMMAND, ID_ENABLE), nullptr);
+    }
+}
+
+
+long
+GNEDeleteFrame::ProtectElements::onUpdUnprotectAll(FXObject* sender, FXSelector, void*) {
+    if (!myProtectAdditionals->getCheck() && !myProtectTAZs->getCheck() &&
+            !myProtectDemandElements->getCheck() && !myProtectGenericDatas->getCheck()) {
+        return sender->handle(this, FXSEL(SEL_COMMAND, ID_DISABLE), nullptr);
+    } else {
+        return sender->handle(this, FXSEL(SEL_COMMAND, ID_ENABLE), nullptr);
+    }
+}
+
 // ===========================================================================
 // method definitions
 // ===========================================================================
 
 GNEDeleteFrame::GNEDeleteFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
-    GNEFrame(viewParent, viewNet, "Delete") {
-    // create delete options modul
+    GNEFrame(viewParent, viewNet, TL("Delete")) {
+    // create delete options module
     myDeleteOptions = new DeleteOptions(this);
-    // create protect elements modul
+    // create protect elements module
     myProtectElements = new ProtectElements(this);
 }
 
@@ -304,8 +358,8 @@ GNEDeleteFrame::removeSelectedAttributeCarriers() {
     const auto& attributeCarriers = myViewNet->getNet()->getAttributeCarriers();
     // first check if there is additional to remove
     if (selectedACsToDelete()) {
-        // remove all selected attribute carrier susing the following parent-child sequence
-        myViewNet->getUndoList()->begin(GUIIcon::MODEDELETE, "remove selected items");
+        // remove all selected attribute carriers using the following parent-child sequence
+        myViewNet->getUndoList()->begin(GUIIcon::MODEDELETE, TL("remove selected items"));
         // disable update geometry
         myViewNet->getNet()->disableUpdateGeometry();
         // delete selected attribute carriers depending of current supermode
@@ -438,7 +492,7 @@ GNEDeleteFrame::selectedACsToDelete() const {
             if (junction.second->isAttributeCarrierSelected()) {
                 return true;
             }
-            // due we iterate over all junctions, only it's neccesary iterate over incoming edges
+            // since we iterate over all junctions, it's only necessary to iterate over incoming edges
             for (const auto& edge : junction.second->getGNEIncomingEdges()) {
                 if (edge->isAttributeCarrierSelected()) {
                     return true;

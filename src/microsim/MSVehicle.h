@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -461,15 +461,22 @@ public:
 
     /** @brief Get the vehicle's lateral position on the edge of the given lane
      * (or its current edge if lane == 0)
+     * @return The lateral position of the vehicle (in m distance between left
+     * side of vehicle and right side of edge
+     */
+    double getLeftSideOnEdge(const MSLane* lane = 0) const;
+
+    /** @brief Get the vehicle's lateral position on the edge of the given lane
+     * (or its current edge if lane == 0)
      * @return The lateral position of the vehicle (in m distance between right
-     * side of vehicle and ride side of edge
+     * side of vehicle and right side of edge
      */
     double getRightSideOnEdge(const MSLane* lane = 0) const;
 
     /** @brief Get the vehicle's lateral position on the edge of the given lane
      * (or its current edge if lane == 0)
      * @return The lateral position of the vehicle (in m distance between center
-     * of vehicle and ride side of edge
+     * of vehicle and right side of edge
      */
     double getCenterOnEdge(const MSLane* lane = 0) const;
 
@@ -586,6 +593,8 @@ public:
         return myLane;
     }
 
+    // @brief return the lane on which the back of this vehicle resides
+    const MSLane* getBackLane() const;
 
     /** @brief Returns the maximal speed for the vehicle on its current lane (including speed factor and deviation,
      *         i.e., not necessarily the allowed speed limit)
@@ -802,7 +811,7 @@ public:
 
     /** @brief set tentative lane and position during insertion to ensure that
      * all cfmodels work (some of them require veh->getLane() to return a valid lane)
-     * Once the vehicle is sucessfully inserted the lane is set again (see enterLaneAtInsertion)
+     * Once the vehicle is successfully inserted the lane is set again (see enterLaneAtInsertion)
      */
     void setTentativeLaneAndPosition(MSLane* lane, double pos, double posLat = 0);
 
@@ -846,6 +855,9 @@ public:
 
     /// @brief whether this vehicle has its back (and no its front) on the given edge
     bool onFurtherEdge(const MSEdge* edge) const;
+
+    /// @brief whether this vehicle is driving against lane
+    bool isBidiOn(const MSLane* lane) const;
 
     /// @name strategical/tactical lane choosing methods
     /// @{
@@ -988,27 +1000,13 @@ public:
         return myCFVariables;
     }
 
-    /// @name vehicle stops definitions and i/o
-    //@{
-
-
-
-    /** @brief replace the current parking area stop with a new stop with merge duration
-     */
-    bool replaceParkingArea(MSParkingArea* parkingArea, std::string& errorMsg);
-
-    /** @brief get the upcoming parking area stop or nullptr
-     */
-    MSParkingArea* getNextParkingArea();
-
-    /** @brief get the current  parking area stop or nullptr */
-    MSParkingArea* getCurrentParkingArea();
-
     /** @brief Whether this vehicle is equipped with a MSDriverState
      */
     inline bool hasDriverState() const {
         return myDriverState != nullptr;
     }
+    /// @name vehicle stops definitions and i/o
+    //@{
 
     /// @brief Returns the remaining stop duration for a stopped vehicle or 0
     SUMOTime remainingStopDuration() const;
@@ -1712,6 +1710,9 @@ public:
      */
     void replaceVehicleType(MSVehicleType* type);
 
+    /// @brief get distance for coming to a stop (used for rerouting checks)
+    double getBrakeGap(bool delayed = false) const;
+
     /// @name state io
     //@{
 
@@ -1825,9 +1826,6 @@ protected:
     /// updates LaneQ::nextOccupation and myCurrentLaneInBestLanes
     void updateOccupancyAndCurrentBestLane(const MSLane* startLane);
 
-    /// @brief get distance for coming to a stop (used for rerouting checks)
-    double getBrakeGap(bool delayed = false) const;
-
     /// @brief ensure that a vehicle-relative position is not invalid
     Position validatePosition(Position result, double offset = 0) const;
 
@@ -1845,6 +1843,14 @@ protected:
 
     /// @brief optionally return an upper bound on speed to stay within the schedule
     double slowDownForSchedule(double vMinComfortable) const;
+
+    /// @brief perform lateral z interpolation in elevated networks
+    void interpolateLateralZ(Position& pos, double offset, double posLat) const;
+
+    /** @brief get the distance from the start of this lane to the start of the next normal lane
+     * (or 0 if this lane is a normal lane)
+     */
+    double getDistanceToLeaveJunction() const;
 
 protected:
 
@@ -2031,14 +2037,24 @@ protected:
                        DriveProcessItem* const lastLink,
                        double& v, double& vLinkPass) const;
 
+    /// @brief handle with transitions
+    bool brakeForOverlap(const MSLink* link, const MSLane* lane) const;
+
 public:
     void adaptToJunctionLeader(const std::pair<const MSVehicle*, double> leaderInfo,
                                const double seen, DriveProcessItem* const lastLink,
                                const MSLane* const lane, double& v, double& vLinkPass,
                                double distToCrossing = -1) const;
 
-    /// @brief decide whether a red (or yellow light) may be ignore
+    void adaptToOncomingLeader(const std::pair<const MSVehicle*, double> leaderInfo,
+                               DriveProcessItem* const lastLink,
+                               double& v, double& vLinkPass) const;
+
+    /// @brief decide whether a red (or yellow light) may be ignored
     bool ignoreRed(const MSLink* link, bool canBrake) const;
+
+    /// @brief decide whether a given foe object may be ignored
+    bool ignoreFoe(const SUMOTrafficObject* foe) const;
 
     /// @brief maximum acceleration to consider a vehicle as 'waiting' at low speed
     inline double accelThresholdForWaiting() const {
@@ -2076,9 +2092,6 @@ protected:
     void checkLinkLeaderCurrentAndParallel(const MSLink* link, const MSLane* lane, double seen,
                                            DriveProcessItem* const lastLink, double& v, double& vLinkPass, double& vLinkWait, bool& setRequest) const;
 
-
-    // @brief return the lane on which the back of this vehicle resides
-    const MSLane* getBackLane() const;
 
     /** @brief updates the vehicles state, given a next value for its speed.
      *         This value can be negative in case of the ballistic update to indicate

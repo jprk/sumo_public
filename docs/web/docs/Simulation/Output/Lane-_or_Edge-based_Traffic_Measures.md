@@ -39,7 +39,7 @@ The defined file can either be loaded with sumo option **--additional-files FILE
 
 !!! note
     attribute 'id' is only used to distinguish outputs if there are multiple edgeData definitions. The value is otherwise arbitrary and does not influence written outputs.
-    
+
 
 For additional attributes see the table below.
 
@@ -50,7 +50,7 @@ For additional attributes see the table below.
 | period (alias freq) | int (time)                | The aggregation period the values the detector collects shall be summed up. If not given the whole time interval from begin to end (see below) is aggregated.                                                                               |
 | begin          | int (time)                     | The time to start writing (intervals starting before this time are discarded). If not given, the simulation's begin is used.                                                                                                                |
 | end            | int (time)                     | The time to end writing (intervals starting at or after this time are discarded). If not given the simulation's end is used.                                                                                                                |
-| excludeEmpty   | string (true, false, defaults) | If set to true, edges/lanes which were not use by a vehicle during this period will not be written; *default: false*. If set to "defaults" default values for travel time and speed depending on edge length and maximum speed get printed. |
+| excludeEmpty   | string (true, false, defaults) | If set to true, edges/lanes which were not used by a vehicle during this period will not be written; *default: false*. If set to "defaults" default values for travel time and speed depending on edge length and maximum speed get printed. |
 | withInternal   | bool                           | If set, junction internal edges/lanes will be written as well; *default: false*.                                                                                                                                                            |
 | maxTraveltime  | float (time)                   | The maximum traveltime in seconds to write if only very small movements occur; *default 100000*.                                                                                                                                            |
 | minSamples     | float (time)                   | The minimum total number of seconds vehicles have to be on the edge / lane to consider it non-empty; *default: \>0*.                                                                                                                        |
@@ -140,7 +140,7 @@ values are reported in one line.
 Both the edge-dump and the lane-dump are computing the values the same
 way: every vehicle move - even those with v=0 - is recorded and saved
 during the interval. After the interval has passed, these values are
-written into the file after being normalized. 
+written into the file after being normalized.
 
 With regard to edgeData `density`, the values are normalized by the number of the
 collected vehicle movements and the length of the lane. For `laneDensity` they are also normalized by the
@@ -254,7 +254,7 @@ vehicle only once but they include/exclude some special cases.
 ## Visualization / Plotting
 
 - [sumo-gui](../../sumo-gui.md#visualizing_edge-related_data) can load edgeData files and color network edges/lanes according to any of it's attributes
-- [sumo-gui](../../sumo-gui.md#edgelane_visualisation_settings) can color edges/lanes by any of the attributse being collected while the simulation is running
+- [sumo-gui](../../sumo-gui.md#edgelane_visualisation_settings) can color edges/lanes by any of the attributes being collected while the simulation is running
 - [netedit](../../Netedit/editModesData.md) can be used to load/view/edit edgeData files
 - The [mpl_dump_onNet.py](../../Tools/Visualization.md#mpl_dump_onnetpy)
   script can display values of this output as a colored net (and

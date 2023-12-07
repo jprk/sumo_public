@@ -2,7 +2,7 @@
 <div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
     <div class="navbar-header">
         <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Contents">
-            <span class="fa fa-angle-down"></span>
+            <span class="fa-solid fa-angle-down"></span>
         </button>
     </div>
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary toc-scroll toc">
@@ -25,27 +25,8 @@
     </div>
 
     <div class="admonition conference" style="position: sticky; margin-top: 20px; margin-bottom:10px;">
-        <p>visit <a href="https://eclipse.org/sumo">eclipse.org/sumo</a></p>
+        <p>visit <a class="no-arrow-link" href="https://eclipse.dev/sumo">eclipse.dev/sumo</a></p>
     </div>
-    <a href="https://www.eclipse.org/sumo/conference" class="no-arrow-link text-decoration-none" style="color: inherit">
-        <div class="card">
-          <div class="card-header">
-            <img src="https://www.eclipse.org/sumo/images/banner_2023.png" style="width: 100%">
-          </div>
-          <div class="card-body text-center" style="color: #212427">
-            See you in Berlin, in just <strong id="remaining-days"></strong> days!
-            <br>
-            <small>(Keep in mind that the registration will close earlier, on April 25th)</small>
-          </div>
-        </div>
-      </a>
-
-      <script>
-        let conference_date = new Date('05/02/2023');
-        let current_date = new Date();
-        var remainingDays = Math.ceil((conference_date.getTime() - current_date.getTime()) / (1000 * 3600 * 24));
-        document.getElementById("remaining-days").innerHTML = remainingDays;
-      </script>
 
 </div>
 {%- endif %}

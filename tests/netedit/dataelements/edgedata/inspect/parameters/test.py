@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -41,13 +41,13 @@ netedit.createDataSet()
 netedit.createDataInterval()
 
 # create edgeData
-netedit.leftClick(referencePosition, 400, 120)
+netedit.leftClick(referencePosition, 265, 180)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect edgeData
-netedit.leftClick(referencePosition, 400, 120)
+netedit.leftClick(referencePosition, 265, 180)
 
 # check double parameters
 netedit.checkDoubleParameters(referencePosition, netedit.attrs.edgeData.inspect.parameters, False, 0, 30)

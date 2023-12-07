@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -15,6 +15,7 @@
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
+/// @author  Mirko Barthauer
 /// @date    Fri, 29.04.2005
 ///
 // Variables, methods, and tools for internal time representation
@@ -65,7 +66,7 @@ string2time(const std::string& r) {
 
 
 std::string
-time2string(SUMOTime t) {
+time2string(SUMOTime t, bool humanReadable) {
     std::ostringstream oss;
     if (t < 0) {
         oss << "-";
@@ -77,7 +78,7 @@ time2string(SUMOTime t) {
         t = (t + scale / 2) / scale;
     }
     const SUMOTime second = TIME2STEPS(1) / scale;
-    if (gHumanReadableTime) {
+    if (humanReadable) {
         const SUMOTime minute = 60 * second;
         const SUMOTime hour = 60 * minute;
         const SUMOTime day = 24 * hour;
@@ -106,6 +107,13 @@ time2string(SUMOTime t) {
     return oss.str();
 }
 
+
+std::string
+time2string(SUMOTime t) {
+    return time2string(t, gHumanReadableTime);
+}
+
+
 std::string
 elapsedMs2string(long long int t) {
     if (gHumanReadableTime) {
@@ -120,9 +128,16 @@ elapsedMs2string(long long int t) {
     }
 }
 
-bool checkStepLengthMultiple(const SUMOTime t, const std::string& error, SUMOTime deltaT) {
-    if (t % deltaT != 0) {
-        WRITE_WARNING("The given time value " + time2string(t) + " is not a multiple of the step length " + time2string(deltaT) + error + ".")
+bool checkStepLengthMultiple(const SUMOTime t, const std::string& error, SUMOTime deltaT, SUMOTime begin) {
+    if (begin % deltaT == 0) {
+        if (t % deltaT != 0) {
+            WRITE_WARNING("The given time value " + time2string(t) + " is not a multiple of the step length " + time2string(deltaT) + error + ".")
+        }
+    } else {
+        if ((t - begin) % deltaT != 0) {
+            WRITE_WARNING("The given time value " + time2string(t) + " is not reached with step length " + time2string(deltaT)
+                          + " and begin time " + time2string(begin) + error + ".")
+        }
     }
     // next line used to fix build
     return false;

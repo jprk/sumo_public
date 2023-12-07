@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -27,6 +27,7 @@ import pyautogui
 import time
 import pyperclip
 import attributesEnum as attrs  # noqa
+import testPositions as positions  # noqa
 
 # define delay before every operation
 DELAY_KEY = 0.2
@@ -320,8 +321,8 @@ def Popen(extraParameters):
     neteditCall = [_NETEDIT_APP]
 
     # check if a netedit config must be loaded
-    if os.path.exists(os.path.join(_TEXTTEST_SANDBOX, "netedit.neteditcfg")):
-        neteditCall += ['-c', os.path.join(_TEXTTEST_SANDBOX, "netedit.neteditcfg")]
+    if os.path.exists(os.path.join(_TEXTTEST_SANDBOX, "netedit.netecfg")):
+        neteditCall += ['-c', os.path.join(_TEXTTEST_SANDBOX, "netedit.netecfg")]
 
     # add extra parameters
     neteditCall += extraParameters
@@ -342,7 +343,7 @@ def getReferenceMatch(neProcess, makeScrenshot):
         # wait for reference
         time.sleep(DELAY_REFERENCE)
     # capture screen and search reference
-        positionOnScreen = pyautogui.locateOnScreen(_REFERENCE_PNG, minSearchTime=3)
+        positionOnScreen = pyautogui.locateOnScreen(_REFERENCE_PNG, minSearchTime=3, confidence=0.95)
     except Exception as e:
         # we cannot specify the exception here because some versions of pyautogui use one and some don't
         print(e)
@@ -702,6 +703,7 @@ def openNetworkAs(waitTime=2):
     # wait for saving
     time.sleep(waitTime)
 
+
 def saveNetwork(referencePosition, clickOverReference=False, posX=0, posY=0):
     """
     @brief save network
@@ -860,6 +862,7 @@ def changeEditMode(key):
     # Configs
 #################################################
 
+
 def openNeteditConfigAs(waitTime=2):
     """
     @brief load netedit config using dialog
@@ -870,7 +873,7 @@ def openNeteditConfigAs(waitTime=2):
     typeTwoKeys('alt', 'f')
     pasteIntoTextField(_TEXTTEST_SANDBOX)
     typeEnter()
-    pasteIntoTextField("netedit_loadedmanually.neteditcfg")
+    pasteIntoTextField("netedit_loadedmanually.netecfg")
     typeEnter()
     # wait for saving
     time.sleep(waitTime)
@@ -920,7 +923,7 @@ def saveNeteditConfigAs(referencePosition):
     typeTwoKeys('alt', 'f')
     pasteIntoTextField(_TEXTTEST_SANDBOX)
     typeEnter()
-    pasteIntoTextField("netedit_savedmanually.neteditcfg")
+    pasteIntoTextField("netedit_savedmanually.netecfg")
     typeEnter()
     # wait for saving
     time.sleep(DELAY_SAVING)
@@ -1067,6 +1070,16 @@ def modifyAllowDisallowValue(numTabs, overlapped):
     typeSpace()
 
 
+def checkUndoRedo(referencePosition):
+    """
+    @brief Check undo-redo
+    """
+    # Check undo
+    undo(referencePosition, 9)
+    # Check redo
+    redo(referencePosition, 9)
+
+
 def checkParameters(referencePosition, attributeNumber, overlapped):
     """
     @brief Check generic parameters
@@ -1091,10 +1104,8 @@ def checkParameters(referencePosition, attributeNumber, overlapped):
     modifyAttribute(attributeNumber, "key1=valueInvalid%;%$<>$$%|key2=value2|key3=value3", overlapped)
     # Change generic parameters with a valid value
     modifyAttribute(attributeNumber, "keyFinal1=value1|keyFinal2=value2|keyFinal3=value3", overlapped)
-    # Check undo
-    undo(referencePosition, 8)
-    # Check redo
-    redo(referencePosition, 8)
+    # Check undoRedo
+    checkUndoRedo(referencePosition)
 
 
 def checkDoubleParameters(referencePosition, attributeNumber, overlapped, posX=0, posY=0):
@@ -1121,10 +1132,8 @@ def checkDoubleParameters(referencePosition, attributeNumber, overlapped, posX=0
     modifyAttribute(attributeNumber, "key1=valueInvalid%;%$<>$$%|key2=2|key3=3", overlapped)
     # Change generic parameters with a valid value
     modifyAttribute(attributeNumber, "keyFinal1=1|keyFinal2=2|keyFinal3=3", overlapped)
-    # Check undo (including load/creation)
-    undo(referencePosition, 8)
-    # Check redo
-    redo(referencePosition, 8)
+    # Check undoRedo
+    checkUndoRedo(referencePosition)
 
 #################################################
     # Move mode
@@ -1212,7 +1221,7 @@ def crossingClearEdges(useSelectedEdges=False, thereIsSelectedEdges=False):
     """
     # focus current frame
     focusOnFrame()
-    if(useSelectedEdges and thereIsSelectedEdges):
+    if (useSelectedEdges and thereIsSelectedEdges):
         # jump to clear button
         for _ in range(attrs.crossing.clearEdgesSelected):
             typeTab()
@@ -1230,7 +1239,7 @@ def crossingInvertEdges(useSelectedEdges=False, thereIsSelectedEdges=False):
     """
     # focus current frame
     focusOnFrame()
-    if(useSelectedEdges and thereIsSelectedEdges):
+    if (useSelectedEdges and thereIsSelectedEdges):
         # jump to clear button
         for _ in range(attrs.crossing.clearEdgesSelected):
             typeTab()
@@ -1570,7 +1579,7 @@ def containerMode():
     """
     @brief change to container mode
     """
-    typeKey('g')
+    typeKey('c')
     # wait for gl debug
     time.sleep(DELAY_CHANGEMODE)
 
@@ -1646,7 +1655,7 @@ def personPlanMode():
     """
     @brief change to person mode
     """
-    typeKey('c')
+    typeKey('l')
     # wait for gl debug
     time.sleep(DELAY_CHANGEMODE)
 
@@ -1662,6 +1671,21 @@ def changePersonPlanMode(personPlan):
         typeTab()
     # paste the new containerPlan
     pasteIntoTextField(personPlan)
+    # type enter to save change
+    typeEnter()
+
+
+def selectPerson(person):
+    """
+    @brief select person in containerPlan
+    """
+    # focus current frame
+    focusOnFrame()
+    # jump to person plan
+    for _ in range(2):
+        typeTab()
+    # paste the new containerPlan
+    pasteIntoTextField(person)
     # type enter to save change
     typeEnter()
 
@@ -1870,53 +1894,14 @@ def changeRemoveOnlyGeometryPoint(referencePosition):
     typeSpace()
 
 
-def changeProtectAdditionalElements(referencePosition):
+def protectElements(referencePosition):
     """
-    @brief Enable or disable 'automatically delete Additionals'
+    @brief Protect or unprotect delete elements
     """
     # select delete mode again to set mode
     deleteMode()
     # jump to checkbox
     for _ in range(4):
-        typeTab()
-    # type SPACE to change value
-    typeSpace()
-
-
-def changeProtectTAZElements(referencePosition):
-    """
-    @brief Enable or disable 'protect TAZ elements'
-    """
-    # select delete mode again to set mode
-    deleteMode()
-    # jump to checkbox
-    for _ in range(5):
-        typeTab()
-    # type SPACE to change value
-    typeSpace()
-
-
-def changeProtectDemandElements(referencePosition):
-    """
-    @brief Enable or disable 'protect demand elements'
-    """
-    # select delete mode again to set mode
-    deleteMode()
-    # jump to checkbox
-    for _ in range(6):
-        typeTab()
-    # type SPACE to change value
-    typeSpace()
-
-
-def changeProtectDataElements(referencePosition):
-    """
-    @brief Enable or disable 'protect data elements'
-    """
-    # select delete mode again to set mode
-    deleteMode()
-    # jump to checkbox
-    for _ in range(7):
         typeTab()
     # type SPACE to change value
     typeSpace()
@@ -2482,7 +2467,7 @@ def shapeMode():
     time.sleep(DELAY_CHANGEMODE)
 
 
-def createSquaredPoly(referencePosition, positionx, positiony, size, close):
+def createSquaredShape(referencePosition, positionx, positiony, size, close):
     """
     @brief Create squared Polygon in position with a certain size
     """
@@ -2502,7 +2487,7 @@ def createSquaredPoly(referencePosition, positionx, positiony, size, close):
     typeEnter()
 
 
-def createRectangledPoly(referencePosition, positionx, positiony, sizex, sizey, close):
+def createRectangledShape(referencePosition, positionx, positiony, sizex, sizey, close):
     """
     @brief Create rectangle Polygon in position with a certain size
     """
@@ -2522,7 +2507,7 @@ def createRectangledPoly(referencePosition, positionx, positiony, sizex, sizey, 
     typeEnter()
 
 
-def createLinePoly(referencePosition, positionx, positiony, sizex, sizey, close):
+def createLineShape(referencePosition, positionx, positiony, sizex, sizey, close):
     """
     @brief Create line Polygon in position with a certain size
     """
@@ -2612,43 +2597,6 @@ def TAZMode():
     # wait for gl debug
     time.sleep(DELAY_CHANGEMODE)
 
-
-def createSquaredTAZ(referencePosition, positionx, positiony, size, close):
-    """
-    @brief Create squared TAZ in position with a certain size
-    """
-    # focus current frame
-    focusOnFrame()
-    # start draw
-    typeEnter()
-    # create TAZ
-    leftClick(referencePosition, positionx, positiony)
-    leftClick(referencePosition, positionx, positiony - (size / 2))
-    leftClick(referencePosition, positionx - (size / 2), positiony - (size / 2))
-    leftClick(referencePosition, positionx - (size / 2), positiony)
-    # check if TAZ has to be closed
-    if (close is True):
-        leftClick(referencePosition, positionx, positiony)
-    # finish draw
-    typeEnter()
-
-
-def createLineTAZ(referencePosition, positionx, positiony, sizex, sizey, close):
-    """
-    @brief Create line TAZ in position with a certain size
-    """
-    # focus current frame
-    focusOnFrame()
-    # start draw
-    typeEnter()
-    # create TAZ
-    leftClick(referencePosition, positionx, positiony)
-    leftClick(referencePosition, positionx - (sizex / 2), positiony - (sizey / 2))
-    # check if TAZ has to be closed
-    if (close is True):
-        leftClick(referencePosition, positionx, positiony)
-    # finish draw
-    typeEnter()
 
 #################################################
     # datas

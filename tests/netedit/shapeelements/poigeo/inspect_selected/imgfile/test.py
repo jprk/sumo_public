@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -38,20 +38,19 @@ netedit.selectionInvert()
 netedit.inspectMode()
 
 # inspect first POI
-netedit.leftClick(referencePosition, 149, 53)
+netedit.leftClick(referencePosition, 451, 119)
 
 # Change parameter 8 with a non valid value (invalid)
-netedit.modifyAttribute(netedit.attrs.POIGEO.inspectSelection.imgFile, "%$$%%%%%", True)
+netedit.modifyAttribute(netedit.attrs.poiGeo.inspectSelection.imgFile, "%$$%%%%%", False)
 
 # Change parameter 8 with a non valid value (no exist)
-netedit.modifyAttribute(netedit.attrs.POIGEO.inspectSelection.imgFile, "paris.ico", True)
+netedit.modifyAttribute(netedit.attrs.poiGeo.inspectSelection.imgFile, "paris.ico", False)
 
 # Change parameter 8 with a valid value (valid)
-netedit.modifyAttribute(netedit.attrs.POIGEO.inspectSelection.imgFile, "berlin_icon.ico", True)
+netedit.modifyAttribute(netedit.attrs.poiGeo.inspectSelection.imgFile, "berlin_icon.ico", False)
 
 # Check undos and redos
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

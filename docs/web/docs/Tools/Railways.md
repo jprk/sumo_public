@@ -4,7 +4,7 @@ title: Railways
 
 # generateRailSignalConstraints.py
 
-Generate [constraints that enforce a given railway schedule](../Simulation/Railways.md#schedule_constraints). 
+Generate [constraints that enforce a given railway schedule](../Simulation/Railways.md#schedule_constraints).
 Example:
 
 ```
@@ -89,10 +89,10 @@ arrival and until times:
 
 Given two vehicles A and B which stop at the same location, if A arrives at the
 stop later than B, but A also leaves earlier than B, then B is "overtaken" by A.
-All subsquent stops of B are marked as invalid and will not
+All subsequent stops of B are marked as invalid and will not
 participate in constraint generation. If the stop where overtaking took place
 doesn't have a 'started' value (which implies that the original schedule is
-inconsistent), then this stop is also mared as invalid.
+inconsistent), then this stop is also marked as invalid.
 
 If two vehicles have a 'parking'-stop with the same 'until' time at the same
 location, their stops will also be marked as invalid since the simulation cannot
@@ -100,7 +100,7 @@ enforce an order in this case (and local desired order is ambiguous).
 
 Another kind of inconsistency is indicated by 'ended' times that lie ahead of
 the 'until' time of the respective stop by a significant margin (--.
-This situation may corrrespond to the actions of
+This situation may correspond to the actions of
 a real-life dispatcher. In such a case, the must not be constraint any further
 since it is no longer running according to the schedule.
 
@@ -121,7 +121,7 @@ as an updated schedule (replacing arrival and until). However, if an order
 reversal was detected for a train, no constraints based on the old schedule
 should be generated anymore (stops are ignored after started,ended information ends)
 
-## Further Options 
+## Further Options
 If constraints shall be modified during the simulation (traci.trafficlight.swapConstraints)
 it may be useful to add additional constraints which would otherwise be
 redundant. This can be accomplished by setting option --redundant with a time
@@ -146,10 +146,14 @@ Options:
 
 - **--xml-output FILE** (**-o**): write statistics to FILE in xml format
 - **--statistic-type** (**-t**): select among statistics to be computed
-  - 'd' : depart delay
-  - 'a' : arrival delay
+  - 'd' : stop depart delay
+  - 'a' : stop arrival delay
   - 's' : stop duration difference
-  
+  - 'de' : stop depart delay compared to 'ended' in input
+  - 'as' : stop arrival delay compared to recorded 'started' in input
+  - 't'  : traveltime according to schedule versus traveltime in simulation (between stops)
+  - 'T'  : traveltime according to recording versus traveltime in simulation (between stops)
+
 - **--group-by** (**-g**): group results by one or more attributes (vehID,tripId,stopID,priorStop)
 - **--group-statistic-type** (**-T**): select among statistics over the group values (i.e. to compare the groups by their mean depart delay). permitted values are mean, median, min, max
 - **--histogram FLOAT** (**-i**): add a histogram with the given bin width

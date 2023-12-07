@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -233,7 +233,7 @@ def main(args=None):
 
         # drawing the legend, at least for the colors
         norm = matplotlib.colors.LogNorm if options.logColors else matplotlib.colors.Normalize
-        sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(options.colormap),
+        sm = plt.cm.ScalarMappable(cmap=helpers.getColorMap(options),
                                    norm=norm(vmin=minColorValue, vmax=maxColorValue))
 
         if sys.version_info.major < 3:

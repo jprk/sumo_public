@@ -1,4 +1,4 @@
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2018-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -156,14 +156,9 @@ executeMove = simulation.executeMove
 _libsumo_step = simulation.step
 
 
-def simulationStep(step=0):
-    _libsumo_step(step)
-    result = []
-    for domain in DOMAINS:
-        result += [(k, v) for k, v in domain.getAllSubscriptionResults().items()]
-        result += [(k, v) for k, v in domain.getAllContextSubscriptionResults().items()]
-    _stepManager.manageStepListeners(step)
-    return result
+def simulationStep(time=0.):
+    _libsumo_step(time)
+    _stepManager.manageStepListeners(time)
 
 
 simulation.step = simulationStep

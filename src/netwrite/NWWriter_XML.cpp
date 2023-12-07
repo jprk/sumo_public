@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -53,7 +53,7 @@ NWWriter_XML::writeNetwork(const OptionsCont& oc, const std::string& prefix, NBN
     if (prefix != "") {
         writeNodes(oc, prefix, nb.getNodeCont());
         if (nb.getTypeCont().size() > 0) {
-            writeTypes(prefix, nb.getTypeCont());
+            writeTypes(prefix, nb.getEdgeCont(), nb.getTypeCont());
         }
         writeEdgesAndConnections(oc, prefix, nb.getNodeCont(), nb.getEdgeCont());
         writeTrafficLights(prefix, nb.getTLLogicCont(), nb.getEdgeCont());
@@ -172,12 +172,13 @@ NWWriter_XML::writeNodes(const OptionsCont& oc, const std::string& prefix, NBNod
 
 
 void
-NWWriter_XML::writeTypes(const std::string& prefix, NBTypeCont& tc) {
+NWWriter_XML::writeTypes(const std::string& prefix, NBEdgeCont& ec, NBTypeCont& tc) {
     OutputDevice& device = OutputDevice::getDevice(prefix + ".typ.xml");
     std::map<SumoXMLAttr, std::string> attrs;
     attrs[SUMO_ATTR_VERSION] = toString(NETWORK_VERSION);
     device.writeXMLHeader("types", "types_file.xsd", attrs);
-    tc.writeEdgeTypes(device);
+    std::set<std::string> usedTypes = ec.getUsedTypes();
+    tc.writeEdgeTypes(device, usedTypes);
     device.close();
 }
 

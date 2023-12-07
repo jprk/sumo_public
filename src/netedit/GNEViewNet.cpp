@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -27,6 +27,7 @@
 #include <netedit/elements/additional/GNEPOI.h>
 #include <netedit/elements/additional/GNEPoly.h>
 #include <netedit/elements/additional/GNETAZ.h>
+#include <netedit/elements/demand/GNERoute.h>
 #include <netedit/elements/network/GNEWalkingArea.h>
 #include <netedit/elements/network/GNEConnection.h>
 #include <netedit/elements/network/GNECrossing.h>
@@ -43,13 +44,16 @@
 #include <netedit/frames/demand/GNEPersonFrame.h>
 #include <netedit/frames/demand/GNEPersonPlanFrame.h>
 #include <netedit/frames/demand/GNERouteFrame.h>
+#include <netedit/frames/demand/GNERouteDistributionFrame.h>
 #include <netedit/frames/demand/GNEStopFrame.h>
 #include <netedit/frames/demand/GNETypeFrame.h>
+#include <netedit/frames/demand/GNETypeDistributionFrame.h>
 #include <netedit/frames/demand/GNEVehicleFrame.h>
 #include <netedit/frames/network/GNEAdditionalFrame.h>
 #include <netedit/frames/network/GNEConnectorFrame.h>
 #include <netedit/frames/network/GNECreateEdgeFrame.h>
 #include <netedit/frames/network/GNECrossingFrame.h>
+#include <netedit/frames/network/GNEDecalFrame.h>
 #include <netedit/frames/network/GNEProhibitionFrame.h>
 #include <netedit/frames/network/GNEShapeFrame.h>
 #include <netedit/frames/network/GNETAZFrame.h>
@@ -86,20 +90,21 @@ FXDEFMAP(GNEViewNet) GNEViewNetMap[] = {
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_F3_SUPERMODE_DEMAND,  GNEViewNet::onCmdSetSupermode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_F4_SUPERMODE_DATA,    GNEViewNet::onCmdSetSupermode),
     // Modes
-    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP,    GNEViewNet::onCmdSetMode),
-    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN,                GNEViewNet::onCmdSetMode),
+    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS,    GNEViewNet::onCmdSetMode),
+    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_CONTAINER,                 GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE,       GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_E_MODE_EDGE_EDGEDATA,                     GNEViewNet::onCmdSetMode),
-    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_G_MODE_CONTAINER,                         GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN,         GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_I_MODE_INSPECT,                           GNEViewNet::onCmdSetMode),
+    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_L_MODE_PERSONPLAN,                        GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_M_MODE_MOVE_MEANDATA,                     GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_P_MODE_POLYGON_PERSON,                    GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA,        GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_S_MODE_STOPSIMULATION_SELECT,             GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_T_MODE_TLS_TYPE,                          GNEViewNet::onCmdSetMode),
+    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION,            GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_V_MODE_VEHICLE,                           GNEViewNet::onCmdSetMode),
-    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE,                              GNEViewNet::onCmdSetMode),
+    FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION,            GNEViewNet::onCmdSetMode),
     FXMAPFUNC(SEL_COMMAND, MID_HOTKEY_Z_MODE_TAZ_TAZREL,                        GNEViewNet::onCmdSetMode),
     // Network view options
     FXMAPFUNC(SEL_COMMAND, MID_GNE_NETWORKVIEWOPTIONS_TOGGLEGRID,               GNEViewNet::onCmdToggleShowGrid),
@@ -211,9 +216,15 @@ FXDEFMAP(GNEViewNet) GNEViewNetMap[] = {
     FXMAPFUNC(SEL_COMMAND, MID_GNE_POLYGON_DELETE_GEOMETRY_POINT,   GNEViewNet::onCmdDeleteGeometryPoint),
     // POIs
     FXMAPFUNC(SEL_COMMAND, MID_GNE_POI_TRANSFORM,   GNEViewNet::onCmdTransformPOI),
+    // Demand elements
+    FXMAPFUNC(SEL_COMMAND, MID_GNE_REVERSE,     GNEViewNet::onCmdReverse),
+    FXMAPFUNC(SEL_COMMAND, MID_GNE_ADDREVERSE,  GNEViewNet::onCmdAddReverse),
     // Geometry Points
     FXMAPFUNC(SEL_COMMAND, MID_GNE_CUSTOM_GEOMETRYPOINT,    GNEViewNet::onCmdSetCustomGeometryPoint),
     FXMAPFUNC(SEL_COMMAND, MID_GNE_RESET_GEOMETRYPOINT,     GNEViewNet::onCmdResetEndPoints),
+    // toolbar views
+    FXMAPFUNC(SEL_COMMAND,  MID_GNE_VIEW_DEFAULT,   GNEViewNet::onCmdSetNeteditView),
+    FXMAPFUNC(SEL_COMMAND,  MID_GNE_VIEW_JUPEDSIM,  GNEViewNet::onCmdSetNeteditView),
     // IntervalBar
     FXMAPFUNC(SEL_COMMAND, MID_GNE_INTERVALBAR_GENERICDATATYPE,     GNEViewNet::onCmdIntervalBarGenericDataType),
     FXMAPFUNC(SEL_COMMAND, MID_GNE_INTERVALBAR_DATASET,             GNEViewNet::onCmdIntervalBarDataSet),
@@ -250,6 +261,7 @@ GNEViewNet::GNEViewNet(FXComposite* tmpParent, FXComposite* actualParent, GUIMai
     myVehicleOptions(this),
     myVehicleTypeOptions(this),
     mySaveElements(this),
+    myTimeFormat(this),
     mySelectingArea(this),
     myEditNetworkElementShapes(this),
     myLockManager(this),
@@ -320,12 +332,11 @@ GNEViewNet::buildViewToolBars(GUIGlChildWindow* v) {
     // build coloring tools
     {
         for (auto it_names : gSchemeStorage.getNames()) {
-            v->getColoringSchemesCombo()->appendItem(it_names.c_str());
+            v->getColoringSchemesCombo()->appendIconItem(it_names.c_str());
             if (it_names == myVisualizationSettings->name) {
                 v->getColoringSchemesCombo()->setCurrentItem(v->getColoringSchemesCombo()->getNumItems() - 1);
             }
         }
-        v->getColoringSchemesCombo()->setNumVisible(MAX2(5, (int)gSchemeStorage.getNames().size() + 1));
     }
     // for junctions
     new MFXButtonTooltip(v->getLocatorPopup(), myViewParent->getGNEAppWindows()->getStaticTooltipMenu(),
@@ -347,6 +358,10 @@ GNEViewNet::buildViewToolBars(GUIGlChildWindow* v) {
     new MFXButtonTooltip(v->getLocatorPopup(), myViewParent->getGNEAppWindows()->getStaticTooltipMenu(),
                          std::string("\t") + TL("Locate Persons") + std::string("\t") + TL("Locate a person within the network. (Shift+P)"),
                          GUIIconSubSys::getIcon(GUIIcon::LOCATEPERSON), v, MID_HOTKEY_SHIFT_P_LOCATEPERSON, GUIDesignButtonPopup);
+    // for container
+    new MFXButtonTooltip(v->getLocatorPopup(), myViewParent->getGNEAppWindows()->getStaticTooltipMenu(),
+                         std::string("\t") + TL("Locate Containers") + std::string("\t") + TL("Locate a container within the network. (Shift+C)"),
+                         GUIIconSubSys::getIcon(GUIIcon::LOCATECONTAINER), v, MID_HOTKEY_SHIFT_C_LOCATECONTAINER, GUIDesignButtonPopup);
     // for routes
     new MFXButtonTooltip(v->getLocatorPopup(), myViewParent->getGNEAppWindows()->getStaticTooltipMenu(),
                          std::string("\t") + TL("Locate Route") + std::string("\t") + TL("Locate a route within the network. (Shift+R)"),
@@ -389,8 +404,53 @@ GNEViewNet::updateViewNet() const {
 
 
 void
-GNEViewNet::forceSupermodeNetwork() {
+GNEViewNet::forceSupemodeNetwork() {
     myEditModes.setSupermode(Supermode::NETWORK, true);
+}
+
+
+void
+GNEViewNet::viewUpdated() {
+    if (myEditModes.isJuPedSimView()) {
+        // hide data button (and adjust width)
+        myEditModes.dataButton->hide();
+        // check network modes
+        switch (myEditModes.networkEditMode) {
+            case NetworkEditMode::NETWORK_CONNECT:
+            case NetworkEditMode::NETWORK_TLS:
+            case NetworkEditMode::NETWORK_PROHIBITION:
+            case NetworkEditMode::NETWORK_WIRE:
+            case NetworkEditMode::NETWORK_DECAL:
+                myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_INSPECT);
+                break;
+            default:
+                break;
+        }
+        // check demand modes
+        switch (myEditModes.demandEditMode) {
+            case DemandEditMode::DEMAND_MOVE:
+            case DemandEditMode::DEMAND_VEHICLE:
+            case DemandEditMode::DEMAND_STOP:
+            case DemandEditMode::DEMAND_CONTAINER:
+            case DemandEditMode::DEMAND_CONTAINERPLAN:
+                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_INSPECT);
+                break;
+            default:
+                break;
+        }
+        // go to network mode if we're in data mode
+        if (myEditModes.isCurrentSupermodeData()) {
+            forceSupemodeNetwork();
+        } else {
+            // refresh current supermode
+            myEditModes.setSupermode(myEditModes.currentSupermode, true);
+        }
+    } else {
+        // show data button
+        myEditModes.dataButton->show();
+        // refresh current supermode
+        myEditModes.setSupermode(myEditModes.currentSupermode, true);
+    }
 }
 
 
@@ -831,6 +891,10 @@ GNEViewNet::mergeJunctions(GNEJunction* movedJunction, GNEJunction* targetJuncti
 
 bool
 GNEViewNet::aksChangeSupermode(const std::string& operation, Supermode expectedSupermode) {
+    // first check if ignore option is enabled
+    if (OptionsCont::getOptions().getBool("ignore-supermode-question")) {
+        return true;
+    }
     std::string body;
     if (expectedSupermode == Supermode::NETWORK) {
         body = (operation + TL(" requires switch to network mode. Continue?"));
@@ -879,6 +943,259 @@ GNEViewNet::getSaveElements() {
 }
 
 
+GNEViewNetHelper::TimeFormat&
+GNEViewNet::getTimeFormat() {
+    return myTimeFormat;
+}
+
+
+bool
+GNEViewNet::restrictLane(GNELane* lane, SUMOVehicleClass vclass) {
+    // Get selected lanes
+    const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
+    // Declare map of edges and lanes
+    std::map<GNEEdge*, GNELane*> mapOfEdgesAndLanes;
+    // Iterate over selected lanes
+    for (const auto& selectedLane : selectedLanes) {
+        mapOfEdgesAndLanes[myNet->getAttributeCarriers()->retrieveEdge(selectedLane->getParentEdge()->getID())] = selectedLane;
+    }
+    // Throw warning dialog if there hare multiple lanes selected in the same edge
+    if (mapOfEdgesAndLanes.size() != selectedLanes.size()) {
+        const std::string header = TL("Multiple lane in the same edge selected");
+        const std::string bodyA = TL("There are selected lanes that belong to the same edge.");
+        const std::string bodyB = TL("Only one lane per edge will be restricted for ");
+        FXMessageBox::information(getApp(), MBOX_OK, header.c_str(), "%s", (bodyA + std::string("\n") + bodyB + toString(vclass) + ".").c_str());
+    }
+    // If we handeln a set of lanes
+    if (mapOfEdgesAndLanes.size() > 0) {
+        // declare counter for number of Sidewalks
+        int counter = 0;
+        // iterate over selected lanes
+        for (const auto& edgeLane : mapOfEdgesAndLanes) {
+            if (edgeLane.first->hasRestrictedLane(vclass)) {
+                counter++;
+            }
+        }
+        // if all edges parent own a Sidewalk, stop function
+        if (counter == (int)mapOfEdgesAndLanes.size()) {
+            const std::string headerA = TL("Set vclass for ");
+            const std::string headerB = TL(" to selected lanes");
+            const std::string body = TL("All lanes own already another lane in the same edge with a restriction for ");
+            FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
+            return 0;
+        } else {
+            WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
+            // Ask confirmation to user
+            const std::string headerA = TL("Set vclass for ");
+            const std::string headerB = TL(" to selected lanes");
+            const std::string bodyA = TL(" lanes will be restricted for ");
+            const std::string bodyB = TL(". Continue?");
+            FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
+                                                    (toString(mapOfEdgesAndLanes.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
+            if (answer != 1) { //1:yes, 2:no, 4:esc
+                // write warning if netedit is running in testing mode
+                if (answer == 2) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
+                } else if (answer == 4) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
+                }
+                return 0;
+            } else {
+                // write warning if netedit is running in testing mode
+                WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
+            }
+        }
+        // begin undo operation
+        myUndoList->begin(lane, "restrict lanes to " + toString(vclass));
+        // iterate over selected lanes
+        for (const auto& edgeLane : mapOfEdgesAndLanes) {
+            // Transform lane to Sidewalk
+            myNet->restrictLane(vclass, edgeLane.second, myUndoList);
+        }
+        // end undo operation
+        myUndoList->end();
+    } else {
+        // If only have a single lane, start undo/redo operation
+        myUndoList->begin(lane, TL("restrict lane to ") + toString(vclass));
+        // Transform lane to Sidewalk
+        myNet->restrictLane(vclass, lane, myUndoList);
+        // end undo operation
+        myUndoList->end();
+    }
+    return 1;
+}
+
+
+bool
+GNEViewNet::addRestrictedLane(GNELane* lane, SUMOVehicleClass vclass, const bool insertAtFront) {
+    // Get selected edges
+    const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
+    // get selected lanes
+    const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
+    // Declare set of edges
+    std::set<GNEEdge*> setOfEdges;
+    // Fill set of edges with vector of edges
+    for (const auto& edge : selectedEdges) {
+        setOfEdges.insert(edge);
+    }
+    // iterate over selected lanes
+    for (const auto& selectedLane : selectedLanes) {
+        // Insert pointer to edge into set of edges (To avoid duplicates)
+        setOfEdges.insert(myNet->getAttributeCarriers()->retrieveEdge(selectedLane->getParentEdge()->getID()));
+    }
+    // If we handeln a set of edges
+    if (lane->isAttributeCarrierSelected() || lane->getParentEdge()->isAttributeCarrierSelected()) {
+        // declare counter for number of restrictions
+        int counter = 0;
+        // iterate over set of edges
+        for (const auto& edge : setOfEdges) {
+            // update counter if edge has already a restricted lane of type "vclass"
+            if (edge->hasRestrictedLane(vclass)) {
+                counter++;
+            }
+        }
+        // if all lanes own a Sidewalk, stop function
+        if (counter == (int)setOfEdges.size()) {
+            const std::string headerA = TL("Add vclass for ");
+            const std::string headerB = TL(" to selected lanes");
+            const std::string body = TL("All lanes own already another lane in the same edge with a restriction for ");
+            FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
+            return 0;
+        } else {
+            WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
+            // Ask confirmation to user
+            const std::string headerA = TL("Add vclass for ");
+            const std::string headerB = TL(" to selected lanes");
+            const std::string bodyA = TL(" restrictions for ");
+            const std::string bodyB = TL(" will be added. Continue?");
+            FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
+                                                    (toString(setOfEdges.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
+            if (answer != 1) { //1:yes, 2:no, 4:esc
+                // write warning if netedit is running in testing mode
+                if (answer == 2) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
+                } else if (answer == 4) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
+                }
+                return 0;
+            } else {
+                // write warning if netedit is running in testing mode
+                WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
+            }
+        }
+        // begin undo operation
+        myUndoList->begin(lane, TL("add restrictions for ") + toString(vclass));
+        // iterate over set of edges
+        for (const auto& edge : setOfEdges) {
+            // add restricted lane (guess target)
+            myNet->addRestrictedLane(vclass, edge, -1, myUndoList);
+        }
+        // end undo operation
+        myUndoList->end();
+    } else {
+        // If only have a single lane, start undo/redo operation
+        myUndoList->begin(lane, TL("add vclass for ") + toString(vclass));
+        // Add restricted lane
+        if (vclass == SVC_PEDESTRIAN) {
+            // always add pedestrian lanes on the right
+            myNet->addRestrictedLane(vclass, lane->getParentEdge(), 0, myUndoList);
+        } else if (vclass == SVC_IGNORING) {
+            if (insertAtFront) {
+                myNet->addGreenVergeLane(lane->getParentEdge(), lane->getIndex() + 1, myUndoList);
+            } else {
+                myNet->addGreenVergeLane(lane->getParentEdge(), lane->getIndex(), myUndoList);
+            }
+        } else if (lane->getParentEdge()->getLanes().size() == 1) {
+            // guess insertion position if there is only 1 lane
+            myNet->addRestrictedLane(vclass, lane->getParentEdge(), -1, myUndoList);
+        } else {
+            myNet->addRestrictedLane(vclass, lane->getParentEdge(), lane->getIndex(), myUndoList);
+        }
+        // end undo/redo operation
+        myUndoList->end();
+    }
+    return 1;
+}
+
+
+bool
+GNEViewNet::removeRestrictedLane(GNELane* lane, SUMOVehicleClass vclass) {
+    // Get selected edges
+    const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
+    // get selected lanes
+    const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
+    // Declare set of edges
+    std::set<GNEEdge*> setOfEdges;
+    // Fill set of edges with vector of edges
+    for (const auto& edge : selectedEdges) {
+        setOfEdges.insert(edge);
+    }
+    // iterate over selected lanes
+    for (const auto& selectedLane : selectedLanes) {
+        // Insert pointer to edge into set of edges (To avoid duplicates)
+        setOfEdges.insert(myNet->getAttributeCarriers()->retrieveEdge(selectedLane->getParentEdge()->getID()));
+    }
+    // If we handeln a set of edges
+    if (setOfEdges.size() > 0) {
+        // declare counter for number of restrictions
+        int counter = 0;
+        // iterate over set of edges
+        for (const auto& edge : setOfEdges) {
+            // update counter if edge has already a restricted lane of type "vclass"
+            if (edge->hasRestrictedLane(vclass)) {
+                counter++;
+            }
+        }
+        // if all lanes don't own a Sidewalk, stop function
+        if (counter == 0) {
+            const std::string headerA = TL("Remove vclass for ");
+            const std::string headerB = TL(" from selected lanes");
+            const std::string body = TL("Selected lanes and edges haven't a restriction for ");
+            FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
+            return 0;
+        } else {
+            WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
+            // Ask confirmation to user
+            const std::string headerA = TL("Remove vclass for ");
+            const std::string headerB = TL(" in selected lanes");
+            const std::string bodyA = TL(" restrictions for ");
+            const std::string bodyB = TL(" will be removed. Continue?");
+            FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
+                                                    (toString(setOfEdges.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
+            if (answer != 1) { //1:yes, 2:no, 4:esc
+                // write warning if netedit is running in testing mode
+                if (answer == 2) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
+                } else if (answer == 4) {
+                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
+                }
+                return 0;
+            } else {
+                // write warning if netedit is running in testing mode
+                WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
+            }
+        }
+        // begin undo operation
+        myUndoList->begin(lane, "Remove restrictions for " + toString(vclass));
+        // iterate over set of edges
+        for (const auto& edge : setOfEdges) {
+            // add Sidewalk
+            myNet->removeRestrictedLane(vclass, edge, myUndoList);
+        }
+        // end undo operation
+        myUndoList->end();
+    } else {
+        // If only have a single lane, start undo/redo operation
+        myUndoList->begin(lane, TL("Remove vclass for ") + toString(vclass));
+        // Remove Sidewalk
+        myNet->removeRestrictedLane(vclass, lane->getParentEdge(), myUndoList);
+        // end undo/redo operation
+        myUndoList->end();
+    }
+    return 1;
+}
+
+
 GNEViewNet::GNEViewNet() :
     myEditModes(this),
     myTestingMode(this),
@@ -896,6 +1213,7 @@ GNEViewNet::GNEViewNet() :
     myVehicleOptions(this),
     myVehicleTypeOptions(this),
     mySaveElements(this),
+    myTimeFormat(this),
     mySelectingArea(this),
     myEditNetworkElementShapes(this),
     myLockManager(this) {
@@ -1038,11 +1356,11 @@ GNEViewNet::doPaintGL(int mode, const Boundary& bound) {
         // draw temporal trip/flow route
         myViewParent->getVehicleFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
         // draw temporal person plan route
-        myViewParent->getPersonFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
-        myViewParent->getPersonPlanFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
+        myViewParent->getPersonFrame()->getPlanCreator()->drawTemporalRoute(*myVisualizationSettings);
+        myViewParent->getPersonPlanFrame()->getPlanCreator()->drawTemporalRoute(*myVisualizationSettings);
         // draw temporal container plan route
-        myViewParent->getContainerFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
-        myViewParent->getContainerPlanFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
+        myViewParent->getContainerFrame()->getPlanCreator()->drawTemporalRoute(*myVisualizationSettings);
+        myViewParent->getContainerPlanFrame()->getPlanCreator()->drawTemporalRoute(*myVisualizationSettings);
         // draw temporal route
         myViewParent->getRouteFrame()->getPathCreator()->drawTemporalRoute(*myVisualizationSettings);
         // draw temporal edgeRelPath
@@ -1090,7 +1408,7 @@ GNEViewNet::doPaintGL(int mode, const Boundary& bound) {
     }
     // re-draw marked route
     if (gPostDrawing.markedRoute && !myVisualizationSettings->drawForPositionSelection && !myVisualizationSettings->drawForRectangleSelection) {
-        myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, dynamic_cast<const GNEPathManager::PathElement*>(gPostDrawing.markedRoute));
+        myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, gPostDrawing.markedRoute);
     }
     // draw temporal split junction
     drawTemporalSplitJunction();
@@ -1100,10 +1418,12 @@ GNEViewNet::doPaintGL(int mode, const Boundary& bound) {
     drawTemporalE1TLSLines();
     // draw temporal lines between junctions in TLS Mode
     drawTemporalJunctionTLSLines();
-    // draw delete dotted contour
+    // draw dotted contours
+    drawOverDottedContour();
     drawDeleteDottedContour();
-    // draw select dotted contour
     drawSelectDottedContour();
+    // draw netedit attributes references
+    drawNeteditAttributesReferences();
     // draw test circle
     drawTestsCircle();
     // pop draw matrix
@@ -1342,7 +1662,7 @@ GNEViewNet::abortOperation(bool clearSelection) {
             if (myViewParent->getTLSEditorFrame()->getTLSAttributes()->isSetDetectorsToggleButtonEnabled()) {
                 myViewParent->getTLSEditorFrame()->getTLSAttributes()->disableE1DetectorMode();
             } else if (myViewParent->getTLSEditorFrame()->getTLSJunction()->isJoiningJunctions()) {
-                myViewParent->getTLSEditorFrame()->getTLSJunction()->disableJoiningJunctionMode();
+                myViewParent->getTLSEditorFrame()->getTLSJunction()->onCmdCancelJoin(nullptr, 0, nullptr);
             } else {
                 myViewParent->getTLSEditorFrame()->getTLSDefinition()->discardChanges(false);
             }
@@ -1386,13 +1706,13 @@ GNEViewNet::abortOperation(bool clearSelection) {
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
             myViewParent->getVehicleFrame()->getPathCreator()->abortPathCreation();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
-            myViewParent->getPersonFrame()->getPathCreator()->abortPathCreation();
+            myViewParent->getPersonFrame()->getPlanCreator()->abortPathCreation();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
             myViewParent->getPersonPlanFrame()->resetSelectedPerson();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
-            myViewParent->getContainerFrame()->getPathCreator()->abortPathCreation();
+            myViewParent->getContainerFrame()->getPlanCreator()->abortPathCreation();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
-            myViewParent->getContainerPlanFrame()->getPathCreator()->abortPathCreation();
+            myViewParent->getContainerPlanFrame()->getPlanCreator()->abortPathCreation();
         }
     } else if (myEditModes.isCurrentSupermodeData()) {
         // abort operation depending of current mode
@@ -1487,7 +1807,7 @@ GNEViewNet::hotkeyEnter() {
             if (myViewParent->getTLSEditorFrame()->getTLSAttributes()->isSetDetectorsToggleButtonEnabled()) {
                 myViewParent->getTLSEditorFrame()->getTLSAttributes()->disableE1DetectorMode();
             } else if (myViewParent->getTLSEditorFrame()->getTLSJunction()->isJoiningJunctions()) {
-                myViewParent->getTLSEditorFrame()->getTLSJunction()->disableJoiningJunctionMode();
+                myViewParent->getTLSEditorFrame()->getTLSJunction()->onCmdAcceptJoin(nullptr, 0, nullptr);
             } else if (myViewParent->getTLSEditorFrame()->getTLSDefinition()->checkHaveModifications()) {
                 myViewParent->getTLSEditorFrame()->getTLSDefinition()->onCmdSaveChanges(nullptr, 0, nullptr);
             }
@@ -1525,15 +1845,15 @@ GNEViewNet::hotkeyEnter() {
         if (myEditModes.demandEditMode == DemandEditMode::DEMAND_ROUTE) {
             myViewParent->getRouteFrame()->getPathCreator()->createPath(false);
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
-            myViewParent->getVehicleFrame()->getPathCreator()->createPath(false);
+            myViewParent->getVehicleFrame()->getPathCreator()->onCmdCreatePath(nullptr, 0, nullptr);
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
-            myViewParent->getPersonFrame()->getPathCreator()->createPath(false);
+            myViewParent->getPersonFrame()->getPlanCreator()->onCmdCreatePath(nullptr, 0, nullptr);
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
-            myViewParent->getPersonPlanFrame()->getPathCreator()->createPath(false);
+            myViewParent->getPersonPlanFrame()->getPlanCreator()->onCmdCreatePath(nullptr, 0, nullptr);
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
-            myViewParent->getContainerFrame()->getPathCreator()->createPath(false);
+            myViewParent->getContainerFrame()->getPlanCreator()->onCmdCreatePath(nullptr, 0, nullptr);
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
-            myViewParent->getContainerPlanFrame()->getPathCreator()->createPath(false);
+            myViewParent->getContainerPlanFrame()->getPlanCreator()->onCmdCreatePath(nullptr, 0, nullptr);
         }
     } else if (myEditModes.isCurrentSupermodeData()) {
         if (myEditModes.dataEditMode == DataEditMode::DATA_EDGERELDATA) {
@@ -1558,13 +1878,13 @@ GNEViewNet::hotkeyBackSpace() {
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
             myViewParent->getVehicleFrame()->getPathCreator()->removeLastElement();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
-            myViewParent->getPersonFrame()->getPathCreator()->removeLastElement();
+            myViewParent->getPersonFrame()->getPlanCreator()->removeLastElement();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
-            myViewParent->getPersonPlanFrame()->getPathCreator()->removeLastElement();
+            myViewParent->getPersonPlanFrame()->getPlanCreator()->removeLastElement();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
-            myViewParent->getContainerFrame()->getPathCreator()->removeLastElement();
+            myViewParent->getContainerFrame()->getPlanCreator()->removeLastElement();
         } else if (myEditModes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
-            myViewParent->getContainerPlanFrame()->getPathCreator()->removeLastElement();
+            myViewParent->getContainerPlanFrame()->getPlanCreator()->removeLastElement();
         }
     } else if (myEditModes.isCurrentSupermodeData()) {
         if (myEditModes.dataEditMode == DataEditMode::DATA_EDGERELDATA) {
@@ -1677,82 +1997,88 @@ GNEViewNet::drawTranslateFrontAttributeCarrier(const GNEAttributeCarrier* AC, do
 
 
 bool
-GNEViewNet::drawDeleteContour(const GUIGlObject* GLObject, const GNEAttributeCarrier* AC) const {
-    // first check disableDottedContours flag
-    if (myVisualizationSettings->disableDottedContours) {
+GNEViewNet::checkDrawOverContour(const GUIGlObject* GLObject) const {
+    // avoid draw in position/rectangle selection
+    if (myVisualizationSettings->drawForPositionSelection || myVisualizationSettings->drawForRectangleSelection) {
         return false;
     }
-    // only draw for top element under cursor
-    if (!gPostDrawing.isTopElementUnderCursor(GLObject)) {
-        return false;
-    }
-    // check if we're in the correct mode and supermode
-    if ((AC->getTagProperty().isNetworkElement() || AC->getTagProperty().isAdditionalElement()) &&
-            !(myEditModes.isCurrentSupermodeNetwork() && (myEditModes.networkEditMode == NetworkEditMode::NETWORK_DELETE))) {
-        return false;
-    } else if (AC->getTagProperty().isDemandElement() &&
-               !(myEditModes.isCurrentSupermodeDemand() && (myEditModes.demandEditMode == DemandEditMode::DEMAND_DELETE))) {
-        return false;
-    } else if (AC->getTagProperty().isDataElement() &&
-               !(myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_DELETE))) {
+    // check if element is under cursor
+    if (!gPostDrawing.isElementUnderCursor(GLObject)) {
         return false;
     }
     // check if we're in post drawing
     if (myPostDrawing) {
-        return gPostDrawing.isElementUnderCursor(GLObject);
-    }
-    // check ifs blocked
-    if (myLockManager.isObjectLocked(GLObject->getType(), AC->isAttributeCarrierSelected())) {
+        // in post-drawing, draw always
+        return true;
+    } else {
+        // check if set as markedElementDeleteContour
+        if ((gPostDrawing.markedElementOverContour == nullptr) ||
+                (GLObject->getType() > gPostDrawing.markedElementOverContour->getType())) {
+            gPostDrawing.markedElementOverContour = GLObject;
+        }
+        // we wan't to draw select contour in this moment
         return false;
     }
-    // check if is under mouse
-    if (!gPostDrawing.isElementUnderCursor(GLObject)) {
-        return false;
-    }
-    // add it in gPostDrawing
-    gPostDrawing.elementsMarkedToRemove.push_back(GLObject);
-    // we wan't to draw delete contour in this time
-    return false;
 }
 
 
 bool
-GNEViewNet::drawSelectContour(const GUIGlObject* GLObject, const GNEAttributeCarrier* AC) const {
-    // first check disableDottedContours flag
-    if (myVisualizationSettings->disableDottedContours) {
+GNEViewNet::checkDrawDeleteContour(const GUIGlObject* GLObject, const bool isSelected) const {
+    // avoid draw in position/rectangle selection
+    if (myVisualizationSettings->drawForPositionSelection || myVisualizationSettings->drawForRectangleSelection) {
         return false;
     }
-    // only draw for top element under cursor
-    if (!gPostDrawing.isTopElementUnderCursor(GLObject)) {
+    // check if elemet is blocked
+    if (myLockManager.isObjectLocked(GLObject->getType(), isSelected)) {
         return false;
     }
-    // check if we're in the correct mode and supermode
-    if ((AC->getTagProperty().isNetworkElement() || AC->getTagProperty().isAdditionalElement()) &&
-            !(myEditModes.isCurrentSupermodeNetwork() && (myEditModes.networkEditMode == NetworkEditMode::NETWORK_SELECT))) {
-        return false;
-    } else if (AC->getTagProperty().isDemandElement() &&
-               !(myEditModes.isCurrentSupermodeDemand() && (myEditModes.demandEditMode == DemandEditMode::DEMAND_SELECT))) {
-        return false;
-    } else if (AC->getTagProperty().isDataElement() &&
-               !(myEditModes.isCurrentSupermodeData() && (myEditModes.dataEditMode == DataEditMode::DATA_SELECT))) {
+    // check if element is under cursor
+    if (!gPostDrawing.isElementUnderCursor(GLObject)) {
         return false;
     }
     // check if we're in post drawing
     if (myPostDrawing) {
-        return gPostDrawing.isElementUnderCursor(GLObject);
-    }
-    // check ifs blocked
-    if (myLockManager.isObjectLocked(GLObject->getType(), AC->isAttributeCarrierSelected())) {
+        // in post-drawing, draw always
+        return true;
+    } else {
+        // check if set as markedElementDeleteContour
+        if ((gPostDrawing.markedElementDeleteContour == nullptr) ||
+                (GLObject->getType() > gPostDrawing.markedElementDeleteContour->getType())) {
+            gPostDrawing.markedElementDeleteContour = GLObject;
+        }
+        // we wan't to draw select contour in this moment
         return false;
     }
-    // check if is under mouse
+}
+
+
+bool
+GNEViewNet::checkDrawSelectContour(const GUIGlObject* GLObject, const bool isSelected) const {
+    // avoid draw in position/rectangle selection
+    if (myVisualizationSettings->drawForPositionSelection || myVisualizationSettings->drawForRectangleSelection) {
+        return false;
+    }
+    // check if elemet is blocked
+    if (myLockManager.isObjectLocked(GLObject->getType(), isSelected)) {
+        return false;
+    }
+    // check if element is under cursor
     if (!gPostDrawing.isElementUnderCursor(GLObject)) {
         return false;
     }
-    // add it in gPostDrawing
-    gPostDrawing.elementsMarkedToSelect.push_back(GLObject);
-    // we wan't to draw select contour in this moment
-    return false;
+    // check if we're in post drawing
+    if (myPostDrawing) {
+        // in post-drawing, draw always
+        return true;
+    } else {
+        // check if set as markedElementSelectContour
+        if ((gPostDrawing.markedElementSelectContour == nullptr) ||
+                (GLObject->getType() > gPostDrawing.markedElementSelectContour->getType())) {
+            gPostDrawing.markedElementSelectContour = GLObject;
+        }
+        // we wan't to draw select contour in this moment
+        return false;
+    }
 }
 
 
@@ -1770,111 +2096,155 @@ GNEViewNet::setLastCreatedRoute(GNEDemandElement* lastCreatedRoute) {
 
 GNEJunction*
 GNEViewNet::getJunctionAtPopupPosition() {
-    GNEJunction* junction = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed && (pointed->getType() == GLO_JUNCTION)) {
-            junction = (GNEJunction*)pointed;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to junction element
+        for (const auto& glObject : glObjects) {
+            auto junction = dynamic_cast<GNEJunction*>(glObject);
+            if (junction) {
+                return junction;
+            }
         }
     }
-    return junction;
+    return nullptr;
 }
 
 
 GNEConnection*
 GNEViewNet::getConnectionAtPopupPosition() {
-    GNEConnection* connection = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed && (pointed->getType() == GLO_CONNECTION)) {
-            connection = (GNEConnection*)pointed;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to connection element
+        for (const auto& glObject : glObjects) {
+            auto connection = dynamic_cast<GNEConnection*>(glObject);
+            if (connection) {
+                return connection;
+            }
         }
     }
-    return connection;
+    return nullptr;
 }
 
 
 GNECrossing*
 GNEViewNet::getCrossingAtPopupPosition() {
-    GNECrossing* crossing = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed && (pointed->getType() == GLO_CROSSING)) {
-            crossing = (GNECrossing*)pointed;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to crossing element
+        for (const auto& glObject : glObjects) {
+            auto crossing = dynamic_cast<GNECrossing*>(glObject);
+            if (crossing) {
+                return crossing;
+            }
         }
     }
-    return crossing;
+    return nullptr;
 }
 
 
 GNEWalkingArea*
 GNEViewNet::getWalkingAreaAtPopupPosition() {
-    GNEWalkingArea* walkingArea = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed && (pointed->getType() == GLO_WALKINGAREA)) {
-            walkingArea = (GNEWalkingArea*)pointed;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to walking area element
+        for (const auto& glObject : glObjects) {
+            auto walkingArea = dynamic_cast<GNEWalkingArea*>(glObject);
+            if (walkingArea) {
+                return walkingArea;
+            }
         }
     }
-    return walkingArea;
+    return nullptr;
 }
 
 
 GNEEdge*
 GNEViewNet::getEdgeAtPopupPosition() {
-    GNEEdge* edge = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed) {
-            switch (pointed->getType()) {
-                case GLO_EDGE:
-                    edge = (GNEEdge*)pointed;
-                    break;
-                case GLO_LANE:
-                    edge = (((GNELane*)pointed)->getParentEdge());
-                    break;
-                default:
-                    break;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to edge element
+        for (const auto& glObject : glObjects) {
+            auto edge = dynamic_cast<GNEEdge*>(glObject);
+            if (edge) {
+                return edge;
+            } else {
+                auto lane = dynamic_cast<GNELane*>(glObject);
+                if (lane) {
+                    return lane->getParentEdge();
+                }
             }
         }
     }
-    return edge;
+    return nullptr;
 }
 
 
 GNELane*
 GNEViewNet::getLaneAtPopupPosition() {
-    GNELane* lane = nullptr;
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed && (pointed->getType() == GLO_LANE)) {
-            lane = (GNELane*)pointed;
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to lane element
+        for (const auto& glObject : glObjects) {
+            auto lane = dynamic_cast<GNELane*>(glObject);
+            if (lane) {
+                return lane;
+            }
         }
     }
-    return lane;
+    return nullptr;
 }
 
 
 GNEAdditional*
 GNEViewNet::getAdditionalAtPopupPosition() {
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed) {
-            return dynamic_cast<GNEAdditional*>(pointed);
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to additional element
+        for (const auto& glObject : glObjects) {
+            auto additionalElement = dynamic_cast<GNEAdditional*>(glObject);
+            if (additionalElement) {
+                return additionalElement;
+            }
+        }
+    }
+    return nullptr;
+}
+
+
+GNEDemandElement*
+GNEViewNet::getDemandElementAtPopupPosition() {
+    if (makeCurrent()) {
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to demand element
+        for (const auto& glObject : glObjects) {
+            auto demandElement = dynamic_cast<GNEDemandElement*>(glObject);
+            if (demandElement) {
+                return demandElement;
+            }
         }
     }
     return nullptr;
@@ -1884,11 +2254,16 @@ GNEViewNet::getAdditionalAtPopupPosition() {
 GNEPoly*
 GNEViewNet::getPolygonAtPopupPosition() {
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed) {
-            return dynamic_cast<GNEPoly*>(pointed);
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to poly element
+        for (const auto& glObject : glObjects) {
+            auto poly = dynamic_cast<GNEPoly*>(glObject);
+            if (poly) {
+                return poly;
+            }
         }
     }
     return nullptr;
@@ -1898,11 +2273,16 @@ GNEViewNet::getPolygonAtPopupPosition() {
 GNEPOI*
 GNEViewNet::getPOIAtPopupPosition() {
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed) {
-            return dynamic_cast<GNEPOI*>(pointed);
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to POI element
+        for (const auto& glObject : glObjects) {
+            auto POI = dynamic_cast<GNEPOI*>(glObject);
+            if (POI) {
+                return POI;
+            }
         }
     }
     return nullptr;
@@ -1912,11 +2292,16 @@ GNEViewNet::getPOIAtPopupPosition() {
 GNETAZ*
 GNEViewNet::getTAZAtPopupPosition() {
     if (makeCurrent()) {
-        int id = getObjectAtPosition(getPopupPosition());
-        GUIGlObject* pointed = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
-        GUIGlObjectStorage::gIDStorage.unblockObject(id);
-        if (pointed) {
-            return dynamic_cast<GNETAZ*>(pointed);
+        // get all gl objects in position
+        auto glObjects = getGUIGlObjectsAtPosition(getPopupPosition(), 0.1);
+        // swap objects
+        std::reverse(glObjects.begin(), glObjects.end());
+        // get first object that can be parsed to TAZ element
+        for (const auto& glObject : glObjects) {
+            auto TAZ = dynamic_cast<GNETAZ*>(glObject);
+            if (TAZ) {
+                return TAZ;
+            }
         }
     }
     return nullptr;
@@ -1928,13 +2313,19 @@ GNEViewNet::onCmdSetSupermode(FXObject*, FXSelector sel, void*) {
     // check what network mode will be set
     switch (FXSELID(sel)) {
         case MID_HOTKEY_F2_SUPERMODE_NETWORK:
-            myEditModes.setSupermode(Supermode::NETWORK, false);
+            if (myEditModes.networkButton->shown()) {
+                myEditModes.setSupermode(Supermode::NETWORK, false);
+            }
             break;
         case MID_HOTKEY_F3_SUPERMODE_DEMAND:
-            myEditModes.setSupermode(Supermode::DEMAND, false);
+            if (myEditModes.demandButton->shown()) {
+                myEditModes.setSupermode(Supermode::DEMAND, false);
+            }
             break;
         case MID_HOTKEY_F4_SUPERMODE_DATA:
-            myEditModes.setSupermode(Supermode::DATA, false);
+            if (myEditModes.dataButton->shown()) {
+                myEditModes.setSupermode(Supermode::DATA, false);
+            }
             break;
         default:
             break;
@@ -1942,8 +2333,59 @@ GNEViewNet::onCmdSetSupermode(FXObject*, FXSelector sel, void*) {
     return 1;
 }
 
+
 long
 GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
+    // first filter modes depending of view
+    if (myEditModes.isJuPedSimView()) {
+        // network
+        if (myEditModes.isCurrentSupermodeNetwork()) {
+            switch (FXSELID(sel)) {
+                // common
+                case MID_HOTKEY_I_MODE_INSPECT:
+                case MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE:
+                case MID_HOTKEY_S_MODE_STOPSIMULATION_SELECT:
+                // infrastructure
+                case MID_HOTKEY_M_MODE_MOVE_MEANDATA:
+                case MID_HOTKEY_E_MODE_EDGE_EDGEDATA:
+                case MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS:
+                case MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA:
+                // shapes
+                case MID_HOTKEY_P_MODE_POLYGON_PERSON:
+                case MID_HOTKEY_Z_MODE_TAZ_TAZREL:
+                    break;
+                default:
+                    return 0;
+            }
+        }
+        // demand
+        if (myEditModes.isCurrentSupermodeDemand()) {
+            switch (FXSELID(sel)) {
+                // common
+                case MID_HOTKEY_I_MODE_INSPECT:
+                case MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE:
+                case MID_HOTKEY_S_MODE_STOPSIMULATION_SELECT:
+                // persons
+                case MID_HOTKEY_P_MODE_POLYGON_PERSON:
+                case MID_HOTKEY_L_MODE_PERSONPLAN:
+                // routes
+                case MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA:
+                case MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION:
+                // types
+                case MID_HOTKEY_T_MODE_TLS_TYPE:
+                case MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION:
+                    break;
+                default:
+                    return 0;
+            }
+        }
+        // data
+        if (myEditModes.isCurrentSupermodeData()) {
+            // all modes disabled
+            return 0;
+        }
+    }
+    // continue depending of supermode
     if (myEditModes.isCurrentSupermodeNetwork()) {
         // check what network mode will be set
         switch (FXSELID(sel)) {
@@ -1962,13 +2404,13 @@ GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
             case MID_HOTKEY_E_MODE_EDGE_EDGEDATA:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_CREATE_EDGE);
                 break;
-            case MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN:
+            case MID_HOTKEY_C_MODE_CONNECT_CONTAINER:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_CONNECT);
                 break;
             case MID_HOTKEY_T_MODE_TLS_TYPE:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_TLS);
                 break;
-            case MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP:
+            case MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_ADDITIONAL);
                 break;
             case MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA:
@@ -1983,8 +2425,11 @@ GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
             case MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_PROHIBITION);
                 break;
-            case MID_HOTKEY_W_MODE_WIRE:
+            case MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION:
                 myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_WIRE);
+                break;
+            case MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION:
+                myEditModes.setNetworkEditMode(NetworkEditMode::NETWORK_DECAL);
                 break;
             default:
                 break;
@@ -1992,8 +2437,8 @@ GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
     } else if (myEditModes.isCurrentSupermodeDemand()) {
         // check what demand mode will be set
         switch (FXSELID(sel)) {
-            case MID_HOTKEY_G_MODE_CONTAINER:
-                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_CONTAINER);
+            case MID_HOTKEY_L_MODE_PERSONPLAN:
+                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_PERSONPLAN);
                 break;
             case MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_CONTAINERPLAN);
@@ -2013,20 +2458,26 @@ GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
             case MID_HOTKEY_R_MODE_CROSSING_ROUTE_EDGERELDATA:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_ROUTE);
                 break;
+            case MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION:
+                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_ROUTEDISTRIBUTION);
+                break;
             case MID_HOTKEY_V_MODE_VEHICLE:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_VEHICLE);
                 break;
             case MID_HOTKEY_T_MODE_TLS_TYPE:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_TYPE);
                 break;
-            case MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP:
+            case MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION:
+                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_TYPEDISTRIBUTION);
+                break;
+            case MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_STOP);
                 break;
             case MID_HOTKEY_P_MODE_POLYGON_PERSON:
                 myEditModes.setDemandEditMode(DemandEditMode::DEMAND_PERSON);
                 break;
-            case MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN:
-                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_PERSONPLAN);
+            case MID_HOTKEY_C_MODE_CONNECT_CONTAINER:
+                myEditModes.setDemandEditMode(DemandEditMode::DEMAND_CONTAINER);
                 break;
             default:
                 break;
@@ -2054,6 +2505,8 @@ GNEViewNet::onCmdSetMode(FXObject*, FXSelector sel, void*) {
                 break;
             case MID_HOTKEY_M_MODE_MOVE_MEANDATA:
                 myEditModes.setDataEditMode(DataEditMode::DATA_MEANDATA);
+                break;
+            default:
                 break;
         }
     }
@@ -2098,14 +2551,14 @@ GNEViewNet::onCmdReverseEdge(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("Reverse selected edges"));
+            myUndoList->begin(edge, TL("Reverse selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 myNet->reverseEdge(selectedEdge, myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("Reverse edge"));
+            myUndoList->begin(edge, TL("Reverse edge"));
             myNet->reverseEdge(edge, myUndoList);
             myUndoList->end();
         }
@@ -2119,14 +2572,14 @@ GNEViewNet::onCmdAddReversedEdge(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("Add Reverse edge for selected edges"));
+            myUndoList->begin(edge, TL("Add Reverse edge for selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 myNet->addReversedEdge(selectedEdge, false, myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("Add reverse edge"));
+            myUndoList->begin(edge, TL("Add reverse edge"));
             myNet->addReversedEdge(edge, false, myUndoList);
             myUndoList->end();
         }
@@ -2140,14 +2593,14 @@ GNEViewNet::onCmdAddReversedEdgeDisconnected(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("Add Reverse disconnected edge for selected edges"));
+            myUndoList->begin(edge, TL("Add Reverse disconnected edge for selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 myNet->addReversedEdge(selectedEdge, true, myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("Add reverse disconnected edge"));
+            myUndoList->begin(edge, TL("Add reverse disconnected edge"));
             myNet->addReversedEdge(edge, true, myUndoList);
             myUndoList->end();
         }
@@ -2176,7 +2629,7 @@ GNEViewNet::onCmdResetEdgeEndpoint(FXObject*, FXSelector, void*) {
             // get all selected edges
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             // begin operation
-            myUndoList->begin(GUIIcon::EDGE, TL("reset geometry points"));
+            myUndoList->begin(edge, TL("reset geometry points"));
             // iterate over selected edges
             for (const auto& selectedEdge : selectedEdges) {
                 // reset both end points
@@ -2197,7 +2650,7 @@ GNEViewNet::onCmdStraightenEdges(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("straighten selected edges"));
+            myUndoList->begin(edge, TL("straighten selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 selectedEdge->setAttribute(SUMO_ATTR_SHAPE, "", myUndoList);
@@ -2205,7 +2658,7 @@ GNEViewNet::onCmdStraightenEdges(FXObject*, FXSelector, void*) {
             myUndoList->end();
         } else {
 
-            myUndoList->begin(GUIIcon::EDGE, TL("straighten edge"));
+            myUndoList->begin(edge, TL("straighten edge"));
             edge->setAttribute(SUMO_ATTR_SHAPE, "", myUndoList);
             myUndoList->end();
         }
@@ -2219,14 +2672,14 @@ GNEViewNet::onCmdSmoothEdges(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("smooth selected edges"));
+            myUndoList->begin(edge, TL("smooth selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 selectedEdge->smooth(myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("smooth edge"));
+            myUndoList->begin(edge, TL("smooth edge"));
             edge->smooth(myUndoList);
             myUndoList->end();
         }
@@ -2240,14 +2693,14 @@ GNEViewNet::onCmdStraightenEdgesElevation(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("straighten elevation of selected edges"));
+            myUndoList->begin(edge, TL("straighten elevation of selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 selectedEdge->straightenElevation(myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("straighten edge elevation"));
+            myUndoList->begin(edge, TL("straighten edge elevation"));
             edge->straightenElevation(myUndoList);
             myUndoList->end();
         }
@@ -2261,14 +2714,14 @@ GNEViewNet::onCmdSmoothEdgesElevation(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("smooth elevation of selected edges"));
+            myUndoList->begin(edge, TL("smooth elevation of selected edges"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 selectedEdge->smoothElevation(myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::EDGE, TL("smooth edge elevation"));
+            myUndoList->begin(edge, TL("smooth edge elevation"));
             edge->smoothElevation(myUndoList);
             myUndoList->end();
         }
@@ -2282,7 +2735,7 @@ GNEViewNet::onCmdResetLength(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if (edge != nullptr) {
         if (edge->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::EDGE, TL("reset edge lengths"));
+            myUndoList->begin(edge, TL("reset edge lengths"));
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             for (const auto& selectedEdge : selectedEdges) {
                 selectedEdge->setAttribute(SUMO_ATTR_LENGTH, "-1", myUndoList);
@@ -2311,7 +2764,7 @@ GNEViewNet::onCmdEgeApplyTemplate(FXObject*, FXSelector, void*) {
     GNEEdge* edge = getEdgeAtPopupPosition();
     if ((edge != nullptr) && myViewParent->getInspectorFrame()->getTemplateEditor()->getEdgeTemplate()) {
         // begin copy template
-        myUndoList->begin(GUIIcon::EDGE, TL("copy edge template"));
+        myUndoList->begin(edge, TL("copy edge template"));
         // copy template
         edge->copyTemplate(myViewParent->getInspectorFrame()->getTemplateEditor()->getEdgeTemplate(), myUndoList);
         // end copy template
@@ -2332,13 +2785,15 @@ GNEViewNet::onCmdSimplifyShape(FXObject*, FXSelector, void*) {
         // check if shape is selected
         if (polygonUnderMouse->isAttributeCarrierSelected()) {
             // begin undo-list
-            myNet->getViewNet()->getUndoList()->begin(GUIIcon::POLY, TL("simplify shapes"));
+            myNet->getViewNet()->getUndoList()->begin(polygonUnderMouse, TL("simplify shapes"));
             // get shapes
             const auto selectedShapes = myNet->getAttributeCarriers()->getSelectedShapes();
             // iterate over shapes
             for (const auto& selectedShape : selectedShapes) {
                 // check if shape is a poly
-                if (selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) {
+                if ((selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_WALKABLEAREA) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_OBSTACLE)) {
                     // simplify shape
                     dynamic_cast<GNEPoly*>(selectedShape)->simplifyShape();
                 }
@@ -2374,13 +2829,15 @@ GNEViewNet::onCmdClosePolygon(FXObject*, FXSelector, void*) {
         // check if shape is selected
         if (polygonUnderMouse->isAttributeCarrierSelected()) {
             // begin undo-list
-            myNet->getViewNet()->getUndoList()->begin(GUIIcon::POLY, TL("close polygon shapes"));
+            myNet->getViewNet()->getUndoList()->begin(polygonUnderMouse, TL("close polygon shapes"));
             // get selectedshapes
             const auto selectedShapes = myNet->getAttributeCarriers()->getSelectedShapes();
             // iterate over shapes
             for (const auto& selectedShape : selectedShapes) {
                 // check if shape is a poly
-                if (selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) {
+                if ((selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_WALKABLEAREA) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_OBSTACLE)) {
                     // close polygon
                     dynamic_cast<GNEPoly*>(selectedShape)->closePolygon();
                 }
@@ -2405,13 +2862,15 @@ GNEViewNet::onCmdOpenPolygon(FXObject*, FXSelector, void*) {
         // check if shape is selected
         if (polygonUnderMouse->isAttributeCarrierSelected()) {
             // begin undo-list
-            myNet->getViewNet()->getUndoList()->begin(GUIIcon::POLY, TL("open polygon shapes"));
+            myNet->getViewNet()->getUndoList()->begin(polygonUnderMouse, TL("open polygon shapes"));
             // get shapes
             const auto selectedShapes = myNet->getAttributeCarriers()->getSelectedShapes();
             // iterate over shapes
             for (const auto& selectedShape : selectedShapes) {
                 // check if shape is a poly
-                if (selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) {
+                if ((selectedShape->getTagProperty().getTag() == SUMO_TAG_POLY) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_WALKABLEAREA) ||
+                        (selectedShape->getTagProperty().getTag() == GNE_TAG_JPS_OBSTACLE)) {
                     // open polygon
                     dynamic_cast<GNEPoly*>(selectedShape)->openPolygon();
                 }
@@ -2522,7 +2981,7 @@ GNEViewNet::onCmdTransformPOI(FXObject*, FXSelector, void*) {
                 POIBaseObject->addBoolAttribute(SUMO_ATTR_FRIENDLY_POS, POI->getFriendlyPos());
                 POIBaseObject->addDoubleAttribute(SUMO_ATTR_POSITION_LAT, 0);
                 // remove POI
-                myUndoList->begin(GUIIcon::POI, TL("attach POI into lane"));
+                myUndoList->begin(POI, TL("attach POI into lane"));
                 myNet->deleteAdditional(POI, myUndoList);
                 // add new POI use route handler
                 additionalHanlder.parseSumoBaseObject(POIBaseObject);
@@ -2535,7 +2994,7 @@ GNEViewNet::onCmdTransformPOI(FXObject*, FXSelector, void*) {
             POIBaseObject->addDoubleAttribute(SUMO_ATTR_X, POI->x());
             POIBaseObject->addDoubleAttribute(SUMO_ATTR_Y, POI->y());
             // remove POI
-            myUndoList->begin(GUIIcon::POI, TL("release POI from lane"));
+            myUndoList->begin(POI, TL("release POI from lane"));
             myNet->deleteAdditional(POI, myUndoList);
             // add new POI use route handler
             additionalHanlder.parseSumoBaseObject(POIBaseObject);
@@ -2543,6 +3002,34 @@ GNEViewNet::onCmdTransformPOI(FXObject*, FXSelector, void*) {
         }
         // update view after transform
         updateViewNet();
+    }
+    return 1;
+}
+
+
+long
+GNEViewNet::onCmdReverse(FXObject*, FXSelector, void*) {
+    // obtain demand element at popup position
+    GNEDemandElement* demandElement = getDemandElementAtPopupPosition();
+    if (demandElement) {
+        // begin undo list
+        myUndoList->begin(demandElement, TLF("reverse % '%'", demandElement->getTagStr(), demandElement->getID()));
+        GNERouteHandler::reverse(demandElement);
+        myUndoList->end();
+    }
+    return 1;
+}
+
+
+long
+GNEViewNet::onCmdAddReverse(FXObject*, FXSelector, void*) {
+    // obtain demand element at popup position
+    GNEDemandElement* demandElement = getDemandElementAtPopupPosition();
+    if (demandElement) {
+        // begin undo list
+        myUndoList->begin(demandElement, TLF("add reverse '%'", demandElement->getTagStr()));
+        GNERouteHandler::addReverse(demandElement);
+        myUndoList->end();
     }
     return 1;
 }
@@ -2569,20 +3056,20 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
             // update new position
             edgeGeometry[index] = newPosition;
             // begin undo list
-            myUndoList->begin(GUIIcon::EDGE, TL("change edge Geometry Point position"));
+            myUndoList->begin(lane->getParentEdge(), TL("change edge Geometry Point position"));
             // continue depending of index
             if (index == 0) {
                 // change shape start
-                myUndoList->changeAttribute(new GNEChange_Attribute(lane->getParentEdge(), GNE_ATTR_SHAPE_START, toString(edgeGeometry.front())));
+                GNEChange_Attribute::changeAttribute(lane->getParentEdge(), GNE_ATTR_SHAPE_START, toString(edgeGeometry.front()), myUndoList);
             } else if (index == ((int)edgeGeometry.size() - 1)) {
                 // change shape end
-                myUndoList->changeAttribute(new GNEChange_Attribute(lane->getParentEdge(), GNE_ATTR_SHAPE_END, toString(edgeGeometry.back())));
+                GNEChange_Attribute::changeAttribute(lane->getParentEdge(), GNE_ATTR_SHAPE_END, toString(edgeGeometry.back()), myUndoList);
             } else {
                 // remove front and back geometry points
                 edgeGeometry.pop_front();
                 edgeGeometry.pop_back();
                 // change shape
-                myUndoList->changeAttribute(new GNEChange_Attribute(lane->getParentEdge(), SUMO_ATTR_SHAPE, toString(edgeGeometry)));
+                GNEChange_Attribute::changeAttribute(lane->getParentEdge(), SUMO_ATTR_SHAPE, toString(edgeGeometry), myUndoList);
             }
             // end undo list
             myUndoList->end();
@@ -2601,9 +3088,9 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
             // update new position
             polygonGeometry[index] = newPosition;
             // begin undo list
-            myUndoList->begin(GUIIcon::POLY, TL("change polygon Geometry Point position"));
+            myUndoList->begin(poly, TL("change polygon Geometry Point position"));
             // change shape
-            myUndoList->changeAttribute(new GNEChange_Attribute(poly, SUMO_ATTR_SHAPE, toString(polygonGeometry)));
+            GNEChange_Attribute::changeAttribute(poly, SUMO_ATTR_SHAPE, toString(polygonGeometry), myUndoList);
             // end undo list
             myUndoList->end();
         }
@@ -2621,9 +3108,9 @@ GNEViewNet::onCmdSetCustomGeometryPoint(FXObject*, FXSelector, void*) {
             // update new position
             TAZGeometry[index] = newPosition;
             // begin undo list
-            myUndoList->begin(GUIIcon::TAZ, TL("change TAZ Geometry Point position"));
+            myUndoList->begin(TAZ, TL("change TAZ Geometry Point position"));
             // change shape
-            myUndoList->changeAttribute(new GNEChange_Attribute(TAZ, SUMO_ATTR_SHAPE, toString(TAZGeometry)));
+            GNEChange_Attribute::changeAttribute(TAZ, SUMO_ATTR_SHAPE, toString(TAZGeometry), myUndoList);
             // end undo list
             myUndoList->end();
         }
@@ -2645,7 +3132,7 @@ GNEViewNet::onCmdResetEndPoints(FXObject*, FXSelector, void*) {
             // get selected edges
             const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
             // begin undo list
-            myUndoList->begin(GUIIcon::EDGE, TL("reset end points of selected edges"));
+            myUndoList->begin(edge, TL("reset end points of selected edges"));
             // iterate over edges
             for (const auto& selectedEdge : selectedEdges) {
                 // reset both end points
@@ -2656,7 +3143,7 @@ GNEViewNet::onCmdResetEndPoints(FXObject*, FXSelector, void*) {
             myUndoList->end();
         } else {
             // begin undo list
-            myUndoList->begin(GUIIcon::EDGE, TL("reset end points of edge '") + edge->getID());
+            myUndoList->begin(edge, TL("reset end points of edge '") + edge->getID());
             // reset both end points
             edge->setAttribute(GNE_ATTR_SHAPE_START, "", myUndoList);
             edge->setAttribute(GNE_ATTR_SHAPE_END, "", myUndoList);
@@ -2675,14 +3162,14 @@ GNEViewNet::onCmdDuplicateLane(FXObject*, FXSelector, void*) {
         // when duplicating an unselected lane, keep all connections as they
         // are, otherwise recompute them
         if (laneAtPopupPosition->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::LANE, TL("duplicate selected lanes"));
+            myUndoList->begin(laneAtPopupPosition, TL("duplicate selected lanes"));
             const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
             for (const auto& lane : selectedLanes) {
                 myNet->duplicateLane(lane, myUndoList, true);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::LANE, TL("duplicate lane"));
+            myUndoList->begin(laneAtPopupPosition, TL("duplicate lane"));
             myNet->duplicateLane(laneAtPopupPosition, myUndoList, false);
             myUndoList->end();
         }
@@ -2712,14 +3199,14 @@ GNEViewNet::onCmdResetLaneCustomShape(FXObject*, FXSelector, void*) {
         // when duplicating an unselected lane, keep all connections as they
         // are, otherwise recompute them
         if (laneAtPopupPosition->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::LANE, TL("reset custom lane shapes"));
+            myUndoList->begin(laneAtPopupPosition, TL("reset custom lane shapes"));
             const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
             for (const auto& lane : selectedLanes) {
                 lane->setAttribute(SUMO_ATTR_CUSTOMSHAPE, "", myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::LANE, TL("reset custom lane shape"));
+            myUndoList->begin(laneAtPopupPosition, TL("reset custom lane shape"));
             laneAtPopupPosition->setAttribute(SUMO_ATTR_CUSTOMSHAPE, "", myUndoList);
             myUndoList->end();
         }
@@ -2735,14 +3222,14 @@ GNEViewNet::onCmdResetOppositeLane(FXObject*, FXSelector, void*) {
         // when duplicating an unselected lane, keep all connections as they
         // are, otherwise recompute them
         if (laneAtPopupPosition->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::LANE, TL("reset opposite lanes"));
+            myUndoList->begin(laneAtPopupPosition, TL("reset opposite lanes"));
             const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
             for (const auto& lane : selectedLanes) {
                 lane->setAttribute(GNE_ATTR_OPPOSITE, "", myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::LANE, TL("reset opposite lane"));
+            myUndoList->begin(laneAtPopupPosition, TL("reset opposite lane"));
             laneAtPopupPosition->setAttribute(GNE_ATTR_OPPOSITE, "", myUndoList);
             myUndoList->end();
         }
@@ -2753,36 +3240,41 @@ GNEViewNet::onCmdResetOppositeLane(FXObject*, FXSelector, void*) {
 
 long
 GNEViewNet::onCmdLaneOperation(FXObject*, FXSelector sel, void*) {
-    // check lane operation
-    switch (FXSELID(sel)) {
-        case MID_GNE_LANE_TRANSFORM_SIDEWALK:
-            return restrictLane(SVC_PEDESTRIAN);
-        case MID_GNE_LANE_TRANSFORM_BIKE:
-            return restrictLane(SVC_BICYCLE);
-        case MID_GNE_LANE_TRANSFORM_BUS:
-            return restrictLane(SVC_BUS);
-        case MID_GNE_LANE_TRANSFORM_GREENVERGE:
-            return restrictLane(SVC_IGNORING);
-        case MID_GNE_LANE_ADD_SIDEWALK:
-            return addRestrictedLane(SVC_PEDESTRIAN, false);
-        case MID_GNE_LANE_ADD_BIKE:
-            return addRestrictedLane(SVC_BICYCLE, false);
-        case MID_GNE_LANE_ADD_BUS:
-            return addRestrictedLane(SVC_BUS, false);
-        case MID_GNE_LANE_ADD_GREENVERGE_FRONT:
-            return addRestrictedLane(SVC_IGNORING, true);
-        case MID_GNE_LANE_ADD_GREENVERGE_BACK:
-            return addRestrictedLane(SVC_IGNORING, false);
-        case MID_GNE_LANE_REMOVE_SIDEWALK:
-            return removeRestrictedLane(SVC_PEDESTRIAN);
-        case MID_GNE_LANE_REMOVE_BIKE:
-            return removeRestrictedLane(SVC_BICYCLE);
-        case MID_GNE_LANE_REMOVE_BUS:
-            return removeRestrictedLane(SVC_BUS);
-        case MID_GNE_LANE_REMOVE_GREENVERGE:
-            return removeRestrictedLane(SVC_IGNORING);
-        default:
-            return 0;
+    GNELane* laneAtPopupPosition = getLaneAtPopupPosition();
+    if (laneAtPopupPosition) {
+        // check lane operation
+        switch (FXSELID(sel)) {
+            case MID_GNE_LANE_TRANSFORM_SIDEWALK:
+                return restrictLane(laneAtPopupPosition, SVC_PEDESTRIAN);
+            case MID_GNE_LANE_TRANSFORM_BIKE:
+                return restrictLane(laneAtPopupPosition, SVC_BICYCLE);
+            case MID_GNE_LANE_TRANSFORM_BUS:
+                return restrictLane(laneAtPopupPosition, SVC_BUS);
+            case MID_GNE_LANE_TRANSFORM_GREENVERGE:
+                return restrictLane(laneAtPopupPosition, SVC_IGNORING);
+            case MID_GNE_LANE_ADD_SIDEWALK:
+                return addRestrictedLane(laneAtPopupPosition, SVC_PEDESTRIAN, false);
+            case MID_GNE_LANE_ADD_BIKE:
+                return addRestrictedLane(laneAtPopupPosition, SVC_BICYCLE, false);
+            case MID_GNE_LANE_ADD_BUS:
+                return addRestrictedLane(laneAtPopupPosition, SVC_BUS, false);
+            case MID_GNE_LANE_ADD_GREENVERGE_FRONT:
+                return addRestrictedLane(laneAtPopupPosition, SVC_IGNORING, true);
+            case MID_GNE_LANE_ADD_GREENVERGE_BACK:
+                return addRestrictedLane(laneAtPopupPosition, SVC_IGNORING, false);
+            case MID_GNE_LANE_REMOVE_SIDEWALK:
+                return removeRestrictedLane(laneAtPopupPosition, SVC_PEDESTRIAN);
+            case MID_GNE_LANE_REMOVE_BIKE:
+                return removeRestrictedLane(laneAtPopupPosition, SVC_BICYCLE);
+            case MID_GNE_LANE_REMOVE_BUS:
+                return removeRestrictedLane(laneAtPopupPosition, SVC_BUS);
+            case MID_GNE_LANE_REMOVE_GREENVERGE:
+                return removeRestrictedLane(laneAtPopupPosition, SVC_IGNORING);
+            default:
+                return 0;
+        }
+    } else {
+        return 0;
     }
 }
 
@@ -2795,8 +3287,8 @@ GNEViewNet::onCmdLaneReachability(FXObject* menu, FXSelector, void*) {
         const SUMOVehicleClass vClass = SumoVehicleClassStrings.get(dynamic_cast<FXMenuCommand*>(menu)->getText().text());
         // calculate reachability
         myNet->getPathManager()->getPathCalculator()->calculateReachability(vClass, laneAtPopupPosition->getParentEdge());
-        // select all lanes with reachability greather than 0
-        myUndoList->begin(GUIIcon::LANE, TL("select lane reachability"));
+        // select all lanes with reachability greater than 0
+        myUndoList->begin(laneAtPopupPosition, TL("select lane reachability"));
         for (const auto& edge : myNet->getAttributeCarriers()->getEdges()) {
             for (const auto& lane : edge.second->getLanes()) {
                 if (lane->getReachability() >= 0) {
@@ -2819,262 +3311,6 @@ GNEViewNet::onCmdOpenAdditionalDialog(FXObject*, FXSelector, void*) {
     // check if additional can open dialog
     if (addtional && addtional->getTagProperty().hasDialog()) {
         addtional->openAdditionalDialog();
-    }
-    return 1;
-}
-
-
-bool
-GNEViewNet::restrictLane(SUMOVehicleClass vclass) {
-    GNELane* laneAtPopupPosition = getLaneAtPopupPosition();
-    if (laneAtPopupPosition != nullptr) {
-        // Get selected lanes
-        const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
-        // Declare map of edges and lanes
-        std::map<GNEEdge*, GNELane*> mapOfEdgesAndLanes;
-        // Iterate over selected lanes
-        for (const auto& lane : selectedLanes) {
-            mapOfEdgesAndLanes[myNet->getAttributeCarriers()->retrieveEdge(lane->getParentEdge()->getID())] = lane;
-        }
-        // Throw warning dialog if there hare multiple lanes selected in the same edge
-        if (mapOfEdgesAndLanes.size() != selectedLanes.size()) {
-            const std::string header = TL("Multiple lane in the same edge selected");
-            const std::string bodyA = TL("There are selected lanes that belong to the same edge.");
-            const std::string bodyB = TL("Only one lane per edge will be restricted for ");
-            FXMessageBox::information(getApp(), MBOX_OK, header.c_str(), "%s", (bodyA + std::string("\n") + bodyB + toString(vclass) + ".").c_str());
-        }
-        // If we handeln a set of lanes
-        if (mapOfEdgesAndLanes.size() > 0) {
-            // declare counter for number of Sidewalks
-            int counter = 0;
-            // iterate over selected lanes
-            for (const auto& edgeLane : mapOfEdgesAndLanes) {
-                if (edgeLane.first->hasRestrictedLane(vclass)) {
-                    counter++;
-                }
-            }
-            // if all edges parent own a Sidewalk, stop function
-            if (counter == (int)mapOfEdgesAndLanes.size()) {
-                const std::string headerA = TL("Set vclass for ");
-                const std::string headerB = TL(" to selected lanes");
-                const std::string body = TL("All lanes own already another lane in the same edge with a restriction for ");
-                FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
-                return 0;
-            } else {
-                WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
-                // Ask confirmation to user
-                const std::string headerA = TL("Set vclass for ");
-                const std::string headerB = TL(" to selected lanes");
-                const std::string bodyA = TL(" lanes will be restricted for ");
-                const std::string bodyB = TL(". Continue?");
-                FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
-                                                       (toString(mapOfEdgesAndLanes.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
-                if (answer != 1) { //1:yes, 2:no, 4:esc
-                    // write warning if netedit is running in testing mode
-                    if (answer == 2) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
-                    } else if (answer == 4) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
-                    }
-                    return 0;
-                } else {
-                    // write warning if netedit is running in testing mode
-                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
-                }
-            }
-            // begin undo operation
-            myUndoList->begin(GUIIcon::LANE, "restrict lanes to " + toString(vclass));
-            // iterate over selected lanes
-            for (const auto& edgeLane : mapOfEdgesAndLanes) {
-                // Transform lane to Sidewalk
-                myNet->restrictLane(vclass, edgeLane.second, myUndoList);
-            }
-            // end undo operation
-            myUndoList->end();
-        } else {
-            // If only have a single lane, start undo/redo operation
-            myUndoList->begin(GUIIcon::LANE, TL("restrict lane to ") + toString(vclass));
-            // Transform lane to Sidewalk
-            myNet->restrictLane(vclass, laneAtPopupPosition, myUndoList);
-            // end undo operation
-            myUndoList->end();
-        }
-    }
-    return 1;
-}
-
-
-bool
-GNEViewNet::addRestrictedLane(SUMOVehicleClass vclass, const bool insertAtFront) {
-    GNELane* laneAtPopupPosition = getLaneAtPopupPosition();
-    if (laneAtPopupPosition != nullptr) {
-        // Get selected edges
-        const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
-        // get selected lanes
-        const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
-        // Declare set of edges
-        std::set<GNEEdge*> setOfEdges;
-        // Fill set of edges with vector of edges
-        for (const auto& edge : selectedEdges) {
-            setOfEdges.insert(edge);
-        }
-        // iterate over selected lanes
-        for (const auto& lane : selectedLanes) {
-            // Insert pointer to edge into set of edges (To avoid duplicates)
-            setOfEdges.insert(myNet->getAttributeCarriers()->retrieveEdge(lane->getParentEdge()->getID()));
-        }
-        // If we handeln a set of edges
-        if (laneAtPopupPosition->isAttributeCarrierSelected() || laneAtPopupPosition->getParentEdge()->isAttributeCarrierSelected()) {
-            // declare counter for number of restrictions
-            int counter = 0;
-            // iterate over set of edges
-            for (const auto& edge : setOfEdges) {
-                // update counter if edge has already a restricted lane of type "vclass"
-                if (edge->hasRestrictedLane(vclass)) {
-                    counter++;
-                }
-            }
-            // if all lanes own a Sidewalk, stop function
-            if (counter == (int)setOfEdges.size()) {
-                const std::string headerA = TL("Add vclass for ");
-                const std::string headerB = TL(" to selected lanes");
-                const std::string body = TL("All lanes own already another lane in the same edge with a restriction for ");
-                FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
-                return 0;
-            } else {
-                WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
-                // Ask confirmation to user
-                const std::string headerA = TL("Add vclass for ");
-                const std::string headerB = TL(" to selected lanes");
-                const std::string bodyA = TL(" restrictions for ");
-                const std::string bodyB = TL(" will be added. Continue?");
-                FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
-                                                       (toString(setOfEdges.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
-                if (answer != 1) { //1:yes, 2:no, 4:esc
-                    // write warning if netedit is running in testing mode
-                    if (answer == 2) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
-                    } else if (answer == 4) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
-                    }
-                    return 0;
-                } else {
-                    // write warning if netedit is running in testing mode
-                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
-                }
-            }
-            // begin undo operation
-            myUndoList->begin(GUIIcon::LANE, TL("add restrictions for ") + toString(vclass));
-            // iterate over set of edges
-            for (const auto& edge : setOfEdges) {
-                // add restricted lane (guess target)
-                myNet->addRestrictedLane(vclass, edge, -1, myUndoList);
-            }
-            // end undo operation
-            myUndoList->end();
-        } else {
-            // If only have a single lane, start undo/redo operation
-            myUndoList->begin(GUIIcon::LANE, TL("add vclass for ") + toString(vclass));
-            // Add restricted lane
-            if (vclass == SVC_PEDESTRIAN) {
-                // always add pedestrian lanes on the right
-                myNet->addRestrictedLane(vclass, laneAtPopupPosition->getParentEdge(), 0, myUndoList);
-            } else if (vclass == SVC_IGNORING) {
-                if (insertAtFront) {
-                    myNet->addGreenVergeLane(laneAtPopupPosition->getParentEdge(), laneAtPopupPosition->getIndex() + 1, myUndoList);
-                } else {
-                    myNet->addGreenVergeLane(laneAtPopupPosition->getParentEdge(), laneAtPopupPosition->getIndex(), myUndoList);
-                }
-            } else if (laneAtPopupPosition->getParentEdge()->getLanes().size() == 1) {
-                // guess insertion position if there is only 1 lane
-                myNet->addRestrictedLane(vclass, laneAtPopupPosition->getParentEdge(), -1, myUndoList);
-            } else {
-                myNet->addRestrictedLane(vclass, laneAtPopupPosition->getParentEdge(), laneAtPopupPosition->getIndex(), myUndoList);
-            }
-            // end undo/redo operation
-            myUndoList->end();
-        }
-    }
-    return 1;
-}
-
-
-bool
-GNEViewNet::removeRestrictedLane(SUMOVehicleClass vclass) {
-    GNELane* laneAtPopupPosition = getLaneAtPopupPosition();
-    if (laneAtPopupPosition != nullptr) {
-        // Get selected edges
-        const auto selectedEdges = myNet->getAttributeCarriers()->getSelectedEdges();
-        // get selected lanes
-        const auto selectedLanes = myNet->getAttributeCarriers()->getSelectedLanes();
-        // Declare set of edges
-        std::set<GNEEdge*> setOfEdges;
-        // Fill set of edges with vector of edges
-        for (const auto& edge : selectedEdges) {
-            setOfEdges.insert(edge);
-        }
-        // iterate over selected lanes
-        for (const auto& lane : selectedLanes) {
-            // Insert pointer to edge into set of edges (To avoid duplicates)
-            setOfEdges.insert(myNet->getAttributeCarriers()->retrieveEdge(lane->getParentEdge()->getID()));
-        }
-        // If we handeln a set of edges
-        if (setOfEdges.size() > 0) {
-            // declare counter for number of restrictions
-            int counter = 0;
-            // iterate over set of edges
-            for (const auto& edge : setOfEdges) {
-                // update counter if edge has already a restricted lane of type "vclass"
-                if (edge->hasRestrictedLane(vclass)) {
-                    counter++;
-                }
-            }
-            // if all lanes don't own a Sidewalk, stop function
-            if (counter == 0) {
-                const std::string headerA = TL("Remove vclass for ");
-                const std::string headerB = TL(" from selected lanes");
-                const std::string body = TL("Selected lanes and edges haven't a restriction for ");
-                FXMessageBox::information(getApp(), MBOX_OK, (headerA + toString(vclass) + headerB).c_str(), "%s", (body + toString(vclass) + ".").c_str());
-                return 0;
-            } else {
-                WRITE_DEBUG("Opening FXMessageBox 'restrict lanes'");
-                // Ask confirmation to user
-                const std::string headerA = TL("Remove vclass for ");
-                const std::string headerB = TL(" in selected lanes");
-                const std::string bodyA = TL(" restrictions for ");
-                const std::string bodyB = TL(" will be removed. Continue?");
-                FXuint answer = FXMessageBox::question(getApp(), MBOX_YES_NO, (headerA + toString(vclass) + headerB).c_str(), "%s",
-                                                       (toString(setOfEdges.size() - counter) + bodyA + toString(vclass) + bodyB).c_str());
-                if (answer != 1) { //1:yes, 2:no, 4:esc
-                    // write warning if netedit is running in testing mode
-                    if (answer == 2) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'No'");
-                    } else if (answer == 4) {
-                        WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'ESC'");
-                    }
-                    return 0;
-                } else {
-                    // write warning if netedit is running in testing mode
-                    WRITE_DEBUG("Closed FXMessageBox 'restrict lanes' with 'Yes'");
-                }
-            }
-            // begin undo operation
-            myUndoList->begin(GUIIcon::LANE, "Remove restrictions for " + toString(vclass));
-            // iterate over set of edges
-            for (const auto& edge : setOfEdges) {
-                // add Sidewalk
-                myNet->removeRestrictedLane(vclass, edge, myUndoList);
-            }
-            // end undo operation
-            myUndoList->end();
-        } else {
-            // If only have a single lane, start undo/redo operation
-            myUndoList->begin(GUIIcon::LANE, TL("Remove vclass for ") + toString(vclass));
-            // Remove Sidewalk
-            myNet->removeRestrictedLane(vclass, laneAtPopupPosition->getParentEdge(), myUndoList);
-            // end undo/redo operation
-            myUndoList->end();
-        }
     }
     return 1;
 }
@@ -3275,14 +3511,14 @@ GNEViewNet::onCmdResetJunctionShape(FXObject*, FXSelector, void*) {
     if (junction) {
         // are, otherwise recompute them
         if (junction->isAttributeCarrierSelected()) {
-            myUndoList->begin(GUIIcon::JUNCTION, TL("reset custom junction shapes"));
+            myUndoList->begin(junction, TL("reset custom junction shapes"));
             const auto selectedJunctions = myNet->getAttributeCarriers()->getSelectedJunctions();
             for (const auto& selectedJunction : selectedJunctions) {
                 selectedJunction->setAttribute(SUMO_ATTR_SHAPE, "", myUndoList);
             }
             myUndoList->end();
         } else {
-            myUndoList->begin(GUIIcon::JUNCTION, TL("reset custom junction shape"));
+            myUndoList->begin(junction, TL("reset custom junction shape"));
             junction->setAttribute(SUMO_ATTR_SHAPE, "", myUndoList);
             myUndoList->end();
         }
@@ -4391,6 +4627,14 @@ GNEViewNet::onCmdRemoveEdgeSelected(FXObject*, FXSelector, void*) {
     return 1;
 }
 
+
+long
+GNEViewNet::onCmdSetNeteditView(FXObject*, FXSelector sel, void*) {
+    myEditModes.setView(FXSELID(sel));
+    update();
+    return 1;
+}
+
 // ===========================================================================
 // private
 // ===========================================================================
@@ -4400,8 +4644,11 @@ GNEViewNet::buildEditModeControls() {
     // build supermode buttons
     myEditModes.buildSuperModeButtons();
 
-    // build save buttons
+    // build save elements buttons
     mySaveElements.buildSaveElementsButtons();
+
+    // build time switch buttons
+    myTimeFormat.buildTimeFormatButtons();
 
     // build menu checks for Common checkable buttons
     myCommonCheckableButtons.buildCommonCheckableButtons();
@@ -4610,6 +4857,12 @@ GNEViewNet::updateNetworkModeSpecificControls() {
             myCurrentFrame = myViewParent->getWireFrame();
             myNetworkCheckableButtons.wireButton->setChecked(true);
             break;
+        case NetworkEditMode::NETWORK_DECAL:
+            myViewParent->getDecalFrame()->show();
+            myViewParent->getDecalFrame()->focusUpperElement();
+            myCurrentFrame = myViewParent->getDecalFrame();
+            myNetworkCheckableButtons.decalButton->setChecked(true);
+            break;
         default:
             break;
     }
@@ -4719,6 +4972,13 @@ GNEViewNet::updateDemandModeSpecificControls() {
             // set checkable button
             myDemandCheckableButtons.routeButton->setChecked(true);
             break;
+        case DemandEditMode::DEMAND_ROUTEDISTRIBUTION:
+            myViewParent->getRouteDistributionFrame()->show();
+            myViewParent->getRouteDistributionFrame()->focusUpperElement();
+            myCurrentFrame = myViewParent->getRouteDistributionFrame();
+            // set checkable button
+            myDemandCheckableButtons.routeDistributionButton->setChecked(true);
+            break;
         case DemandEditMode::DEMAND_VEHICLE:
             myViewParent->getVehicleFrame()->show();
             myViewParent->getVehicleFrame()->focusUpperElement();
@@ -4732,6 +4992,13 @@ GNEViewNet::updateDemandModeSpecificControls() {
             myCurrentFrame = myViewParent->getTypeFrame();
             // set checkable button
             myDemandCheckableButtons.typeButton->setChecked(true);
+            break;
+        case DemandEditMode::DEMAND_TYPEDISTRIBUTION:
+            myViewParent->getTypeDistributionFrame()->show();
+            myViewParent->getTypeDistributionFrame()->focusUpperElement();
+            myCurrentFrame = myViewParent->getTypeDistributionFrame();
+            // set checkable button
+            myDemandCheckableButtons.typeDistributionButton->setChecked(true);
             break;
         case DemandEditMode::DEMAND_STOP:
             myViewParent->getStopFrame()->show();
@@ -5044,8 +5311,11 @@ GNEViewNet::updateControls() {
             case DemandEditMode::DEMAND_TYPE:
                 myViewParent->getTypeFrame()->show();
                 break;
-            case DemandEditMode::DEMAND_STOP:
-                myViewParent->getStopFrame()->show();
+            case DemandEditMode::DEMAND_TYPEDISTRIBUTION:
+                myViewParent->getTypeDistributionFrame()->getDistributionSelector()->refreshDistributionSelector();
+                break;
+            case DemandEditMode::DEMAND_ROUTEDISTRIBUTION:
+                myViewParent->getRouteDistributionFrame()->getDistributionSelector()->refreshDistributionSelector();
                 break;
             case DemandEditMode::DEMAND_PERSON:
                 myViewParent->getPersonFrame()->show();
@@ -5058,6 +5328,9 @@ GNEViewNet::updateControls() {
                 break;
             case DemandEditMode::DEMAND_CONTAINERPLAN:
                 myViewParent->getContainerPlanFrame()->show();
+                break;
+            case DemandEditMode::DEMAND_STOP:
+                myViewParent->getStopFrame()->show();
                 break;
             default:
                 break;
@@ -5194,42 +5467,37 @@ GNEViewNet::drawTemporalSplitJunction() const {
             myMouseButtonKeyPressed.shiftKeyPressed() &&
             !myMouseButtonKeyPressed.altKeyPressed() &&
             (gPostDrawing.markedEdge != nullptr)) {
-        // get marked edge
-        const GNEEdge* edge = dynamic_cast<const GNEEdge*>(gPostDrawing.markedEdge);
-        // check that edge exist
-        if (edge) {
-            // calculate split position
-            const auto lane = edge->getLanes().back();
-            const auto laneDrawingConstants = GNELane::LaneDrawingConstants(*myVisualizationSettings, lane);
-            auto shape = lane->getLaneShape();
-            // move shape to side
-            shape.move2side(laneDrawingConstants.halfWidth * -1);
-            const auto offset = shape.nearest_offset_to_point2D(snapToActiveGrid(getPositionInformation()));
-            const auto splitPosition = shape.positionAtOffset2D(offset);
-            // get junction exaggeration
-            const double junctionExaggeration = myVisualizationSettings->junctionSize.getExaggeration(*myVisualizationSettings, nullptr, 4);
-            // get bubble color
-            RGBColor bubbleColor = myVisualizationSettings->junctionColorer.getScheme().getColor(1);
-            // push layer matrix
-            GLHelper::pushMatrix();
-            // translate to temporal shape layer
-            glTranslated(0, 0, GLO_TEMPORALSHAPE);
-            // push junction matrix
-            GLHelper::pushMatrix();
-            // move matrix junction center
-            glTranslated(splitPosition.x(), splitPosition.y(), 0.1);
-            // set color
-            GLHelper::setColor(bubbleColor);
-            // draw outline circle
-            const double circleWidth = myVisualizationSettings->neteditSizeSettings.junctionBubbleRadius * junctionExaggeration;
-            GLHelper::drawOutlineCircle(circleWidth, circleWidth * 0.75, myVisualizationSettings->getCircleResolution());
-            // draw filled circle
-            GLHelper::drawFilledCircle(0.5, myVisualizationSettings->getCircleResolution());
-            // pop junction matrix
-            GLHelper::popMatrix();
-            // pop layer matrix
-            GLHelper::popMatrix();
-        }
+        // calculate split position
+        const auto lane = gPostDrawing.markedEdge->getLanes().back();
+        const auto laneDrawingConstants = GNELane::LaneDrawingConstants(*myVisualizationSettings, lane);
+        auto shape = lane->getLaneShape();
+        // move shape to side
+        shape.move2side(laneDrawingConstants.halfWidth * -1);
+        const auto offset = shape.nearest_offset_to_point2D(snapToActiveGrid(getPositionInformation()));
+        const auto splitPosition = shape.positionAtOffset2D(offset);
+        // get junction exaggeration
+        const double junctionExaggeration = myVisualizationSettings->junctionSize.getExaggeration(*myVisualizationSettings, nullptr, 4);
+        // get bubble color
+        RGBColor bubbleColor = myVisualizationSettings->junctionColorer.getScheme().getColor(1);
+        // push layer matrix
+        GLHelper::pushMatrix();
+        // translate to temporal shape layer
+        glTranslated(0, 0, GLO_TEMPORALSHAPE);
+        // push junction matrix
+        GLHelper::pushMatrix();
+        // move matrix junction center
+        glTranslated(splitPosition.x(), splitPosition.y(), 0.1);
+        // set color
+        GLHelper::setColor(bubbleColor);
+        // draw outline circle
+        const double circleWidth = myVisualizationSettings->neteditSizeSettings.junctionBubbleRadius * junctionExaggeration;
+        GLHelper::drawOutlineCircle(circleWidth, circleWidth * 0.75, myVisualizationSettings->getCircleResolution());
+        // draw filled circle
+        GLHelper::drawFilledCircle(0.5, myVisualizationSettings->getCircleResolution());
+        // pop junction matrix
+        GLHelper::popMatrix();
+        // pop layer matrix
+        GLHelper::popMatrix();
     }
 }
 
@@ -5320,18 +5588,41 @@ GNEViewNet::drawTemporalJunctionTLSLines() const {
 
 
 void
+GNEViewNet::drawOverDottedContour() {
+    // first check if there is a markedElementOverContour
+    if (gPostDrawing.markedElementOverContour) {
+        // check if is a basic GLObject or a path element
+        auto pathElement = myNet->getPathManager()->getPathElement(gPostDrawing.markedElementOverContour);
+        if (pathElement != nullptr) {
+            myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, pathElement);
+        } else {
+            gPostDrawing.markedElementOverContour->drawGL(*myVisualizationSettings);
+        }
+    }
+}
+
+
+void
 GNEViewNet::drawDeleteDottedContour() {
-    // avoid draw if we're in position or rectangle selection
-    if (!myVisualizationSettings->drawForPositionSelection && !myVisualizationSettings->drawForRectangleSelection) {
-        // only draw marked elements that have the same GLType of the last element
-        for (const auto elementToRemove : gPostDrawing.elementsMarkedToRemove) {
-            if (elementToRemove->getType() == gPostDrawing.elementsMarkedToRemove.back()->getType()) {
+    // first check if there is a markedElementDeleteContour
+    if (gPostDrawing.markedElementDeleteContour) {
+        // check if is a basic GLObject or a path element
+        auto pathElement = myNet->getPathManager()->getPathElement(gPostDrawing.markedElementDeleteContour);
+        if (pathElement != nullptr) {
+            myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, pathElement);
+        } else {
+            gPostDrawing.markedElementDeleteContour->drawGL(*myVisualizationSettings);
+        }
+        // iterate over all objects under cursor
+        for (const auto& objectUnderCursor : gPostDrawing.getElementUnderCursor()) {
+            // compare objectUnderCursor and markedElementsDeleteContour types
+            if (objectUnderCursor->getType() == gPostDrawing.markedElementDeleteContour->getType()) {
                 // check if is a normalGLObject or a path element
-                const auto pathElement = myNet->getPathManager()->getPathElement(elementToRemove);
+                pathElement = myNet->getPathManager()->getPathElement(objectUnderCursor);
                 if (pathElement != nullptr) {
                     myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, pathElement);
                 } else {
-                    elementToRemove->drawGL(*myVisualizationSettings);
+                    objectUnderCursor->drawGL(*myVisualizationSettings);
                 }
             }
         }
@@ -5341,20 +5632,36 @@ GNEViewNet::drawDeleteDottedContour() {
 
 void
 GNEViewNet::drawSelectDottedContour() {
-    // avoid draw if we're in position or rectangle selection
-    if (!myVisualizationSettings->drawForPositionSelection && !myVisualizationSettings->drawForRectangleSelection) {
-        // only draw marked elements that have the same GLType of the last element
-        for (const auto elementToSelect : gPostDrawing.elementsMarkedToSelect) {
-            if (elementToSelect->getType() == gPostDrawing.elementsMarkedToSelect.back()->getType()) {
+    // first check if there is a markedElementSelectContour
+    if (gPostDrawing.markedElementSelectContour) {
+        // check if is a basic GLObject or a path element
+        auto pathElement = myNet->getPathManager()->getPathElement(gPostDrawing.markedElementSelectContour);
+        if (pathElement != nullptr) {
+            myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, pathElement);
+        } else {
+            gPostDrawing.markedElementSelectContour->drawGL(*myVisualizationSettings);
+        }
+        // iterate over all objects under cursor
+        for (const auto& objectUnderCursor : gPostDrawing.getElementUnderCursor()) {
+            // compare objectUnderCursor and markedElementsSelectContour types
+            if (objectUnderCursor->getType() == gPostDrawing.markedElementSelectContour->getType()) {
                 // check if is a normalGLObject or a path element
-                const auto pathElement = myNet->getPathManager()->getPathElement(elementToSelect);
+                pathElement = myNet->getPathManager()->getPathElement(objectUnderCursor);
                 if (pathElement != nullptr) {
                     myNet->getPathManager()->forceDrawPath(*myVisualizationSettings, pathElement);
                 } else {
-                    elementToSelect->drawGL(*myVisualizationSettings);
+                    objectUnderCursor->drawGL(*myVisualizationSettings);
                 }
             }
         }
+    }
+}
+
+
+void
+GNEViewNet::drawNeteditAttributesReferences() {
+    if (myEditModes.isCurrentSupermodeNetwork() && (myEditModes.networkEditMode == NetworkEditMode::NETWORK_ADDITIONAL)) {
+        myViewParent->getAdditionalFrame()->getNeteditAttributes()->drawLaneReference(*myVisualizationSettings, gPostDrawing.markedLane);
     }
 }
 
@@ -5649,6 +5956,11 @@ GNEViewNet::processLeftButtonPressNetwork(void* eventData) {
             processClick(eventData);
             break;
         }
+        case NetworkEditMode::NETWORK_DECAL: {
+            // process click
+            processClick(eventData);
+            break;
+        }
         default: {
             // process click
             processClick(eventData);
@@ -5823,28 +6135,28 @@ GNEViewNet::processLeftButtonPressDemand(void* eventData) {
         }
         case DemandEditMode::DEMAND_PERSON: {
             // Handle click
-            myViewParent->getPersonFrame()->addPerson(myObjectsUnderCursor, myMouseButtonKeyPressed);
+            myViewParent->getPersonFrame()->addPerson(myObjectsUnderCursor);
             // process click
             processClick(eventData);
             break;
         }
         case DemandEditMode::DEMAND_PERSONPLAN: {
             // Handle person plan click
-            myViewParent->getPersonPlanFrame()->addPersonPlanElement(myObjectsUnderCursor, myMouseButtonKeyPressed);
+            myViewParent->getPersonPlanFrame()->addPersonPlanElement(myObjectsUnderCursor);
             // process click
             processClick(eventData);
             break;
         }
         case DemandEditMode::DEMAND_CONTAINER: {
             // Handle click
-            myViewParent->getContainerFrame()->addContainer(myObjectsUnderCursor, myMouseButtonKeyPressed);
+            myViewParent->getContainerFrame()->addContainer(myObjectsUnderCursor);
             // process click
             processClick(eventData);
             break;
         }
         case DemandEditMode::DEMAND_CONTAINERPLAN: {
             // Handle container plan click
-            myViewParent->getContainerPlanFrame()->addContainerPlanElement(myObjectsUnderCursor, myMouseButtonKeyPressed);
+            myViewParent->getContainerPlanFrame()->addContainerPlanElement(myObjectsUnderCursor);
             // process click
             processClick(eventData);
             break;
@@ -6023,4 +6335,3 @@ GNEViewNet::processMoveMouseData(const bool mouseLeftButtonPressed) {
 
 
 /****************************************************************************/
-

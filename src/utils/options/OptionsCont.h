@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -89,9 +89,11 @@
 class OptionsCont {
 
 public:
-
     /// @brief Retrieves the options
     static OptionsCont& getOptions();
+
+    /// @brief empty option container
+    static OptionsCont EMPTY_OPTIONS;
 
     /// @brief Constructor
     OptionsCont();
@@ -269,7 +271,7 @@ public:
      * @param[in] subtopic The subtopic to locate the description within
      * @exception InvalidArgument If none of the synonymes or both synonymes with different options were registered before
      */
-    void setRequired(const std::string& name, const std::string& subtopic);
+    void setFurtherAttributes(const std::string& name, const std::string& subtopic, bool required, bool positional, const std::string& listSep);
 
     /** @brief Adds a category for an option
      *

@@ -221,7 +221,7 @@ value is also shown in the table.
 </tr>
 <tr class="even">
 <td><p>stop state (id 0xb5)</p></td>
-<td><p>ubyte</p></td>
+<td><p>int</p></td>
 <td><p>value = 1 * stopped + 2 * parking + 4 * triggered + 8 * containerTriggered + 16 * atBusStop + 32 * atContainerStop + 64 * atChargingStation + 128 * atParkingArea</p></td>
 <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getStopState">getStopState</a><br />
 <a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-isAtBusStop">isAtBusStop</a><br />
@@ -417,6 +417,18 @@ value is also shown in the table.
 <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getMaxSpeedLat">getMaxSpeedLat</a></p></td>
 </tr>
 <tr class="odd">
+<td><p>boarding duration (0x2f)</p></td>
+<td><p>double</p></td>
+<td><p>Returns the boarding duration of the vehicle in s</p></td>
+<td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getBoardingDuration">getBoarding</a></p></td>
+</tr>
+<tr class="even">
+<td><p>current impatience (0x26)</p></td>
+<td><p>double</p></td>
+<td><p>Returns the current [dynamic impatience](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#impatience) of this vehicle.</p></td>
+<td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getImpatience">getImpatience</a></p></td>
+</tr>
+<tr class="odd">
 <td><p>lateral gap (0xbb)</p></td>
 <td><p>double</p></td>
 <td><p>Returns the desired lateral gap of this vehicle at 50km/h in m.</p></td>
@@ -475,6 +487,18 @@ value is also shown in the table.
   <td><p>complex</p></td>
   <td><p>Returns the list of upcoming links with each compound containing info about (lane, via, priority, opened, foe, state, direction, length)</p></td>
   <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getNextLinks">getNextLinks</a></p></td>
+</tr>
+<tr class="odd">
+<td><p>actual departure time (0x3a)</p></td>
+<td><p>double</p></td>
+<td><p><Returns the actual departure time (after possibly queueing for insertion)/p></td>
+<td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getDeparture">getDeparture</a></p></td>
+</tr>
+<tr class="even">
+  <td><p>departure delay (0x3b)</p></td>
+  <td><p>double</p></td>
+  <td><p>Returns the time difference between the planned and the actual departure</p></td>
+  <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getDepartDelay">getDepartDelay</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -594,6 +618,18 @@ Return the lane change state for the vehicle.</p></td>
 <td><p>Return the safe speed for stopping at gap computed by the carFollowModel of vehicle</p></td>
 <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getStopSpeed">getStopSpeed</a></p></td>
 </tr>
+  <tr class="even">
+  <td><p>junction foes (0x37)</p></td>
+  <td><p>complex</p></td>
+  <td><p>Returns the list of foes within a certain distance of the ego vehicle.</p></td>
+  <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getJunctionFoes">getJunctionFoes</a></p></td>
+</tr>
+<tr class="odd">
+  <td><p>stop parameters (0x55)</p></td>
+  <td><p>string</p></td>
+  <td><p>Returns the attribute by the given name for the stop of the given index (0 is the next stop, -1 is the previous stop etc) for the specified vehicle. If customParam is set to True (1), the user defined custom parameter will returned instead.
+  <td><p><a href="https://sumo.dlr.de/pydoc/traci._vehicle.html#VehicleDomain-getStopParameter">getStopParameter</a></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -655,6 +691,8 @@ Each value is a bitset with the following meaning:
 - 2^13: overlapping
 - 2^14: insufficient space
 - 2^15: sublane
+- 2^28: insufficient speed
+- 2^30: undetermined
 
 ### neighboring vehicles (0xbf)
 
@@ -697,6 +735,25 @@ The returned value is the safe gap for following the given leader in m.
 
 The returned value is the safe speed in m/s for stopping after gap when braking
 from the given speed.
+
+### junction foes (0x37)
+
+|         byte          |  double |
+| :-------------------: |  :----: |
+| value type *double*   |  lookahead distance in m   |
+
+The returned value is the safe speed in m/s for stopping after gap when braking
+from the given speed.
+
+### stopParameter (0x55)
+
+|         byte          | int   | int | string | byte
+| :-------------------: | :---: | :----: | :----: |:----: |
+| value type *compound* | 3     | stopIndex  | param    | customParam
+
+The stopIndex must be in range [-numberOfPassedStops, numberORemaingStops - 1]
+The customParam is interpreted as a boolean and deterines whether an attribute values or a user defined parama is returned.
+
 
 ## Device and LaneChangeModel Parameter Retrieval 0x7e
 
@@ -741,7 +798,7 @@ call](../TraCI/GenericParameters.md#get_parameter).
 - device.taxi.occupiedDistance
 - device.taxi.currentCustomers
 - device.tripinfo.waitingTime (total waiting time)
-- device.tripinfo.waitingCount 
+- device.tripinfo.waitingCount
 - device.tripinfo.stopTime (total stopping time)
 - device.example.customValue1 (return the value of option **--device.example.parameter**)
 - device.example.customValue2 (return the value of vehicle parameter
@@ -773,6 +830,3 @@ Some carFollowModels permit access to further vehicle-specific parameters.
 - parking.memory.score:  latest scores for the list of considered parkingAreas (smaller is better)
 - parking.memory.blockedAtTime: times for the list of considered parkingAreas indicating the last time the area was found to be blocked (possibly via remote information)
 - parking.memory.blockedAtTimeLocal: times for the list of considered parkingAreas indicating the last time the area was found to be blocked (upon physically visiting that area)
-
-
-

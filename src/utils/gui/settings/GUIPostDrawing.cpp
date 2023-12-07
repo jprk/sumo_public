@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -37,13 +37,12 @@ GUIPostDrawing::executePostDrawingTasks() {
     myGLObjectsToUpdate.clear();
     // reset mouse Pos
     mousePos = Position::INVALID;
-    // clear containers
+    // clear objects under cursor
     myElementsUnderCursor.clear();
-    elementsMarkedToRemove.clear();
-    elementsMarkedToSelect.clear();
     // reset marked elements
-    myTopElement = nullptr;
-    markedNode = nullptr;
+    markedElementOverContour = nullptr;
+    markedElementDeleteContour = nullptr;
+    markedElementSelectContour = nullptr;
     markedEdge = nullptr;
     markedLane = nullptr;
     markedTAZ = nullptr;
@@ -63,11 +62,9 @@ GUIPostDrawing::markGLObjectToUpdate(GUIGlObject* GLObject) {
 
 void
 GUIPostDrawing::addElementUnderCursor(const GUIGlObject* GLObject) {
-    myElementsUnderCursor.push_back(GLObject);
-    if (myTopElement == nullptr) {
-        myTopElement = GLObject;
-    } else if (GLObject->getType() > myTopElement->getType()) {
-        myTopElement = GLObject;
+    // avoid to insert duplicated elements
+    if (isElementUnderCursor(GLObject) == false) {
+        myElementsUnderCursor.push_back(GLObject);
     }
 }
 
@@ -75,16 +72,6 @@ GUIPostDrawing::addElementUnderCursor(const GUIGlObject* GLObject) {
 bool
 GUIPostDrawing::isElementUnderCursor(const GUIGlObject* GLObject) const {
     return (std::find(myElementsUnderCursor.begin(), myElementsUnderCursor.end(), GLObject) != myElementsUnderCursor.end());
-}
-
-
-bool
-GUIPostDrawing::isTopElementUnderCursor(const GUIGlObject* GLObject) const {
-    if (myTopElement) {
-        return (GLObject->getType() >= myTopElement->getType());
-    } else {
-        return false;
-    }
 }
 
 

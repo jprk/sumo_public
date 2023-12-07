@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // activitygen module
 // Copyright 2010 TUM (Technische Universitaet Muenchen, http://www.tum.de/)
@@ -104,7 +104,7 @@ main(int argc, char* argv[]) {
         XMLSubSys::setValidation(oc.getString("xml-validation"), oc.getString("xml-validation.net"), "never");
         MsgHandler::initOutputOptions();
         RandHelper::initRandGlobal();
-        SystemFrame::checkOptions();
+        SystemFrame::checkOptions(oc);
 
         // Load network
         net = new RONet();

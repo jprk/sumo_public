@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -35,7 +35,7 @@ netedit.rebuildNetwork()
 netedit.inspectMode()
 
 # add restricted lane
-netedit.contextualMenuOperation(referencePosition, 250, 150,
+netedit.contextualMenuOperation(referencePosition, 400, 150,
                                 netedit.attrs.lane.contextualMenuLane,
                                 netedit.attrs.lane.contextualMenu.addRestrictedLane,
                                 netedit.attrs.lane.restrictedLanes.sidewalk)

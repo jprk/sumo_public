@@ -1,4 +1,4 @@
-Eclipse SUMO netconvert Version v1_16_0+0875-d196e53626f
+Eclipse SUMO netconvert Version v1_18_0+2224-9463baa5d5c
  Copyright (C) 2001-2023 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Network importer / builder for the microscopic, multi-modal traffic simulation
  SUMO.
@@ -73,6 +73,8 @@ Output Options:
                                         FILE using OpenDRIVE format
   --dlr-navteq-output FILE             The generated net will be written to
                                         dlr-navteq files with the given PREFIX
+  --dlr-navteq.version STR             The dlr-navteq output format version to
+                                        write
   --dlr-navteq.precision INT           The network coordinates are written with
                                         the specified level of output precision
   --output.street-names                Street names will be included in the
@@ -152,6 +154,9 @@ Processing Options:
   --geometry.remove.width-tolerance FLOAT  Allow merging edges with differing
                                         lane widths if the difference is below
                                         FLOAT
+  --geometry.remove.max-junction-size FLOAT  Prevent removal of junctions with
+                                        a size above FLOAT as defined by custom
+                                        edge endpoints
   --geometry.max-segment-length FLOAT  splits geometry to restrict segment
                                         length
   --geometry.min-dist FLOAT            reduces too similar geometry points
@@ -247,9 +252,9 @@ Building Defaults Options:
                                         'edgePriority')
 
 TLS Building Options:
-  --tls.discard-loaded                 Does not instatiate traffic lights
+  --tls.discard-loaded                 Does not instantiate traffic lights
                                         loaded from other formats than plain-XML
-  --tls.discard-simple                 Does not instatiate traffic lights at
+  --tls.discard-simple                 Does not instantiate traffic lights at
                                         geometry-like nodes loaded from other
                                         formats than plain-XML
   --tls.set STR[]                      Interprets STR[] as list of junctions to
@@ -264,6 +269,8 @@ TLS Building Options:
   --tls.join                           Tries to cluster tls-controlled nodes
   --tls.join-dist FLOAT                Determines the maximal distance for
                                         joining traffic lights (defaults to 20)
+  --tls.join-exclude STR[]             Interprets STR[] as list of tls ids to
+                                        exclude from joining
   --tls.uncontrolled-within            Do not control edges that lie fully
                                         within a joined traffic light. This may
                                         cause collisions but allows old traffic
@@ -303,7 +310,7 @@ TLS Building Options:
   --tls.nema.vehExt INT                Set INT as fixed time for intermediate
                                         vehext phase after every switch
   --tls.nema.yellow INT                Set INT as fixed time for intermediate
-                                        NEMA yelow phase after every switch
+                                        NEMA yellow phase after every switch
   --tls.nema.red INT                   Set INT as fixed time for intermediate
                                         NEMA red phase after every switch
   --tls.crossing-min.time INT          Use INT as minimum green duration for
@@ -440,7 +447,7 @@ Junctions Options:
                                         lane-changing while turning
   --junctions.limit-turn-speed FLOAT   Limits speed on junctions to an average
                                         lateral acceleration of at most FLOAT
-                                        m/s^2)
+                                        (m/s^2)
   --junctions.limit-turn-speed.min-angle FLOAT  Do not limit turn speed for
                                         angular changes below FLOAT (degrees).
                                         The value is subtracted from the
@@ -463,6 +470,8 @@ Junctions Options:
   --junctions.higher-speed             Use maximum value of incoming and
                                         outgoing edge speed on junction instead
                                         of average
+  --junctions.minimal-shape            Build junctions with minimal shapes
+                                        (ignoring edge overlap)
   --internal-junctions.vehicle-width FLOAT  Assumed vehicle width for computing
                                         internal junction positions
   --rectangular-lane-cut               Forces rectangular cuts between lanes
@@ -521,6 +530,9 @@ Railway Options:
                                         meet at a straight angle
   --railway.topology.repair.stop-turn  Add turn-around connections at all
                                         loaded stops.
+  --railway.topology.repair.bidi-penalty FLOAT  Penalty factor for adding new
+                                        bidi edges to connect public transport
+                                        stops
   --railway.topology.all-bidi          Make all rails usable in both direction
   --railway.topology.all-bidi.input-file FILE  Make all rails edge ids from
                                         FILE usable in both direction
@@ -528,6 +540,8 @@ Railway Options:
                                         estimated main direction
   --railway.topology.extend-priority   Extend loaded edge priority values based
                                         on estimated main direction
+  --railway.signal.guess.by-stops      Guess signals that guard public
+                                        transport stops
   --railway.access-distance FLOAT      The search radius for finding suitable
                                         road accesses for rail stops
   --railway.max-accesses INT           The maximum road accesses registered per
@@ -548,7 +562,7 @@ Formats Options:
                                         on layer data. Each layer is raised by
                                         FLOAT m
   --osm.layer-elevation.max-grade FLOAT  Maximum grade threshold in % at 50km/h
-                                        when reconstrucing elevation based on
+                                        when reconstructing elevation based on
                                         layer data. The value is scaled
                                         according to road speed.
   --osm.oneway-spread-right            Whether one-way roads should be spread
@@ -635,6 +649,10 @@ Formats Options:
                                         in m (legacy)
   --opendrive.lane-shapes              Use custom lane shapes to compensate
                                         discarded lane types
+  --opendrive.signal-groups            Use the OpenDRIVE controller information
+                                        for the generated signal program
+  --opendrive.ignore-misplaced-signals  Ignore traffic signals which do not
+                                        control any driving lane
 
 Report Options:
   -v, --verbose                        Switches to verbose output
@@ -655,6 +673,10 @@ Report Options:
   --message-log FILE                   Writes all non-error messages to FILE
                                         (implies verbose)
   --error-log FILE                     Writes all warnings and errors to FILE
+  --log.timestamps                     Writes timestamps in front of all
+                                        messages
+  --log.processid                      Writes process ID in front of all
+                                        messages
   --language STR                       Language to use in messages
   --ignore-errors                      Continue on broken input
   --ignore-errors.connections          Continue on invalid connections

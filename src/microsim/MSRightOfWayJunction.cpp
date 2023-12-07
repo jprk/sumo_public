@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -132,7 +132,8 @@ MSRightOfWayJunction::postloadInit() {
                     }
                     if (linkFoes.test(c)) {
                         myLinkFoeInternalLanes[link].push_back(myInternalLanes[li]);
-                        if (linkResponse.test(c) || sortedLinks[c].second->isIndirect()) {
+                        if (linkResponse.test(c) || sortedLinks[c].second->isIndirect() ||
+                                link->getLane()->getBidiLane() == sortedLinks[c].second->getLaneBefore()) {
                             const std::vector<MSLane::IncomingLaneInfo>& l = myInternalLanes[li]->getIncomingLanes();
                             if (l.size() == 1 && l[0].lane->getEdge().isInternal()) {
                                 myLinkFoeInternalLanes[link].push_back(l[0].lane);

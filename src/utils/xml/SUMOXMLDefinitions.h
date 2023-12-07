@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -111,6 +111,8 @@ enum SumoXMLTag {
     GNE_TAG_CALIBRATOR_FLOW,
     /// @brief  A rerouter
     SUMO_TAG_REROUTER,
+    /// @brief Rerouter Symbol
+    GNE_TAG_REROUTER_SYMBOL,
     /// @brief an aggreagated-output interval
     SUMO_TAG_INTERVAL,
     /// @brief probability of destination of a reroute
@@ -125,6 +127,8 @@ enum SumoXMLTag {
     SUMO_TAG_PARKING_AREA_REROUTE,
     /// @brief A variable speed sign
     SUMO_TAG_VSS,
+    /// @brief VSS Symbol
+    GNE_TAG_VSS_SYMBOL,
     /// @brief trigger: a step description
     SUMO_TAG_STEP,
     /// @brief vaporizer of vehicles
@@ -143,17 +147,27 @@ enum SumoXMLTag {
     SUMO_TAG_ROUTES,
     /// @brief a single trip definition (used by router)
     SUMO_TAG_TRIP,
-    /// @brief a trip between junctions (used in netedit)
+    /// @brief a trip between junctions
     GNE_TAG_TRIP_JUNCTIONS,
+    /// @brief a single trip definition that uses TAZs
+    GNE_TAG_TRIP_TAZS,
     /// @brief description of a vehicle
     SUMO_TAG_VEHICLE,
-    /// @brief description of a vehicle with an embedded route (used in netedit)
+    /// @brief description of a vehicle with an embedded route
     GNE_TAG_VEHICLE_WITHROUTE,
+    /// @brief a flow definition using from and to edges or a route
+    SUMO_TAG_FLOW,
+    /// @brief a flow between junctions
+    GNE_TAG_FLOW_JUNCTIONS,
+    /// @brief a flow between TAZs
+    GNE_TAG_FLOW_TAZS,
+    /// @brief a flow state definition (used when saving and loading simulatino state)
+    SUMO_TAG_FLOWSTATE,
     /// @brief description of a vehicle/person/container type
     SUMO_TAG_VTYPE,
     /// @brief begin/end of the description of a route
     SUMO_TAG_ROUTE,
-    /// @brief embedded route (used in netedit)
+    /// @brief embedded route
     GNE_TAG_ROUTE_EMBEDDED,
     /// @brief description of a logic request within the junction
     SUMO_TAG_REQUEST,
@@ -177,14 +191,6 @@ enum SumoXMLTag {
     SUMO_TAG_ASSIGNMENT,
     /// @brief a sequence of assignments evaluated in the context of passed arguments
     SUMO_TAG_FUNCTION,
-    /// @brief a single trip definition that uses TAZs (used in netedit)
-    SUMO_TAG_TRIP_TAZ,
-    /// @brief a flow definitio nusing a from-to edges instead of a route (used by router)
-    SUMO_TAG_FLOW,
-    /// @brief a flow between junctions (used in netedit)
-    GNE_TAG_FLOW_JUNCTIONS,
-    /// @brief a flow state definition (used when saving and loading simulatino state)
-    SUMO_TAG_FLOWSTATE,
     /// @brief the internal state for edge control
     SUMO_TAG_EDGECONTROL,
     /// @brief a relation between two edges
@@ -210,16 +216,18 @@ enum SumoXMLTag {
     SUMO_TAG_DEL,
     /// @brief stop for vehicles
     SUMO_TAG_STOP,
-    /// @brief stop placed over a lane (used in netedit)
-    SUMO_TAG_STOP_LANE,
-    /// @brief stop placed over a busStop (used in netedit)
-    SUMO_TAG_STOP_BUSSTOP,
-    /// @brief stop placed over a containerStop (used in netedit)
-    SUMO_TAG_STOP_CONTAINERSTOP,
-    /// @brief stop placed over a charging station (used in netedit)
-    SUMO_TAG_STOP_CHARGINGSTATION,
-    /// @brief stop placed over a parking area (used in netedit)
-    SUMO_TAG_STOP_PARKINGAREA,
+    /// @brief stop placed over a lane
+    GNE_TAG_STOP_LANE,
+    /// @brief stop placed over a busStop
+    GNE_TAG_STOP_BUSSTOP,
+    /// @brief stop placed over a trainStop
+    GNE_TAG_STOP_TRAINSTOP,
+    /// @brief stop placed over a containerStop
+    GNE_TAG_STOP_CONTAINERSTOP,
+    /// @brief stop placed over a charging station
+    GNE_TAG_STOP_CHARGINGSTATION,
+    /// @brief stop placed over a parking area
+    GNE_TAG_STOP_PARKINGAREA,
     /// @brief type of polygon
     SUMO_TAG_POLYTYPE,
     /// @brief connectioon between two lanes
@@ -415,50 +423,108 @@ enum SumoXMLTag {
     GNE_TAG_POILANE,
     /// @brief Point of interest over view with GEO attributes
     GNE_TAG_POIGEO,
-    /// @brief Rerouter Symbol
-    GNE_TAG_REROUTER_SYMBOL,
-    /// @brief VSS Symbol
-    GNE_TAG_VSS_SYMBOL,
+    /// @brief polygon used for draw juPedSim walkable areas
+    GNE_TAG_JPS_WALKABLEAREA,
+    /// @brief polygon used for draw juPedSim obstacles
+    GNE_TAG_JPS_OBSTACLE,
     /// @brief COF Symbol
     GNE_TAG_COF_SYMBOL,
-    /// @brief a flow definition using a route instead of a from-to edges route (used in netedit)
+    /// @brief a flow definition using a route instead of a from-to edges route
     GNE_TAG_FLOW_ROUTE,
-    /// @brief description of a vehicle with an embedded route (used in netedit)
+    /// @brief description of a vehicle with an embedded route
     GNE_TAG_FLOW_WITHROUTE,
-    // @brief person trips
-    GNE_TAG_PERSONTRIP_EDGE,
-    GNE_TAG_PERSONTRIP_BUSSTOP,
-    GNE_TAG_PERSONTRIP_JUNCTIONS,
-    /// @brief waypoint for vehicles (used in netedit)
+    /// @brief waypoint for vehicles
     GNE_TAG_WAYPOINT,
-    /// @brief waypoint placed over a lane (used in netedit)
+    /// @brief waypoint placed over a lane
     GNE_TAG_WAYPOINT_LANE,
-    /// @brief waypoint placed over a busStop (used in netedit)
+    /// @brief waypoint placed over a busStop
     GNE_TAG_WAYPOINT_BUSSTOP,
-    /// @brief waypoint placed over a containerStop (used in netedit)
+    /// @brief waypoint placed over a busStop
+    GNE_TAG_WAYPOINT_TRAINSTOP,
+    /// @brief waypoint placed over a containerStop
     GNE_TAG_WAYPOINT_CONTAINERSTOP,
-    /// @brief waypoint placed over a charging station (used in netedit)
+    /// @brief waypoint placed over a charging station
     GNE_TAG_WAYPOINT_CHARGINGSTATION,
-    /// @brief waypoint placed over a parking area (used in netedit)
+    /// @brief waypoint placed over a parking area
     GNE_TAG_WAYPOINT_PARKINGAREA,
+    // @brief person trips
+    GNE_TAG_PERSONTRIP_EDGE_EDGE,
+    GNE_TAG_PERSONTRIP_EDGE_TAZ,
+    GNE_TAG_PERSONTRIP_EDGE_JUNCTION,
+    GNE_TAG_PERSONTRIP_EDGE_BUSSTOP,
+    GNE_TAG_PERSONTRIP_EDGE_TRAINSTOP,
+    GNE_TAG_PERSONTRIP_TAZ_EDGE,
+    GNE_TAG_PERSONTRIP_TAZ_TAZ,
+    GNE_TAG_PERSONTRIP_TAZ_JUNCTION,
+    GNE_TAG_PERSONTRIP_TAZ_BUSSTOP,
+    GNE_TAG_PERSONTRIP_TAZ_TRAINSTOP,
+    GNE_TAG_PERSONTRIP_JUNCTION_EDGE,
+    GNE_TAG_PERSONTRIP_JUNCTION_TAZ,
+    GNE_TAG_PERSONTRIP_JUNCTION_JUNCTION,
+    GNE_TAG_PERSONTRIP_JUNCTION_BUSSTOP,
+    GNE_TAG_PERSONTRIP_JUNCTION_TRAINSTOP,
+    GNE_TAG_PERSONTRIP_BUSSTOP_EDGE,
+    GNE_TAG_PERSONTRIP_BUSSTOP_TAZ,
+    GNE_TAG_PERSONTRIP_BUSSTOP_JUNCTION,
+    GNE_TAG_PERSONTRIP_BUSSTOP_BUSSTOP,
+    GNE_TAG_PERSONTRIP_BUSSTOP_TRAINSTOP,
+    GNE_TAG_PERSONTRIP_TRAINSTOP_EDGE,
+    GNE_TAG_PERSONTRIP_TRAINSTOP_TAZ,
+    GNE_TAG_PERSONTRIP_TRAINSTOP_JUNCTION,
+    GNE_TAG_PERSONTRIP_TRAINSTOP_BUSSTOP,
+    GNE_TAG_PERSONTRIP_TRAINSTOP_TRAINSTOP,
     // @brief walks
-    GNE_TAG_WALK_EDGE,
-    GNE_TAG_WALK_BUSSTOP,
+    GNE_TAG_WALK_EDGE_EDGE,
+    GNE_TAG_WALK_EDGE_TAZ,
+    GNE_TAG_WALK_EDGE_JUNCTION,
+    GNE_TAG_WALK_EDGE_BUSSTOP,
+    GNE_TAG_WALK_EDGE_TRAINSTOP,
+    GNE_TAG_WALK_TAZ_EDGE,
+    GNE_TAG_WALK_TAZ_TAZ,
+    GNE_TAG_WALK_TAZ_JUNCTION,
+    GNE_TAG_WALK_TAZ_BUSSTOP,
+    GNE_TAG_WALK_TAZ_TRAINSTOP,
+    GNE_TAG_WALK_JUNCTION_EDGE,
+    GNE_TAG_WALK_JUNCTION_TAZ,
+    GNE_TAG_WALK_JUNCTION_JUNCTION,
+    GNE_TAG_WALK_JUNCTION_BUSSTOP,
+    GNE_TAG_WALK_JUNCTION_TRAINSTOP,
+    GNE_TAG_WALK_BUSSTOP_EDGE,
+    GNE_TAG_WALK_BUSSTOP_TAZ,
+    GNE_TAG_WALK_BUSSTOP_JUNCTION,
+    GNE_TAG_WALK_BUSSTOP_BUSSTOP,
+    GNE_TAG_WALK_BUSSTOP_TRAINSTOP,
+    GNE_TAG_WALK_TRAINSTOP_EDGE,
+    GNE_TAG_WALK_TRAINSTOP_TAZ,
+    GNE_TAG_WALK_TRAINSTOP_JUNCTION,
+    GNE_TAG_WALK_TRAINSTOP_BUSSTOP,
+    GNE_TAG_WALK_TRAINSTOP_TRAINSTOP,
     GNE_TAG_WALK_EDGES,
     GNE_TAG_WALK_ROUTE,
-    GNE_TAG_WALK_JUNCTIONS,
     // @brief rides
-    GNE_TAG_RIDE_EDGE,
-    GNE_TAG_RIDE_BUSSTOP,
+    GNE_TAG_RIDE_EDGE_EDGE,
+    GNE_TAG_RIDE_EDGE_BUSSTOP,
+    GNE_TAG_RIDE_EDGE_TRAINSTOP,
+    GNE_TAG_RIDE_BUSSTOP_EDGE,
+    GNE_TAG_RIDE_BUSSTOP_BUSSTOP,
+    GNE_TAG_RIDE_BUSSTOP_TRAINSTOP,
+    GNE_TAG_RIDE_TRAINSTOP_EDGE,
+    GNE_TAG_RIDE_TRAINSTOP_BUSSTOP,
+    GNE_TAG_RIDE_TRAINSTOP_TRAINSTOP,
     // @brief person stops
     GNE_TAG_STOPPERSON_BUSSTOP,
+    GNE_TAG_STOPPERSON_TRAINSTOP,
     GNE_TAG_STOPPERSON_EDGE,
-    // @brief person trips
-    GNE_TAG_TRANSPORT_EDGE,
-    GNE_TAG_TRANSPORT_CONTAINERSTOP,
-    // @brief walks
-    GNE_TAG_TRANSHIP_EDGE,
-    GNE_TAG_TRANSHIP_CONTAINERSTOP,
+    // @brief transports
+    GNE_TAG_TRANSPORT_EDGE_EDGE,
+    GNE_TAG_TRANSPORT_EDGE_CONTAINERSTOP,
+    GNE_TAG_TRANSPORT_CONTAINERSTOP_EDGE,
+    GNE_TAG_TRANSPORT_CONTAINERSTOP_CONTAINERSTOP,
+    // @brief tranships
+    GNE_TAG_TRANSHIP_EDGE_EDGE,
+    GNE_TAG_TRANSHIP_EDGE_CONTAINERSTOP,
+    GNE_TAG_TRANSHIP_CONTAINERSTOP_EDGE,
+    GNE_TAG_TRANSHIP_CONTAINERSTOP_CONTAINERSTOP,
     GNE_TAG_TRANSHIP_EDGES,
     // @brief container stops
     GNE_TAG_STOPCONTAINER_CONTAINERSTOP,
@@ -691,8 +757,10 @@ enum SumoXMLAttr {
     SUMO_ATTR_EFFICIENCY,
     /// @brief Allow/disallow charge in transit in Charging Stations
     SUMO_ATTR_CHARGEINTRANSIT,
-    /// @brief Delay in the charge of charging stations
+    /// @brief Delay in the charge of charging stations (different of waiting time)
     SUMO_ATTR_CHARGEDELAY,
+    /// @brief Charge type (fuel or electric)
+    SUMO_ATTR_CHARGETYPE,
     /// @}
 
     /// @name battery device parameters
@@ -928,6 +996,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_JM_TIMEGAP_MINOR,
     SUMO_ATTR_JM_IGNORE_IDS,
     SUMO_ATTR_JM_IGNORE_TYPES,
+    SUMO_ATTR_CF_IGNORE_IDS,
+    SUMO_ATTR_CF_IGNORE_TYPES,
     /// @}
 
     /// @name route alternatives / distribution attributes
@@ -957,8 +1027,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_TOLONLAT,
     SUMO_ATTR_FROMXY,
     SUMO_ATTR_TOXY,
-    SUMO_ATTR_FROMJUNCTION,
-    SUMO_ATTR_TOJUNCTION,
+    SUMO_ATTR_FROM_JUNCTION,
+    SUMO_ATTR_TO_JUNCTION,
     SUMO_ATTR_PERIOD,
     SUMO_ATTR_REPEAT,
     SUMO_ATTR_CYCLETIME,
@@ -1035,6 +1105,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_LCSTATE,
     /// @brief foe visibility distance of a link
     SUMO_ATTR_VISIBILITY_DISTANCE,
+    /// @brief icon
+    SUMO_ATTR_ICON,
     /// @brief A layer number
     SUMO_ATTR_LAYER,
     /// @brief Fill the polygon
@@ -1104,6 +1176,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_JAM_DIST_THRESHOLD,
     SUMO_ATTR_SHOW_DETECTOR,
     SUMO_ATTR_OPEN_ENTRY,
+    SUMO_ATTR_EXPECT_ARRIVAL,
     /// @}
 
     SUMO_ATTR_WAUT_ID,
@@ -1122,6 +1195,9 @@ enum SumoXMLAttr {
     SUMO_ATTR_TRAIN_STOP,
     SUMO_ATTR_CONTAINER_STOP,
     SUMO_ATTR_PARKING_AREA,
+    SUMO_ATTR_FROM_BUSSTOP,
+    SUMO_ATTR_FROM_TRAINSTOP,
+    SUMO_ATTR_FROM_CONTAINERSTOP,
     SUMO_ATTR_ROADSIDE_CAPACITY,
     SUMO_ATTR_ONROAD,
     SUMO_ATTR_CHARGING_STATION,
@@ -1396,10 +1472,6 @@ enum SumoXMLAttr {
     /// @brief flag to center camera after element creation
     GNE_ATTR_CENTER_AFTER_CREATION,
     /// @brief to busStop (used by personPlans)
-    GNE_ATTR_TO_BUSSTOP,
-    /// @brief to busStop (used by containerPlans)
-    GNE_ATTR_TO_CONTAINERSTOP,
-    /// @brief neighboring lane, simplified lane attr instead of child element
     GNE_ATTR_OPPOSITE,
     /// @brief shift lane index (only used by elements over lanes)
     GNE_ATTR_SHIFTLANEINDEX,
@@ -1407,6 +1479,8 @@ enum SumoXMLAttr {
     GNE_ATTR_STOPOFFSET,
     /// @brief stop exceptions (virtual, used by edge and lanes)
     GNE_ATTR_STOPOEXCEPTION,
+    /// @brief route distribution
+    GNE_ATTR_ROUTE_DISTRIBUTION,
     /// @brief vehicle type distribution
     GNE_ATTR_VTYPE_DISTRIBUTION,
     /// @brief poisson definition (used in flow)
@@ -1415,7 +1489,16 @@ enum SumoXMLAttr {
     GNE_ATTR_STOPINDEX,
     /// @brief stop index (position in the parent's path)
     GNE_ATTR_PATHSTOPINDEX,
-
+    /// @brief check number of additional children (used in vTypeDistribution)
+    GNE_ATTR_ADDITIONALCHILDREN,
+    /// @brief person/container geometry start position
+    GNE_ATTR_PLAN_GEOMETRY_STARTPOS,
+    /// @brief person/container geometry end position
+    GNE_ATTR_PLAN_GEOMETRY_ENDPOS,
+    /// @brief from lane ID (used in GNEConnection)
+    GNE_ATTR_FROM_LANEID,
+    /// @brief to lane ID (used in GNEConnection)
+    GNE_ATTR_TO_LANEID,
     // @}
 
     /// @name train parameters
@@ -1423,6 +1506,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_CARRIAGE_LENGTH,
     SUMO_ATTR_LOCOMOTIVE_LENGTH,
     SUMO_ATTR_CARRIAGE_GAP,
+    SUMO_ATTR_CARRIAGE_DOORS,
     /// @}
 
     SUMO_ATTR_TARGETLANE,
@@ -1784,7 +1868,19 @@ enum class TrainType {
     REDOSTO7,
     FREIGHT,
     ICE3,
+    MIREOPLUSB,
+    MIREOPLUSH,
     UNKNOWN
+};
+
+/// @brief POI icons
+enum class POIIcon {
+    PIN = 1,
+    NATURE = 2,
+    HOTEL = 3,
+    FUEL = 4,
+    CHARGING_STATION = 5,
+    NONE = 0,
 };
 
 // @}
@@ -1858,6 +1954,9 @@ public:
 
     /// @brief train types
     static StringBijection<TrainType> TrainTypes;
+
+    /// @brief POI icon values
+    static StringBijection<POIIcon> POIIcons;
     /// @}
 
     /// @name Helper functions for ID-string manipulations
@@ -1909,8 +2008,6 @@ public:
     /// @brief all allowed characters for phase state
     static const std::string ALLOWED_TLS_LINKSTATES;
 
-
-
 private:
     /// @brief containers for the different SUMOXMLDefinitions
     /// @{
@@ -1960,8 +2057,12 @@ private:
     /// @brief lane change action values
     static StringBijection<LaneChangeAction>::Entry laneChangeActionValues[];
 
-    /// @brief train type values values
+    /// @brief train type values
     static StringBijection<TrainType>::Entry trainTypeValues[];
+
+    /// @brief POI icon values
+    static StringBijection<POIIcon>::Entry POIIconValues[];
+
     /// @}
 
     /// @brief all allowed characters for phase state

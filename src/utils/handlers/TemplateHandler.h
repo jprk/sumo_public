@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -64,7 +64,7 @@ private:
 
     /// @brief add option
     bool addOption(std::string value, const std::string& synonymes, const std::string& type,
-                   const std::string& help, const bool required) const;
+                   const std::string& help, bool required, bool positional, const std::string& listSep) const;
 
     /** @brief Called on the end of an element
      *

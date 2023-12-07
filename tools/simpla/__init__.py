@@ -1,4 +1,4 @@
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -184,4 +184,20 @@ def getPlatoonInfo(platoonID):
         return _mgr.getPlatoonInfo(platoonID)
     else:
         raise SimplaException("call simpla.load(<config_file>) before simpla.getPlatoonInfo()!")
+    return 0
+
+
+def getPlatoonID(vehicleID):
+    '''
+
+    getPlatoonID(string) -> integer
+
+    Returns the platoon ID the vehicle given by its ID belongs too. If the vehicle does not belong to
+    any platoon, -1 is returned.
+    '''
+    global _mgr, warn
+    if _mgr is not None:
+        return _mgr.getPlatoonID(vehicleID)
+    else:
+        raise SimplaException("call simpla.load(<config_file>) before simpla.getPlatoonID()!")
     return 0

@@ -28,7 +28,7 @@ in **docs/examples**. All other applications
 etc.) have to be run from the command line. To facilitate this there is
 also a start-commandline.bat which sets up the whole environment for
 you. If you feel unsure about the command line, please read
-[Basics/Basic_Computer_Skills\#Running_Programs_from_the_Command_Line](../Basics/Basic_Computer_Skills.md#running_programs_from_the_command_line).
+[Running Programs from the Command Line](../Basics/Basic_Computer_Skills.md#running_programs_from_the_command_line).
 
 If you want a bleeding edge nightly build or need tests or source files,
 you can download them from the [Download](../Downloads.md) page.
@@ -59,7 +59,7 @@ sudo apt-get install sumo sumo-tools sumo-doc
 ```
 
 Precompiled binaries for different distributions like openSUSE and
-Fedora can be found at these [repositories for binary Linux versions](http://download.opensuse.org/repositories/home:/behrisch/).
+Fedora can be found at these [repositories for binary Linux versions](https://download.opensuse.org/repositories/home:/behrisch/).
 These repositories contain nightly builds as well. In the case your
 system is not listed here or you need to modify the sources, [you have to build SUMO from sources](Linux_Build.md).
 
@@ -79,9 +79,9 @@ Send bug reports regarding SUMO packaged as Flatpak [here](https://github.com/fl
 
 # macOS
 
-SUMO can be easily installed on macOS by using [Homebrew](http://brew.sh). If you did not already install homebrew, you can do so by invoking te following command in a macOS Terminal:
+SUMO can be easily installed on macOS by using [Homebrew](https://brew.sh). If you did not already install homebrew, you can do so by invoking te following command in a macOS Terminal:
 ```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 Please make sure your homebrew installation is up-to-date:
 ```
@@ -97,12 +97,15 @@ You can then install the latest stable release of SUMO (with minimal requirement
 brew tap dlr-ts/sumo
 brew install sumo
 ```
+!!! note
+    It is possible to install older vesions of SUMO using Homebrew. Running `brew search sumo` will list all available versions (v1.0.1 or newer). To install a specific version (e.g. version 1.9.0), just run `brew install sumo@1.9.0`.
+
 If you need to compile SUMO with support for other libraries, such as GDAL, you need to provide further command line options [as described here](https://github.com/DLR-TS/homebrew-sumo#usage).
-To finalize your setup, please make sure to set the **SUMO_HOME** environment variable and have it point to the directory of your SUMO installation. Depending on your shell, you may set this variable either in `.bashrc` or `.zshrc`. To set this variable in `.bashrc` you can use the following commands. 
+To finalize your setup, please make sure to set the **SUMO_HOME** environment variable and have it point to the directory of your SUMO installation. Depending on your shell, you may set this variable either in `.bashrc` or `.zshrc`. To set this variable in `.bashrc` you can use the following commands.
 ```
 touch ~/.bashrc; open ~/.bashrc
 ```
-Just insert the following new line at the end of the file: 
+Just insert the following new line at the end of the file:
 ```
 export SUMO_HOME=/your/path/to/sumo
 ```
@@ -124,10 +127,12 @@ These application bundles determine the location of your SUMO installation by ev
 !!! note
     When using these launchers for the first time, macOS may need you to authorize them to run.
 
+For building SUMO from its sources see [building SUMO on macOS](MacOS_Build.md).
+
 ## macOS Troubleshooting
 
 ### Segmentation faults on macOS Catalina
-If you encounter segmentation faults on macOS Catalina, please follow the following steps (see [Issue 6242](https://github.com/eclipse/sumo/issues/6242#issuecomment-553458710)).
+If you encounter segmentation faults on macOS Catalina, please follow the following steps (see [Issue 6242](https://github.com/eclipse-sumo/sumo/issues/6242#issuecomment-553458710)).
 
 1. Uninstall Catalina bottle of fox:
 ```brew uninstall --ignore-dependencies fox```
@@ -142,7 +147,7 @@ If you encounter segmentation faults on macOS Catalina, please follow the follow
 ```brew install fox```
 
 ### Blank screen after update to XQuartz 2.8.0_beta3
-If you encounter a blank screen after opening sumo-gui (cf. https://github.com/eclipse/sumo/issues/8208), try resetting your DISPLAY environment variable:
+If you encounter a blank screen after opening sumo-gui (cf. https://github.com/eclipse-sumo/sumo/issues/8208), try resetting your DISPLAY environment variable:
 
 ```export DISPLAY=:0.0```
 

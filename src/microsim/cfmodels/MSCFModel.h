@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -553,6 +553,12 @@ public:
         myApparentDecel = decel;
     }
 
+    /** @brief Sets a new value for the factor of minGap that must be maintained to avoid a collision event
+     * @param[in] factor The new minGap factor
+     */
+    inline void setCollisionMinGapFactor(const double factor) {
+        myCollisionMinGapFactor = factor;
+    }
 
     /** @brief Sets a new value for driver imperfection
      * @param[in] accel The new driver imperfection
@@ -601,8 +607,9 @@ public:
      * @param[in] currentSpeed The current speed of the ego vehicle
      * @param[in] onInsertion Indicator whether the call is triggered during vehicle insertion
      * @param[in] headway The desired time headway to be included in the calculations (default argument -1 induces the use of myHeadway)
+     * @param[in] relaxEmergency Whether emergency deceleration should be reduced (at the cost of staying in a dangerous situation for longer)
      */
-    double maximumSafeStopSpeed(double gap, double decel, double currentSpeed, bool onInsertion = false, double headway = -1) const;
+    double maximumSafeStopSpeed(double gap, double decel, double currentSpeed, bool onInsertion = false, double headway = -1, bool relaxEmergency = true) const;
 
 
     /** @brief Returns the maximum next velocity for stopping within gap
@@ -653,6 +660,7 @@ public:
         UNUSED_PARAMETER(veh);
         UNUSED_PARAMETER(key);
         UNUSED_PARAMETER(value);
+        throw InvalidArgument("Setting parameter '" + key + "' is not supported by carFollowModel");
     }
 
 protected:
@@ -707,6 +715,3 @@ protected:
 
 
 };
-
-
-

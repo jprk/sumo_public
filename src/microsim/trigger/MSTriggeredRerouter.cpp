@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -82,7 +82,8 @@ MSTriggeredRerouter::MSTriggeredRerouter(const std::string& id,
     myProbability(prob),
     myUserProbability(prob),
     myAmInUserMode(false),
-    myTimeThreshold(timeThreshold) {
+    myTimeThreshold(timeThreshold),
+    myHaveParkProbs(false) {
     myInstances[id] = this;
     // build actors
     for (MSEdgeVector::const_iterator j = edges.begin(); j != edges.end(); ++j) {
@@ -232,6 +233,7 @@ MSTriggeredRerouter::myStartElement(int element,
         const bool visible = attrs.getOpt<bool>(SUMO_ATTR_VISIBLE, getID().c_str(), ok, false);
         // add
         myCurrentParkProb.add(std::make_pair(pa, visible), prob);
+        myHaveParkProbs = true;
         //MSEdge* to = &(pa->getLane().getEdge());
         //myCurrentEdgeProb.add(prob, to);
     }
@@ -595,7 +597,7 @@ MSTriggeredRerouter::getUserProbability() const {
 
 
 double
-MSTriggeredRerouter::getWeight(SUMOVehicle& veh, const std::string param, const double defaultWeight) const {
+MSTriggeredRerouter::getWeight(SUMOVehicle& veh, const std::string param, const double defaultWeight) {
     // get custom vehicle parameter
     if (veh.getParameter().knowsParameter(param)) {
         try {
@@ -620,7 +622,7 @@ MSTriggeredRerouter::getWeight(SUMOVehicle& veh, const std::string param, const 
 
 MSParkingArea*
 MSTriggeredRerouter::rerouteParkingArea(const MSTriggeredRerouter::RerouteInterval* rerouteDef,
-                                        SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute) const {
+                                        SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute) {
     // Reroute destination from initial parking area to an alternative parking area
     // if the following conditions are met:
     // - next stop target is a parking area
@@ -640,13 +642,11 @@ MSTriggeredRerouter::rerouteParkingArea(const MSTriggeredRerouter::RerouteInterv
         // not driving towards a parkingArea
         return nullptr;
     }
+    // if the vehicle is on the destParkArea edge it is always visible
+    bool destVisible = (&destParkArea->getLane().getEdge() == veh.getEdge());
 
-    bool destVisible = false;
     for (auto paVis : parks) {
-        if (paVis.first == destParkArea
-                && (paVis.second
-                    // if the vehicle is on the destParkArea edge it is always visible
-                    || &(destParkArea->getLane().getEdge()) == veh.getEdge())) {
+        if (paVis.first == destParkArea && paVis.second) {
             destVisible = true;
             break;
         }
@@ -1016,7 +1016,7 @@ MSTriggeredRerouter::addParkValues(SUMOVehicle& veh, double brakeGap, bool newDe
                                    MSParkingAreaMap_t& parkAreas,
                                    std::map<MSParkingArea*, ConstMSEdgeVector>& newRoutes,
                                    std::map<MSParkingArea*, ConstMSEdgeVector>& parkApproaches,
-                                   ParkingParamMap_t& maxValues) const {
+                                   ParkingParamMap_t& maxValues) {
     // a map stores the parking values
     ParkingParamMap_t parkValues;
 

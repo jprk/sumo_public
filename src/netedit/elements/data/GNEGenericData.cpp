@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -99,6 +99,56 @@ GNEGenericData::drawAttribute(const PositionVector& shape) const {
 
 
 bool
+GNEGenericData::checkDrawFromContour() const {
+    return false;
+}
+
+
+bool
+GNEGenericData::checkDrawToContour() const {
+    return false;
+}
+
+
+bool
+GNEGenericData::checkDrawRelatedContour() const {
+    return false;
+}
+
+
+bool
+GNEGenericData::checkDrawOverContour() const {
+    return false;
+}
+
+
+bool
+GNEGenericData::checkDrawDeleteContour() const {
+    // get edit modes
+    const auto& editModes = myNet->getViewNet()->getEditModes();
+    // check if we're in delete mode
+    if (editModes.isCurrentSupermodeData() && (editModes.dataEditMode == DataEditMode::DATA_DELETE)) {
+        return myNet->getViewNet()->checkDrawDeleteContour(this, mySelected);
+    } else {
+        return false;
+    }
+}
+
+
+bool
+GNEGenericData::checkDrawSelectContour() const {
+    // get edit modes
+    const auto& editModes = myNet->getViewNet()->getEditModes();
+    // check if we're in select mode
+    if (editModes.isCurrentSupermodeData() && (editModes.dataEditMode == DataEditMode::DATA_SELECT)) {
+        return myNet->getViewNet()->checkDrawSelectContour(this, mySelected);
+    } else {
+        return false;
+    }
+}
+
+
+bool
 GNEGenericData::isGenericDataValid() const {
     return true;
 }
@@ -124,16 +174,16 @@ GNEGenericData::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
     // build menu command for center button and copy cursor position to clipboard
     buildCenterPopupEntry(ret);
     buildPositionCopyEntry(ret, app);
-    // buld menu commands for names
-    GUIDesigns::buildFXMenuCommand(ret, TL("Copy ") + getTagStr() + TL(" name to clipboard"), nullptr, ret, MID_COPY_NAME);
-    GUIDesigns::buildFXMenuCommand(ret, TL("Copy ") + getTagStr() + TL(" typed name to clipboard"), nullptr, ret, MID_COPY_TYPED_NAME);
+    // build menu commands for names
+    GUIDesigns::buildFXMenuCommand(ret, TLF("Copy % name to clipboard", getTagStr()), nullptr, ret, MID_COPY_NAME);
+    GUIDesigns::buildFXMenuCommand(ret, TLF("Copy % name to clipboard", getTagStr()), nullptr, ret, MID_COPY_TYPED_NAME);
     new FXMenuSeparator(ret);
     // build selection and show parameters menu
     myDataIntervalParent->getNet()->getViewNet()->buildSelectionACPopupEntry(ret, this);
     buildShowParamsPopupEntry(ret);
     // show option to open additional dialog
     if (myTagProperty.hasDialog()) {
-        GUIDesigns::buildFXMenuCommand(ret, (TL("Open ") + getTagStr() + TL(" Dialog")).c_str(), getACIcon(), &parent, MID_OPEN_ADDITIONAL_DIALOG);
+        GUIDesigns::buildFXMenuCommand(ret, (TLF("Open % Dialog", getTagStr())).c_str(), getACIcon(), &parent, MID_OPEN_ADDITIONAL_DIALOG);
         new FXMenuSeparator(ret);
     } else {
         GUIDesigns::buildFXMenuCommand(ret, (TL("Cursor position in view: ") + toString(getPositionInView().x()) + "," + toString(getPositionInView().y())).c_str(), nullptr, nullptr, 0);
@@ -188,30 +238,6 @@ GNEGenericData::updateGLObject() {
 bool
 GNEGenericData::isPathElementSelected() const {
     return mySelected;
-}
-
-
-double
-GNEGenericData::getPathElementDepartValue() const {
-    return 0;
-}
-
-
-Position
-GNEGenericData::getPathElementDepartPos() const {
-    return Position();
-}
-
-
-double
-GNEGenericData::getPathElementArrivalValue() const {
-    return 0;
-}
-
-
-Position
-GNEGenericData::getPathElementArrivalPos() const {
-    return Position();
 }
 
 

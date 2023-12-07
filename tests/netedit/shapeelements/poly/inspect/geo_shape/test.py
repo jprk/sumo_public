@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -35,21 +35,23 @@ netedit.shapeMode()
 netedit.changeElement("poly")
 
 # create first polygon
-netedit.createSquaredTAZ(referencePosition, 182, 130, 200, True)
+netedit.createSquaredShape(referencePosition, 116, 139, 200, True)
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first polygon
-netedit.leftClick(referencePosition, 182, 130)
+netedit.leftClick(referencePosition, 116, 139)
+
+# Change boolean parameter 13
+netedit.modifyBoolAttribute(netedit.attrs.poly.inspect.geo, False)
 
 # Change parameter 12 with a valid value
-netedit.modifyAttribute(netedit.attrs.Poly.inspect.geoshape,
+netedit.modifyAttribute(netedit.attrs.poly.inspect.geoshape,
                         "-13.00,8.00 -8.00,13.00 -13.00,18.00 -18.00,23.00 -23.00,18.00 " +
                         "-28.00,13.00 -23.00,8.00 -18.00,3.00 -13.00,8.00", False)
 
 # Check undos and redos
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

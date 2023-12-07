@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2007-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -89,8 +89,8 @@ if __name__ == "__main__":
         xIndex = int((x - xmin + w2) / w)
         yIndex = int((y - ymin + w2) / w)
         ii = (xIndex, yIndex)
-        x2 = xIndex * w
-        y2 = yIndex * w
+        x2 = xmin + xIndex * w
+        y2 = ymin + yIndex * w
         if ii not in odpairs:
             odpairs[ii] = TAZ("%s_%s" % (xIndex, yIndex),
                               [(x2 - w2, y2 - w2),

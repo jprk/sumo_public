@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -50,6 +50,7 @@
 // ===========================================================================
 
 OptionsCont OptionsCont::myOptions;
+OptionsCont OptionsCont::EMPTY_OPTIONS;
 
 // ===========================================================================
 // method definitions
@@ -428,7 +429,7 @@ void
 OptionsCont::reportDoubleSetting(const std::string& arg) const {
     std::vector<std::string> synonymes = getSynonymes(arg);
     std::ostringstream s;
-    s << "A value for the option '" + arg + "' was already set.\n Possible synonymes: ";
+    s << TLF("A value for the option '%' was already set.\n Possible synonymes: ", arg);
     auto synonym = synonymes.begin();
     while (synonym != synonymes.end()) {
         s << (*synonym);
@@ -489,7 +490,7 @@ OptionsCont::isWriteable(const std::string& name) {
 
 void
 OptionsCont::clear() {
-    // delete only adresse (because synonyms placed in values aim to the same Option)
+    // delete only address (because synonyms placed in values aim to the same Option)
     for (const auto& addresse : myAddresses) {
         delete addresse.second;
     }
@@ -517,7 +518,7 @@ OptionsCont::addDescription(const std::string& name, const std::string& subtopic
 
 
 void
-OptionsCont::setRequired(const std::string& name, const std::string& subtopic) {
+OptionsCont::setFurtherAttributes(const std::string& name, const std::string& subtopic, bool required, bool positional, const std::string& listSep) {
     Option* o = getSecure(name);
     if (o == nullptr) {
         throw ProcessError("Option doesn't exist");
@@ -525,9 +526,13 @@ OptionsCont::setRequired(const std::string& name, const std::string& subtopic) {
     if (find(mySubTopics.begin(), mySubTopics.end(), subtopic) == mySubTopics.end()) {
         throw ProcessError("SubTopic '" + subtopic + "' doesn't exist");
     }
-    o->setRequired();
-    o->setSubtopic(subtopic);
-    mySubTopicEntries[subtopic].push_back(name);
+    if (required) {
+        o->setRequired();
+    }
+    if (positional) {
+        o->setPositional();
+    }
+    o->setListSeparator(listSep);
 }
 
 
@@ -886,13 +891,11 @@ OptionsCont::writeConfiguration(std::ostream& os, const bool filled,
     os << "<configuration xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://sumo.dlr.de/xsd/";
     if (myAppName == "sumo-gui") {
         os << "sumo";
-    } else if (myAppName == "netedit") {
-        os << "netconvert";
     } else {
         os << myAppName;
     }
     os << "Configuration.xsd\">" << std::endl << std::endl;
-    for (auto subtopic : mySubTopics) {
+    for (std::string subtopic : mySubTopics) {
         if (subtopic == "Configuration" && !complete) {
             continue;
         }
@@ -922,8 +925,10 @@ OptionsCont::writeConfiguration(std::ostream& os, const bool filled,
                 if (o->isFileName() && relativeTo != "") {
                     StringVector fileList = StringTokenizer(o->getValueString(), ",").getVector();
                     for (auto& file : fileList) {
-                        file = FileHelpers::fixRelative(StringUtils::urlEncode(file, " ;%"), relativeTo,
-                                                        forceRelative || getBool("save-configuration.relative"));
+                        file = FileHelpers::fixRelative(
+                                   StringUtils::urlEncode(file, " ;%"),
+                                   StringUtils::urlEncode(relativeTo, " ;%"),
+                                   forceRelative || getBool("save-configuration.relative"));
                     }
                     os << StringUtils::escapeXML(joinToString(fileList, ','), inComment);
                 } else {
@@ -969,7 +974,7 @@ OptionsCont::writeSchema(std::ostream& os) {
     os << "    <xsd:element name=\"configuration\" type=\"configurationType\"/>\n\n";
     os << "    <xsd:complexType name=\"configurationType\">\n";
     os << "        <xsd:all>\n";
-    for (auto subtopic : mySubTopics) {
+    for (std::string subtopic : mySubTopics) {
         if (subtopic == "Configuration") {
             continue;
         }
@@ -979,15 +984,16 @@ OptionsCont::writeSchema(std::ostream& os) {
     }
     os << "        </xsd:all>\n";
     os << "    </xsd:complexType>\n\n";
-    for (auto subtopic : mySubTopics) {
+    for (std::string subtopic : mySubTopics) {
         if (subtopic == "Configuration") {
             continue;
         }
+        const std::vector<std::string>& entries = mySubTopicEntries.find(subtopic)->second;
         std::replace(subtopic.begin(), subtopic.end(), ' ', '_');
         subtopic = StringUtils::to_lower_case(subtopic);
         os << "    <xsd:complexType name=\"" << subtopic << "TopicType\">\n";
         os << "        <xsd:all>\n";
-        for (const auto& entry : mySubTopicEntries[subtopic]) {
+        for (const auto& entry : entries) {
             Option* o = getSecure(entry);
             std::string type = o->getTypeName();
             type = StringUtils::to_lower_case(type);

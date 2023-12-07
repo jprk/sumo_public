@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -101,6 +101,42 @@ GNEInternalLane::getPositionInView() const {
 }
 
 
+bool
+GNEInternalLane::checkDrawFromContour() const {
+    return false;
+}
+
+
+bool
+GNEInternalLane::checkDrawToContour() const {
+    return false;
+}
+
+
+bool
+GNEInternalLane::checkDrawRelatedContour() const {
+    return false;
+}
+
+
+bool
+GNEInternalLane::checkDrawOverContour() const {
+    return false;
+}
+
+
+bool
+GNEInternalLane::checkDrawDeleteContour() const {
+    return false;
+}
+
+
+bool
+GNEInternalLane::checkDrawSelectContour() const {
+    return false;
+}
+
+
 GNEMoveOperation*
 GNEInternalLane::getMoveOperation() {
     // internal lanes cannot be moved
@@ -162,6 +198,10 @@ GNEInternalLane::drawGL(const GUIVisualizationSettings& s) const {
             GLHelper::popMatrix();
             // pop name
             GLHelper::popName();
+            // draw edge name
+            if (s.internalEdgeName.show(this)) {
+                GLHelper::drawTextSettings(s.internalEdgeName, getMicrosimID(), myInternalLaneGeometry.getShape().getLineCenter(), s.scale, s.angle);
+            }
         }
     }
 }

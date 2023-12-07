@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -162,6 +162,29 @@ public:
 
     /// @}
 
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw from contour (green)
+    bool checkDrawFromContour() const;
+
+    /// @brief check if draw from contour (magenta)
+    bool checkDrawToContour() const;
+
+    /// @brief check if draw related contour (cyan)
+    bool checkDrawRelatedContour() const;
+
+    /// @brief check if draw over contour (orange)
+    bool checkDrawOverContour() const;
+
+    /// @brief check if draw delete contour (pink/white)
+    bool checkDrawDeleteContour() const;
+
+    /// @brief check if draw select contour (blue)
+    bool checkDrawSelectContour() const;
+
+    /// @}
+
     /// @name inherited from GUIGlObject
     /// @{
 
@@ -218,38 +241,25 @@ public:
     /// @brief check if path element is selected
     bool isPathElementSelected() const;
 
-    /**@brief Draws partial object (lane)
+    /**@brief Draws partial object over lane
      * @param[in] s The settings for the current view (may influence drawing)
-     * @param[in] lane GNELane in which draw partial
-     * @param[in] segment segment geometry
+     * @param[in] segment lane segment
+     * @param[in] offsetFront front offset
      */
-    virtual void drawPartialGL(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment, const double offsetFront) const;
+    virtual void drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const;
 
-    /**@brief Draws partial object (junction)
+    /**@brief Draws partial object over junction
      * @param[in] s The settings for the current view (may influence drawing)
-     * @param[in] fromLane from GNELane
-     * @param[in] toLane to GNELane
-     * @param[in] drawGeometry flag to enable/disable draw geometry (lines, boxLines, etc.)
+     * @param[in] segment junction segment
+     * @param[in] offsetFront front offset
      */
-    virtual void drawPartialGL(const GUIVisualizationSettings& s, const GNELane* fromLane, const GNELane* toLane, const GNEPathManager::Segment* segment, const double offsetFront) const;
+    virtual void drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const;
 
     /// @brief get first path lane
     GNELane* getFirstPathLane() const;
 
     /// @brief get last path lane
     GNELane* getLastPathLane() const;
-
-    /// @brief get path element depart lane pos
-    double getPathElementDepartValue() const;
-
-    /// @brief get path element depart position
-    Position getPathElementDepartPos() const;
-
-    /// @brief get path element arrival lane pos
-    double getPathElementArrivalValue() const;
-
-    /// @brief get path element arrival position
-    Position getPathElementArrivalPos() const;
 
     /// @}
 
@@ -340,10 +350,19 @@ protected:
     /// @{
 
     /// @brief check if a new additional ID is valid
-    bool isValidAdditionalID(const std::string& newID) const;
+    bool isValidAdditionalID(const std::string& value) const;
+
+    /// @brief check if a new additional ID is valid
+    bool isValidAdditionalID(const std::vector<SumoXMLTag>& tags, const std::string& value) const;
 
     /// @brief check if a new detector ID is valid
-    bool isValidDetectorID(const std::string& newID) const;
+    bool isValidDetectorID(const std::string& value) const;
+
+    /// @brief check if a new detector ID is valid
+    bool isValidDetectorID(const std::vector<SumoXMLTag>& tags, const std::string& value) const;
+
+    /// @brief set additional ID
+    void setAdditionalID(const std::string& newID);
 
     /// @}
 
@@ -381,8 +400,8 @@ protected:
     void drawSquaredAdditional(const GUIVisualizationSettings& s, const Position& pos, const double size, GUITexture texture, GUITexture selectedTexture) const;
 
     /// @brief draw listed additional
-    void drawListedAddtional(const GUIVisualizationSettings& s, const Position& parentPosition, const double offsetX, const double extraOffsetY,
-                             const RGBColor baseCol, const RGBColor textCol, GUITexture texture, const std::string text) const;
+    void drawListedAdditional(const GUIVisualizationSettings& s, const Position& parentPosition, const double offsetX, const double extraOffsetY,
+                              const RGBColor baseCol, const RGBColor textCol, GUITexture texture, const std::string text) const;
 
 
     /// @brief get moveOperation for an element over single lane
@@ -390,6 +409,29 @@ protected:
 
     /// @brief get moveOperation for an element over multi lane
     GNEMoveOperation* getMoveOperationMultiLane(const double startPos, const double endPos);
+
+    /// @name JuPedSim values
+    /// @{
+
+    /// @brief get JuPedSim type
+    static std::string getJuPedSimType(SumoXMLTag tag);
+
+    /// @brief get JuPedSim color
+    static RGBColor getJuPedSimColor(SumoXMLTag tag);
+
+    /// @brief get JuPedSim fill
+    static bool getJuPedSimFill(SumoXMLTag tag);
+
+    /// @brief get JuPedSim color
+    static double getJuPedSimLayer(SumoXMLTag tag);
+
+    /// @brief get GLO color
+    static GUIGlObjectType getJuPedSimGLO(SumoXMLTag tag);
+
+    /// @brief get JuPedSim icon
+    static FXIcon* getJuPedSimIcon(SumoXMLTag tag);
+
+    /// @}
 
 private:
     /**@brief check restriction with the number of children
@@ -419,4 +461,3 @@ private:
     /// @brief Invalidated assignment operator.
     GNEAdditional& operator=(const GNEAdditional&) = delete;
 };
-

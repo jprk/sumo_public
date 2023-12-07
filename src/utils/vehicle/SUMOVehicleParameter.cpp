@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -257,7 +257,10 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev, const bool close, const boo
         dev.writeAttr(SUMO_ATTR_EXTENSION, time2string(extension));
     }
     if ((parametersSet & STOP_TRIGGER_SET) != 0) {
-        dev.writeAttr(SUMO_ATTR_TRIGGERED, getTriggers());
+        const std::vector<std::string> triggers = getTriggers();
+        if (triggers.size() > 0) {
+            dev.writeAttr(SUMO_ATTR_TRIGGERED, triggers);
+        }
     }
     if ((parametersSet & STOP_PARKING_SET) != 0) {
         dev.writeAttr(SUMO_ATTR_PARKING, parking);
@@ -304,6 +307,8 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev, const bool close, const boo
         dev.writeAttr(SUMO_ATTR_ACTTYPE, actType);
     }
     if (close) {
+        // the user is closing the stop it is responsible for writing params
+        writeParams(dev);
         dev.closeTag();
     }
 }
@@ -391,6 +396,8 @@ SUMOVehicleParameter::parseDepartPos(const std::string& val, const std::string& 
         dpd = DepartPosDefinition::RANDOM;
     } else if (val == "random_free") {
         dpd = DepartPosDefinition::RANDOM_FREE;
+    } else if (val == "random_location") {
+        dpd = DepartPosDefinition::RANDOM_LOCATION;
     } else if (val == "free") {
         dpd = DepartPosDefinition::FREE;
     } else if (val == "base") {
@@ -808,6 +815,9 @@ SUMOVehicleParameter::getDepartPos() const {
             break;
         case DepartPosDefinition::RANDOM_FREE:
             val = "random_free";
+            break;
+        case DepartPosDefinition::RANDOM_LOCATION:
+            val = "random_location";
             break;
         case DepartPosDefinition::FREE:
             val = "free";

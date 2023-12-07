@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 // activitygen module
 // Copyright 2010 TUM (Technische Universitaet Muenchen, http://www.tum.de/)
@@ -78,7 +78,6 @@ AGCity::completeStreets() {
     for (it = streets.begin(); it != streets.end(); ++it) {
         (*it)->setPopulation((*it)->getPopulation() * statData.factorInhabitants);
         (*it)->setWorkplaceNumber((*it)->getWorkplaceNumber() * statData.factorWorkPositions);
-        //it->print();
     }
 
     //completing streets from edges of the network not handled/present in STAT file (no population no work position)
@@ -103,10 +102,8 @@ void
 AGCity::generateWorkPositions() {
     std::vector<AGStreet*>::iterator it;
     int workPositionCounter = 0;
-
     try {
         for (it = streets.begin(); it != streets.end(); ++it) {
-            //std::cout << "number of work positions in street: " << it->getWorkplaceNumber() << std::endl;
             for (int i = 0; i < (*it)->getWorkplaceNumber(); ++i) {
                 workPositions.push_back(AGWorkPosition(&statData, **it));
                 ++workPositionCounter;
@@ -140,6 +137,7 @@ AGCity::generateOutgoingWP() {
     int nbrOutWorkPositions = (int)((double)workPositions.size() * (double)statData.outgoingTraffic / (nbrWorkers - (double)statData.outgoingTraffic));
 
     if (cityGates.empty()) {
+        statData.workPositions = static_cast<int>(workPositions.size());
         return;
     }
 
@@ -215,23 +213,13 @@ AGCity::generatePopulation() {
     int nbrCouple = 0;
     int nbrChild = 0;
     int nbrHH = 0;
-    int workingP = 0;
     std::list<AGHousehold>::iterator itt;
     for (itt = households.begin(); itt != households.end(); ++itt) {
         if (itt->getAdultNbr() == 1) {
             nbrSingle++;
-            if (itt->getAdults().front().isWorking()) {
-                workingP++;
-            }
         }
         if (itt->getAdultNbr() == 2) {
             nbrCouple += 2;
-            if (itt->getAdults().front().isWorking()) {
-                workingP++;
-            }
-            if (itt->getAdults().back().isWorking()) {
-                workingP++;
-            }
         }
         nbrChild += itt->getPeopleNbr() - itt->getAdultNbr();
         nbrHH++;

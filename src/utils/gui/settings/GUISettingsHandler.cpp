@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -277,6 +277,8 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.personSize = parseSizeSettings("person", attrs, mySettings.personSize);
             mySettings.personName = parseTextSettings("personName", attrs, mySettings.personName);
             mySettings.personValue = parseTextSettings("personValue", attrs, mySettings.personValue);
+            mySettings.showPedestrianNetwork = StringUtils::toBool(attrs.getStringSecure("showPedestrianNetwork", toString(mySettings.showPedestrianNetwork)));
+            mySettings.pedestrianNetworkColor = RGBColor::parseColorReporting(attrs.getStringSecure("pedestrianNetworkColor", toString(mySettings.pedestrianNetworkColor)), "pedestrianNetworkColor", nullptr, true, ok);
             myCurrentColorer = element;
             break;
         case SUMO_TAG_VIEWSETTINGS_CONTAINERS:
@@ -483,7 +485,7 @@ const std::vector<std::string>&
 GUISettingsHandler::addSettings(GUISUMOAbstractView* view) const {
     if (view) {
         for (std::string name : myLoadedSettingNames) {
-            FXint index = view->getColoringSchemesCombo()->appendItem(name.c_str());
+            FXint index = view->getColoringSchemesCombo()->appendIconItem(name.c_str());
             view->getColoringSchemesCombo()->setCurrentItem(index);
             view->setColorScheme(name);
         }

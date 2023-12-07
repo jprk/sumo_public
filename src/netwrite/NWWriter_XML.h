@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -84,7 +84,7 @@ private:
      * @param[in] oc The options to use
      * @param[in] nc The type-container from which to read data
      */
-    static void writeTypes(const std::string& prefix, NBTypeCont& tc);
+    static void writeTypes(const std::string& prefix, NBEdgeCont& ec, NBTypeCont& tc);
 
     /** @brief Writes the edges and connections files
      * @param[in] oc The options to use

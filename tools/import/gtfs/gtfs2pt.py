@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -45,56 +45,62 @@ import gtfs2osm  # noqa
 def get_options(args=None):
     ap = gtfs2fcd.add_options()
     # ----------------------- general options ---------------------------------
-    ap.add_argument("-n", "--network", fix_path=True, required=True,
+    ap.add_argument("-n", "--network", category="input", required=True, type=ap.net_file,
                     help="sumo network to use")
-    ap.add_argument("--route-output",
+    ap.add_argument("--route-output", category="output", type=ap.route_file,
                     help="file to write the generated public transport vehicles to")
-    ap.add_argument("--additional-output",
+    ap.add_argument("--additional-output", category="output", type=ap.additional_file,
                     help="file to write the generated public transport stops and routes to")
-    ap.add_argument("--duration", default=10,
+    ap.add_argument("--duration", default=10, category="input",
                     type=int, help="minimum time to wait on a stop")
-    ap.add_argument("--bus-stop-length", default=13, type=float,
+    ap.add_argument("--bus-stop-length", default=13, category="input", type=float,
                     help="length for a bus stop")
-    ap.add_argument("--train-stop-length", default=110, type=float,
+    ap.add_argument("--train-stop-length", default=110, category="input", type=float,
                     help="length for a train stop")
-    ap.add_argument("--tram-stop-length", default=60, type=float,
+    ap.add_argument("--tram-stop-length", default=60, category="input", type=float,
                     help="length for a tram stop")
-    ap.add_argument("--sort", action="store_true", default=False,
+    ap.add_argument("--center-stops", action="store_true", default=False, category="processing",
+                    help="use stop position as center not as front")
+    ap.add_argument("--skip-access", action="store_true", default=False, category="processing",
+                    help="do not create access links")
+    ap.add_argument("--sort", action="store_true", default=False, category="processing",
                     help="sorting the output-file")
+    ap.add_argument("--stops", category="input", type=ap.file, help="file with predefined stop positions to use")
 
     # ----------------------- fcd options -------------------------------------
-    ap.add_argument("--network-split",
+    ap.add_argument("--network-split", category="input",
                     help="directory to write generated networks to")
-    # ap.add_argument("--network-split.vclass", action="store_true", default=False,
-    #                        help="use the allowed vclass instead of the edge type to split the network")
-    ap.add_argument("--warn-unmapped", action="store_true", default=False,
+    ap.add_argument("--network-split-vclass", action="store_true", default=False, category="processing",
+                    help="use the allowed vclass instead of the edge type to split the network")
+    ap.add_argument("--warn-unmapped", action="store_true", default=False, category="processing",
                     help="warn about unmapped routes")
-    ap.add_argument("--mapperlib", default="lib/fcd-process-chain-2.2.2.jar",
+    ap.add_argument("--mapperlib", default="lib/fcd-process-chain-2.2.2.jar", category="input",
                     help="mapping library to use")
-    ap.add_argument("--map-output",
+    ap.add_argument("--map-output", category="output",
                     help="directory to write the generated mapping files to")
-    ap.add_argument("--map-output-config", default="conf/output_configuration_template.xml",
-                    help="output configuration template for the mapper library")
-    ap.add_argument("--map-input-config", default="conf/input_configuration_template.xml",
-                    help="input configuration template for the mapper library")
-    ap.add_argument("--map-parameter", default="conf/parameters_template.xml",
+    ap.add_argument("--map-output-config", default="conf/output_configuration_template.xml", category="output",
+                    type=ap.file, help="output configuration template for the mapper library")
+    ap.add_argument("--map-input-config", default="conf/input_configuration_template.xml", category="input",
+                    type=ap.file, help="input configuration template for the mapper library")
+    ap.add_argument("--map-parameter", default="conf/parameters_template.xml", category="input", type=ap.file,
                     help="parameter template for the mapper library")
-    ap.add_argument("--poly-output", help="file to write the generated polygon files to")
-    ap.add_argument("--fill-gaps", default=5000, type=float,
+    ap.add_argument("--poly-output", category="output", type=ap.file,
+                    help="file to write the generated polygon files to")
+    ap.add_argument("--fill-gaps", default=5000, type=float, category="input",
                     help="maximum distance between stops")
-    ap.add_argument("--skip-fcd", action="store_true", default=False,
+    ap.add_argument("--skip-fcd", action="store_true", default=False, category="processing",
                     help="skip generating fcd data")
-    ap.add_argument("--skip-map", action="store_true", default=False,
+    ap.add_argument("--skip-map", action="store_true", default=False, category="processing",
                     help="skip network mapping")
 
     # ----------------------- osm options -------------------------------------
-    ap.add_argument("--osm-routes", help="osm routes file")
-    ap.add_argument("--warning-output",
+    ap.add_argument("--osm-routes", category="input", type=ap.route_file, help="osm routes file")
+    ap.add_argument("--warning-output", category="output", type=ap.file,
                     help="file to write the unmapped elements from gtfs")
-    ap.add_argument("--dua-repair-output",
+    ap.add_argument("--dua-repair-output", category="output", type=ap.file,
                     help="file to write the osm routes with errors")
-    ap.add_argument("--repair", help="repair osm routes", action='store_true')
-    ap.add_argument("--min-stops", default=1, type=int,
+    ap.add_argument("--repair", help="repair osm routes", action='store_true', category="processing")
+    ap.add_argument("--min-stops", default=1, type=int, category="input",
                     help="minimum number of stops a public transport line must have to be imported")
 
     options = ap.parse_args(args)
@@ -131,24 +137,31 @@ def splitNet(options):
         subprocess.call(netcCall + ["-s", options.network, "-o", numIdNet,
                                     "--discard-params", "origId,origFrom,origTo"])
     edgeMap = {}
+    invEdgeMap = {}
     seenTypes = set()
     for e in sumolib.net.readNet(numIdNet).getEdges():
-        edgeMap[e.getID()] = e.getLanes()[0].getParam("origId", e.getID())
+        origId = e.getLanes()[0].getParam("origId", e.getID())
+        edgeMap[e.getID()] = origId
+        invEdgeMap[origId] = e.getID()
         seenTypes.add(e.getType())
     typedNets = {}
     for inp in sorted(glob.glob(os.path.join(options.fcd, "*.fcd.xml"))):
         mode = os.path.basename(inp)[:-8]
         if not options.modes or mode in options.modes.split(","):
             netPrefix = os.path.join(options.network_split, mode)
-            edgeFilter = ["--keep-edges.by-type", mode] if mode in seenTypes else None
-            if "rail" in mode or mode == "subway":
-                if "railway." + mode in seenTypes:
-                    edgeFilter = ["--keep-edges.by-type", "railway." + mode]
-            elif mode == "train":
-                if "railway.rail" in seenTypes or "railway.light_rail" in seenTypes:
-                    edgeFilter = ["--keep-edges.by-type", "railway.rail,railway.light_rail"]
-            elif mode in ("tram", "bus"):
-                edgeFilter = ["--keep-edges.by-vclass", mode]
+            if options.network_split_vclass:
+                vclass = gtfs2osm.OSM2SUMO_MODES.get(mode)
+                edgeFilter = ["--keep-edges.by-vclass", vclass] if vclass else None
+            else:
+                edgeFilter = ["--keep-edges.by-type", mode] if mode in seenTypes else None
+                if "rail" in mode or mode == "subway":
+                    if "railway." + mode in seenTypes:
+                        edgeFilter = ["--keep-edges.by-type", "railway." + mode]
+                elif mode == "train":
+                    if "railway.rail" in seenTypes or "railway.light_rail" in seenTypes:
+                        edgeFilter = ["--keep-edges.by-type", "railway.rail,railway.light_rail"]
+                elif mode in ("tram", "bus"):
+                    edgeFilter = ["--keep-edges.by-vclass", mode]
             if edgeFilter:
                 if (os.path.exists(netPrefix + ".net.xml") and
                         os.path.getmtime(netPrefix + ".net.xml") > os.path.getmtime(numIdNet)):
@@ -162,7 +175,7 @@ def splitNet(options):
                         subprocess.call(netcCall + ["-s", netPrefix + ".net.xml", "-o", "NUL", "--dismiss-vclasses"
                                                     "--dlr-navteq-output", netPrefix])
                 typedNets[mode] = (inp, netPrefix)
-    return edgeMap, typedNets
+    return edgeMap, invEdgeMap, typedNets
 
 
 def mapFCD(options, typedNets):
@@ -185,7 +198,7 @@ def mapFCD(options, typedNets):
         subprocess.call(call, shell=True)
 
 
-def traceMap(options, typedNets, radius=100):
+def traceMap(options, typedNets, fixedStops, invEdgeMap, radius=150):
     routes = collections.OrderedDict()
     for mode in sorted(typedNets.keys()):
         if options.verbose:
@@ -202,7 +215,14 @@ def traceMap(options, typedNets, radius=100):
             minX, minY, maxX, maxY = sumolib.geomhelper.addToBoundingBox(trace)
             if (minX < netBox[1][0] + radius and minY < netBox[1][1] + radius and
                     maxX > netBox[0][0] - radius and maxY > netBox[0][1] - radius):
-                mappedRoute = sumolib.route.mapTrace(trace, net, radius, fillGaps=options.fill_gaps)
+                vias = {}
+                for idx in range(len(trace)):
+                    fixed = fixedStops.get("%s.%s" % (tid, idx))
+                    if fixed:
+                        vias[idx] = invEdgeMap[fixed.lane[:fixed.lane.rfind("_")]]
+                mappedRoute = sumolib.route.mapTrace(trace, net, radius, verbose=options.verbose,
+                                                     fillGaps=options.fill_gaps, gapPenalty=5000., vias=vias,
+                                                     reversalPenalty=1000.)
                 if mappedRoute:
                     routes[tid] = [e.getID() for e in mappedRoute]
         if options.verbose:
@@ -226,9 +246,9 @@ def generate_polygons(net, routes, outfile):
         outf.write('</polygons>\n')
 
 
-def map_stops(options, net, routes, rout, edgeMap):
+def map_stops(options, net, routes, rout, edgeMap, fixedStops):
     stops = collections.defaultdict(list)
-    stopDef = set()
+    stopEnds = collections.defaultdict(list)
     rid = None
     for inp in sorted(glob.glob(os.path.join(options.fcd, "*.fcd.xml"))):
         mode = os.path.basename(inp)[:-8]
@@ -243,7 +263,8 @@ def map_stops(options, net, routes, rout, edgeMap):
         fixed = {}
         for veh in sumolib.xml.parse_fast(inp, "vehicle", ("id", "x", "y", "until", "name",
                                                            "fareZone", "fareSymbol", "startFare")):
-            addAttrs = ' friendlyPos="true" name="%s"' % veh.attr_name
+            stopName = veh.attr_name
+            addAttrs = ' friendlyPos="true" name="%s"' % stopName
             params = ""
             if veh.fareZone:
                 params = "".join(['        <param key="%s" value="%s"/>\n' %
@@ -253,6 +274,9 @@ def map_stops(options, net, routes, rout, edgeMap):
                 lastIndex = 0
                 lastPos = -1
                 rid = veh.id
+                stopIndex = 0
+            else:
+                stopIndex += 1
             if rid not in routes:
                 if options.warn_unmapped and rid not in seen:
                     print("Warning! Not mapped", rid, file=sys.stderr)
@@ -284,20 +308,30 @@ def map_stops(options, net, routes, rout, edgeMap):
                 stopLength = options.tram_stop_length
             else:
                 stopLength = options.train_stop_length
-            result = gtfs2osm.getBestLane(net, veh.x, veh.y, 200, stopLength,
-                                          route[lastIndex:], gtfs2osm.OSM2SUMO_MODES[mode], lastPos)
-            if result is None:
-                if options.warn_unmapped:
-                    print("Warning! No stop for %s." % str(veh), file=sys.stderr)
-                continue
-            laneID, start, end = result
+            stop = "%s.%s" % (rid, stopIndex)
+            if stop in fixedStops:
+                s = fixedStops[stop]
+                laneID, start, end = s.lane, float(s.startPos), float(s.endPos)
+            else:
+                result = gtfs2osm.getBestLane(net, veh.x, veh.y, 200, stopLength, options.center_stops,
+                                              route[lastIndex:], gtfs2osm.OSM2SUMO_MODES[mode], lastPos)
+                if result is None:
+                    if options.warn_unmapped:
+                        print("Warning! No stop for %s." % str(veh), file=sys.stderr)
+                    continue
+                laneID, start, end = result
             edgeID = laneID.rsplit("_", 1)[0]
             lastIndex = route.index(edgeID, lastIndex)
             lastPos = end
-            stop = "%s:%.2f" % (edgeID, end)
-            if stop not in stopDef:
-                stopDef.add(stop)
-                access = gtfs2osm.getAccess(net, veh.x, veh.y, 100, laneID)
+            keep = True
+            for otherStop, otherStart, otherEnd in stopEnds[laneID]:
+                if (otherEnd > start and otherEnd <= end) or (end > otherStart and end <= otherEnd):
+                    keep = False
+                    stop = otherStop
+                    break
+            if keep:
+                stopEnds[laneID].append((stop, start, end))
+                access = None if options.skip_access else gtfs2osm.getAccess(net, veh.x, veh.y, 100, laneID)
                 if not access and not params:
                     addAttrs += "/"
                 typ = "busStop" if mode == "bus" else "trainStop"
@@ -307,12 +341,12 @@ def map_stops(options, net, routes, rout, edgeMap):
                     for a in sorted(access):
                         rout.write(a)
                     rout.write(u'    </%s>\n' % typ)
-            stops[rid].append((stop, int(veh.until)))
+            stops[rid].append((stop, int(veh.until), stopName))
     return stops
 
 
 def filter_trips(options, routes, stops, outf, begin, end):
-    numDays = end // 86400
+    numDays = int(end) // 86400
     if end % 86400 != 0:
         numDays += 1
     if options.sort:
@@ -352,6 +386,10 @@ def main(options):
         options.bbox = net.convertXY2LonLat(*bboxXY[0]) + net.convertXY2LonLat(*bboxXY[1])
     else:
         options.bbox = [float(coord) for coord in options.bbox.split(",")]
+    fixedStops = {}
+    if options.stops:
+        for stop in sumolib.xml.parse(options.stops, ("busStop", "trainStop")):
+            fixedStops[stop.id] = stop
     if options.osm_routes:
         # Import PT from GTFS and OSM routes
         gtfsZip = zipfile.ZipFile(sumolib.openz(options.gtfs, mode="rb", tryGZip=False))
@@ -384,7 +422,7 @@ def main(options):
                 options.gpsdat = None
             if not gtfs2fcd.main(options):
                 return
-        edgeMap, typedNets = splitNet(options)
+        edgeMap, invEdgeMap, typedNets = splitNet(options)
         if os.path.exists(options.mapperlib):
             if not options.skip_map:
                 mapFCD(options, typedNets)
@@ -399,13 +437,13 @@ def main(options):
                 return
             if options.mapperlib != "tracemapper":
                 print("Warning! No mapping library found, falling back to tracemapper.", file=sys.stderr)
-            routes = traceMap(options, typedNets)
+            routes = traceMap(options, typedNets, fixedStops, invEdgeMap)
 
         if options.poly_output:
             generate_polygons(net, routes, options.poly_output)
         with sumolib.openz(options.additional_output, mode='w') as aout:
             sumolib.xml.writeHeader(aout, os.path.basename(__file__), "additional", options=options)
-            stops = map_stops(options, net, routes, aout, edgeMap)
+            stops = map_stops(options, net, routes, aout, edgeMap, fixedStops)
             aout.write(u'</additional>\n')
         with sumolib.openz(options.route_output, mode='w') as rout:
             sumolib.xml.writeHeader(rout, os.path.basename(__file__), "routes", options=options)
@@ -416,8 +454,8 @@ def main(options):
                     for stop in stops[vehID]:
                         if offset is None:
                             offset = stop[1]
-                        rout.write(u'        <stop busStop="%s" duration="%s" until="%s"/>\n' %
-                                   (stop[0], options.duration, stop[1] - offset))
+                        rout.write(u'        <stop busStop="%s" duration="%s" until="%s"/> <!-- %s -->\n' %
+                                   (stop[0], options.duration, stop[1] - offset, stop[2]))
                     rout.write(u'    </route>\n')
                 else:
                     print("Warning! Empty route", vehID, file=sys.stderr)

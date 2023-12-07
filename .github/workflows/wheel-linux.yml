@@ -1,8 +1,8 @@
 name: linux-wheels
 
-on: 
+on:
   push:            # run on push events
-    paths-ignore:  # but ignore everything in the docs subfolder 
+    paths-ignore:  # but ignore everything in the docs subfolder
       - 'docs/**'
       - 'src/gui*/**'
       - 'src/netedit/**'
@@ -12,7 +12,7 @@ on:
     tags:
       - '*'
   pull_request:    # run on pull requests
-    paths-ignore:  # but ignore everything in the docs subfolder 
+    paths-ignore:  # but ignore everything in the docs subfolder
       - 'docs/**'
   workflow_dispatch:
   schedule:
@@ -32,27 +32,27 @@ jobs:
       run: |
         git fetch --tags --force
 
-    - name: Building helper wheels for later tests
+    - name: Building sumolib / traci (pure Python) wheels and sdist
       run: |
         cd tools
         python -m pip install build
-        python build/version.py build/setup-sumolib.py ./setup.py
-        python -m build --wheel -o ../wheelhouse
-        python build/version.py build/setup-traci.py ./setup.py
-        python -m build --wheel -o ../wheelhouse
+        python build_config/version.py build_config/setup-sumolib.py ./setup.py
+        python -m build -o ../wheelhouse
+        python build_config/version.py build_config/setup-traci.py ./setup.py
+        python -m build -o ../wheelhouse
 
-    - name: Building Python wheels (latest manylinux docker)
+    - name: Building SUMO / libsumo Python wheels (latest manylinux docker)
       # if: github.repository == 'DLR-TS/sumo'
       uses: docker://quay.io/pypa/manylinux2014_x86_64
       with:
-        entrypoint: tools/build/build_wheels.sh
+        entrypoint: tools/build_config/build_wheels.sh
 
     # the next two steps are only needed when we debug the manylinux build
     # - name: Building Python wheels (fixed manylinux docker)
-    #   if: github.repository == 'eclipse/sumo'
+    #   if: github.repository == 'eclipse-sumo/sumo'
     #   uses: docker://quay.io/pypa/manylinux2014_x86_64:2022-11-14-1226cfc
     #   with:
-    #     entrypoint: tools/build/build_wheels.sh
+    #     entrypoint: tools/build_config/build_wheels.sh
 
     # - name: Uploading raw wheels (without auditwheel being applied)
     #   uses: actions/upload-artifact@v3
@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: [3.7, 3.8, 3.9, '3.10', 3.11]
+        python_version: [3.7, 3.8, 3.9, '3.10', 3.11, 3.12]
 
     steps:
     - name: Cloning SUMO
@@ -84,7 +84,7 @@ jobs:
     - name: Configuring Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python }}
+        python-version: ${{ matrix.python_version }}
 
     - name: Preparing Python environment
       run: |
@@ -107,8 +107,8 @@ jobs:
 
     - name: Running libsumo tests
       run: |
-        python -m pip install manylinux-wheels/sumolib-* manylinux-wheels/traci-*
-        PYTHON_VERSION=${{ matrix.python }}
+        python -m pip install manylinux-wheels/sumolib-*.whl manylinux-wheels/traci-*.whl
+        PYTHON_VERSION=${{ matrix.python_version }}
         python -m pip install manylinux-wheels/libsumo-*cp3${PYTHON_VERSION:2}*
         cd tests
         texttest -b ci -v ci -a complex.libsumo
@@ -122,12 +122,12 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v3
       with:
-        name: texttesttmp-${{ matrix.python }}
+        name: texttesttmp-${{ matrix.python_version }}
         path: texttesttmp.zip
         if-no-files-found: warn
 
   publish-wheels:
-    if: github.repository == 'eclipse/sumo' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags'))
+    if: github.repository == 'eclipse-sumo/sumo' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags'))
     needs: [test-wheels]
     runs-on: ubuntu-latest
 

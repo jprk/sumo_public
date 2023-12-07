@@ -46,14 +46,16 @@ below. Each person must have at least one stage in its plan.
 | maxSpeed            | float (s) | ≥0                 | 10,44           | The person's absolute maximum velocity (in m/s)             |
 | desiredMaxSpeed     | float (s) | ≥0                 | 1,39            | The person's desired maximum velocity (in m/s)             |
 | speedFactor         | float or [distribution spec](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#defining_a_normal_distribution_for_vehicle_speeds) | >0 | 1.0 | The persons expected multiplier for desiredMaxSpeed   |
-| speedDev          | float                 | >=0      | 0.1      | The deviation of the speedFactor distribution |
+| speedDev          | float                 | ≥0      | 0.1      | The deviation of the speedFactor distribution |
 | color             | [RGB-color](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#colors)  |          | "1,1,0" (yellow)    | This person type's color       |
 | jmDriveAfterRedTime | float (s)           | ≥0       | -1       | This value causes persons to violate a red light if the duration of the red phase is lower than the given threshold. When set to 0, persons will always walk at yellow but will try to stop at red. If this behavior causes a person to walk so fast that stopping is not possible any more it will not attempt to stop. |
+| jmIgnoreFoeProb        | float | \[0,1\]             | 0          | This value causes vehicles and pedestrians to ignore foe vehicles that have right-of-way with the given probability. The check is performed anew every simulation step.|
+| jmIgnoreFoeSpeed       | float (m/s) | ≥0            | 0          | This value is used in conjunction with *jmIgnoreFoeProb*. Only vehicles with a speed below or equal to the given value may be ignored. |
 | impatience         | float or 'off'       | <= 1     | 0.0      | Willingness of persons to walk across the street at an unprioritized crossing when there are vehicles that would have to brake  |
 | vClass            | class (enum) |        |          | "pedestrian" | Should either be "pedestrian" or "ignoring" (to allow walking anywhere) |
 
 !!! note
-    Up to version 1.14.1, speed distributions for walking persons (pedestrians) worked differently from those for vehicles. Whereas the individual speed factor of vehicles is multiplied with the road speed limit to arrive at the desired speed, the individual speed factor of persons was multiplied with the maxSpeed of their vType (since road speed limits do not apply to persons). In later versions, person use [desiredMaxSpeed and maxSpeed](../Simulation/VehicleSpeed.md#desiredmaxspeed) in the exact same manner as vehicles. For backward compatibility reasons, if `maxSpeed` is configured and `desiredMaxSpeed` is not given in the vType, the `desiredMaxSpeed` is initialied from the given `maxSpeed` value.
+    Up to version 1.14.1, speed distributions for walking persons (pedestrians) worked differently from those for vehicles. Whereas the individual speed factor of vehicles is multiplied with the road speed limit to arrive at the desired speed, the individual speed factor of persons was multiplied with the maxSpeed of their vType (since road speed limits do not apply to persons). In later versions, person use [desiredMaxSpeed and maxSpeed](../Simulation/VehicleSpeed.md#desiredmaxspeed) in the exact same manner as vehicles. For backward compatibility reasons, if `maxSpeed` is configured and `desiredMaxSpeed` is not given in the vType, the `desiredMaxSpeed` is initialized from the given `maxSpeed` value.
 
 When specifying a `type`, the set of
 attributes which are in effect during simulation depend on the selected
@@ -175,7 +177,7 @@ They are child elements of plan definitions.
 
 You can define either a `route`-id, or a list of `edges` to travel or a `from` and a `to` edge.
 In the first and second case the route edges are traveled in the listed
-order. They do not need to be joined in the net. If travelling between
+order. They do not need to be joined in the net. If traveling between
 stops on the same edge then only include the edge once. In the latter
 case a shortest path calculation is performed and it is an error if
 there is no path connecting `from` and `to`.
@@ -213,7 +215,7 @@ positioned between the start and end position of the vehicle's stop, the
 person will enter the vehicle and start its ride. If such a vehicle
 exists but the person is not positioned between the start and end
 position of the vehicle's stop, the person will still enter if the
-vehicle is triggered by the a person and the distance between person and
+vehicle is triggered by the person and the distance between person and
 vehicle is at most 10 metres. It does not check whether the vehicle has
 the aspired destination on the current route. The first time the vehicle
 stops (on a well defined stop) at the destination edge, the ride is
@@ -243,7 +245,7 @@ The person stops for the maximum of `currentTime` + `duration` and `until`.
 Whenever a person starts or ends a walk at a busStop or trainStop (collectively called *stoppingPlace*), an access stage inserted into the person plan under the following conditions:
 
 - the walk ends on an edge that is different from the stoppingPlace edge and the stoppingPlace has an `<access>` definition that connects it with the final edge of the walk
-- the walk starts on an edge that is differnt from the stoppingPlace edge and the stoppingPlce has an `<access>` definition that connects it with the first edge of the walk
+- the walk starts on an edge that is different from the stoppingPlace edge and the stoppingPlace has an `<access>` definition that connects it with the first edge of the walk
 
 The time spent in an access stage is equal to the "length" attribute of the access divided by the walking speed of the person. No interaction between persons on the same access element takes place.
 
@@ -253,7 +255,7 @@ It is possible to start the person simulation simultaneously with the start of a
 
 !!! note
     The starting vehicle must already be loaded in the input file
-    
+
 ## Starting a person in a vehicle
 To start the simulation of a person while riding in a vehicle, the `depart` attribute of the person must be set to `triggered`.
 Additionally the first stage of the plan must be a `ride`. The `from` attribute is not necessary, since the vehicle start position is already defined and used.
@@ -321,7 +323,7 @@ If the computed plan starts with a car or bicycle, a vehicle for use by the pers
 
 !!! note
     If no itinerary for performing the trip is found and the option **--ignore-route-errors** is set, the trip will be transformed into a walk which consists of the start and arrival edge. The person will teleport to complete the walk.
-    
+
 !!! note
     when attribute vTypes is used, the person may start with any of the given vehicle types at the from-edge. Including 'car' in modes is equivalent to vTypes="DEFAULT_VEHTYPE". Including 'bicycle' in modes is equivalent to vTypes="DEFAULT_BIKETYPE". The vehicles will be automatically generated when used.
 

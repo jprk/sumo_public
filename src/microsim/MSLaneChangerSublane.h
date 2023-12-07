@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -111,6 +111,8 @@ protected:
     void outputLCStarted(MSVehicle* vehicle, ChangerIt& from, ChangerIt& to, int direction, double maneuverDist);
     /// @brief optional output for end of lane-change maneuvre
     void outputLCEnded(MSVehicle* vehicle, ChangerIt& from, ChangerIt& to, int direction);
+
+    void addOutsideLeaders(const MSVehicle* vehicle, MSLeaderDistanceInfo& leaders) const;
 
     /// @brief whether checkChangeOpposite was called for the current vehicle
     bool myCheckedChangeOpposite;

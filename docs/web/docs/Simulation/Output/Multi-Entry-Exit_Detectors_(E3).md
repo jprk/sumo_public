@@ -26,7 +26,7 @@ The definition:
 
 ```xml
 <additional>
-   <entryExitDetector id="<ID>" period="<AGGREGATION_TIME>" file="<OUTPUT_XMLFILE>" 
+   <entryExitDetector id="<ID>" period="<AGGREGATION_TIME>" file="<OUTPUT_XMLFILE>"
    timeThreshold="<FLOAT>" speedThreshold="<FLOAT>">
       <detEntry lane="<LANE_ID1>" pos="<POSITION_ON_LANE>" friendlyPos="<BOOL>"/>
       <detEntry lane="<LANE_ID2>" pos="<POSITION_ON_LANE>" friendlyPos="<BOOL>"/>
@@ -58,6 +58,7 @@ The complete list of attributes is:
 | timeThreshold  | float       | The time-based threshold that describes how much time has to pass until a vehicle is recognized as halting; *in s, default: 1s*.    |
 | speedThreshold | float       | The speed-based threshold that describes how slow a vehicle has to be to be recognized as halting; *in m/s, default: 5/3.6m/s*.    |
 | openEntry      | bool        | If set to *true*, no error will be reported if vehicles leave the detector without first entering it. This can be useful when tracking vehicles for a particular combination of entry and exit lane at an intersection and other vehicles may also use the exit lane. *default: false*. |
+| expectArrival  | bool        | Whether no warning should be issued when a vehicle arrives within the detector area. *default: false*. |
 | vTypes         | string      | space separated list of vehicle type ids to consider, "" means all; default "".       |
 | detectPersons   | string            | [detect persons instead of vehicles (pedestrians or passengers)](../Pedestrians.md#detectors_for_pedestrians)       |
 
@@ -67,11 +68,11 @@ A single data line within the output of a simulated Multi-Entry-Exit
 Detector looks as following:
 
 ```
-<interval begin="<BEGIN_TIME>" end="<END_TIME>" id="<ID>" meanTravelTime="<MEAN_TT>" 
-meanOverlapTravelTime="<MEAN_OVERLAP_TT>" meanSpeed="<MEAN_SPEED>" 
-meanHaltsPerVehicle="<MEAN_HALT_NUMBER>" vehicleSum="<#VEHICLES>" meanSpeedWithin="<MEAN_SPEED>" 
-meanHaltsPerVehicleWithin="<MEAN_HALT_NUMBER>" meanDurationWithin="<MEAN_HALT_DURATION>" 
-vehicleSumWithin="<#VEHICLES>" meanIntervalSpeedWithin="<MEAN_SPEED>" 
+<interval begin="<BEGIN_TIME>" end="<END_TIME>" id="<ID>" meanTravelTime="<MEAN_TT>"
+meanOverlapTravelTime="<MEAN_OVERLAP_TT>" meanSpeed="<MEAN_SPEED>"
+meanHaltsPerVehicle="<MEAN_HALT_NUMBER>" vehicleSum="<#VEHICLES>" meanSpeedWithin="<MEAN_SPEED>"
+meanHaltsPerVehicleWithin="<MEAN_HALT_NUMBER>" meanDurationWithin="<MEAN_HALT_DURATION>"
+vehicleSumWithin="<#VEHICLES>" meanIntervalSpeedWithin="<MEAN_SPEED>"
 meanIntervalHaltsPerVehicleWithin="<MEAN_HALT_NUMBER>" meanIntervalDurationWithin="<MEAN_HALT_DURATION>"/>
 ```
 

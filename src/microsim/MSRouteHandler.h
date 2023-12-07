@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -153,7 +153,7 @@ protected:
     MSStoppingPlace* retrieveStoppingPlace(const SUMOSAXAttributes& attrs, const std::string& errorSuffix, SUMOVehicleParameter::Stop* stopParam = nullptr);
 
     /// @brief Processing of a stop
-    void addStop(const SUMOSAXAttributes& attrs);
+    Parameterised* addStop(const SUMOSAXAttributes& attrs);
 
     /// @brief add a routing request for a walking or intermodal person
     void addPersonTrip(const SUMOSAXAttributes& attrs);
@@ -162,10 +162,7 @@ protected:
     void addWalk(const SUMOSAXAttributes& attrs);
 
     /// @brief Processing of a person
-    void addPerson(const SUMOSAXAttributes& attrs);
-
-    /// @brief Processing of a container
-    void addContainer(const SUMOSAXAttributes& attrs);
+    void addTransportable(const SUMOSAXAttributes& attrs, const bool isPerson);
 
     /// @brief Processing of a ride
     void addRide(const SUMOSAXAttributes& attrs);
@@ -189,6 +186,9 @@ protected:
     /// @brief number of repetitions of the active route
     int myActiveRouteRepeat;
     SUMOTime myActiveRoutePeriod;
+
+    /// @brief whether the active route is stored indefinitely (used by state loader)
+    bool myActiveRoutePermanent;
 
     /// @brief The time at which this route was replaced (from vehroute-output)
     SUMOTime myActiveRouteReplacedAtTime;
@@ -261,9 +261,6 @@ private:
 
     /// @brief Invalidated assignment operator
     MSRouteHandler& operator=(const MSRouteHandler& s) = delete;
-
-    /// @brief Check if vtype of given transportable exists
-    void checkTransportableType();
 
     /// @brief Processing of a transport
     void addRideOrTransport(const SUMOSAXAttributes& attrs, const SumoXMLTag modeTag);

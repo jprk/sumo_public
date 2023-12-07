@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -115,6 +115,7 @@ MSPerson::MSPersonStage_Walking::proceed(MSNet* net, MSTransportable* person, SU
         return;
     }
     if (previous->getEdgePos(now) >= 0 && previous->getEdge() == *myRouteStep) {
+        // we need to adapt to the arrival position of the vehicle unless we have an explicit access
         myDepartPos = previous->getEdgePos(now);
         if (myWalkingTime > 0) {
             mySpeed = computeAverageSpeed();
@@ -436,14 +437,11 @@ MSPerson::MSPersonStage_Walking::loadState(MSTransportable* transportable, std::
 * MSPerson::MSPersonStage_Access - methods
 * ----------------------------------------------------------------------- */
 MSPerson::MSPersonStage_Access::MSPersonStage_Access(const MSEdge* destination, MSStoppingPlace* toStop,
-        const double arrivalPos, const double dist, const bool isExit) :
+        const double arrivalPos, const double dist, const bool isExit, const Position& startPos, const Position& endPos) :
     MSStage(destination, toStop, arrivalPos, MSStageType::ACCESS),
     myDist(dist), myAmExit(isExit) {
-    myPath.push_back(destination->getLanes()[0]->geometryPositionAtOffset(myDestinationStop->getAccessPos(destination)));
-    myPath.push_back(toStop->getCenterPos());
-    if (isExit) {
-        myPath = myPath.reverse();
-    }
+    myPath.push_back(startPos);
+    myPath.push_back(endPos);
 }
 
 
@@ -451,7 +449,7 @@ MSPerson::MSPersonStage_Access::~MSPersonStage_Access() {}
 
 MSStage*
 MSPerson::MSPersonStage_Access::clone() const {
-    return new MSPersonStage_Access(myDestination, myDestinationStop, myArrivalPos, myDist, myAmExit);
+    return new MSPersonStage_Access(myDestination, myDestinationStop, myArrivalPos, myDist, myAmExit, myPath.front(), myPath.back());
 }
 
 void
@@ -535,27 +533,40 @@ bool
 MSPerson::checkAccess(const MSStage* const prior, const bool waitAtStop) {
     MSStoppingPlace* prevStop = prior->getDestinationStop();
     if (!waitAtStop && prior->getStageType() == MSStageType::TRIP) {
-        prevStop = dynamic_cast<const MSStageTrip*>(prior)->getOriginStop();
+        prevStop = prior->getOriginStop();
     }
     if (prevStop != nullptr) {
-        if (waitAtStop) {
-            const double accessDist = prevStop->getAccessDistance(prior->getDestination());
-            if (accessDist > 0.) {
+        const MSEdge* const accessEdge = waitAtStop ? prior->getDestination() : (*myStep)->getFromEdge();
+        const MSStoppingPlace::Access* const access = prevStop->getAccess(accessEdge);
+        if (access != nullptr) {
+            const MSLane* const lane = accessEdge->getLanes()[0];
+            MSStage* newStage = nullptr;
+            if (waitAtStop) {
+                const MSEdge* const stopEdge = &prevStop->getLane().getEdge();
                 const double arrivalAtBs = (prevStop->getBeginLanePosition() + prevStop->getEndLanePosition()) / 2;
-                myStep = myPlan->insert(myStep, new MSPersonStage_Access(prior->getDestination(), prevStop, arrivalAtBs, accessDist, false));
-                return true;
+                newStage = new MSPersonStage_Access(stopEdge, prevStop, arrivalAtBs, access->length, false,
+                                                    lane->geometryPositionAtOffset(access->endPos),
+                                                    prevStop->getLane().geometryPositionAtOffset(arrivalAtBs));
+            } else {
+                const double startPos = prior->getStageType() == MSStageType::TRIP ? prior->getEdgePos(0) : prior->getArrivalPos();
+                const Position& p = prevStop->getLane().geometryPositionAtOffset(startPos);
+                const double arrivalPos = access->useDoors ? lane->getShape().nearest_offset_to_point2D(p) : access->endPos;
+                newStage = new MSPersonStage_Access(accessEdge, prevStop, arrivalPos, access->length, true,
+                                                    p, lane->geometryPositionAtOffset(arrivalPos));
             }
-        } else {
-            const double accessDist = prevStop->getAccessDistance((*myStep)->getFromEdge());
-            if (accessDist > 0.) {
-                myStep = myPlan->insert(myStep, new MSPersonStage_Access((*myStep)->getFromEdge(), prevStop, prevStop->getAccessPos((*myStep)->getFromEdge()), accessDist, true));
-                return true;
-            }
+            myStep = myPlan->insert(myStep, newStage);
+            return true;
         }
     }
     return false;
 }
 
+
+double
+MSPerson::getImpatience() const {
+    return MAX2(0., MIN2(1., getVehicleType().getImpatience()
+                         + STEPS2TIME((*myStep)->getWaitingTime(SIMSTEP)) / MSPModel_Striping::MAX_WAIT_TOLERANCE));
+}
 
 const std::string&
 MSPerson::getNextEdge() const {

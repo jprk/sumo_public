@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -78,6 +78,42 @@ GNEEdgeTemplate::getGUIGlObject() {
 void
 GNEEdgeTemplate::updateGeometry() {
     throw InvalidArgument("cannot be called in templates");
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawFromContour() const {
+    return false;
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawToContour() const {
+    return false;
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawRelatedContour() const {
+    return false;
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawOverContour() const {
+    return false;
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawDeleteContour() const {
+    return false;
+}
+
+
+bool
+GNEEdgeTemplate::checkDrawSelectContour() const {
+    return false;
 }
 
 

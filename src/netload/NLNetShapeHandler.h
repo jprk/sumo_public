@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -92,6 +92,9 @@ protected:
 
     /// @brief mapping between primary internal lane and corresponding secondary internal lane
     std::map<const MSJunction*, std::map<MSLane*, MSLane*> > myShuffledJunctions;
+
+    /// @brief lanes of the primary network that should receive a secondary shape
+    std::set<const MSEdge*> myPrimaryEdges;
 
 private:
     /** invalid copy constructor */

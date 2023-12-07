@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -54,9 +54,9 @@ std::map<std::string, int> lastThreadIndex; // by rng
 // ===========================================================================
 // member method definitions
 // ===========================================================================
+
 void
-RandHelper::insertRandOptions() {
-    OptionsCont& oc = OptionsCont::getOptions();
+RandHelper::insertRandOptions(OptionsCont& oc) {
     // registers random number options
     oc.addOptionSubTopic("Random Number");
 

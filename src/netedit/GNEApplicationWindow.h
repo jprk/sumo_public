@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -251,6 +251,9 @@ public:
     /// @brief called when the command/FXCall save additionals as is executed
     long onCmdSaveAdditionalsAs(FXObject*, FXSelector, void*);
 
+    /// @brief called when the command/FXCall save JuPedSim elements as is executed
+    long onCmdSaveJuPedSimElementsAs(FXObject*, FXSelector, void*);
+
     /// @brief called when the command/FXCall open demand is executed
     long onCmdOpenDemandElements(FXObject*, FXSelector, void*);
 
@@ -313,6 +316,9 @@ public:
 
     /// @brief called when the update/FXCall save additionals as is executed
     long onUpdSaveAdditionalsAs(FXObject*, FXSelector, void*);
+
+    /// @brief called when the update/FXCall save juPedSim as is executed
+    long onUpdSaveJuPedSimElementsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the update/FXCall save demand elements is executed
     long onUpdSaveDemandElements(FXObject*, FXSelector, void*);
@@ -421,6 +427,12 @@ public:
 
     /// @brief called if the user hits key combination for focus on frame
     long onCmdFocusFrame(FXObject* sender, FXSelector sel, void* ptr);
+
+    /// @brief called if the user press the toggle time format button
+    long onCmdToggleTimeFormat(FXObject* sender, FXSelector sel, void* ptr);
+
+    /// @brief update toggle time format button
+    long onUpdToggleTimeFormat(FXObject* sender, FXSelector sel, void* ptr);
 
     /// @brief enable or disable sender object depending if viewNet exist
     long onUpdRequireViewNet(FXObject* sender, FXSelector sel, void* ptr);
@@ -556,17 +568,23 @@ public:
     /// @brief check if undo-redo is enabled
     const std::string& isUndoRedoEnabled() const;
 
-    /// @brief getEdit Menu Commands (needed for show/hide menu commands)
-    GNEApplicationWindowHelper::EditMenuCommands& getEditMenuCommands();
-
-    /// @brief get lock Menu Commands
-    GNEApplicationWindowHelper::LockMenuCommands& getLockMenuCommands();
-
     /// @brief clear undo list
     void clearUndoList();
 
+    /// @brief get file Menu Commands (needed for show/hide menu commands)
+    GNEApplicationWindowHelper::FileMenuCommands& getFileMenuCommands();
+
+    /// @brief get modes Menu Commands (needed for show/hide menu commands)
+    GNEApplicationWindowHelper::ModesMenuCommands& getModesMenuCommands();
+
+    /// @brief get Edit Menu Commands (needed for show/hide menu commands)
+    GNEApplicationWindowHelper::EditMenuCommands& getEditMenuCommands();
+
     /// @brief get processing Menu Commands
     const GNEApplicationWindowHelper::ProcessingMenuCommands& getProcessingMenuCommands() const;
+
+    /// @brief get lock Menu Commands
+    GNEApplicationWindowHelper::LockMenuCommands& getLockMenuCommands();
 
     /// @brief get SUMO options container
     OptionsCont& getSumoOptions();
@@ -676,11 +694,20 @@ protected:
     /// @brief string to check if undo/redo list is enabled (a String is used to keep the disabling reason)
     std::string myUndoRedoListEnabled;
 
+    /// @brief original netedit options container
+    OptionsCont myOriginalNeteditOptions;
+
     /// @brief sumo options container
     OptionsCont mySumoOptions;
 
+    /// @brief original sumo options container
+    OptionsCont myOriginalSumoOptions;
+
     /// @brief netgenerate options container
     OptionsCont myNetgenerateOptions;
+
+    /// @brief original netgenerate options container
+    OptionsCont myOriginalNetgenerateOptions;
 
     /// @brief flag for check if console options was already loaded
     bool myConsoleOptionsLoaded = true;

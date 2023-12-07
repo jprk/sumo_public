@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -75,6 +75,7 @@ CommonXMLStructure::SumoBaseObject::clear() {
     myTimeAttributes.clear();
     myColorAttributes.clear();
     myStringListAttributes.clear();
+    myDoubleListAttributes.clear();
     myPositionVectorAttributes.clear();
     myParameters.clear();
     mySumoBaseObjectChildren.clear();
@@ -132,6 +133,9 @@ CommonXMLStructure::SumoBaseObject::getAllAttributes() const {
         result[toString(attr.first)] = toString(attr.second);
     }
     for (const auto& attr : myStringListAttributes) {
+        result[toString(attr.first)] = toString(attr.second);
+    }
+    for (const auto& attr : myDoubleListAttributes) {
         result[toString(attr.first)] = toString(attr.second);
     }
     for (const auto& attr : myPositionVectorAttributes) {
@@ -246,6 +250,17 @@ CommonXMLStructure::SumoBaseObject::getStringListAttribute(const SumoXMLAttr att
 }
 
 
+const std::vector<double>&
+CommonXMLStructure::SumoBaseObject::getDoubleListAttribute(const SumoXMLAttr attr) const {
+    if (hasDoubleListAttribute(attr)) {
+        return myDoubleListAttributes.at(attr);
+    } else {
+        handleAttributeError(attr, "double list");
+        throw ProcessError();
+    }
+}
+
+
 const PositionVector&
 CommonXMLStructure::SumoBaseObject::getPositionVectorAttribute(const SumoXMLAttr attr) const {
     if (hasPositionVectorAttribute(attr)) {
@@ -355,6 +370,12 @@ CommonXMLStructure::SumoBaseObject::hasStringListAttribute(const SumoXMLAttr att
 
 
 bool
+CommonXMLStructure::SumoBaseObject::hasDoubleListAttribute(const SumoXMLAttr attr) const {
+    return myDoubleListAttributes.count(attr) > 0;
+}
+
+
+bool
 CommonXMLStructure::SumoBaseObject::hasPositionVectorAttribute(const SumoXMLAttr attr) const {
     return myPositionVectorAttributes.count(attr) > 0;
 }
@@ -409,6 +430,12 @@ CommonXMLStructure::SumoBaseObject::addStringListAttribute(const SumoXMLAttr att
 
 
 void
+CommonXMLStructure::SumoBaseObject::addDoubleListAttribute(const SumoXMLAttr attr, const std::vector<double>& value) {
+    myDoubleListAttributes[attr] = value;
+}
+
+
+void
 CommonXMLStructure::SumoBaseObject::addPositionVectorAttribute(const SumoXMLAttr attr, const PositionVector& value) {
     myPositionVectorAttributes[attr] = value;
 }
@@ -450,7 +477,7 @@ CommonXMLStructure::SumoBaseObject::setStopParameter(const SUMOVehicleParameter:
     myDefinedStopParameter = true;
     // set attribute edge
     if (!myStopParameter.edge.empty()) {
-        addStringAttribute(SUMO_ATTR_ID, myStopParameter.edge);
+        addStringAttribute(SUMO_ATTR_EDGE, myStopParameter.edge);
     }
     // set attribute lane
     if (!myStopParameter.lane.empty()) {

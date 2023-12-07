@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -154,16 +154,10 @@ protected:
     const SUMOVehicleParameter::Stop* retrieveStoppingPlace(const SUMOSAXAttributes& attrs, const std::string& errorSuffix, std::string& id, const SUMOVehicleParameter::Stop* stopParam = nullptr);
 
     /// @brief Processing of a stop
-    void addStop(const SUMOSAXAttributes& attrs);
-
-    /// @brief Processing of a person
-    void addPerson(const SUMOSAXAttributes& attrs);
+    Parameterised* addStop(const SUMOSAXAttributes& attrs);
 
     /// @brief Processing of a person from a personFlow
-    void addFlowPerson(SUMOVTypeParameter* type, SUMOTime depart, const std::string& baseID, int i);
-
-    /// @brief Processing of a container
-    void addContainer(const SUMOSAXAttributes& attrs);
+    void addFlowPerson(const std::string& typeID, SUMOTime depart, const std::string& baseID, int i);
 
     /// @brief Processing of a ride
     void addRide(const SUMOSAXAttributes& attrs);

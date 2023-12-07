@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -56,8 +56,9 @@ public:
     /// routing edge
     class Track {
     public:
-        Track(NBEdge* e, int i = -1, const std::string& _id = "") :
+        Track(NBEdge* e, int i = -1, const std::string& _id = "", double _penalty = 1) :
             edge(e),
+            penalty(_penalty),
             index(i < 0 ? edge->getNumericalID() : i),
             id(_id == "" ? edge->getID() : _id),
             minPermissions(edge->getPermissions()) {
@@ -74,7 +75,7 @@ public:
             return index;
         }
         double getLength() const {
-            return 0.;
+            return 0;
         }
         const Track* getBidiEdge() const {
             return this;
@@ -90,6 +91,7 @@ public:
         }
 
         NBEdge* edge;
+        double penalty;
 
     private:
         const int index;
@@ -140,7 +142,7 @@ private:
     static int addBidiEdgesBetweenSwitches(NBEdgeCont& ec);
 
     /// @brief add bidi-edges to connect successive public transport stops
-    static int addBidiEdgesForStops(NBEdgeCont& ec, NBPTLineCont& lc, NBPTStopCont& sc);
+    static int addBidiEdgesForStops(NBEdgeCont& ec, NBPTLineCont& lc, NBPTStopCont& sc, bool minimal);
 
     /// @brief add bidi-edges to connect straight tracks
     static int addBidiEdgesForStraightConnectivity(NBEdgeCont& ec, bool geometryLike);
@@ -151,4 +153,14 @@ private:
     /// @brief identify lines that are likely to require bidirectional tracks
     static std::set<NBPTLine*> findBidiCandidates(NBPTLineCont& lc);
 
+};
+
+
+class NBRailwaySignalGuesser {
+
+public:
+    static int guessRailSignals(NBEdgeCont& ec, NBPTStopCont& sc);
+
+private:
+    static int guessByStops(NBEdgeCont& ec, NBPTStopCont& sc, double minLength);
 };

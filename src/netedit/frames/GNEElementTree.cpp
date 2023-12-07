@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -73,8 +73,8 @@ GNEElementTree::GNEElementTree(GNEFrame* frameParent) :
     myClickedDataSet(nullptr),
     myClickedDataInterval(nullptr),
     myClickedGenericData(nullptr) {
-    // Create tree list
-    myTreeListDynamic = new MFXTreeListDynamic(getCollapsableFrame(), this, MID_GNE_ACHIERARCHY_SHOWCHILDMENU, GUIDesignTreeListDinamic);
+    // Create tree list with fixed height
+    myTreeListDynamic = new MFXTreeListDynamic(getCollapsableFrame(), this, MID_GNE_ACHIERARCHY_SHOWCHILDMENU, GUIDesignTreeListFixedHeight);
     hide();
 }
 
@@ -210,11 +210,14 @@ GNEElementTree::onCmdDeleteItem(FXObject*, FXSelector, void*) {
         if ((myClickedDemandElement->getTagProperty().getTag() == SUMO_TAG_VTYPE) && (GNEAttributeCarrier::parse<bool>(myClickedDemandElement->getAttribute(GNE_ATTR_DEFAULT_VTYPE)))) {
             WRITE_WARNINGF(TL("Default Vehicle Type '%' cannot be removed"), myClickedDemandElement->getAttribute(SUMO_ATTR_ID));
             return 1;
-        } else if (myClickedDemandElement->getTagProperty().isPersonPlan() && (myClickedDemandElement->getParentDemandElements().front()->getChildDemandElements().size() == 1)) {
+        } else if (myClickedDemandElement->getTagProperty().isPlan()) {
             // we need to check if we're removing the last person plan of a person.
-            myFrameParent->getViewNet()->getNet()->deleteDemandElement(myClickedDemandElement->getParentDemandElements().front(), myFrameParent->getViewNet()->getUndoList());
-        } else {
-            myFrameParent->getViewNet()->getNet()->deleteDemandElement(myClickedDemandElement, myFrameParent->getViewNet()->getUndoList());
+            auto planParent = myClickedDemandElement->getParentDemandElements().front();
+            if (planParent->getChildDemandElements().size() == 1) {
+                myFrameParent->getViewNet()->getNet()->deleteDemandElement(planParent, myFrameParent->getViewNet()->getUndoList());
+            } else {
+                myFrameParent->getViewNet()->getNet()->deleteDemandElement(myClickedDemandElement, myFrameParent->getViewNet()->getUndoList());
+            }
         }
     } else if (myClickedDataSet) {
         myFrameParent->getViewNet()->getNet()->deleteDataSet(myClickedDataSet, myFrameParent->getViewNet()->getUndoList());
@@ -259,7 +262,7 @@ long
 GNEElementTree::onCmdMoveItemUp(FXObject*, FXSelector, void*) {
     // currently only children of demand elements can be moved
     if (myClickedDemandElement) {
-        myFrameParent->getViewNet()->getUndoList()->begin(myClickedDemandElement->getTagProperty().getGUIIcon(), ("moving up " + myClickedDemandElement->getTagStr()).c_str());
+        myFrameParent->getViewNet()->getUndoList()->begin(myClickedDemandElement, ("moving up " + myClickedDemandElement->getTagStr()).c_str());
         // move element one position back
         myFrameParent->getViewNet()->getUndoList()->add(new GNEChange_Children(myClickedDemandElement->getParentDemandElements().at(0), myClickedDemandElement,
                 GNEChange_Children::Operation::MOVE_BACK), true);
@@ -275,7 +278,7 @@ long
 GNEElementTree::onCmdMoveItemDown(FXObject*, FXSelector, void*) {
     // currently only children of demand elements can be moved
     if (myClickedDemandElement) {
-        myFrameParent->getViewNet()->getUndoList()->begin(myClickedDemandElement->getTagProperty().getGUIIcon(), ("moving down " + myClickedDemandElement->getTagStr()).c_str());
+        myFrameParent->getViewNet()->getUndoList()->begin(myClickedDemandElement, ("moving down " + myClickedDemandElement->getTagStr()).c_str());
         // move element one position front
         myFrameParent->getViewNet()->getUndoList()->add(new GNEChange_Children(myClickedDemandElement->getParentDemandElements().at(0), myClickedDemandElement,
                 GNEChange_Children::Operation::MOVE_FRONT), true);
@@ -315,7 +318,7 @@ GNEElementTree::createPopUpMenu(int X, int Y, GNEAttributeCarrier* clickedAC) {
         // create center menu command
         FXMenuCommand* centerMenuCommand = GUIDesigns::buildFXMenuCommand(pane, TL("Center"), GUIIconSubSys::getIcon(GUIIcon::RECENTERVIEW), this, MID_GNE_CENTER);
         // disable Centering for Vehicle Types, data sets and data intervals
-        if (myClickedAC->getTagProperty().isVehicleType() || (myClickedAC->getTagProperty().getTag() == SUMO_TAG_DATASET) ||
+        if (myClickedAC->getTagProperty().isType() || (myClickedAC->getTagProperty().getTag() == SUMO_TAG_DATASET) ||
                 (myClickedAC->getTagProperty().getTag() == SUMO_TAG_DATAINTERVAL)) {
             centerMenuCommand->disable();
         }
@@ -335,7 +338,7 @@ GNEElementTree::createPopUpMenu(int X, int Y, GNEAttributeCarrier* clickedAC) {
             FXMenuCommand* moveUpMenuCommand = GUIDesigns::buildFXMenuCommand(pane, "Move up", GUIIconSubSys::getIcon(GUIIcon::ARROW_UP), this, MID_GNE_ACHIERARCHY_MOVEUP);
             FXMenuCommand* moveDownMenuCommand = GUIDesigns::buildFXMenuCommand(pane, "Move down", GUIIconSubSys::getIcon(GUIIcon::ARROW_DOWN), this, MID_GNE_ACHIERARCHY_MOVEDOWN);
             // check if both commands has to be disabled
-            if (myClickedDemandElement->getTagProperty().isStopPerson()) {
+            if (myClickedDemandElement->getTagProperty().isPlanStopPerson()) {
                 moveUpMenuCommand->setText(TL("Move up (Stops cannot be moved)"));
                 moveDownMenuCommand->setText(TL("Move down (Stops cannot be moved)"));
                 moveUpMenuCommand->disable();
@@ -345,7 +348,7 @@ GNEElementTree::createPopUpMenu(int X, int Y, GNEAttributeCarrier* clickedAC) {
                 if (myClickedDemandElement->getParentDemandElements().front()->getChildDemandElements().front() == myClickedDemandElement) {
                     moveUpMenuCommand->setText(TL("Move up (It's already the first element)"));
                     moveUpMenuCommand->disable();
-                } else if (myClickedDemandElement->getParentDemandElements().front()->getPreviousChildDemandElement(myClickedDemandElement)->getTagProperty().isStopPerson()) {
+                } else if (myClickedDemandElement->getParentDemandElements().front()->getPreviousChildDemandElement(myClickedDemandElement)->getTagProperty().isPlanStopPerson()) {
                     moveUpMenuCommand->setText(TL("Move up (Previous element is a Stop)"));
                     moveUpMenuCommand->disable();
                 }
@@ -353,7 +356,7 @@ GNEElementTree::createPopUpMenu(int X, int Y, GNEAttributeCarrier* clickedAC) {
                 if (myClickedDemandElement->getParentDemandElements().front()->getChildDemandElements().back() == myClickedDemandElement) {
                     moveDownMenuCommand->setText(TL("Move down (It's already the last element)"));
                     moveDownMenuCommand->disable();
-                } else if (myClickedDemandElement->getParentDemandElements().front()->getNextChildDemandElement(myClickedDemandElement)->getTagProperty().isStopPerson()) {
+                } else if (myClickedDemandElement->getParentDemandElements().front()->getNextChildDemandElement(myClickedDemandElement)->getTagProperty().isPlanStopPerson()) {
                     moveDownMenuCommand->setText(TL("Move down (Next element is a Stop)"));
                     moveDownMenuCommand->disable();
                 }

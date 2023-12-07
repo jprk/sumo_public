@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -28,6 +28,7 @@
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/xml/NamespaceIDs.h>
 
 #include "GNEAccess.h"
 #include "GNEAdditionalHandler.h"
@@ -74,9 +75,7 @@ void
 GNEAccess::updateGeometry() {
     // set start position
     double fixedPositionOverLane;
-    if (myPositionOverLane == -1) {
-        fixedPositionOverLane = getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength();
-    } else if (myPositionOverLane < 0) {
+    if (myPositionOverLane < 0) {
         fixedPositionOverLane = 0;
     } else if (myPositionOverLane > getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength()) {
         fixedPositionOverLane = getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength();
@@ -121,7 +120,7 @@ GNEAccess::isAccessPositionFixed() const {
     if (myFriendlyPosition) {
         return true;
     } else {
-        if (myPositionOverLane != -1) {
+        if (myPositionOverLane != INVALID_DOUBLE) {
             return (myPositionOverLane >= 0) && (myPositionOverLane <= getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength());
         } else {
             return false;
@@ -134,7 +133,7 @@ void
 GNEAccess::writeAdditional(OutputDevice& device) const {
     device.openTag(SUMO_TAG_ACCESS);
     device.writeAttr(SUMO_ATTR_LANE, getParentLanes().front()->getID());
-    device.writeAttr(SUMO_ATTR_POSITION, myPositionOverLane);
+    device.writeAttr(SUMO_ATTR_POSITION, getAttribute(SUMO_ATTR_POSITION));
     if (myLength != -1) {
         device.writeAttr(SUMO_ATTR_LENGTH, myLength);
     }
@@ -149,6 +148,8 @@ bool
 GNEAccess::isAdditionalValid() const {
     // with friendly position enabled position is "always fixed"
     if (myFriendlyPosition) {
+        return true;
+    } else if (myPositionOverLane == INVALID_DOUBLE) {
         return true;
     } else {
         return fabs(myPositionOverLane) <= getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength();
@@ -180,7 +181,7 @@ std::string GNEAccess::getAdditionalProblem() const {
 void GNEAccess::fixAdditionalProblem() {
     // declare new position
     double newPositionOverLane = myPositionOverLane;
-    // declare new lenght (but unsed in this context)
+    // declare new length (but unsed in this context)
     double length = 0;
     // fix pos and length with fixLanePosition
     GNEAdditionalHandler::fixLanePosition(newPositionOverLane, length, getParentLanes().front()->getParentEdge()->getNBEdge()->getFinalLength());
@@ -248,22 +249,9 @@ GNEAccess::drawGL(const GUIVisualizationSettings& s) const {
             mouseWithinGeometry(myAdditionalGeometry.getShape().front(), (radius * accessExaggeration));
             // draw lock icon
             GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), myAdditionalGeometry.getShape().front(), accessExaggeration, 0.3);
-        }
-        // inspect contour
-        if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-            GUIDottedGeometry::drawDottedContourCircle(s, GUIDottedGeometry::DottedContourType::INSPECT, myAdditionalGeometry.getShape().front(), 0.5, accessExaggeration);
-        }
-        // front element contour
-        if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-            GUIDottedGeometry::drawDottedContourCircle(s, GUIDottedGeometry::DottedContourType::FRONT, myAdditionalGeometry.getShape().front(), 0.5, accessExaggeration);
-        }
-        // delete contour
-        if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-            GUIDottedGeometry::drawDottedContourCircle(s, GUIDottedGeometry::DottedContourType::REMOVE, myAdditionalGeometry.getShape().front(), 0.5, accessExaggeration);
-        }
-        // select contour
-        if (myNet->getViewNet()->drawSelectContour(this, this)) {
-            GUIDottedGeometry::drawDottedContourCircle(s, GUIDottedGeometry::DottedContourType::SELECT, myAdditionalGeometry.getShape().front(), 0.5, accessExaggeration);
+            // draw dotted contour
+            myContour.drawDottedContourCircle(s, myAdditionalGeometry.getShape().front(), radius, accessExaggeration,
+                                              s.dottedContourSettings.segmentWidthSmall);
         }
     }
 }
@@ -277,7 +265,11 @@ GNEAccess::getAttribute(SumoXMLAttr key) const {
         case SUMO_ATTR_LANE:
             return getParentLanes().front()->getID();
         case SUMO_ATTR_POSITION:
-            return toString(myPositionOverLane);
+            if (myPositionOverLane == INVALID_DOUBLE) {
+                return "random";
+            } else {
+                return toString(myPositionOverLane);
+            }
         case SUMO_ATTR_LENGTH:
             return toString(myLength);
         case SUMO_ATTR_FRIENDLY_POS:
@@ -319,7 +311,7 @@ GNEAccess::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList* 
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_PARAMETERS:
         case GNE_ATTR_SHIFTLANEINDEX:
-            undoList->changeAttribute(new GNEChange_Attribute(this, key, value));
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
@@ -343,7 +335,7 @@ GNEAccess::isValid(SumoXMLAttr key, const std::string& value) {
             }
         }
         case SUMO_ATTR_POSITION:
-            if (value.empty()) {
+            if (value.empty() || (value == "random")) {
                 return true;
             } else {
                 return canParse<double>(value);
@@ -358,8 +350,7 @@ GNEAccess::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_FRIENDLY_POS:
             return canParse<bool>(value);
         case GNE_ATTR_PARENT:
-            return ((myNet->getAttributeCarriers()->retrieveAdditional(SUMO_TAG_BUS_STOP, value, false) != nullptr) ||
-                    (myNet->getAttributeCarriers()->retrieveAdditional(SUMO_TAG_TRAIN_STOP, value, false) != nullptr));
+            return (myNet->getAttributeCarriers()->retrieveAdditionals(NamespaceIDs::busStops, value, false) != nullptr);
         case GNE_ATTR_SELECTED:
             return canParse<bool>(value);
         case GNE_ATTR_PARAMETERS:
@@ -392,7 +383,13 @@ GNEAccess::setAttribute(SumoXMLAttr key, const std::string& value) {
             replaceAdditionalParentLanes(value);
             break;
         case SUMO_ATTR_POSITION:
-            myPositionOverLane = parse<double>(value);
+            if (value.empty()) {
+                myPositionOverLane = 0;
+            } else if (value == "random") {
+                myPositionOverLane = INVALID_DOUBLE;
+            } else {
+                myPositionOverLane = parse<double>(value);
+            }
             break;
         case SUMO_ATTR_LENGTH:
             myLength = parse<double>(value);
@@ -441,7 +438,7 @@ void
 GNEAccess::commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList) {
     // reset lateral offset
     myMoveElementLateralOffset = 0;
-    undoList->begin(GUIIcon::ACCESS, "position of " + getTagStr());
+    undoList->begin(this, "position of " + getTagStr());
     // now adjust start position
     setAttribute(SUMO_ATTR_POSITION, toString(moveResult.newFirstPos), undoList);
     // check if lane has to be changed

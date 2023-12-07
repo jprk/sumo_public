@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -101,6 +101,8 @@ TemplateHandler::startElement(const XMLCh* const name, XERCES_CPP_NAMESPACE::Att
         std::string type;
         std::string help;
         bool required = false;
+        bool positional = false;
+        std::string listSep = "";
         // iterate over attributes
         for (int i = 0; i < (int)attributes.getLength(); i++) {
             const std::string attributeName = StringUtils::transcode(attributes.getName(i));
@@ -122,18 +124,22 @@ TemplateHandler::startElement(const XMLCh* const name, XERCES_CPP_NAMESPACE::Att
                     myOptions.addOptionSubTopic(attributeValue);
                 }
             } else if (attributeName == "required") {
-                required = ((attributeValue == "true") || (attributeValue == "1")) ? true : false;
+                required = StringUtils::toBool(attributeValue);
+            } else if (attributeName == "positional") {
+                positional = StringUtils::toBool(attributeValue);
+            } else if (attributeName == "listSeparator") {
+                listSep = attributeValue;
             }
         }
         // add option
-        addOption(value, synonymes, type, help, required);
+        addOption(value, synonymes, type, help, required, positional, listSep);
     }
 }
 
 
 bool
 TemplateHandler::addOption(std::string value, const std::string& synonymes, const std::string& type,
-                           const std::string& help, const bool required) const {
+                           const std::string& help, bool required, bool positional, const std::string& listSep) const {
     if (myOptions.exists(myOptionName)) {
         WRITE_WARNING(myOptionName + " already exists");
         return false;
@@ -151,16 +157,22 @@ TemplateHandler::addOption(std::string value, const std::string& synonymes, cons
             option = new Option_Integer(0);
             if (value.empty()) {
                 option->set(INVALID_INT_STR, "", true);
+            } else {
+                option->set(value, value, true);
             }
         } else if ((type == "FLOAT") || (type == "float") || (type == "TIME") || (type == "time")) {
             option = new Option_Float(0);
             if (value.empty()) {
                 option->set(INVALID_DOUBLE_STR, "", true);
+            } else {
+                option->set(value, value, true);
             }
         } else if ((type == "BOOL") || (type == "bool")) {
             option = new Option_Bool(false);
             if (value.empty()) {
                 option->set("false", "", true);
+            } else {
+                option->set(value, value, true);
             }
         } else if (type == "INT[]") {
             option = new Option_IntVector();
@@ -176,6 +188,14 @@ TemplateHandler::addOption(std::string value, const std::string& synonymes, cons
             option = new Option_Route(value);
         } else if ((type == "DATA") || (type == "data_file") || (type == "edgedata_file")) {
             option = new Option_Data(value);
+        } else if ((type == "SUMOCONFIG") || (type == "sumoconfig_file")) {
+            option = new Option_SumoConfig(value);
+        } else if ((type == "EDGE") || (type == "edge")) {
+            if (listSep.empty()) {
+                option = new Option_Edge(value);
+            } else {
+                option = new Option_EdgeVector(value);
+            }
         } else if (type.size() > 0) {
             WRITE_WARNING(type + " is an invalid type");
         }
@@ -194,10 +214,7 @@ TemplateHandler::addOption(std::string value, const std::string& synonymes, cons
             if (help.size() > 0) {
                 myOptions.addDescription(myOptionName, mySubTopic, help);
             }
-            // check if option is required
-            if (required) {
-                myOptions.setRequired(myOptionName, mySubTopic);
-            }
+            myOptions.setFurtherAttributes(myOptionName, mySubTopic, required, positional, listSep);
             return true;
         } else {
             return false;

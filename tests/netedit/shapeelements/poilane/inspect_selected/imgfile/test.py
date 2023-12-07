@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -32,29 +32,28 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 netedit.selectMode()
 
 # select first POILane
-netedit.leftClick(referencePosition, 140, 210)
+netedit.leftClick(referencePosition, 649, 290)
 
 # select second POILane
-netedit.leftClick(referencePosition, 200, 210)
+netedit.leftClick(referencePosition, 714, 290)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first POILane
-netedit.leftClick(referencePosition, 140, 210)
+netedit.leftClick(referencePosition, 649, 290)
 
 # Change parameter file with a non valid value (invalid)
-netedit.modifyAttribute(netedit.attrs.POILane.inspectSelection.imgFile, "%$$%%%%%", True)
+netedit.modifyAttribute(netedit.attrs.poiLane.inspectSelection.imgFile, "%$$%%%%%", True)
 
 # Change parameter file with a non valid value (no exist)
-netedit.modifyAttribute(netedit.attrs.POILane.inspectSelection.imgFile, "paris.ico", True)
+netedit.modifyAttribute(netedit.attrs.poiLane.inspectSelection.imgFile, "paris.ico", True)
 
 # Change parameter file with a valid value (valid)
-netedit.modifyAttribute(netedit.attrs.POILane.inspectSelection.imgFile, "berlin_icon.ico", True)
+netedit.modifyAttribute(netedit.attrs.poiLane.inspectSelection.imgFile, "berlin_icon.ico", True)
 
 # Check undos and redos
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

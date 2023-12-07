@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2005-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -112,14 +112,6 @@ MAX4(T a, T b, T c, T d) {
 }
 
 
-template<typename T>
-inline T
-ISNAN(T a) {
-    volatile T d = a;
-    return d != d;
-}
-
-
 /// the precision for floating point outputs
 extern int gPrecision;
 extern int gPrecisionGeo; // for lon,lat
@@ -159,4 +151,3 @@ double roundDecimal(double x, int precision);
  * @return the number of objects to create (something between 0 and ceil(frac))
  */
 int getScalingQuota(double frac, int loaded);
-

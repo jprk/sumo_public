@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -54,6 +54,8 @@ while traci.simulation.getMinExpectedNumber() > 0:
             print("\tsimpla platoon average speed: %.2f" % simpla.getAveragePlatoonSpeed())
             platoonInfo = simpla.getPlatoonInfo(platoonID)
             print("\tsimpla platoon info ID %d: %s" % (platoonID, str(platoonInfo)))
+            confirmedPlatoonID = simpla.getPlatoonID(platoonInfo["members"][0])
+            print("\tsimpla platoon of vehicle %s: %d" % (platoonInfo["members"][0], confirmedPlatoonID))
     traci.simulationStep()
     step += 1
 

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -20,11 +20,13 @@
 /****************************************************************************/
 #pragma once
 #include <config.h>
+
+
 // ===========================================================================
 // class declarations
 // ===========================================================================
-class OptionsCont;
 
+class OptionsCont;
 
 // ===========================================================================
 // class definitions
@@ -44,6 +46,7 @@ class OptionsCont;
  *  subsystems.
  */
 class SystemFrame {
+
 public:
     /** @brief Adds configuration options to the given container
      *
@@ -51,7 +54,6 @@ public:
      * @todo let the container be retrieved
      */
     static void addConfigurationOptions(OptionsCont& oc);
-
 
     /** @brief Adds reporting options to the given container
      *
@@ -61,7 +63,7 @@ public:
     static void addReportOptions(OptionsCont& oc);
 
     /// @brief checks shared options and sets StdDefs
-    static bool checkOptions();
+    static bool checkOptions(OptionsCont& oc);
 
     /** @brief Closes all of an applications subsystems
      *
@@ -74,6 +76,4 @@ public:
      * @see MsgHandler::cleanupOnEnd()
      */
     static void close();
-
-
 };

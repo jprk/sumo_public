@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -35,12 +35,31 @@
 #define TTT_UNSET SUMOTime_MIN
 
 // ===========================================================================
+// static value definitions
+// ===========================================================================
+std::set<SumoXMLAttr> SUMOVTypeParameter::AllowedJMAttrs({
+    SUMO_ATTR_JM_CROSSING_GAP,
+    SUMO_ATTR_JM_DRIVE_AFTER_YELLOW_TIME,
+    SUMO_ATTR_JM_DRIVE_AFTER_RED_TIME,
+    SUMO_ATTR_JM_DRIVE_RED_SPEED,
+    SUMO_ATTR_JM_IGNORE_KEEPCLEAR_TIME,
+    SUMO_ATTR_JM_IGNORE_FOE_SPEED,
+    SUMO_ATTR_JM_IGNORE_FOE_PROB,
+    SUMO_ATTR_JM_IGNORE_JUNCTION_FOE_PROB,
+    SUMO_ATTR_JM_SIGMA_MINOR,
+    SUMO_ATTR_JM_STOPLINE_GAP,
+    SUMO_ATTR_JM_TIMEGAP_MINOR,
+});
+
+
+// ===========================================================================
 // member method definitions
 // ===========================================================================
 
 SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vclass) :
     length(getDefaultVehicleLength(vclass)),
     minGap(2.5),
+    minGapLat(0.6),
     maxSpeed(200. / 3.6),
     desiredMaxSpeed(10000 / 3.6), // backward-compatibility: do not influence speeds by default
     width(1.8),
@@ -54,6 +73,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
     osgFile("car-normal-citrus.obj"),
     carriageLength(-1),
     locomotiveLength(-1),
+    carriageDoors(2),
     latAlignmentProcedure(LatAlignmentDefinition::CENTER) {
     // update default values
     switch (vclass) {
@@ -71,6 +91,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             break;
         case SVC_BICYCLE:
             minGap = 0.5;
+            minGapLat = 0.35;
             maxSpeed = 50. / 3.6;
             desiredMaxSpeed = DEFAULT_BICYCLE_SPEED;
             width = 0.65;
@@ -254,15 +275,10 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues() :
 
 SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicleClass vclass)
     : id(vtid),
-      length(5. /*4.3*/),
-      minGap(2.5),
-      maxSpeed(200. / 3.6),
-      desiredMaxSpeed(200. / 3.6),
       actionStepLength(0),
       defaultProbability(DEFAULT_VEH_PROB),
       speedFactor("normc", 1.0, 0.0, 0.2, 2.0),
       emissionClass(PollutantsInterface::getClassByName(EMPREFIX + "PC_G_EU4", vclass)),
-      mass(1500.),
       color(RGBColor::DEFAULT_COLOR),
       vehicleClass(vclass),
       impatience(0.0),
@@ -280,10 +296,10 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
       maxSpeedLat(1.0),
       latAlignmentOffset(0.0),
       latAlignmentProcedure(LatAlignmentDefinition::CENTER),
-      minGapLat(0.6),
       carriageLength(-1),
       locomotiveLength(-1),
       carriageGap(1),
+      carriageDoors(2),
       timeToTeleport(TTT_UNSET),
       timeToTeleportBidi(TTT_UNSET),
       speedFactorPremature(-1),
@@ -302,6 +318,7 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
     // overwrite SUMOVTypeParameter with VClassDefaultValues
     length = defaultValues.length;
     minGap = defaultValues.minGap;
+    minGapLat = defaultValues.minGapLat;
     maxSpeed = defaultValues.maxSpeed;
     desiredMaxSpeed = defaultValues.desiredMaxSpeed;
     width = defaultValues.width;
@@ -315,6 +332,7 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
     osgFile = defaultValues.osgFile;
     carriageLength = defaultValues.carriageLength;
     locomotiveLength = defaultValues.locomotiveLength;
+    carriageDoors = defaultValues.carriageDoors;
     latAlignmentProcedure = defaultValues.latAlignmentProcedure;
     // check if default speeddev was defined
     if (oc.exists("default.speeddev")) {
@@ -541,6 +559,13 @@ SUMOVTypeParameter::write(OutputDevice& dev) const {
         dev.openTag(SUMO_TAG_PARAM);
         dev.writeAttr(SUMO_ATTR_KEY, toString(SUMO_ATTR_CARRIAGE_GAP));
         dev.writeAttr(SUMO_ATTR_VALUE, toString(carriageGap));
+        dev.closeTag();
+    }
+    // Write carriage doors
+    if (wasSet(VTYPEPARS_CARRIAGE_DOORS_SET)) {
+        dev.openTag(SUMO_TAG_PARAM);
+        dev.writeAttr(SUMO_ATTR_KEY, toString(SUMO_ATTR_CARRIAGE_DOORS));
+        dev.writeAttr(SUMO_ATTR_VALUE, toString(carriageDoors));
         dev.closeTag();
     }
     // Write rest of parameters

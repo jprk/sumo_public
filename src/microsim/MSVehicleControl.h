@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -194,6 +194,8 @@ public:
     /// @}
 
 
+    /// @brief register / unregister depart-triggered vehicles with edges
+    void handleTriggeredDepart(SUMOVehicle* v, bool add);
 
     /// @name Setting vehicle statistics
     /// @{
@@ -330,6 +332,11 @@ public:
         return myEmergencyStops;
     }
 
+    /// @brief return the number of emergency stops
+    int getEmergencyBrakingCount() const {
+        return myEmergencyBrakingCount;
+    }
+
     /// @brief return the number of vehicles that are currently stopped
     int getStoppedVehiclesCount() const {
         return myStoppedVehicles;
@@ -434,6 +441,9 @@ public:
     /// @brief return the vehicle type distribution with the given id
     const RandomDistributor<MSVehicleType*>* getVTypeDistribution(const std::string& typeDistID) const;
 
+    /// @brief Return all pedestrian vehicle types.
+    const std::vector<MSVehicleType*> getPedestrianTypes(void) const;
+
     /// @}
 
     /** @brief increases the count of vehicles waiting for a transport to allow recognition of person / container related deadlocks
@@ -474,6 +484,11 @@ public:
     /// @brief register emergency stop
     void registerEmergencyStop() {
         myEmergencyStops++;
+    }
+
+    /// @brief register emergency stop
+    void registerEmergencyBraking() {
+        myEmergencyBrakingCount++;
     }
 
     /// @brief register emergency stop
@@ -591,6 +606,9 @@ private:
 
     /// @brief The number of emergency stops
     int myEmergencyStops;
+
+    /// @brief The number of emergency stops
+    int myEmergencyBrakingCount;
 
     /// @brief The number of stopped vehicles
     int myStoppedVehicles;

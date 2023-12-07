@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -22,6 +22,7 @@
 
 #include <netedit/frames/GNEFrame.h>
 #include <netedit/frames/GNEAttributesCreator.h>
+#include <utils/foxtools/MFXDynamicLabel.h>
 #include <utils/vehicle/SUMOVehicleParameter.h>
 #include <netedit/elements/demand/GNERouteHandler.h>
 #include <netedit/frames/GNENeteditAttributes.h>
@@ -66,7 +67,7 @@ public:
         GNEStopFrame* myStopFrameParent;
 
         /// @brief Label with creation information
-        FXLabel* myInformationLabel;
+        MFXDynamicLabel* myInformationLabel;
     };
 
     /**@brief Constructor
@@ -92,7 +93,7 @@ public:
     bool getStopParameter(const SumoXMLTag stopTag, const GNELane* lane, const GNEAdditional* stoppingPlace);
 
     /// @brief get stop parent selector
-    DemandElementSelector* getStopParentSelector() const;
+    GNEDemandElementSelector* getStopParentSelector() const;
 
 protected:
     /// @brief Tag selected in GNETagSelector
@@ -109,7 +110,7 @@ private:
     CommonXMLStructure::SumoBaseObject* myStopParentBaseObject;
 
     /// @brief Stop parent selectors
-    DemandElementSelector* myStopParentSelector;
+    GNEDemandElementSelector* myStopParentSelector;
 
     /// @brief stop tag selector selector (used to select diffent kind of Stops)
     GNETagSelector* myStopTagSelector;

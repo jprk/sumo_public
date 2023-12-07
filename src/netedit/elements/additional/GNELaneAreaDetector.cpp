@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -29,6 +29,7 @@
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/xml/NamespaceIDs.h>
 
 #include "GNELaneAreaDetector.h"
 #include "GNEAdditionalHandler.h"
@@ -226,7 +227,7 @@ GNELaneAreaDetector::fixAdditionalProblem() {
             while (i < ((int)getParentLanes().size() - 1)) {
                 // change foundConnection to false
                 foundConnection = false;
-                // if a connection betwen "from" lane and "to" lane of connection is found, change myE2valid to true again
+                // if a connection between "from" lane and "to" lane of connection is found, change myE2valid to true again
                 for (const auto& connection : getParentLanes().at(i)->getParentEdge()->getGNEConnections()) {
                     if ((connection->getLaneFrom() == getParentLanes().at(i)) && (connection->getLaneTo() == getParentLanes().at(i + 1))) {
                         foundConnection = true;
@@ -328,26 +329,9 @@ GNELaneAreaDetector::drawGL(const GUIVisualizationSettings& s) const {
             }
             // check if mouse is over element
             mouseWithinGeometry(myAdditionalGeometry.getShape(), s.detectorSettings.E2Width);
-            // inspect contour
-            if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width,
-                        E2Exaggeration, true, true);
-            }
-            // front element contour
-            if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width,
-                        E2Exaggeration, true, true);
-            }
-            // delete contour
-            if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width,
-                        E2Exaggeration, true, true);
-            }
-            // select contour
-            if (myNet->getViewNet()->drawSelectContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width,
-                        E2Exaggeration, true, true);
-            }
+            // draw dotted geometry
+            myContour.drawDottedContourExtruded(s, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width, E2Exaggeration, true, true,
+                                                s.dottedContourSettings.segmentWidth);
         }
         // Draw additional ID
         drawAdditionalID(s);
@@ -365,12 +349,12 @@ GNELaneAreaDetector::computePathElement() {
 
 
 void
-GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNELaneAreaDetector::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
     // calculate E2Detector width
-    const double E2DetectorWidth = s.addSize.getExaggeration(s, lane);
+    const double E2DetectorWidth = s.addSize.getExaggeration(s, segment->getLane());
     // check if E2 can be drawn
-    if (s.drawAdditionals(E2DetectorWidth) && myNet->getViewNet()->getDataViewOptions().showAdditionals() &&
-            !myNet->getViewNet()->selectingDetectorsTLSMode()) {
+    if (segment->getLane() && (myTagProperty.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) && s.drawAdditionals(E2DetectorWidth) &&
+            myNet->getViewNet()->getDataViewOptions().showAdditionals() && !myNet->getViewNet()->selectingDetectorsTLSMode()) {
         // calculate startPos
         const double geometryDepartPos = getAttributeDouble(SUMO_ATTR_POSITION);
         // get endPos
@@ -379,19 +363,25 @@ GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNEL
         GUIGeometry E2Geometry;
         // update pathGeometry depending of first and last segment
         if (segment->isFirstSegment() && segment->isLastSegment()) {
-            E2Geometry.updateGeometry(lane->getLaneGeometry().getShape(),
-                                      geometryDepartPos, geometryEndPos,      // extrem positions
-                                      Position::INVALID, Position::INVALID);  // extra positions
+            E2Geometry.updateGeometry(segment->getLane()->getLaneGeometry().getShape(),
+                                      geometryDepartPos,
+                                      Position::INVALID,
+                                      geometryEndPos,
+                                      Position::INVALID);
         } else if (segment->isFirstSegment()) {
-            E2Geometry.updateGeometry(lane->getLaneGeometry().getShape(),
-                                      geometryDepartPos, -1,                  // extrem positions
-                                      Position::INVALID, Position::INVALID);  // extra positions
+            E2Geometry.updateGeometry(segment->getLane()->getLaneGeometry().getShape(),
+                                      geometryDepartPos,
+                                      Position::INVALID,
+                                      -1,
+                                      Position::INVALID);
         } else if (segment->isLastSegment()) {
-            E2Geometry.updateGeometry(lane->getLaneGeometry().getShape(),
-                                      -1, geometryEndPos,                     // extrem positions
-                                      Position::INVALID, Position::INVALID);  // extra positions
+            E2Geometry.updateGeometry(segment->getLane()->getLaneGeometry().getShape(),
+                                      -1,
+                                      Position::INVALID,
+                                      geometryEndPos,
+                                      Position::INVALID);
         } else {
-            E2Geometry = lane->getLaneGeometry();
+            E2Geometry = segment->getLane()->getLaneGeometry();
         }
         // obtain color
         const RGBColor E2Color = drawUsingSelectColor() ? s.colorSettings.selectedAdditionalColor : s.detectorSettings.E2Color;
@@ -427,7 +417,7 @@ GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNEL
         if (!s.drawForRectangleSelection) {
             drawName(getCenteringBoundary().getCenter(), s.scale, s.addName);
             // check if this is the label segment
-            if (segment->isLabelSegment()) {
+            if (segment->isLabelSegment() && !(s.drawForRectangleSelection || s.drawForPositionSelection)) {
                 // calculate middle point
                 const double middlePoint = (E2Geometry.getShape().length2D() * 0.5);
                 // calculate position
@@ -451,35 +441,24 @@ GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNEL
             }
         }
         // declare trim geometry to draw
-        const auto shape = (segment->isFirstSegment() || segment->isLastSegment()) ? E2Geometry.getShape() : lane->getLaneShape();
+        const auto shape = (segment->isFirstSegment() || segment->isLastSegment()) ? E2Geometry.getShape() : segment->getLane()->getLaneShape();
         // check if mouse is over element
         mouseWithinGeometry(shape, s.detectorSettings.E2Width);
-        // inspect contour
-        if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-            GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, shape, E2DetectorWidth, 1, segment->isFirstSegment(), segment->isLastSegment());
-        }
-        // dotted contour
-        if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-            GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, shape, E2DetectorWidth, 1, segment->isFirstSegment(), segment->isLastSegment());
-        }
-        // delete contour
-        if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-            GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, shape, E2DetectorWidth, 1, segment->isFirstSegment(), segment->isLastSegment());
-        }
-        // select contour
-        if (myNet->getViewNet()->drawSelectContour(this, this)) {
-            GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, shape, E2DetectorWidth, 1, segment->isFirstSegment(), segment->isLastSegment());
-        }
+        // draw dotted geometry
+        myContour.drawDottedContourExtruded(s, E2Geometry.getShape(), E2DetectorWidth, 1, segment->isFirstSegment(), segment->isLastSegment(),
+                                            s.dottedContourSettings.segmentWidth);
     }
 }
 
 
 void
-GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNELane* fromLane, const GNELane* toLane, const GNEPathManager::Segment* /*segment*/, const double offsetFront) const {
+GNELaneAreaDetector::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
     // calculate E2Detector width
-    const double E2DetectorWidth = s.addSize.getExaggeration(s, fromLane);
+    const double E2DetectorWidth = s.addSize.getExaggeration(s, segment->getPreviousLane());
     // check if E2 can be drawn
-    if (s.drawAdditionals(E2DetectorWidth) && myNet->getViewNet()->getDataViewOptions().showAdditionals() && !myNet->getViewNet()->selectingDetectorsTLSMode()) {
+    if ((myTagProperty.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) && s.drawAdditionals(E2DetectorWidth) &&
+            segment->getPreviousLane() && segment->getNextLane() &&
+            myNet->getViewNet()->getDataViewOptions().showAdditionals() && !myNet->getViewNet()->selectingDetectorsTLSMode()) {
         // get flag for show only contour
         const bool onlyContour = myNet->getViewNet()->getEditModes().isCurrentSupermodeNetwork() ? myNet->getViewNet()->getNetworkViewOptions().showConnections() : false;
         // Start drawing adding an gl identificator
@@ -495,18 +474,25 @@ GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNEL
             GLHelper::setColor(s.detectorSettings.E2Color);
         }
         // draw lane2lane
-        if (fromLane->getLane2laneConnections().exist(toLane)) {
+        if (segment->getPreviousLane()->getLane2laneConnections().exist(segment->getNextLane())) {
+            // get geometry
+            const auto& connectionGeometry = segment->getPreviousLane()->getLane2laneConnections().getLane2laneGeometry(segment->getNextLane());
             // check if draw only contour
             if (onlyContour) {
-                GUIGeometry::drawContourGeometry(fromLane->getLane2laneConnections().getLane2laneGeometry(toLane), E2DetectorWidth);
+                GUIGeometry::drawContourGeometry(connectionGeometry, E2DetectorWidth);
             } else {
-                GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), fromLane->getLane2laneConnections().getLane2laneGeometry(toLane), E2DetectorWidth);
+                GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), connectionGeometry, E2DetectorWidth);
             }
+            // check if mouse is over element
+            mouseWithinGeometry(connectionGeometry.getShape(), s.detectorSettings.E2Width);
+            // draw dotted geometry
+            myContour.drawDottedContourExtruded(s, connectionGeometry.getShape(), E2DetectorWidth, 1, false, false,
+                                                s.dottedContourSettings.segmentWidth);
         } else {
             // Set invalid person plan color
             GLHelper::setColor(RGBColor::RED);
             // calculate invalid geometry
-            const GUIGeometry invalidGeometry({fromLane->getLaneShape().back(), toLane->getLaneShape().front()});
+            const GUIGeometry invalidGeometry({segment->getPreviousLane()->getLaneShape().back(), segment->getNextLane()->getLaneShape().front()});
             // check if draw only contour
             if (onlyContour) {
                 GUIGeometry::drawContourGeometry(invalidGeometry, (0.5 * E2DetectorWidth));
@@ -514,36 +500,14 @@ GNELaneAreaDetector::drawPartialGL(const GUIVisualizationSettings& s, const GNEL
                 // draw invalid geometry
                 GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), invalidGeometry, (0.5 * E2DetectorWidth));
             }
+            // draw dotted geometry
+            myContour.drawDottedContourExtruded(s, invalidGeometry.getShape(), E2DetectorWidth, 1, false, false,
+                                                s.dottedContourSettings.segmentWidth);
         }
         // Pop last matrix
         GLHelper::popMatrix();
         // Pop name
         GLHelper::popName();
-        // continue with dotted contours
-        if (fromLane->getLane2laneConnections().exist(toLane)) {
-            // check if mouse is over element
-            mouseWithinGeometry(fromLane->getLane2laneConnections().getLane2laneGeometry(toLane).getShape(), s.detectorSettings.E2Width);
-            // inspect contour
-            if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, fromLane->getLane2laneConnections().getLane2laneGeometry(toLane).getShape(),
-                        E2DetectorWidth, 1, false, false);
-            }
-            // front contour
-            if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, fromLane->getLane2laneConnections().getLane2laneGeometry(toLane).getShape(),
-                        E2DetectorWidth, 1, false, false);
-            }
-            // delete contour
-            if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, fromLane->getLane2laneConnections().getLane2laneGeometry(toLane).getShape(),
-                        E2DetectorWidth, 1, false, false);
-            }
-            // select contour
-            if (myNet->getViewNet()->drawSelectContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, fromLane->getLane2laneConnections().getLane2laneGeometry(toLane).getShape(),
-                        E2DetectorWidth, 1, false, false);
-            }
-        }
     }
 }
 
@@ -633,7 +597,7 @@ GNELaneAreaDetector::setAttribute(SumoXMLAttr key, const std::string& value, GNE
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_PARAMETERS:
         case GNE_ATTR_SHIFTLANEINDEX:
-            undoList->changeAttribute(new GNEChange_Attribute(this, key, value));
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
@@ -645,14 +609,7 @@ bool
 GNELaneAreaDetector::isValid(SumoXMLAttr key, const std::string& value) {
     switch (key) {
         case SUMO_ATTR_ID:
-            if (value == getID()) {
-                return true;
-            } else if (isValidDetectorID(value)) {
-                return (myNet->getAttributeCarriers()->retrieveAdditional(GNE_TAG_MULTI_LANE_AREA_DETECTOR, value, false) == nullptr) &&
-                       (myNet->getAttributeCarriers()->retrieveAdditional(SUMO_TAG_LANE_AREA_DETECTOR, value, false) == nullptr);
-            } else {
-                return false;
-            }
+            return isValidDetectorID(NamespaceIDs::laneAreaDetectors, value);
         case SUMO_ATTR_LANE:
             if (value.empty()) {
                 return false;
@@ -719,7 +676,7 @@ GNELaneAreaDetector::setAttribute(SumoXMLAttr key, const std::string& value) {
     switch (key) {
         case SUMO_ATTR_ID:
             // update microsimID
-            setMicrosimID(value);
+            setAdditionalID(value);
             break;
         case SUMO_ATTR_LANE:
         case SUMO_ATTR_LANES:
@@ -819,7 +776,7 @@ GNELaneAreaDetector::setMoveShape(const GNEMoveResult& moveResult) {
 void
 GNELaneAreaDetector::commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList) {
     // begin change attribute
-    undoList->begin(myTagProperty.getGUIIcon(), "position of " + getTagStr());
+    undoList->begin(this, "position of " + getTagStr());
     // set attributes depending of operation type
     if ((moveResult.operationType == GNEMoveOperation::OperationType::ONE_LANE_MOVEFIRST) ||
             (moveResult.operationType == GNEMoveOperation::OperationType::TWO_LANES_MOVEFIRST)) {

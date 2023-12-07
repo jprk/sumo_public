@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -58,6 +58,8 @@ print("haltVeh", traci.edge.getLastStepHaltingNumber(edgeID))
 print("vehIds", traci.edge.getLastStepVehicleIDs(edgeID))
 print("personIds", traci.edge.getLastStepPersonIDs(edgeID))
 print("waiting time", traci.edge.getWaitingTime(edgeID))
+print("angle (with default relative position)", traci.edge.getAngle(edgeID))
+print("angle (with some relative position)", traci.edge.getAngle(edgeID, 10))
 # testing unicode
 print("checking occupancy with unicode id",
       traci.edge.getLastStepOccupancy(str(edgeID)))

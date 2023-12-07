@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -178,30 +178,13 @@ GNEContainerStop::drawGL(const GUIVisualizationSettings& s) const {
             // check if mouse is over element
             mouseWithinGeometry(myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth * MIN2(1.0, containerStopExaggeration));
             mouseWithinGeometry(mySignPos, myCircleWidth);
-            // Inspect contour
-            if (myNet->getViewNet()->isAttributeCarrierInspected(this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::INSPECT, myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth,
-                        containerStopExaggeration, true, true);
-            }
-            // front element contour
-            if (myNet->getViewNet()->getFrontAttributeCarrier() == this) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::FRONT, myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth,
-                        containerStopExaggeration, true, true);
-            }
-            // delete contour
-            if (myNet->getViewNet()->drawDeleteContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::REMOVE, myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth,
-                        containerStopExaggeration, true, true);
-            }
-            // select contour
-            if (myNet->getViewNet()->drawSelectContour(this, this)) {
-                GUIDottedGeometry::drawDottedContourShape(s, GUIDottedGeometry::DottedContourType::SELECT, myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth,
-                        containerStopExaggeration, true, true);
-            }
+            // draw dotted geometry (don't exaggerate contour)
+            myContour.drawDottedContourExtruded(s, myAdditionalGeometry.getShape(), s.stoppingPlaceSettings.containerStopWidth, 1, true, true,
+                                                s.dottedContourSettings.segmentWidth);
             // draw child demand elements
             for (const auto& demandElement : getChildDemandElements()) {
                 if (!demandElement->getTagProperty().isPlacedInRTree() &&
-                        (!demandElement->getTagProperty().isContainerPlan() || demandElement->getTagProperty().isStopContainer())) {
+                        (!demandElement->getTagProperty().isPlanContainer() || demandElement->getTagProperty().isPlanStopContainer())) {
                     demandElement->drawGL(s);
                 }
             }
@@ -277,7 +260,7 @@ GNEContainerStop::setAttribute(SumoXMLAttr key, const std::string& value, GNEUnd
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_PARAMETERS:
         case GNE_ATTR_SHIFTLANEINDEX:
-            undoList->changeAttribute(new GNEChange_Attribute(this, key, value));
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
@@ -346,13 +329,7 @@ GNEContainerStop::setAttribute(SumoXMLAttr key, const std::string& value) {
     switch (key) {
         case SUMO_ATTR_ID:
             // update microsimID
-            setMicrosimID(value);
-            // enable save demand elements if there are stops
-            for (const auto& stop : getChildDemandElements()) {
-                if (stop->getTagProperty().isStop() || stop->getTagProperty().isStopPerson()) {
-                    myNet->getSavingStatus()->requireSaveDemandElements();
-                }
-            }
+            setAdditionalID(value);
             break;
         case SUMO_ATTR_LANE:
             replaceAdditionalParentLanes(value);

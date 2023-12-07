@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -43,18 +43,18 @@ GUIDialog_HallOfFame::GUIDialog_HallOfFame(FXWindow* parent) :
     // main text
     FXVerticalFrame* descriptionFrame = new FXVerticalFrame(mainInfoFrame, GUIDesignLabelAboutInfo);
     myHeadlineFont = new FXFont(getApp(), "Arial", 12, FXFont::Bold);
-    (new FXLabel(descriptionFrame, "SUMO User Conference 2022 - Hall of Fame", nullptr, GUIDesignLabelAboutInfo))->setFont(myHeadlineFont);
+    (new FXLabel(descriptionFrame, "SUMO User Conference 2023 - Hall of Fame", nullptr, GUIDesignLabelAboutInfo))->setFont(myHeadlineFont);
     new FXLabel(descriptionFrame, "", GUIIconSubSys::getIcon(GUIIcon::HALL_OF_FAME), GUIDesignLabelIcon);
-    new FXLabel(descriptionFrame, "SUMO guru of the year: Dennis Harmann", nullptr, GUIDesignLabelAboutInfo);
-    new FXLabel(descriptionFrame, "Voted best presentation: Vijay Jaisankar (Simulation of traffic scenarios using SUMO)", nullptr, GUIDesignLabelAboutInfo);
+    new FXLabel(descriptionFrame, "Voted best presentation:\nComparing Measured Driver Behavior Distributions to Results from Car-Following Models using SUMO and Real-World Vehicle Trajectories from Radar\n(Maxwell Schrader, Mahdi Al Abdraboh and Joshua Bittle)\n", nullptr, GUIDesignLabelAboutInfo);
+    new FXLabel(descriptionFrame, "Voted best poster:\nOpen-Source Framework for Modeling Emission Concentrations in Urban Areas\n(Mario Ilic, Seyed M. Saghaeiannejad, Sasan Amini and Klaus Bogenberger)\n", nullptr, GUIDesignLabelAboutInfo);
 
     // link to conference website
-    (new MFXLinkLabel(this, "Visit conference website", nullptr, GUIDesignLabel(JUSTIFY_NORMAL)))->setTipText("https://www.eclipse.org/sumo/conference");
+    (new MFXLinkLabel(this, "Visit conference website", nullptr, GUIDesignLabel(JUSTIFY_NORMAL)))->setTipText("https://www.eclipse.dev/sumo/conference");
 
     // centered ok-button
     FXHorizontalFrame* buttonFrame = new FXHorizontalFrame(this, GUIDesignHorizontalFrame);
     new FXHorizontalFrame(buttonFrame, GUIDesignAuxiliarHorizontalFrame);
-    new FXButton(buttonFrame, (TL("OK") + std::string("\t\t")).c_str(), GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, ID_ACCEPT, GUIDesignButtonOK);
+    GUIDesigns::buildFXButton(buttonFrame, TL("OK"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, ID_ACCEPT, GUIDesignButtonOK);
     new FXHorizontalFrame(buttonFrame, GUIDesignAuxiliarHorizontalFrame);
 }
 

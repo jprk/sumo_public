@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -276,11 +276,20 @@ MESegment::removeDetector(MSMoveReminder* data) {
 
 
 void
-MESegment::prepareDetectorForWriting(MSMoveReminder& data) {
+MESegment::prepareDetectorForWriting(MSMoveReminder& data, int queueIndex) {
     const SUMOTime currentTime = MSNet::getInstance()->getCurrentTimeStep();
-    for (const Queue& q : myQueues) {
+    if (queueIndex == -1) {
+        for (const Queue& q : myQueues) {
+            SUMOTime earliestExitTime = currentTime;
+            for (std::vector<MEVehicle*>::const_reverse_iterator i = q.getVehicles().rbegin(); i != q.getVehicles().rend(); ++i) {
+                const SUMOTime exitTime = MAX2(earliestExitTime, (*i)->getEventTime());
+                (*i)->updateDetectorForWriting(&data, currentTime, exitTime);
+                earliestExitTime = exitTime + tauWithVehLength(myTau_ff, (*i)->getVehicleType().getLengthWithGap(), (*i)->getVehicleType().getCarFollowModel().getHeadwayTime());
+            }
+        }
+    } else {
         SUMOTime earliestExitTime = currentTime;
-        for (std::vector<MEVehicle*>::const_reverse_iterator i = q.getVehicles().rbegin(); i != q.getVehicles().rend(); ++i) {
+        for (std::vector<MEVehicle*>::const_reverse_iterator i = myQueues[queueIndex].getVehicles().rbegin(); i != myQueues[queueIndex].getVehicles().rend(); ++i) {
             const SUMOTime exitTime = MAX2(earliestExitTime, (*i)->getEventTime());
             (*i)->updateDetectorForWriting(&data, currentTime, exitTime);
             earliestExitTime = exitTime + tauWithVehLength(myTau_ff, (*i)->getVehicleType().getLengthWithGap(), (*i)->getVehicleType().getCarFollowModel().getHeadwayTime());

@@ -1,4 +1,4 @@
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -107,10 +107,10 @@ def assign_prefixed_options(args, allowed_programs):
                 if program in allowed_programs:
                     try:
                         if '--' in args[arg_index+1]:
-                            raise NotImplementedError()
+                            raise ValueError()
                         option = [arg[separator_index+1:], args[arg_index+1]]
-                    except(IndexError, NotImplementedError):
-                        raise NotImplementedError("Please amend prefixed argument %s with a value." % arg)
+                    except (IndexError, ValueError):
+                        raise ValueError("Please amend prefixed argument %s with a value." % arg)
                     prefixed_options.setdefault(program, []).append(option)
                     consumed = True
         if not consumed:
@@ -162,11 +162,19 @@ class ArgumentParser(argparse.ArgumentParser):
         return s
 
     @staticmethod
+    def file_list(s):
+        return s
+
+    @staticmethod
     def net_file(s):
         return s
 
     @staticmethod
     def route_file(s):
+        return s
+
+    @staticmethod
+    def route_file_list(s):
         return s
 
     @staticmethod
@@ -178,8 +186,24 @@ class ArgumentParser(argparse.ArgumentParser):
         return s
 
     @staticmethod
+    def edge(s):
+        return s
+
+    @staticmethod
+    def edge_list(s):
+        return s
+
+    @staticmethod
     def data_file(s):
         # arbitrary data file (i.e. for attributeStats.py and plotXMLAttributes.py)
+        return s
+
+    @staticmethod
+    def sumoconfig_file(s):
+        return s
+
+    @staticmethod
+    def sumoconfig_file_list(s):
         return s
 
     def __init__(self, *args, **kwargs):
@@ -197,7 +221,7 @@ class ArgumentParser(argparse.ArgumentParser):
         self._fix_path_args = set()
 
     def add_argument(self, *args, **kwargs):
-        # due argparse only accept certains values (action, choices, type, help...),
+        # due argparse only accept certain values (action, choices, type, help...),
         #  we need to extract extra parameters before call add_argument
         fix_path = kwargs.get("fix_path")
         if "fix_path" in kwargs:
@@ -224,13 +248,13 @@ class ArgumentParser(argparse.ArgumentParser):
         a.boolean = ((action == "store_true") or (action == "store_false"))
         # the value of a.required is lost during parsing
         a.isRequired = a.required
+        a.isPositional = args[0][0] != "-"
         if catch_all:
             self._catch_all = a
 
     def add_option(self, *args, **kwargs):
         """alias for compatibility with OptionParser"""
         self.add_argument(*args, **kwargs)
-
 
     def get_option(self, dest):
         for action in self._actions:
@@ -240,17 +264,19 @@ class ArgumentParser(argparse.ArgumentParser):
 
     def add_mutually_exclusive_group(self, required=False):
         group = argparse.ArgumentParser.add_mutually_exclusive_group(self, required=required)
-        group.add_argument = handleCatoryWrapper(group.add_argument)
+        group.add_argument = handleCategoryWrapper(group.add_argument)
         return group
 
-    def write_config_file(self, namespace, exit=True, toString=False):
+    def _write_config_file(self, namespace, toString=False):
         if namespace.save_configuration:
-            out_file = namespace.save_configuration
-            print_template = False
-        elif namespace.save_template:
-            out_file = namespace.save_template
-            print_template = True
-        elif toString:
+            with openz(namespace.save_configuration, "w") as out:
+                self.write_config_to_file(out, namespace, False)
+            sys.exit()
+        if namespace.save_template:
+            with openz(namespace.save_template, "w") as out:
+                self.write_config_to_file(out, namespace, True)
+            sys.exit()
+        if toString:
             out = io.StringIO()
             try:
                 self.write_config_to_file(out, namespace, False)
@@ -259,12 +285,6 @@ class ArgumentParser(argparse.ArgumentParser):
                 out = io.BytesIO()
                 self.write_config_to_file(out, namespace, False)
             return out.getvalue()
-        else:
-            return
-        with openz(out_file, "w") as out:
-            self.write_config_to_file(out, namespace, print_template)
-        if exit:
-            sys.exit()
 
     def write_config_to_file(self, out, namespace, print_template):
         out.write(u'<configuration>\n')
@@ -279,6 +299,8 @@ class ArgumentParser(argparse.ArgumentParser):
                 typeStr = ''
                 category = ''
                 required = ''
+                positional = ''
+                listSep = ''
                 for a in self._actions:
                     if a.dest == k:
                         for s in a.option_strings:
@@ -304,42 +326,44 @@ class ArgumentParser(argparse.ArgumentParser):
                                 typeName = a.type.__name__
                                 if typeName == 'parseTime':
                                     typeName = 'time'
-                                knownTypes = ['bool', 'float', 'int',
-                                              'time', 'file', 'net_file', 'route_file',
-                                              'additional_file', 'edgedata_file', 'data_file']
+                                knownTypes = ['bool', 'float', 'int', 'time', 'file',
+                                              'net_file', 'route_file', 'additional_file',
+                                              'edgedata_file', 'data_file', 'file_list',
+                                              'route_file_list', 'sumoconfig_file',
+                                              'sumoconfig_file_list', 'edge', 'edge_list']
                                 if typeName not in knownTypes:
                                     typeName = 'string'
+                                elif typeName.endswith("_list"):
+                                    typeName = typeName[:-5]
+                                    listSep = ' listSeparator=","'
                             typeStr = ' type="%s"' % typeName
                             if a.isRequired:
                                 required = ' required="true"'
+                            if a.isPositional:
+                                positional = ' positional="true"'
+                            if a.nargs:
+                                listSep = ' listSeparator=" "'
+
                         break
                 if print_template or v != a.default:
                     if isinstance(v, list):
                         v = " ".join(map(str, v))
-                    out.write(u'    <%s value="%s"%s%s%s%s/>\n' % (
-                              key, xmlescape(v), typeStr, help, category, required))
+                    out.write(u'    <%s value="%s"%s%s%s%s%s%s/>\n' % (
+                              key, xmlescape(v), typeStr, help, category,
+                              required, positional, listSep))
         out.write(u'</configuration>\n')
 
     def parse_args(self, args=None, namespace=None):
-        if args is not None:
-            # gracefully handle non-string args passed from another script
-            args = map(str, args)
-        args_namespace, unknown_args = self.parse_known_args(args, namespace)
-        if unknown_args:
-            if self._catch_all:
-                setattr(args_namespace, self._catch_all.dest,
-                        getattr(args_namespace, self._catch_all.dest) + unknown_args)
-            else:
-                self.error('unrecognized arguments: %s' % ' '.join(unknown_args))
-        return args_namespace
+        return self.parse_known_args(args, namespace, True)[0]
 
-    def parse_known_args(self, args=None, namespace=None):
+    def parse_known_args(self, args=None, namespace=None, check_unknown=False):
         if args is None:
             args = sys.argv[1:]
         elif isinstance(args, str):
             args = args.split()
         else:
-            args = list(args)
+            # gracefully handle non-string args passed from another script
+            args = list(map(str, args))
         idx = -1
         if '-c' in args:
             idx = args.index('-c') + 1
@@ -422,14 +446,20 @@ class ArgumentParser(argparse.ArgumentParser):
                 option[0] = program + '-' + option[0]
             namespace_as_dict.update(dict(prefixed_options))
 
-        extended_namespace = argparse.Namespace(**namespace_as_dict)
+        if check_unknown and remaining_args:
+            if self._catch_all:
+                setattr(namespace, self._catch_all.dest,
+                        getattr(namespace, self._catch_all.dest) + remaining_args)
+            else:
+                self.error('unrecognized arguments: %s' % ' '.join(remaining_args))
 
-        self.write_config_file(extended_namespace)
-        namespace.config_as_string = self.write_config_file(extended_namespace, toString=True)
+        extended_namespace = argparse.Namespace(**namespace_as_dict)
+        self._write_config_file(extended_namespace)
+        namespace.config_as_string = self._write_config_file(extended_namespace, toString=True)
         return namespace, remaining_args
 
 
-def handleCatoryWrapper(func):
+def handleCategoryWrapper(func):
     @wraps(func)
     def inner(*args, **kwargs):
         category = kwargs.get("category")
@@ -442,6 +472,7 @@ def handleCatoryWrapper(func):
         action = kwargs.get("action")
         result.boolean = ((action == "store_true") or (action == "store_false"))
         result.isRequired = kwargs.get("required", False)
+        result.isPositional = args[0][0] != "-"
         return result
     return inner
 

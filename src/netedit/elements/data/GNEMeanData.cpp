@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -160,6 +160,42 @@ GNEMeanData::getPositionInView() const {
 }
 
 
+bool
+GNEMeanData::checkDrawFromContour() const {
+    return false;
+}
+
+
+bool
+GNEMeanData::checkDrawToContour() const {
+    return false;
+}
+
+
+bool
+GNEMeanData::checkDrawRelatedContour() const {
+    return false;
+}
+
+
+bool
+GNEMeanData::checkDrawOverContour() const {
+    return false;
+}
+
+
+bool
+GNEMeanData::checkDrawDeleteContour() const {
+    return false;
+}
+
+
+bool
+GNEMeanData::checkDrawSelectContour() const {
+    return false;
+}
+
+
 std::string
 GNEMeanData::getAttribute(SumoXMLAttr key) const {
     switch (key) {
@@ -244,7 +280,7 @@ GNEMeanData::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList
         case SUMO_ATTR_EDGES:
         case SUMO_ATTR_EDGESFILE:
         case SUMO_ATTR_AGGREGATE:
-            undoList->changeAttribute(new GNEChange_Attribute(this, key, value));
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");

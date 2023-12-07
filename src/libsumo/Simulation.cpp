@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -568,7 +568,7 @@ Simulation::findRoute(const std::string& from, const std::string& to, const std:
     }
     const MSEdge* const toEdge = MSEdge::dictionary(to);
     if (toEdge == nullptr) {
-        throw TraCIException("Unknown to edge '" + from + "'.");
+        throw TraCIException("Unknown to edge '" + to + "'.");
     }
     SUMOVehicle* vehicle = nullptr;
     MSVehicleType* type = MSNet::getInstance()->getVehicleControl().getVType(typeID == "" ? DEFAULT_VTYPE_ID : typeID);
@@ -829,11 +829,11 @@ Simulation::getParameter(const std::string& objectID, const std::string& key) {
 LIBSUMO_GET_PARAMETER_WITH_KEY_IMPLEMENTATION(Simulation)
 
 void
-Simulation::setParameter(const std::string& objectID, const std::string& param, const std::string& value) {
+Simulation::setParameter(const std::string& objectID, const std::string& key, const std::string& value) {
     if (objectID == "") {
-        MSNet::getInstance()->setParameter(param, value);
+        MSNet::getInstance()->setParameter(key, value);
     } else {
-        throw TraCIException("Setting simulation parameter '" + param + "' is not supported for object id '" + objectID + "'. Use empty id for generic network parameters");
+        throw TraCIException("Setting simulation parameter '" + key + "' is not supported for object id '" + objectID + "'. Use empty id for generic network parameters");
     }
 }
 

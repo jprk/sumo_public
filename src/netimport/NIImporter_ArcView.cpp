@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -149,7 +149,7 @@ NIImporter_ArcView::load() {
     // use wgs84 as destination
     destTransf.SetWellKnownGeogCS("WGS84");
 #if GDAL_VERSION_MAJOR > 2
-    if (myOptions.getBool("shapefile.traditional-axis-mapping")) {
+    if (myOptions.getBool("shapefile.traditional-axis-mapping") || origTransf != nullptr) {
         destTransf.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     }
 #endif
@@ -326,7 +326,7 @@ NIImporter_ArcView::load() {
         if (existing != nullptr || existingReverse != nullptr) {
             if ((existing != nullptr && existing->getGeometry() == shape)
                     || (existingReverse != nullptr && existingReverse->getGeometry() == shape.reverse())) {
-                WRITE_ERRORF(TL("Edge '% is not unique."), (existing != nullptr ? id : existingReverse->getID()));
+                WRITE_ERRORF(TL("Edge '%' is not unique."), (existing != nullptr ? id : existingReverse->getID()));
             } else {
                 if (idIndex.count(id) == 0) {
                     idIndex[id] = 0;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -32,29 +32,28 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 netedit.selectMode()
 
 # select first polygon
-netedit.leftClick(referencePosition, 105, 70)
+netedit.leftClick(referencePosition, 404, 140)
 
 # select second polygon
-netedit.leftClick(referencePosition, 300, 70)
+netedit.leftClick(referencePosition, 593, 140)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first polygon
-netedit.leftClick(referencePosition, 105, 70)
+netedit.leftClick(referencePosition, 404, 140)
 
 # Change parameter 4 with a non valid value
-netedit.modifyAttribute(netedit.attrs.Poly.inspectSelection.lineWidth, "dummyLineWidth", False)
+netedit.modifyAttribute(netedit.attrs.poly.inspectSelection.lineWidth, "dummyLineWidth", False)
 
 # Change parameter 4 with a valid value (negative)
-netedit.modifyAttribute(netedit.attrs.Poly.inspectSelection.lineWidth, "-2", False)
+netedit.modifyAttribute(netedit.attrs.poly.inspectSelection.lineWidth, "-2", False)
 
 # Change parameter 4 with a valid value (negative)
-netedit.modifyAttribute(netedit.attrs.Poly.inspectSelection.lineWidth, "2.5", False)
+netedit.modifyAttribute(netedit.attrs.poly.inspectSelection.lineWidth, "2.5", False)
 
 # Check undos and redos
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

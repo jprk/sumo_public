@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -989,7 +989,7 @@ public:
      * @return The connections from the given lane
      * @see NBEdge::Connection
      */
-    std::vector<Connection> getConnectionsFromLane(int lane, NBEdge* to = nullptr, int toLane = -1) const;
+    std::vector<Connection> getConnectionsFromLane(int lane, const NBEdge* to = nullptr, int toLane = -1) const;
 
     /** @brief Returns the specified connection (unmodifiable)
      * This method goes through "myConnections" and returns the specified one
@@ -1284,8 +1284,7 @@ public:
 
     /** @brief Returns the angle of the edge's geometry at the given node
      *
-     * The angle is signed, regards direction, and starts at 12 o'clock
-     *  (north->south), proceeds positive clockwise.
+     * The angle is in degrees between -180 and 180.
      * @param[in] node The node for which the edge's angle shall be returned
      * @return This edge's angle at the given node
      */

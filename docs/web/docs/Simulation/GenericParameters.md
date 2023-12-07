@@ -13,11 +13,17 @@ their XML definitions:
 - Lane
 - Person
 - Vehicle
+- Stop
 - VehicleType
 - PoI
 - Polygon
 - Route
 - TrafficLight
+- ChargingStation
+- ParkingArea
+- Calibrator
+- Rerouter
+- VariableSpeedSign
 
 Parameters support the following functionality
 

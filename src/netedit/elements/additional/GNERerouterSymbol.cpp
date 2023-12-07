@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -29,6 +29,14 @@
 // ===========================================================================
 // member method definitions
 // ===========================================================================
+
+GNERerouterSymbol::GNERerouterSymbol(GNENet* net) :
+    GNEAdditional("", net, GLO_REROUTER, GNE_TAG_REROUTER_SYMBOL, GUIIconSubSys::getIcon(GUIIcon::REROUTER), "",
+{}, {}, {}, {}, {}, {}) {
+    // reset default values
+    resetDefaultValues();
+}
+
 
 GNERerouterSymbol::GNERerouterSymbol(GNEAdditional* rerouterParent, GNEEdge* edge) :
     GNEAdditional(rerouterParent->getNet(), GLO_REROUTER, GNE_TAG_REROUTER_SYMBOL, GUIIconSubSys::getIcon(GUIIcon::REROUTER), "",
@@ -200,18 +208,11 @@ GNERerouterSymbol::drawGL(const GUIVisualizationSettings& s) const {
                 GLHelper::popName();
             }
         }
-        // check if dotted contour has to be drawn
-        if (myNet->getViewNet()->isAttributeCarrierInspected(getParentAdditionals().front())) {
-            // iterate over symbol geometries
-            for (const auto& symbolGeometry : mySymbolGeometries) {
-                GUIDottedGeometry::drawDottedSquaredShape(s, GUIDottedGeometry::DottedContourType::INSPECT, symbolGeometry.getShape().front(), 1, 3, 0, 3, symbolGeometry.getShapeRotations().front() + 90, rerouteExaggeration);
-            }
-        }
-        if ((myNet->getViewNet()->getFrontAttributeCarrier() == getParentAdditionals().front())) {
-            // iterate over symbol geometries
-            for (const auto& symbolGeometry : mySymbolGeometries) {
-                GUIDottedGeometry::drawDottedSquaredShape(s, GUIDottedGeometry::DottedContourType::FRONT, symbolGeometry.getShape().front(), 1, 3, 0, 3, symbolGeometry.getShapeRotations().front() + 90, rerouteExaggeration);
-            }
+        // draw dotted contour
+        for (const auto& symbolGeometry : mySymbolGeometries) {
+            myContour.drawDottedContourRectangle(s, symbolGeometry.getShape().front(), 1, 3, 0, 3,
+                                                 symbolGeometry.getShapeRotations().front() + 90, rerouteExaggeration,
+                                                 s.dottedContourSettings.segmentWidth);
         }
     }
 }

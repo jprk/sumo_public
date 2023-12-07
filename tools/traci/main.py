@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -88,7 +88,7 @@ def connect(port=8813, numRetries=tc.DEFAULT_NUM_RETRIES, host="localhost", proc
             traceFile=None, traceGetters=True, label=None):
     """
     Establish a connection to a TraCI-Server and return the
-    connection object. The connection is not saved in the pool and not
+    connection object. If label is not set, the connection is not saved in the pool and not
     accessible via traci.switch. It should be safe to use different
     connections established by this method in different threads.
     """
@@ -190,11 +190,21 @@ def isLoaded():
 
 
 def simulationStep(step=0):
+    """simulationStep(float) -> None
+    Make a simulation step and simulate up to the given second in sim time.
+    If the given value is 0 or absent, exactly one step is performed.
+    Values smaller than or equal to the current sim time result in no action.
+    """
+    connection.check().simulationStep(step)
+
+
+def simulationStepLegacy(step=0):
     """simulationStep(float) -> list
     Make a simulation step and simulate up to the given second in sim time.
     If the given value is 0 or absent, exactly one step is performed.
     Values smaller than or equal to the current sim time result in no action.
-    It returns the subscription results for the current step in a list.
+    This is a legacy function which returns the subscription results for the
+    current step in a list.
     """
     return connection.check().simulationStep(step)
 

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -147,10 +147,12 @@ Edge::getLastStepMeanSpeed(const std::string& edgeID) {
     return Dom::getDouble(libsumo::LAST_STEP_MEAN_SPEED, edgeID);
 }
 
+
 double
 Edge::getMeanFriction(const std::string& edgeID) {
     return Dom::getDouble(libsumo::VAR_FRICTION, edgeID);
 }
+
 
 double
 Edge::getLastStepOccupancy(const std::string& edgeID) {
@@ -181,10 +183,21 @@ Edge::getStreetName(const std::string& edgeID) {
     return Dom::getString(libsumo::VAR_NAME, edgeID);
 }
 
+
 const std::vector<std::string>
 Edge::getPendingVehicles(const std::string& edgeID) {
     return Dom::getStringVector(libsumo::VAR_PENDING_VEHICLES, edgeID);
 }
+
+
+double
+Edge::getAngle(const std::string& edgeID, double relativePosition) {
+    tcpip::Storage content;
+    content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
+    content.writeDouble(relativePosition);
+    return Dom::getDouble(libsumo::VAR_ANGLE, edgeID, &content);
+}
+
 
 LIBTRACI_SUBSCRIPTION_IMPLEMENTATION(Edge, EDGE)
 LIBTRACI_PARAMETER_IMPLEMENTATION(Edge, EDGE)
@@ -256,6 +269,7 @@ void
 Edge::setMaxSpeed(const std::string& edgeID, double speed) {
     Dom::setDouble(libsumo::VAR_MAXSPEED, edgeID, speed);
 }
+
 
 void
 Edge::setFriction(const std::string& edgeID, double friction) {

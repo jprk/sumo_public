@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -65,6 +65,7 @@ class Node;
 // ===========================================================================
 
 class GUIGlObject {
+
 public:
     /// @brief associates object types with strings
     static StringBijection<GUIGlObjectType> TypeNames;
@@ -329,14 +330,14 @@ private:
     FXIcon* myIcon;
 
     /// @brief whether the object can be deleted
-    bool myAmBlocked;
+    bool myAmBlocked = false;
 
     /// @brief Parameter table windows which refer to this object
     std::set<GUIParameterTableWindow*> myParamWindows;
 
 #ifdef HAVE_OSG
     /// @brief OSG Node of this GL object
-    osg::Node* myOSGNode;
+    osg::Node* myOSGNode = nullptr;
 #endif
 
     /// @brief create full name

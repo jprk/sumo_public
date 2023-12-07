@@ -16,6 +16,9 @@ write_template_commented_full
 # Tests configuration writing
 write_config
 
+# Tests schema writing
+write_schema
+
 # Tests configuration with boolean values
 bool_value
 
@@ -45,6 +48,9 @@ option_list_equal_sign
 
 # Tests whether log-file output works
 with_log
+
+# Tests whether log-file output can have timestamps and pid
+with_log_timestamps_pid
 
 # Tests configuration with umlauts in file names
 umlaut

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -62,7 +62,7 @@ public:
     */
     virtual void writeAdditional(OutputDevice& device) const = 0;
 
-    /// @brief check if current additional is valid to be writed into XML (must be reimplemented in all detector children)
+    /// @brief check if current additional is valid to be written into XML (must be reimplemented in all detector children)
     bool isAdditionalValid() const;
 
     /// @brief return a string with the current additional problem (must be reimplemented in all detector children)
@@ -170,8 +170,11 @@ protected:
     void drawLines(const GUIVisualizationSettings& s, const std::vector<std::string>& lines, const RGBColor& color) const;
 
     /// @brief draw sign
-    void drawSign(const GUIVisualizationSettings& s, const double exaggeration,
-                  const RGBColor& baseColor, const RGBColor& signColor, const std::string& word) const;
+    void drawSign(const GUIVisualizationSettings& s, const double exaggeration, const RGBColor& baseColor,
+                  const RGBColor& signColor, const std::string& word) const;
+
+    // draw stoppingPlace children
+    void drawStoppingPlaceChildren(const GUIVisualizationSettings& s) const;
 
 private:
     /// @brief set attribute after validation
@@ -192,5 +195,3 @@ private:
     /// @brief Invalidate set new position in the view
     void setPosition(const Position& pos) = delete;
 };
-
-

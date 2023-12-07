@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -29,6 +29,7 @@
 // ===========================================================================
 #ifndef LIBTRACI
 class NamedRTree;
+class PositionVector;
 class SUMOPolygon;
 class SUMOTrafficObject;
 #endif
@@ -49,7 +50,7 @@ public:
     LIBSUMO_ID_PARAMETER_API
     LIBSUMO_SUBSCRIPTION_API
 
-    static void setType(const std::string& polygonID, const std::string& setType);
+    static void setType(const std::string& polygonID, const std::string& polygonType);
     static void setShape(const std::string& polygonID, const libsumo::TraCIPositionVector& shape);
     static void setColor(const std::string& polygonID, const libsumo::TraCIColor& color);
     static void add(const std::string& polygonID, const libsumo::TraCIPositionVector& shape, const libsumo::TraCIColor& color, bool fill = false, const std::string& polygonType = "", int layer = 0, double lineWidth = 1);

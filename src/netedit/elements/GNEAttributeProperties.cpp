@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -117,10 +117,9 @@ GNEAttributeProperties::checkAttributeIntegrity() const {
 
 
 void
-GNEAttributeProperties::setDiscreteValues(const std::vector<std::string>& discreteValues, bool showAll) {
+GNEAttributeProperties::setDiscreteValues(const std::vector<std::string>& discreteValues) {
     if (isDiscrete()) {
         myDiscreteValues = discreteValues;
-        myShowAllDiscreteValues = showAll;
     } else {
         throw FormatException("AttributeProperty doesn't support discrete values");
     }
@@ -235,16 +234,13 @@ GNEAttributeProperties::getDescription() const {
         }
     }
     if ((myAttributeProperty & POSITIVE) != 0) {
-        pre += "positive ";
+        pre += "non-negative ";
     }
     if ((myAttributeProperty & DISCRETE) != 0) {
         pre += "discrete ";
     }
     if ((myAttributeProperty & UNIQUE) != 0) {
         pre += "unique ";
-    }
-    if ((myAttributeProperty & VCLASSES) != 0) {
-        pre += "vclasses ";
     }
     // type
     if ((myAttributeProperty & INT) != 0) {
@@ -269,7 +265,7 @@ GNEAttributeProperties::getDescription() const {
         type = "color";
     }
     if ((myAttributeProperty & VCLASS) != 0) {
-        type = "VClass";
+        type = "vClass";
     }
     if ((myAttributeProperty & FILENAME) != 0) {
         type = "filename";
@@ -444,18 +440,6 @@ GNEAttributeProperties::isUnique() const {
 bool
 GNEAttributeProperties::isDiscrete() const {
     return (myAttributeProperty & DISCRETE) != 0;
-}
-
-
-bool
-GNEAttributeProperties::showAllDiscreteValues() const {
-    return myShowAllDiscreteValues;
-}
-
-
-bool
-GNEAttributeProperties::isVClasses() const {
-    return (myAttributeProperty & VCLASSES) != 0;
 }
 
 

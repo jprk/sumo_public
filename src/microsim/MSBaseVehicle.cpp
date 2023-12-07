@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -135,22 +135,39 @@ MSBaseVehicle::MSBaseVehicle(SUMOVehicleParameter* pars, ConstMSRoutePtr route,
     if (!pars->wasSet(VEHPARS_FORCE_REROUTE)) {
         calculateArrivalParams(true);
     }
-    initJunctionModelParams();
+    initTransientModelParams();
 }
 
 
 MSBaseVehicle::~MSBaseVehicle() {
     delete myEdgeWeights;
-    if (myParameter->repetitionNumber == 0) {
+    if (myParameter->repetitionNumber == -1) {
+        // this is not a flow (flows call checkDist in MSInsertionControl::determineCandidates)
         MSRoute::checkDist(myParameter->routeid);
     }
     for (MSVehicleDevice* dev : myDevices) {
         delete dev;
     }
-    delete myParameter;
     delete myEnergyParams;
     delete myParkingMemory;
-    myRoute->checkRemoval();
+    checkRouteRemoval();
+    delete myParameter;
+}
+
+
+void
+MSBaseVehicle::checkRouteRemoval() {
+    // the check for an instance is needed for the unit tests which do not construct a network
+    // TODO Optimize for speed and there should be a better way to check whether a vehicle is part of a flow
+    if (MSNet::hasInstance() && !MSNet::getInstance()->hasFlow(getFlowID())) {
+        myRoute->checkRemoval();
+    }
+}
+
+
+std::string
+MSBaseVehicle::getFlowID() const {
+    return getID().substr(0, getID().rfind('.'));
 }
 
 
@@ -255,7 +272,7 @@ MSBaseVehicle::reroute(SUMOTime t, const std::string& info, SUMOAbstractRouter<M
         if (stops.size() > 0) {
             const double sourcePos = onInit ? 0 : getPositionOnLane();
             // avoid superfluous waypoints for first and last edge
-            const bool skipFirst = stops.front() == source && (source != getEdge() || sourcePos + getBrakeGap() <= firstPos);
+            const bool skipFirst = stops.front() == source && (source != getEdge() || sourcePos + getBrakeGap() <= firstPos + NUMERICAL_EPS);
             const bool skipLast = stops.back() == sink && myArrivalPos >= lastPos && (
                                       stops.size() < 2 || stops.back() != stops[stops.size() - 2]);
 #ifdef DEBUG_REROUTE
@@ -281,7 +298,7 @@ MSBaseVehicle::reroute(SUMOTime t, const std::string& info, SUMOAbstractRouter<M
         // there is a consistency check in MSRouteHandler::addStop that warns when a stop edge is not part of the via edges
         for (std::vector<std::string>::const_iterator it = myParameter->via.begin(); it != myParameter->via.end(); ++it) {
             MSEdge* viaEdge = MSEdge::dictionary(*it);
-            if (viaEdge == source || viaEdge == sink) {
+            if ((viaEdge == source && it == myParameter->via.begin()) || (viaEdge == sink && myParameter->via.end() - it == 1)) {
                 continue;
             }
             assert(viaEdge != 0);
@@ -484,7 +501,7 @@ MSBaseVehicle::replaceRoute(ConstMSRoutePtr newRoute, const std::string& info, b
     }
     const bool stopsFromScratch = onInit && myRoute->getStops().empty();
     // assign new route
-    myRoute->checkRemoval();
+    checkRouteRemoval();
     myRoute = newRoute;
     // update arrival definition
     calculateArrivalParams(onInit);
@@ -882,7 +899,7 @@ MSBaseVehicle::setDepartAndArrivalEdge() {
         }
         assert(pars->departEdge >= 0);
         if (pars->departEdge >= routeEdges) {
-            WRITE_WARNINGF(TL("Ignoring departEdge % for vehicle '% with % route edges"), toString(pars->departEdge), getID(), toString(routeEdges));
+            WRITE_WARNINGF(TL("Ignoring departEdge % for vehicle '%' with % route edges"), toString(pars->departEdge), getID(), toString(routeEdges));
         } else {
             myCurrEdge += pars->departEdge;
         }
@@ -901,8 +918,9 @@ MSBaseVehicle::setDepartAndArrivalEdge() {
 
 double
 MSBaseVehicle::getImpatience() const {
-    return MAX2(0., MIN2(1., getVehicleType().getImpatience() +
-                         (MSGlobals::gTimeToImpatience > 0 ? (double)getWaitingTime() / (double)MSGlobals::gTimeToImpatience : 0.)));
+    return MAX2(0., MIN2(1., getVehicleType().getImpatience()
+                         + (hasInfluencer() ? getBaseInfluencer()->getExtraImpatience() : 0)
+                         + (MSGlobals::gTimeToImpatience > 0 ? (double)getWaitingTime() / (double)MSGlobals::gTimeToImpatience : 0.)));
 }
 
 
@@ -993,6 +1011,67 @@ MSBaseVehicle::isStoppedInRange(const double pos, const double tolerance, bool c
     }
     return false;
 }
+
+bool
+MSBaseVehicle::replaceParkingArea(MSParkingArea* parkingArea, std::string& errorMsg) {
+    // Check if there is a parking area to be replaced
+    if (parkingArea == 0) {
+        errorMsg = "new parkingArea is NULL";
+        return false;
+    }
+    if (myStops.size() == 0) {
+        errorMsg = "vehicle has no stops";
+        return false;
+    }
+    if (myStops.front().parkingarea == 0) {
+        errorMsg = "first stop is not at parkingArea";
+        return false;
+    }
+    MSStop& first = myStops.front();
+    SUMOVehicleParameter::Stop& stopPar = const_cast<SUMOVehicleParameter::Stop&>(first.pars);
+    // merge subsequent duplicate stops equals to parking area
+    for (std::list<MSStop>::iterator iter = ++myStops.begin(); iter != myStops.end();) {
+        if (iter->parkingarea == parkingArea) {
+            stopPar.duration += iter->duration;
+            myStops.erase(iter++);
+        } else {
+            break;
+        }
+    }
+    stopPar.lane = parkingArea->getLane().getID();
+    stopPar.parkingarea = parkingArea->getID();
+    stopPar.startPos = parkingArea->getBeginLanePosition();
+    stopPar.endPos = parkingArea->getEndLanePosition();
+    first.edge = myRoute->end(); // will be patched in replaceRoute
+    first.lane = &parkingArea->getLane();
+    first.parkingarea = parkingArea;
+    return true;
+}
+
+
+MSParkingArea*
+MSBaseVehicle::getNextParkingArea() {
+    MSParkingArea* nextParkingArea = nullptr;
+    if (!myStops.empty()) {
+        SUMOVehicleParameter::Stop stopPar;
+        MSStop stop = myStops.front();
+        if (!stop.reached && stop.parkingarea != nullptr) {
+            nextParkingArea = stop.parkingarea;
+        }
+    }
+    return nextParkingArea;
+}
+
+
+MSParkingArea*
+MSBaseVehicle::getCurrentParkingArea() {
+    MSParkingArea* currentParkingArea = nullptr;
+    if (isParking()) {
+        currentParkingArea = myStops.begin()->parkingarea;
+    }
+    return currentParkingArea;
+}
+
 
 
 double
@@ -1689,7 +1768,7 @@ MSBaseVehicle::insertStop(int nextStopIndex, SUMOVehicleParameter::Stop stop, co
     auto endPos = nextStopIndex == n ? getArrivalPos() : stops[nextStopIndex].pars.endPos;
     SUMOAbstractRouter<MSEdge, SUMOVehicle>& router = getBaseInfluencer().getRouterTT(getRNGIndex(), getVClass());
 
-    bool newDestination = nextStopIndex == n;
+    bool newDestination = nextStopIndex == n && stopEdge == oldEdges.back();
 
     ConstMSEdgeVector toNewStop;
     if (!teleport) {
@@ -1774,6 +1853,39 @@ MSBaseVehicle::getStateOfCharge() const {
 
     return -1;
 }
+
+
+double
+MSBaseVehicle::getRelativeStateOfCharge() const {
+    if (static_cast<MSDevice_Battery*>(getDevice(typeid(MSDevice_Battery))) != 0) {
+        MSDevice_Battery* batteryOfVehicle = dynamic_cast<MSDevice_Battery*>(getDevice(typeid(MSDevice_Battery)));
+        return batteryOfVehicle->getActualBatteryCapacity() / batteryOfVehicle->getMaximumBatteryCapacity();
+    } else {
+        if (static_cast<MSDevice_ElecHybrid*>(getDevice(typeid(MSDevice_ElecHybrid))) != 0) {
+            MSDevice_ElecHybrid* batteryOfVehicle = dynamic_cast<MSDevice_ElecHybrid*>(getDevice(typeid(MSDevice_ElecHybrid)));
+            return batteryOfVehicle->getActualBatteryCapacity() / batteryOfVehicle->getMaximumBatteryCapacity();
+        }
+    }
+
+    return -1;
+}
+
+
+double
+MSBaseVehicle::getChargedEnergy() const {
+    if (static_cast<MSDevice_Battery*>(getDevice(typeid(MSDevice_Battery))) != 0) {
+        MSDevice_Battery* batteryOfVehicle = dynamic_cast<MSDevice_Battery*>(getDevice(typeid(MSDevice_Battery)));
+        return batteryOfVehicle->getEnergyCharged();
+    } else {
+        if (static_cast<MSDevice_ElecHybrid*>(getDevice(typeid(MSDevice_ElecHybrid))) != 0) {
+            MSDevice_ElecHybrid* batteryOfVehicle = dynamic_cast<MSDevice_ElecHybrid*>(getDevice(typeid(MSDevice_ElecHybrid)));
+            return batteryOfVehicle->getEnergyCharged();
+        }
+    }
+
+    return -1;
+}
+
 
 double
 MSBaseVehicle::getElecHybridCurrent() const {
@@ -1959,7 +2071,25 @@ MSBaseVehicle::setJunctionModelParameter(const std::string& key, const std::stri
 
 
 void
-MSBaseVehicle::initJunctionModelParams() {
+MSBaseVehicle::setCarFollowModelParameter(const std::string& key, const std::string& value) {
+    // handle some generic params first and then delegate to the carFollowModel itself
+    if (key == toString(SUMO_ATTR_CF_IGNORE_IDS) || key == toString(SUMO_ATTR_CF_IGNORE_TYPES)) {
+        getParameter().parametersSet |= VEHPARS_CFMODEL_PARAMS_SET;
+        const_cast<SUMOVehicleParameter&>(getParameter()).setParameter(key, value);
+        // checked in MSVehicle::planMove
+    } else {
+        MSVehicle* microVeh = dynamic_cast<MSVehicle*>(this);
+        if (microVeh) {
+            // remove 'carFollowModel.' prefix
+            const std::string attrName = key.substr(15);
+            microVeh->getCarFollowModel().setParameter(microVeh, attrName, value);
+        }
+    }
+}
+
+
+void
+MSBaseVehicle::initTransientModelParams() {
     /* Design idea for additional junction model parameters:
        We can distinguish between 3 levels of parameters
        1. typically shared by multiple vehicles -> vType parameter
@@ -1969,6 +2099,8 @@ MSBaseVehicle::initJunctionModelParams() {
     for (auto item : getParameter().getParametersMap()) {
         if (StringUtils::startsWith(item.first, "junctionModel.")) {
             setJunctionModelParameter(item.first, item.second);
+        } else if (StringUtils::startsWith(item.first, "carFollowModel.")) {
+            setCarFollowModelParameter(item.first, item.second);
         }
     }
 }

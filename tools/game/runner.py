@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# -*- coding: utf-8 -*-
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -15,6 +15,7 @@
 # @file    runner.py
 # @author  Michael Behrisch
 # @author  Jakob Erdmann
+# @author  Mirko Barthauer
 # @date    2010-01-30
 
 """
@@ -42,7 +43,7 @@ SUMO_HOME = os.environ.get('SUMO_HOME',
                            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 sys.path.append(os.path.join(SUMO_HOME, 'tools'))
 import sumolib  # noqa
-
+from sumolib.translation import addLanguageOption, setLanguage, TL  # noqa
 
 _UPLOAD = False if "noupload" in sys.argv else True
 _SCOREFILE = "scores.pkl"
@@ -54,57 +55,42 @@ if _UPLOAD:
 _DEBUG = True if "debug" in sys.argv else False
 _SCORES = 30
 BASE = os.path.dirname(sys.argv[0])
+_LANGUAGE_CAPTIONS = {}
 
-_LANGUAGE_EN = {'title': 'Interactive Traffic Light',
-                'fkk_in': 'Research intersection Ingolstadt',
-                'cross': 'Simple Junction',
-                'cross_demo': 'Simple Junction (Demo)',
-                'square': 'Four Junctions',
-                'grid6': 'Six Junctions',
-                'kuehne': 'Prof. Kühne',
-                'bs3d': '3D Junction Virtual World',
-                'bs3Dosm': '3D Junction OpenStreetMap',
-                'highway': 'Highway Ramp',
-                'ramp': 'Combined Highway On and Off Ramp',
-                'corridor': 'Corridor',
-                'A10KW': 'Highway Ramp A10',
-                'DRT': 'Demand Responsive Transport (new)',
-                'DRT2': 'DRT - Advanced (new)',
-                'DRT_demo': 'DRT - Demo',
-                'high': 'Highscore',
-                'reset': 'Reset Highscore',
-                'lang': 'Deutsch',
-                'quit': 'Quit',
-                'Highscore': 'Highscore',
-                'Congratulations': 'Congratulations!',
-                'your score': 'Your Score',
-                'Continue': 'Continue',
-                }
-_LANGUAGE_DE = {'title': 'Interaktives Ampelspiel',
-                'fkk_in': 'Forschungskreuzung Ingolstadt',
-                'cross': 'Einfache Kreuzung',
-                'cross_demo': 'Einfache Kreuzung (Demo)',
-                'square': 'Vier Kreuzungen',
-                'grid6': 'Sechs Kreuzungen',
-                'kuehne': 'Prof. Kühne',
-                'bs3d': '3D Forschungskreuzung Virtuelle Welt',
-                'bs3Dosm': '3D Forschungskreuzung OpenStreetMap',
-                'highway': 'Autobahnauffahrt',
-                'ramp': 'Kombinierte Autobahnauf- und -abfahrt',
-                'A10KW': 'A10 KW',
-                'DRT': 'Bedarfsbus (neu)',
-                'DRT2': 'Bedarfsbus für Fortgeschrittene (neu)',
-                'DRT_demo': 'Bedarfsbus - Demo',
-                'corridor': 'Strecke',
-                'high': 'Bestenliste',
-                'reset': 'Bestenliste zurücksetzen',
-                'lang': 'Englisch',
-                'quit': 'Beenden',
-                'Highscore': 'Bestenliste',
-                'Congratulations': 'Gratulation!',
-                'your score': 'Deine Punkte',
-                'Continue': 'Weiter',
-                }
+
+def updateLocalMessages():
+    global _LANGUAGE_CAPTIONS
+    _LANGUAGE_CAPTIONS = {'title': TL('Interactive Traffic Light'),
+                          'fkk_in': TL('Research intersection Ingolstadt'),
+                          'cross': TL('Simple Junction'),
+                          'cross_demo': TL('Simple Junction (Demo)'),
+                          'square': TL('Four Junctions'),
+                          'grid6': TL('Six Junctions'),
+                          'kuehne': TL('Prof. Kühne'),
+                          'bs3d': TL('3D Junction Virtual World'),
+                          'bs3Dosm': TL('3D Junction OpenStreetMap'),
+                          'highway': TL('Highway Ramp'),
+                          'ramp': TL('Combined Highway On and Off Ramp'),
+                          'corridor': TL('Corridor'),
+                          'A10KW': TL('Highway Ramp A10'),
+                          'DRT': TL('Demand Responsive Transport (new)'),
+                          'DRT2': TL('DRT - Advanced (new)'),
+                          'DRT_demo': TL('DRT - Demo'),
+                          'high': TL('Highscore'),
+                          'reset': TL('Reset Highscore'),
+                          'german': TL('German'),
+                          'english': TL('English'),
+                          'italian': TL('Italian'),
+                          'spanish': TL('Spanish'),
+                          'french': TL('French'),
+                          'chinese (simplified)': TL('Chinese (simplified)'),
+                          'chinese (traditional)': TL('Chinese (traditional)'),
+                          'quit': TL("Quit"),
+                          'Highscore': TL("Highscore"),
+                          'Congratulations': TL("Congratulations!"),
+                          'your score': TL('Your Score'),
+                          'Continue': TL('Continue'),
+                          }
 
 
 def printDebug(*args):
@@ -116,9 +102,9 @@ def printDebug(*args):
 
 
 if _UPLOAD:
-    printDebug("import httplib...")
+    printDebug("import http.client...")
     try:
-        import httplib  # noqa
+        import http.client as httplib  # noqa
         printDebug("SUCCESS")
     except ImportError:
         printDebug("FAILED - disabling upload...")
@@ -155,7 +141,7 @@ def computeScoreFromTimeLoss(gamename):
     completed = False
 
     for line in open(gamename + ".log"):
-        if "Simulation ended at time" in line:
+        if "Reason: The final simulation step has been reached." in line:
             completed = True
         m = re.search('Inserted: ([0-9]*)', line)
         if m:
@@ -249,6 +235,7 @@ def computeScoreSquare(gamename):
 _SCORING_FUNCTION = defaultdict(lambda: computeScoreFromWaitingTime)
 _SCORING_FUNCTION.update({
     'A10KW': computeScoreFromTimeLoss,
+    'highway': computeScoreFromTimeLoss,
     'DRT': computeScoreDRT,
     'DRT2': computeScoreDRT,
     'DRT_demo': computeScoreDRT,
@@ -301,7 +288,7 @@ class IMAGE:
 
 class StartDialog(Tkinter.Frame):
 
-    def __init__(self, parent, lang):
+    def __init__(self, parent, lang, langCode):
         Tkinter.Frame.__init__(self, parent)
         # variables for changing language
         self.parent = parent
@@ -320,11 +307,10 @@ class StartDialog(Tkinter.Frame):
         # there is one column for every config, +2 more columns for control
         # buttons
         configs = sorted(glob.glob(os.path.join(BASE, "*.sumocfg")))
-        numButtons = len(configs) + 3
+        numButtons = len(configs) + 2
         # button dimensions
         bWidth_start = 30
         bWidth_high = 10
-        bWidth_control = 41
 
         self.gametime = 0
         self.ret = 0
@@ -354,19 +340,34 @@ class StartDialog(Tkinter.Frame):
             button.grid(row=row, column=COL_HIGH)
 
         # control buttons
-        button = Tkinter.Button(self, width=bWidth_control, command=self.clear)
+        button = Tkinter.Button(self, width=bWidth_start, command=self.clear)
         self.addButton(button, 'reset')
-        button.grid(row=numButtons - 3, column=COL_START, columnspan=2)
+        button.grid(row=numButtons - 2, column=COL_START, columnspan=1)
+
+        # language selection
+        self.langChoices = {
+            "de": 'german',
+            "en": 'english',
+            "es": 'spanish',
+            "it": 'italian',
+            "fr": 'french',
+            "zh": 'chinese (simplified)',
+            "zh-Hant": 'chinese (traditional)',
+        }
+        self._langCode = langCode
+        self.langDrop = Tkinter.Listbox(self, height=3, selectmode=Tkinter.SINGLE, width=bWidth_high)
+        self.langDrop.bind('<<ListboxSelect>>', self.change_language)
+        self.scrollbar = Tkinter.Scrollbar(self, orient=Tkinter.VERTICAL)
+        self.scrollbar.config(command=self.langDrop.yview)
+        self.langDrop.config(yscrollcommand=self.scrollbar.set)
+        self.updateLanguageMenu()
+        self.langDrop.grid(row=numButtons - 2, column=COL_HIGH, rowspan=3, sticky="nsew")
+        self.scrollbar.grid(row=numButtons - 2, column=COL_SUMOLOGO, rowspan=3, sticky="nsw")
 
         button = Tkinter.Button(
-            self, width=bWidth_control, command=sys.exit)
+            self, width=bWidth_start, command=sys.exit)
         self.addButton(button, 'quit')
-        button.grid(row=numButtons - 1, column=COL_START, columnspan=2)
-
-        button = Tkinter.Button(
-            self, width=bWidth_control, command=lambda: self.change_language())
-        self.addButton(button, 'lang')
-        button.grid(row=numButtons - 2, column=COL_START, columnspan=2)
+        button.grid(row=numButtons, column=COL_START, columnspan=1)
 
         self.grid()
         # The following three commands are needed so the window pops
@@ -375,17 +376,39 @@ class StartDialog(Tkinter.Frame):
         self.parent.update()
         self.parent.deiconify()
 
-    def addButton(self, button, text):
-        button["text"] = self._language_text.get(text, text)
-        self.buttons.append((text, button))
+    def updateLanguageMenu(self):
+        self.langDrop.delete(0, Tkinter.END)
+        langChoices = [self._language_text.get(longName, longName) for longName in self.langChoices.values()]
+        scrollPos = self.scrollbar.get()
+        self.langDrop.insert(0, *langChoices)
+        self.langDrop.activate(list(self.langChoices.keys()).index(self._langCode))
+        self.langDrop.yview_moveto(scrollPos[0])
 
-    def change_language(self):
-        if self._language_text == _LANGUAGE_DE:
-            self._language_text = _LANGUAGE_EN
-        else:
-            self._language_text = _LANGUAGE_DE
-        for text, button in self.buttons:
-            button["text"] = self._language_text[text]
+    def addButton(self, button, text, key=None):
+        button["text"] = self._language_text.get(text, text)
+        if key is None:
+            key = text
+        self.buttons.append((key, button))
+
+    def change_language(self, *args):
+        selection = self.langDrop.curselection()
+        if len(selection) == 0:
+            return
+        chosenLang = self.langDrop.get(selection[0])
+        for code, longName in self.langChoices.items():
+            if self._language_text[longName] == chosenLang:
+                self._langCode = code
+                break
+        setLanguage(self._langCode)
+        updateLocalMessages()
+        self._language_text = _LANGUAGE_CAPTIONS
+
+        # update language menu
+        self.updateLanguageMenu()
+
+        for key, button in self.buttons:
+            button["text"] = self._language_text[key]
+        self.parent.title(self._language_text['title'])
 
     def category_name(self, cfg):
         return os.path.basename(cfg)[:-8]
@@ -397,14 +420,17 @@ class StartDialog(Tkinter.Frame):
                 self.high.update(pickle.load(sf))
 
     def start_cfg(self, cfg):
-        # remember which which cfg was launched
+        # remember which cfg was launched
         self.category = self.category_name(cfg)
         if _DEBUG:
             print("starting", cfg)
         self.gametime = parseEndTime(cfg)
+        binary = sumolib.checkBinary("sumo-gui", BASE)
+        if binary == "sumo-gui":  # fallback in case SUMO_HOME env is not defined
+            binary = sumolib.checkBinary("sumo-gui", os.path.join(SUMO_HOME, "bin"))
         self.ret = subprocess.call(
-            [sumolib.checkBinary("sumo-gui", BASE), "-S", "-G", "-Q", "-c", cfg, '-l', 'log',
-                '--output-prefix', "%s." % self.category,
+            [binary, "-S", "-G", "-Q", "-c", cfg, '-l', 'log',
+                '--output-prefix', "%s." % self.category, '--language', self._langCode,
                 '--duration-log.statistics', '--statistic-output', 'stats.xml',
                 '--tripinfo-output.write-unfinished'], stderr=sys.stderr)
 
@@ -448,7 +474,7 @@ class ScoreDialog:
         self.switch = switch
         self.score = score
         self.category = category
-        self.root.title(lang["Highscore"])
+        self.root.title("%s%s" % (lang["Highscore"], ": " + lang[self.category] if self.category in lang else ""))
         self.root.minsize(250, 50)
         self.high = high
 
@@ -545,7 +571,12 @@ def main():
     optParser.add_option("-s", "--stereo", metavar="OSG_STEREO_MODE",
                          help=("Defines the stereo mode to use for 3D output; unique prefix of %s" % (
                                ", ".join(stereoModes))))
+    optParser.add_option("add", nargs="*", help="additional flags: {debug|noupload}")
+
+    addLanguageOption(optParser)
     options = optParser.parse_args()
+    setLanguage(options.language)
+    updateLocalMessages()
 
     if options.stereo:
         for m in stereoModes:
@@ -554,7 +585,6 @@ def main():
                 os.environ["OSG_STEREO"] = "ON"
                 break
 
-    lang = _LANGUAGE_EN
     if "OSG_FILE_PATH" in os.environ:
         os.environ["OSG_FILE_PATH"] += os.pathsep + \
             os.path.join(os.environ.get("SUMO_HOME", ""), "data", "3D")
@@ -566,7 +596,7 @@ def main():
     IMAGE.dlrLogo = Tkinter.PhotoImage(file='dlr.gif')
     IMAGE.sumoLogo = Tkinter.PhotoImage(file='sumo_logo.gif')
     IMAGE.qrCode = Tkinter.PhotoImage(file='qr_sumo.dlr.de.gif')
-    StartDialog(root, lang)
+    StartDialog(root, _LANGUAGE_CAPTIONS, options.language)
     root.mainloop()
 
 

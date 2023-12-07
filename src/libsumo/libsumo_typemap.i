@@ -308,6 +308,23 @@ static PyObject* parseSubscriptionMap(const std::map<int, std::shared_ptr<libsum
     }
 };
 
+%typemap(out) std::vector<libsumo::TraCIJunctionFoe> {
+    $result = PyTuple_New($1.size());
+    int index = 0;
+    for (auto iter = $1.begin(); iter != $1.end(); ++iter) {
+        PyTuple_SetItem($result, index++, Py_BuildValue("(sddddssNN)",
+                                                        iter->foeId.c_str(),
+                                                        iter->egoDist,
+                                                        iter->foeDist,
+                                                        iter->egoExitDist,
+                                                        iter->foeExitDist,
+                                                        iter->egoLane.c_str(),
+                                                        iter->foeLane.c_str(),
+                                                        PyBool_FromLong(iter->egoResponse),
+                                                        PyBool_FromLong(iter->foeResponse)));
+    }
+};
+
 %typemap(out) std::vector<std::pair<std::string, double> > {
     $result = PyTuple_New($1.size());
     int index = 0;
@@ -412,7 +429,7 @@ static PyObject* parseSubscriptionMap(const std::map<int, std::shared_ptr<libsum
             std::cerr << "Error: " << s << std::endl;
         }
 #ifdef SWIGPYTHON
-        PyErr_SetObject(SWIG_Python_ExceptionType(SWIGTYPE_p_libsumo__TraCIException), PyUnicode_FromString(s.c_str()));
+        PyErr_SetString(SWIG_Python_ExceptionType(SWIGTYPE_p_libsumo__TraCIException), s.c_str());
         SWIG_fail;
 #else
         SWIG_exception(SWIG_ValueError, s.c_str());
@@ -431,7 +448,7 @@ static PyObject* parseSubscriptionMap(const std::map<int, std::shared_ptr<libsum
             std::cerr << "Error: " << s << std::endl;
         }
 #ifdef SWIGPYTHON
-        PyErr_SetObject(SWIG_Python_ExceptionType(SWIGTYPE_p_libsumo__FatalTraCIError), PyUnicode_FromString(s.c_str()));
+        PyErr_SetString(SWIG_Python_ExceptionType(SWIGTYPE_p_libsumo__FatalTraCIError), s.c_str());
         SWIG_fail;
 #else
         SWIG_exception(SWIG_UnknownError, s.c_str());

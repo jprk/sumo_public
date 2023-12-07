@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -35,20 +35,19 @@ netedit.shapeMode()
 netedit.changeElement("poi")
 
 # create POI
-netedit.leftClick(referencePosition, 150, 50)
+netedit.leftClick(referencePosition, 428, 115)
 
 # go to delete mode
 netedit.deleteMode()
 
 # delete created poi
-netedit.leftClick(referencePosition, 150, 50)
+netedit.leftClick(referencePosition, 428, 115)
 
 # delete first stacked loaded POI (Second stacked must stay)
-netedit.leftClick(referencePosition, 200, 70)
+netedit.leftClick(referencePosition, 541, 97)
 
 # Check undos and redos
-netedit.undo(referencePosition, 2)
-netedit.redo(referencePosition, 2)
+netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

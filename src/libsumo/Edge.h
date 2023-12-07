@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -68,6 +68,7 @@ public:
     static int getLaneNumber(const std::string& edgeID);
     static std::string getStreetName(const std::string& edgeID);
     static const std::vector<std::string> getPendingVehicles(const std::string& edgeID);
+    static double getAngle(const std::string& edgeID, double relativePosition = libsumo::INVALID_DOUBLE_VALUE);
 
     LIBSUMO_ID_PARAMETER_API
     LIBSUMO_SUBSCRIPTION_API
@@ -79,7 +80,7 @@ public:
     static void adaptTraveltime(const std::string& edgeID, double time, double beginSeconds = 0., double endSeconds = std::numeric_limits<double>::max());
     static void setEffort(const std::string& edgeID, double effort, double beginSeconds = 0., double endSeconds = std::numeric_limits<double>::max());
     static void setMaxSpeed(const std::string& edgeID, double speed);
-    static void setFriction(const std::string& edgeID, double value);
+    static void setFriction(const std::string& edgeID, double friction);
 
 #ifndef LIBTRACI
 #ifndef SWIG

@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -114,6 +114,7 @@ MSStateHandler::MSStateHandler(const std::string& file, const SUMOTime offset) :
     myAmLoadingState = true;
     const std::vector<std::string> vehIDs = OptionsCont::getOptions().getStringVector("load-state.remove-vehicles");
     myVehiclesToRemove.insert(vehIDs.begin(), vehIDs.end());
+    myAllowInternalRoutes = true;
 }
 
 
@@ -242,7 +243,7 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         }
         case SUMO_TAG_FLOWSTATE: {
             bool ok;
-            SUMOVehicleParameter* pars = SUMOVehicleParserHelper::parseFlowAttributes(SUMO_TAG_FLOWSTATE, attrs, true, true, -1, -1);
+            SUMOVehicleParameter* pars = SUMOVehicleParserHelper::parseFlowAttributes(SUMO_TAG_FLOWSTATE, attrs, true, true, -1, -1, true);
             pars->repetitionsDone = attrs.get<int>(SUMO_ATTR_DONE, pars->id.c_str(), ok);
             pars->repetitionTotalOffset = attrs.getOptSUMOTimeReporting(SUMO_ATTR_NEXT, pars->id.c_str(), ok, 0);
             int index = attrs.getInt(SUMO_ATTR_INDEX);
@@ -471,6 +472,7 @@ MSStateHandler::closeVehicle() {
                 // register route for deadlock prevention (vehicleStateChanged would not be called otherwise)
                 MSRailSignalControl::getInstance().vehicleStateChanged(v, MSNet::VehicleState::NEWROUTE, "loadState");
             }
+            vc.handleTriggeredDepart(v, false);
         }
         while (!myDeviceAttrs.empty()) {
             const std::string attrID = myDeviceAttrs.back()->getString(SUMO_ATTR_ID);

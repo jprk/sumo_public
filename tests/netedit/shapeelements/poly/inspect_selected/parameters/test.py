@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -31,19 +31,19 @@ neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
 netedit.selectMode()
 
 # select first polygon
-netedit.leftClick(referencePosition, 105, 70)
+netedit.leftClick(referencePosition, 404, 140)
 
 # select second polygon
-netedit.leftClick(referencePosition, 300, 70)
+netedit.leftClick(referencePosition, 593, 140)
 
 # go to inspect mode
 netedit.inspectMode()
 
 # inspect first polygon
-netedit.leftClick(referencePosition, 105, 70)
+netedit.leftClick(referencePosition, 404, 140)
 
 # check parameters
-netedit.checkParameters(referencePosition, netedit.attrs.Poly.inspectSelection.parameters, False)
+netedit.checkParameters(referencePosition, netedit.attrs.poly.inspectSelection.parameters, False)
 
 # save Netedit config
 netedit.saveNeteditConfig(referencePosition)

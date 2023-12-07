@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -17,6 +17,7 @@
 /// @author  Axel Wegener
 /// @author  Michael Behrisch
 /// @author  Laura Bieker
+/// @author  Mirko Barthauer
 /// @date    Mon, 07.04.2008
 ///
 // Helper methods for parsing vehicle attributes
@@ -45,7 +46,6 @@
 
 SUMOVehicleParserHelper::CFAttrMap SUMOVehicleParserHelper::allowedCFModelAttrs;
 SUMOVehicleParserHelper::LCAttrMap SUMOVehicleParserHelper::allowedLCModelAttrs;
-std::set<SumoXMLAttr> SUMOVehicleParserHelper::allowedJMAttrs;
 
 
 // ===========================================================================
@@ -54,7 +54,7 @@ std::set<SumoXMLAttr> SUMOVehicleParserHelper::allowedJMAttrs;
 
 SUMOVehicleParameter*
 SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttributes& attrs, const bool hardFail, const bool needID,
-        const SUMOTime beginDefault, const SUMOTime endDefault) {
+        const SUMOTime beginDefault, const SUMOTime endDefault, const bool allowInternalRoutes) {
     // first parse ID
     const std::string id = attrs.hasAttribute(SUMO_ATTR_ID) ? parseID(attrs, tag) : "";
     // check if ID is valid
@@ -154,7 +154,7 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
         }
         // parse common vehicle attributes
         try {
-            parseCommonAttributes(attrs, flowParameter, tag);
+            parseCommonAttributes(attrs, flowParameter, tag, allowInternalRoutes);
         } catch (ProcessError& attributeError) {
             // check if continue handling another vehicles or stop handling
             if (hardFail) {
@@ -330,7 +330,7 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
 
 
 SUMOVehicleParameter*
-SUMOVehicleParserHelper::parseVehicleAttributes(int element, const SUMOSAXAttributes& attrs, const bool hardFail, const bool optionalID, const bool skipDepart) {
+SUMOVehicleParserHelper::parseVehicleAttributes(int element, const SUMOSAXAttributes& attrs, const bool hardFail, const bool optionalID, const bool skipDepart, const bool allowInternalRoutes) {
     // declare vehicle ID
     std::string id;
     // for certain vehicles, ID can be optional
@@ -356,7 +356,7 @@ SUMOVehicleParserHelper::parseVehicleAttributes(int element, const SUMOSAXAttrib
         }
         // parse common attributes
         try {
-            parseCommonAttributes(attrs, vehicleParameter, (SumoXMLTag)element);
+            parseCommonAttributes(attrs, vehicleParameter, (SumoXMLTag)element, allowInternalRoutes);
         } catch (ProcessError& attributeError) {
             // check if continue handling another vehicles or stop handling
             if (hardFail) {
@@ -412,13 +412,17 @@ SUMOVehicleParserHelper::parseID(const SUMOSAXAttributes& attrs, const SumoXMLTa
 
 
 void
-SUMOVehicleParserHelper::parseCommonAttributes(const SUMOSAXAttributes& attrs, SUMOVehicleParameter* ret, SumoXMLTag tag) {
+SUMOVehicleParserHelper::parseCommonAttributes(const SUMOSAXAttributes& attrs, SUMOVehicleParameter* ret, SumoXMLTag tag, const bool allowInternalRoutes) {
     const std::string element = toString(tag);
     //ret->refid = attrs.getStringSecure(SUMO_ATTR_REFID, "");
     // parse route information
     if (attrs.hasAttribute(SUMO_ATTR_ROUTE)) {
         bool ok = true;
-        ret->routeid = attrs.get<std::string>(SUMO_ATTR_ROUTE, ret->id.c_str(), ok);
+        std::string routeID = attrs.get<std::string>(SUMO_ATTR_ROUTE, ret->id.c_str(), ok);
+        if (!allowInternalRoutes && isInternalRouteID(routeID)) {
+            WRITE_WARNINGF(TL("Internal routes receive an ID starting with '!' and must not be referenced in other vehicle or flow definitions. Please remove all references to route '%' in case it is internal."), routeID);
+        }
+        ret->routeid = routeID;
         if (ok) {
             ret->parametersSet |= VEHPARS_ROUTE_SET; // !!! needed?
         } else {
@@ -1560,21 +1564,7 @@ SUMOVehicleParserHelper::parseLCParams(SUMOVTypeParameter* into, LaneChangeModel
 
 bool
 SUMOVehicleParserHelper::parseJMParams(SUMOVTypeParameter* into, const SUMOSAXAttributes& attrs) {
-    if (allowedJMAttrs.size() == 0) {
-        // init static set (there is only one model)
-        allowedJMAttrs.insert(SUMO_ATTR_JM_CROSSING_GAP);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_DRIVE_AFTER_YELLOW_TIME);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_DRIVE_AFTER_RED_TIME);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_DRIVE_RED_SPEED);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_IGNORE_KEEPCLEAR_TIME);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_IGNORE_FOE_SPEED);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_IGNORE_FOE_PROB);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_IGNORE_JUNCTION_FOE_PROB);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_SIGMA_MINOR);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_STOPLINE_GAP);
-        allowedJMAttrs.insert(SUMO_ATTR_JM_TIMEGAP_MINOR);
-    }
-    for (const auto& it : allowedJMAttrs) {
+    for (const auto& it : SUMOVTypeParameter::AllowedJMAttrs) {
         if (attrs.hasAttribute(it)) {
             // first obtain  CFM attribute in string format
             bool ok = true;
@@ -1694,6 +1684,12 @@ SUMOVehicleParserHelper::processActionStepLength(double given) {
         }
     }
     return result;
+}
+
+
+bool
+SUMOVehicleParserHelper::isInternalRouteID(const std::string& id) {
+    return id.substr(0, 1) == "!";
 }
 
 

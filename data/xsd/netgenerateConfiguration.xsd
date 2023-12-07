@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-02-06 12:10:37 by Eclipse SUMO netgenerate Version v1_15_0+2198-1709483215c
+<!-- generated on 2023-11-05 18:18:16 by Eclipse SUMO netgenerate Version v1_18_0+2421-58d8177730f
 -->
 
 <xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -50,6 +50,7 @@
             <xsd:element name="spider.circle-number" type="intOptionType" minOccurs="0"/>
             <xsd:element name="spider.space-radius" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="spider.omit-center" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="spider.attach-length" type="floatOptionType" minOccurs="0"/>
         </xsd:all>
     </xsd:complexType>
 
@@ -57,7 +58,6 @@
         <xsd:all>
             <xsd:element name="rand" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="rand.iterations" type="intOptionType" minOccurs="0"/>
-            <xsd:element name="bidi-probability" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rand.max-distance" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rand.min-distance" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rand.min-angle" type="floatOptionType" minOccurs="0"/>
@@ -69,9 +69,6 @@
             <xsd:element name="rand.neighbor-dist4" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rand.neighbor-dist5" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rand.neighbor-dist6" type="floatOptionType" minOccurs="0"/>
-            <xsd:element name="random-lanenumber" type="boolOptionType" minOccurs="0"/>
-            <xsd:element name="random-priority" type="boolOptionType" minOccurs="0"/>
-            <xsd:element name="random-type" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="rand.grid" type="boolOptionType" minOccurs="0"/>
         </xsd:all>
     </xsd:complexType>
@@ -99,6 +96,7 @@
             <xsd:element name="matsim-output" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="opendrive-output" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="dlr-navteq-output" type="fileOptionType" minOccurs="0"/>
+            <xsd:element name="dlr-navteq.version" type="strOptionType" minOccurs="0"/>
             <xsd:element name="dlr-navteq.precision" type="intOptionType" minOccurs="0"/>
             <xsd:element name="output.street-names" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="output.original-names" type="boolOptionType" minOccurs="0"/>
@@ -114,6 +112,10 @@
             <xsd:element name="perturb-x" type="strOptionType" minOccurs="0"/>
             <xsd:element name="perturb-y" type="strOptionType" minOccurs="0"/>
             <xsd:element name="perturb-z" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="bidi-probability" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="random-lanenumber" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="random-priority" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="random-type" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="numerical-ids" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="numerical-ids.node-start" type="intOptionType" minOccurs="0"/>
             <xsd:element name="numerical-ids.edge-start" type="intOptionType" minOccurs="0"/>
@@ -124,6 +126,7 @@
             <xsd:element name="geometry.remove.keep-edges.input-file" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="geometry.remove.min-length" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="geometry.remove.width-tolerance" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="geometry.remove.max-junction-size" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="geometry.max-segment-length" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="geometry.max-grade" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="geometry.max-grade.fix" type="boolOptionType" minOccurs="0"/>
@@ -176,6 +179,7 @@
             <xsd:element name="tls.guess.joining" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="tls.join" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="tls.join-dist" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="tls.join-exclude" type="strArrayOptionType" minOccurs="0"/>
             <xsd:element name="tls.uncontrolled-within" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="tls.ignore-internal-junction-jam" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="tls.cycle.time" type="intOptionType" minOccurs="0"/>
@@ -254,6 +258,7 @@
             <xsd:element name="junctions.limit-turn-speed.warn.turn" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="junctions.small-radius" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="junctions.higher-speed" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="junctions.minimal-shape" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="internal-junctions.vehicle-width" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="rectangular-lane-cut" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="check-lane-foes.roundabout" type="boolOptionType" minOccurs="0"/>
@@ -297,6 +302,8 @@
             <xsd:element name="log" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="message-log" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="error-log" type="fileOptionType" minOccurs="0"/>
+            <xsd:element name="log.timestamps" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="log.processid" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="language" type="strOptionType" minOccurs="0"/>
         </xsd:all>
     </xsd:complexType>

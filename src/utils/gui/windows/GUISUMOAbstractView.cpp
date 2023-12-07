@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -251,7 +251,7 @@ GUISUMOAbstractView::updatePositionInformationLabel() const {
     if (GeoConvHelper::getFinal().usingGeoProjection()) {
         myApp->getGeoLabel()->setText(("lat:" + toString(pos.y(), gPrecisionGeo) + ", lon:" + toString(pos.x(), gPrecisionGeo)).c_str());
     } else {
-        myApp->getGeoLabel()->setText(("x:" + toString(pos.x()) + ", y:" + toString(pos.y()) + TL(" (No projection defined)")).c_str());
+        myApp->getGeoLabel()->setText(TL("(No projection defined)"));
     }
     // if enabled, set test position
     if (myApp->getTestFrame()) {
@@ -910,13 +910,16 @@ void
 GUISUMOAbstractView::centerTo(GUIGlID id, bool applyZoom, double zoomDist) {
     GUIGlObject* o = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
     if (o != nullptr && dynamic_cast<GUIGlObject*>(o) != nullptr) {
-        if (applyZoom && zoomDist < 0) {
-            myChanger->setViewport(o->getCenteringBoundary());
-            update(); // only update when centering onto an object once
-        } else {
-            // called during tracking. update is triggered somewhere else
-            myChanger->centerTo(o->getCenteringBoundary().getCenter(), zoomDist, applyZoom);
-            updatePositionInformationLabel();
+        const Boundary& b = o->getCenteringBoundary();
+        if (b.getCenter() != Position::INVALID) {
+            if (applyZoom && zoomDist < 0) {
+                myChanger->setViewport(b);
+                update(); // only update when centering onto an object once
+            } else {
+                // called during tracking. update is triggered somewhere else
+                myChanger->centerTo(b.getCenter(), zoomDist, applyZoom);
+                updatePositionInformationLabel();
+            }
         }
     }
     GUIGlObjectStorage::gIDStorage.unblockObject(id);
@@ -1044,7 +1047,7 @@ GUISUMOAbstractView::onLeftBtnPress(FXObject*, FXSelector, void* ptr) {
             }
             makeNonCurrent();
             if (id != 0) {
-                // possibly, the selection-colouring is used,
+                // possibly, the selection-coloring is used,
                 //  so we should update the screen again...
                 update();
             }
@@ -1094,7 +1097,9 @@ long
 GUISUMOAbstractView::onMiddleBtnPress(FXObject*, FXSelector, void* ptr) {
     destroyPopup();
     setFocus();
-    myChanger->onMiddleBtnPress(ptr);
+    if (!myApp->isGaming()) {
+        myChanger->onMiddleBtnPress(ptr);
+    }
     grab();
     // enable panning
     myPanning = true;
@@ -1108,7 +1113,9 @@ GUISUMOAbstractView::onMiddleBtnPress(FXObject*, FXSelector, void* ptr) {
 long
 GUISUMOAbstractView::onMiddleBtnRelease(FXObject*, FXSelector, void* ptr) {
     destroyPopup();
-    myChanger->onMiddleBtnRelease(ptr);
+    if (!myApp->isGaming()) {
+        myChanger->onMiddleBtnRelease(ptr);
+    }
     ungrab();
     // disable panning
     myPanning = false;
@@ -1122,7 +1129,9 @@ GUISUMOAbstractView::onMiddleBtnRelease(FXObject*, FXSelector, void* ptr) {
 long
 GUISUMOAbstractView::onRightBtnPress(FXObject*, FXSelector, void* ptr) {
     destroyPopup();
-    myChanger->onRightBtnPress(ptr);
+    if (!myApp->isGaming()) {
+        myChanger->onRightBtnPress(ptr);
+    }
     grab();
     return 1;
 }
@@ -1584,7 +1593,7 @@ GUISUMOAbstractView::showViewschemeEditor() {
 GUIDialog_EditViewport*
 GUISUMOAbstractView::getViewportEditor() {
     if (myGUIDialogEditViewport == nullptr) {
-        myGUIDialogEditViewport = new GUIDialog_EditViewport(this, TL("Edit Viewport"));
+        myGUIDialogEditViewport = new GUIDialog_EditViewport(this, TLC("Labels", "Edit Viewport"));
         myGUIDialogEditViewport->create();
     }
     updateViewportValues();
@@ -1704,7 +1713,7 @@ GUISUMOAbstractView::getDecalsLockMutex() {
 }
 
 
-FXComboBox*
+MFXComboBoxIcon*
 GUISUMOAbstractView::getColoringSchemesCombo() {
     return myGlChildWindowParent->getColoringSchemesCombo();
 }
@@ -1839,21 +1848,21 @@ GUISUMOAbstractView::openPopupDialog() {
     int x, y;
     FXuint b;
     myApp->getCursorPosition(x, y, b);
-    int popX = x + myApp->getX();
+    int appX = myApp->getX();
+    int popX = x + appX;
     int popY = y + myApp->getY();
     myPopup->setX(popX);
     myPopup->setY(popY);
     myPopup->create();
     myPopup->show();
-    // try to stay on screen unless click appears to come from a multi-screen setup
+    // TODO: try to stay on screen even on a right secondary screen in multi-monitor setup
     const int rootWidth = getApp()->getRootWindow()->getWidth();
     const int rootHeight = getApp()->getRootWindow()->getHeight();
     if (popX <= rootWidth) {
-        popX = MAX2(0, MIN2(popX, rootWidth - myPopup->getWidth() - 10));
+        const int maxX = (appX < 0) ? 0 : rootWidth;
+        popX = MIN2(popX, maxX - myPopup->getWidth() - 10);
     }
-    if (popY <= rootHeight) {
-        popY = MAX2(0, MIN2(popY, rootHeight - myPopup->getHeight() - 50));
-    }
+    popY = MIN2(popY, rootHeight - myPopup->getHeight() - 50);
     myPopup->move(popX, popY);
     myPopupPosition = getPositionInformation();
     myChanger->onRightBtnRelease(nullptr);

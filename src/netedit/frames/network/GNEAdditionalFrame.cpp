@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -24,6 +24,7 @@
 #include <netedit/GNEViewParent.h>
 #include <netedit/GNEApplicationWindow.h>
 #include <netedit/elements/additional/GNEAdditionalHandler.h>
+#include <utils/gui/div/GUIDesigns.h>
 
 #include "GNEAdditionalFrame.h"
 
@@ -32,8 +33,107 @@
 // method definitions
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// GNEAdditionalFrame::E2MultilaneLegendModule - methods
+// ---------------------------------------------------------------------------
+
+GNEAdditionalFrame::E2MultilaneLegendModule::E2MultilaneLegendModule(GNEFrame* frameParent) :
+    MFXGroupBoxModule(frameParent, TL("Legend")) {
+    // declare label
+    FXLabel* legendLabel = nullptr;
+    // edge candidate
+    legendLabel = new FXLabel(getCollapsableFrame(), TL(" edge candidate"), 0, GUIDesignLabel(JUSTIFY_LEFT));
+    legendLabel->setBackColor(MFXUtils::getFXColor(frameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.possible));
+    legendLabel->setTextColor(MFXUtils::getFXColor(RGBColor::WHITE));
+    // last edge selected
+    legendLabel = new FXLabel(getCollapsableFrame(), TL(" last edge selected"), 0, GUIDesignLabel(JUSTIFY_LEFT));
+    legendLabel->setBackColor(MFXUtils::getFXColor(frameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.target));
+    // edge selected
+    legendLabel = new FXLabel(getCollapsableFrame(), TL(" edge selected"), 0, GUIDesignLabel(JUSTIFY_LEFT));
+    legendLabel->setBackColor(MFXUtils::getFXColor(frameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.source));
+    // edge disconnected
+    legendLabel = new FXLabel(getCollapsableFrame(), TL(" edge disconnected"), 0, GUIDesignLabel(JUSTIFY_LEFT));
+    legendLabel->setBackColor(MFXUtils::getFXColor(frameParent->getViewNet()->getVisualisationSettings().candidateColorSettings.conflict));
+}
+
+
+GNEAdditionalFrame::E2MultilaneLegendModule::~E2MultilaneLegendModule() {}
+
+
+void
+GNEAdditionalFrame::E2MultilaneLegendModule::showE2MultilaneLegend() {
+    show();
+}
+
+
+void
+GNEAdditionalFrame::E2MultilaneLegendModule::hideE2MultilaneLegend() {
+    hide();
+}
+
+// ---------------------------------------------------------------------------
+// GNEAdditionalFrame::HelpCreationModule - methods
+// ---------------------------------------------------------------------------
+
+#define TLSX(string) std::string(gettext((string)))
+
+
+
+GNEAdditionalFrame::HelpCreationModule::HelpCreationModule(GNEFrame* frameParent) :
+    MFXGroupBoxModule(frameParent, TL("Help")) {
+    // edge candidate
+    myHelpLabel = new FXLabel(getCollapsableFrame(), "", 0, GUIDesignLabelFrameInformation);
+    // fill map
+    //addTLString(TL("-Requires EntryExitDetector\n")) +
+    // E1
+    myHelpMap[SUMO_TAG_INDUCTION_LOOP] = addTLString(TL("-Click over lane to create it"));
+    // E1 Instant
+    myHelpMap[SUMO_TAG_INSTANT_INDUCTION_LOOP] = addTLString(TL("-Click over lane to create it"));
+    // E2
+    myHelpMap[SUMO_TAG_LANE_AREA_DETECTOR] = addTLString(TL("-Click over lane to create it"));
+    // E3
+    myHelpMap[SUMO_TAG_ENTRY_EXIT_DETECTOR] = addTLString(TL("-Click over view to create it")) +
+            addTLString(TL("-Requires at least one Entry\n and one Exit"));
+    // E3 Entry
+    myHelpMap[SUMO_TAG_DET_ENTRY] = addTLString(TL("-Requires EntryExitDetector\n parent\n")) +
+                                    addTLString(TL("-Select EntryExitDetector\n before creating either\n clicking over one in view\n oder selecting in list"));
+    // E3 Exit
+    myHelpMap[SUMO_TAG_DET_EXIT] = addTLString(TL("-Requires EntryExitDetector\n parent\n")) +
+                                   addTLString(TL("-Select EntryExitDetector\n before creating either\n clicking over one in view\n oder selecting in list"));
+}
+
+
+GNEAdditionalFrame::HelpCreationModule::~HelpCreationModule() {}
+
+
+void
+GNEAdditionalFrame::HelpCreationModule::showHelpCreationModule(SumoXMLTag XMLTag) {
+    if (myHelpMap.count(XMLTag) > 0) {
+        myHelpLabel->setText(myHelpMap.at(XMLTag).c_str());
+        show();
+    } else {
+        hide();
+    }
+}
+
+
+void
+GNEAdditionalFrame::HelpCreationModule::hideHelpCreationModule() {
+    hide();
+}
+
+
+std::string
+GNEAdditionalFrame::HelpCreationModule::addTLString(const std::string& str) {
+    return std::string(str.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// GNEAdditionalFrame: - methods
+// ---------------------------------------------------------------------------
+
 GNEAdditionalFrame::GNEAdditionalFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
-    GNEFrame(viewParent, viewNet, "Additionals") {
+    GNEFrame(viewParent, viewNet, TL("Additionals")) {
 
     // create item Selector module for additionals
     myAdditionalTagSelector = new GNETagSelector(this, GNETagProperties::TagType::ADDITIONALELEMENT, SUMO_TAG_BUS_STOP);
@@ -56,8 +156,11 @@ GNEAdditionalFrame::GNEAdditionalFrame(GNEViewParent* viewParent, GNEViewNet* vi
     // Create list for E2Multilane lane selector
     myConsecutiveLaneSelector = new GNEConsecutiveSelector(this, false);
 
+    // create help creation module
+    myHelpCreationModule = new HelpCreationModule(this);
+
     // Create legend for E2 detector
-    myE2DetectorLegendModule = new GNEE2DetectorLegendModule(this);
+    myE2MultilaneLegendModule = new E2MultilaneLegendModule(this);
 }
 
 
@@ -145,6 +248,12 @@ GNEAdditionalFrame::getConsecutiveLaneSelector() const {
 }
 
 
+GNENeteditAttributes*
+GNEAdditionalFrame::getNeteditAttributes() const {
+    return myNeteditAttributes;
+}
+
+
 bool
 GNEAdditionalFrame::createPath(const bool /* useLastRoute */) {
     // obtain tagproperty (only for improve code legibility)
@@ -215,20 +324,22 @@ GNEAdditionalFrame::tagSelected() {
         } else {
             myEdgesSelector->hideNetworkElementsSelector();
         }
+        // show help creation modul
+        myHelpCreationModule->showHelpCreationModule(templateAC->getTagProperty().getTag());
         // check if we must show consecutive lane selector
         if (templateAC->getTagProperty().getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) {
             myConsecutiveLaneSelector->showConsecutiveLaneSelectorModule();
-            myE2DetectorLegendModule->showE2DetectorLegend();
+            myE2MultilaneLegendModule->showE2MultilaneLegend();
             myLanesSelector->hideNetworkElementsSelector();
             // recompute network
             myViewNet->getNet()->computeNetwork(myViewNet->getViewParent()->getGNEAppWindows());
         } else if (templateAC->getTagProperty().hasAttribute(SUMO_ATTR_LANES)) {
             myConsecutiveLaneSelector->hideConsecutiveLaneSelectorModule();
-            myE2DetectorLegendModule->hideE2DetectorLegend();
+            myE2MultilaneLegendModule->hideE2MultilaneLegend();
             myLanesSelector->showNetworkElementsSelector();
         } else {
             myConsecutiveLaneSelector->hideConsecutiveLaneSelectorModule();
-            myE2DetectorLegendModule->hideE2DetectorLegend();
+            myE2MultilaneLegendModule->hideE2MultilaneLegend();
             myLanesSelector->hideNetworkElementsSelector();
         }
         // reset last position
@@ -241,7 +352,8 @@ GNEAdditionalFrame::tagSelected() {
         myEdgesSelector->hideNetworkElementsSelector();
         myLanesSelector->hideNetworkElementsSelector();
         myConsecutiveLaneSelector->hideConsecutiveLaneSelectorModule();
-        myE2DetectorLegendModule->hideE2DetectorLegend();
+        myHelpCreationModule->hideHelpCreationModule();
+        myE2MultilaneLegendModule->hideE2MultilaneLegend();
     }
 }
 
@@ -326,7 +438,7 @@ GNEAdditionalFrame::buildAdditionalCommonAttributes(const GNETagProperties& tagP
         myBaseAdditional->addStringListAttribute(SUMO_ATTR_EDGES, myEdgesSelector->getSelectedIDs());
         // check if attribute has at least one edge
         if (myBaseAdditional->getStringListAttribute(SUMO_ATTR_EDGES).empty()) {
-            myAdditionalAttributes->showWarningMessage(TL("List ofe dges cannot be empty"));
+            myAdditionalAttributes->showWarningMessage(TL("List of edges cannot be empty"));
             return false;
         }
     }
@@ -401,7 +513,11 @@ GNEAdditionalFrame::buildAdditionalOverLane(GNELane* lane, const GNETagPropertie
     // Obtain position of the mouse over lane (limited over grid)
     const double mousePositionOverLane = lane->getLaneShape().nearest_offset_to_point2D(myViewNet->snapToActiveGrid(myViewNet->getPositionInformation())) / lane->getLengthGeometryFactor();
     // set attribute position as mouse position over lane
-    myBaseAdditional->addDoubleAttribute(SUMO_ATTR_POSITION, mousePositionOverLane);
+    if (myBaseAdditional->getTag() == SUMO_TAG_ACCESS) {
+        myBaseAdditional->addStringAttribute(SUMO_ATTR_POSITION, toString(mousePositionOverLane));
+    } else {
+        myBaseAdditional->addDoubleAttribute(SUMO_ATTR_POSITION, mousePositionOverLane);
+    }
     // parse common attributes
     if (!buildAdditionalCommonAttributes(tagProperties)) {
         return false;

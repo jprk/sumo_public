@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -62,16 +62,15 @@
 //#define DEBUG_DRIVEWAY_BUILDROUTE
 //#define DEBUG_CHECK_FLANKS
 
-#define DEBUG_SIGNALSTATE
-#define DEBUG_SIGNALSTATE_PRIORITY
-#define DEBUG_FIND_PROTECTION
-//#define DEBUG_RECHECKGREEN
+//#define DEBUG_SIGNALSTATE
+//#define DEBUG_SIGNALSTATE_PRIORITY
+//#define DEBUG_FIND_PROTECTION
 //#define DEBUG_REROUTE
 
 #define DEBUG_COND DEBUG_HELPER(this)
 #define DEBUG_COND_LINKINFO DEBUG_HELPER(myLink->getTLLogic())
 #define DEBUG_HELPER(obj) ((obj)->isSelected())
-//#define DEBUG_HELPER(obj) ((obj)->getID() == "w2")
+//#define DEBUG_HELPER(obj) ((obj)->getID() == "")
 //#define DEBUG_HELPER(obj) (true)
 
 // ===========================================================================
@@ -79,8 +78,6 @@
 // ===========================================================================
 int MSRailSignal::myNumWarnings(0);
 
-std::vector<std::pair<MSLink*, int> > MSRailSignal::mySwitchedGreenFlanks;
-std::map<std::pair<int, int>, bool> MSRailSignal::myDriveWayCompatibility;
 int MSRailSignal::myDriveWayIndex(0);
 
 bool MSRailSignal::myStoreVehicles(false);
@@ -172,7 +169,7 @@ MSRailSignal::updateCurrentPhase() {
                 state[li.myLink->getTLIndex()] = 'G';
                 if (driveway.myFlank.size() > 0 && myCurrentPhase.getState()[li.myLink->getTLIndex()] != 'G') {
                     // schedule recheck
-                    mySwitchedGreenFlanks.push_back(std::make_pair(li.myLink, driveway.myNumericalID));
+                    MSRailSignalControl::getInstance().addGreenFlankSwitch(li.myLink, driveway.myNumericalID);
                 }
 #ifdef DEBUG_SIGNALSTATE
                 if (gDebugFlag4) {
@@ -736,7 +733,7 @@ MSRailSignal::LinkInfo::buildDriveWay(MSRouteIterator first, MSRouteIterator end
     }
 
 #ifdef DEBUG_BUILD_DRIVEWAY
-    if (DEBUG_COND_LINKINFO || true) {
+    if (DEBUG_COND_LINKINFO) {
         std::cout << "  buildDriveWay railSignal=" << getID()
                   << "\n    route=" << toString(dw.myRoute)
                   << "\n    forward=" << toString(dw.myForward)
@@ -1187,7 +1184,7 @@ MSRailSignal::DriveWay::buildRoute(MSLink* origin, double length,
     bool foundUnsafeSwitch = false;
     MSLane* toLane = origin->getViaLaneOrLane();
 #ifdef DEBUG_DRIVEWAY_BUILDROUTE
-    gDebugFlag4 = true; //getClickableTLLinkID(origin) == "junction 's24', link 0";
+    gDebugFlag4 = DEBUG_HELPER(origin->getTLLogic());
     if (gDebugFlag4) std::cout << "buildRoute origin=" << getTLLinkID(origin) << " vehRoute=" << toString(ConstMSEdgeVector(next, end))
                                    << " visited=" << formatVisitedMap(visited) << "\n";
 #endif
@@ -1556,74 +1553,6 @@ MSRailSignal::retrieveDriveWay(int numericalID) const {
     throw ProcessError("Invalid driveway id " + toString(numericalID) + " at railSignal '" + getID() + "'");
 }
 
-
-void
-MSRailSignal::recheckGreen() {
-    if (mySwitchedGreenFlanks.size() > 0) {
-        for (const auto& item : mySwitchedGreenFlanks) {
-            for (const auto& item2 : mySwitchedGreenFlanks) {
-                if (item.second < item2.second) {
-                    bool conflict = false;
-                    std::pair<int, int> code(item.second, item2.second);
-                    auto it = myDriveWayCompatibility.find(code);
-                    if (it != myDriveWayCompatibility.end()) {
-                        conflict = it->second;
-                    } else {
-                        // new driveway pair
-                        const MSRailSignal* rs = static_cast<const MSRailSignal*>(item.first->getTLLogic());
-                        const MSRailSignal* rs2 = static_cast<const MSRailSignal*>(item2.first->getTLLogic());
-                        const DriveWay& dw = rs->retrieveDriveWay(item.second);
-                        const DriveWay& dw2 = rs2->retrieveDriveWay(item2.second);
-                        // overlap may return true if the driveways are consecutive forward sections
-                        conflict = dw.flankConflict(dw2) || dw2.flankConflict(dw);
-                        myDriveWayCompatibility[code] = conflict;
-#ifdef DEBUG_RECHECKGREEN
-                        std::cout << SIMTIME << " new code " << code.first << "," << code.second << " conflict=" << conflict << " dw=" << toString(dw.myRoute) << " dw2=" << toString(dw2.myRoute) << "\n";
-#endif
-                    }
-                    if (conflict) {
-                        MSRailSignal* rs = const_cast<MSRailSignal*>(static_cast<const MSRailSignal*>(item.first->getTLLogic()));
-                        MSRailSignal* rs2 = const_cast<MSRailSignal*>(static_cast<const MSRailSignal*>(item2.first->getTLLogic()));
-                        const Approaching& veh = rs->getClosest(item.first);
-                        const Approaching& veh2 = rs2->getClosest(item2.first);
-                        if (DriveWay::mustYield(veh, veh2)) {
-                            std::string state = rs->myCurrentPhase.getState();
-                            state[item.first->getTLIndex()] = 'r';
-                            rs->myCurrentPhase.setState(state);
-                            rs->setTrafficLightSignals(MSNet::getInstance()->getCurrentTimeStep());
-#ifdef DEBUG_RECHECKGREEN
-                            std::cout << SIMTIME << " reset to red " << getClickableTLLinkID(item.first)
-                                      << " (" << veh.first->getID() << " yields to " << veh2.first->getID() << "\n";
-#endif
-#ifdef DEBUG_SIGNALSTATE
-                            if (DEBUG_HELPER(rs)) {
-                                std::cout << SIMTIME << " reset to red " << getClickableTLLinkID(item.first)
-                                          << " (" << veh.first->getID() << " yields to " << veh2.first->getID() << "\n";
-                            }
-#endif
-                        } else {
-                            std::string state = rs2->myCurrentPhase.getState();
-                            state[item2.first->getTLIndex()] = 'r';
-                            rs2->myCurrentPhase.setState(state);
-                            rs2->setTrafficLightSignals(MSNet::getInstance()->getCurrentTimeStep());
-#ifdef DEBUG_RECHECKGREEN
-                            std::cout << SIMTIME << " reset to red " << getClickableTLLinkID(item2.first)
-                                      << " (" << veh2.first->getID() << " yields to " << veh.first->getID() << "\n";
-#endif
-#ifdef DEBUG_SIGNALSTATE
-                            if (DEBUG_HELPER(rs2)) {
-                                std::cout << SIMTIME << " reset to red " << getClickableTLLinkID(item2.first)
-                                          << " (" << veh2.first->getID() << " yields to " << veh.first->getID() << "\n";
-                            }
-#endif
-                        }
-                    }
-                }
-            }
-        }
-        mySwitchedGreenFlanks.clear();
-    }
-}
 
 void
 MSRailSignal::updateDriveway(int numericalID) {

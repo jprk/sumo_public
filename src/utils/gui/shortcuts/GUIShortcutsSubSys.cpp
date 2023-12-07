@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -32,11 +32,11 @@ GUIShortcutsSubSys::buildAccelerators(FXAccelTable* accelTable, FXObject* target
 
     // basic hotkeys
 
-    accelTable->addAccel(parseKey(KEY_a), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP));
-    accelTable->addAccel(parseKey(KEY_A), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALSTOP));
+    accelTable->addAccel(parseKey(KEY_a), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS));
+    accelTable->addAccel(parseKey(KEY_A), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS));
 
-    accelTable->addAccel(parseKey(KEY_c), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN));
-    accelTable->addAccel(parseKey(KEY_C), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_PERSONPLAN));
+    accelTable->addAccel(parseKey(KEY_c), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_CONTAINER));
+    accelTable->addAccel(parseKey(KEY_C), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_CONTAINER));
 
     accelTable->addAccel(parseKey(KEY_d), target, FXSEL(SEL_COMMAND, MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE));
     accelTable->addAccel(parseKey(KEY_D), target, FXSEL(SEL_COMMAND, MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE));
@@ -44,14 +44,14 @@ GUIShortcutsSubSys::buildAccelerators(FXAccelTable* accelTable, FXObject* target
     accelTable->addAccel(parseKey(KEY_e), target, FXSEL(SEL_COMMAND, MID_HOTKEY_E_MODE_EDGE_EDGEDATA));
     accelTable->addAccel(parseKey(KEY_E), target, FXSEL(SEL_COMMAND, MID_HOTKEY_E_MODE_EDGE_EDGEDATA));
 
-    accelTable->addAccel(parseKey(KEY_g), target, FXSEL(SEL_COMMAND, MID_HOTKEY_G_MODE_CONTAINER));
-    accelTable->addAccel(parseKey(KEY_G), target, FXSEL(SEL_COMMAND, MID_HOTKEY_G_MODE_CONTAINER));
-
     accelTable->addAccel(parseKey(KEY_h), target, FXSEL(SEL_COMMAND, MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN));
     accelTable->addAccel(parseKey(KEY_H), target, FXSEL(SEL_COMMAND, MID_HOTKEY_H_MODE_PROHIBITION_CONTAINERPLAN));
 
     accelTable->addAccel(parseKey(KEY_i), target, FXSEL(SEL_COMMAND, MID_HOTKEY_I_MODE_INSPECT));
     accelTable->addAccel(parseKey(KEY_I), target, FXSEL(SEL_COMMAND, MID_HOTKEY_I_MODE_INSPECT));
+
+    accelTable->addAccel(parseKey(KEY_l), target, FXSEL(SEL_COMMAND, MID_HOTKEY_L_MODE_PERSONPLAN));
+    accelTable->addAccel(parseKey(KEY_L), target, FXSEL(SEL_COMMAND, MID_HOTKEY_L_MODE_PERSONPLAN));
 
     accelTable->addAccel(parseKey(KEY_m), target, FXSEL(SEL_COMMAND, MID_HOTKEY_M_MODE_MOVE_MEANDATA));
     accelTable->addAccel(parseKey(KEY_M), target, FXSEL(SEL_COMMAND, MID_HOTKEY_M_MODE_MOVE_MEANDATA));
@@ -68,11 +68,14 @@ GUIShortcutsSubSys::buildAccelerators(FXAccelTable* accelTable, FXObject* target
     accelTable->addAccel(parseKey(KEY_t), target, FXSEL(SEL_COMMAND, MID_HOTKEY_T_MODE_TLS_TYPE));
     accelTable->addAccel(parseKey(KEY_T), target, FXSEL(SEL_COMMAND, MID_HOTKEY_T_MODE_TLS_TYPE));
 
+    accelTable->addAccel(parseKey(KEY_u), target, FXSEL(SEL_COMMAND, MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION));
+    accelTable->addAccel(parseKey(KEY_U), target, FXSEL(SEL_COMMAND, MID_HOTKEY_U_MODE_DECAL_TYPEDISTRIBUTION));
+
     accelTable->addAccel(parseKey(KEY_v), target, FXSEL(SEL_COMMAND, MID_HOTKEY_V_MODE_VEHICLE));
     accelTable->addAccel(parseKey(KEY_V), target, FXSEL(SEL_COMMAND, MID_HOTKEY_V_MODE_VEHICLE));
 
-    accelTable->addAccel(parseKey(KEY_w), target, FXSEL(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE));
-    accelTable->addAccel(parseKey(KEY_W), target, FXSEL(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE));
+    accelTable->addAccel(parseKey(KEY_w), target, FXSEL(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION));
+    accelTable->addAccel(parseKey(KEY_W), target, FXSEL(SEL_COMMAND, MID_HOTKEY_W_MODE_WIRE_ROUTEDISTRIBUTION));
 
     accelTable->addAccel(parseKey(KEY_z), target, FXSEL(SEL_COMMAND, MID_HOTKEY_Z_MODE_TAZ_TAZREL));
     accelTable->addAccel(parseKey(KEY_Z), target, FXSEL(SEL_COMMAND, MID_HOTKEY_Z_MODE_TAZ_TAZREL));

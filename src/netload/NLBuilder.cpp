@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -220,6 +220,8 @@ NLBuilder::build() {
         }
         MSTriggeredRerouter::checkParkingRerouteConsistency();
     }
+    // init tls after all detectors have been loaded
+    myJunctionBuilder.postLoadInitialization();
     // declare meandata set by options
     buildDefaultMeanData("edgedata-output", "DEFAULT_EDGEDATA", false);
     buildDefaultMeanData("lanedata-output", "DEFAULT_LANEDATA", true);
@@ -297,7 +299,7 @@ NLBuilder::init(const bool isLibsumo) {
         SystemFrame::close();
         return nullptr;
     }
-    SystemFrame::checkOptions();
+    SystemFrame::checkOptions(oc);
     std::string validation = oc.getString("xml-validation");
     std::string routeValidation = oc.getString("xml-validation.routes");
     if (isLibsumo) {
@@ -457,6 +459,10 @@ NLBuilder::buildRouteLoaderControl(const OptionsCont& oc) {
 void
 NLBuilder::buildDefaultMeanData(const std::string& optionName, const std::string& id, bool useLanes) {
     if (OptionsCont::getOptions().isSet(optionName)) {
+        if (useLanes && MSGlobals::gUseMesoSim && !OptionsCont::getOptions().getBool("meso-lane-queue")) {
+            WRITE_WARNING(TL("LaneData requested for mesoscopic simulation but --meso-lane-queue is not active. Falling back to edgeData."));
+            useLanes = false;
+        }
         try {
             myDetectorBuilder.createEdgeLaneMeanData(id, -1, 0, -1, "traffic", useLanes, false, false,
                     false, false, false, 100000, 0, SUMO_const_haltingSpeed, "", "", std::vector<MSEdge*>(), false,

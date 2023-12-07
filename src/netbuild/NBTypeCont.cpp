@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -374,9 +374,12 @@ NBTypeCont::addLaneTypeRestriction(const std::string& id, const SUMOVehicleClass
 
 
 void
-NBTypeCont::writeEdgeTypes(OutputDevice& into) const {
+NBTypeCont::writeEdgeTypes(OutputDevice& into,  const std::set<std::string>& typeIDs) const {
     // iterate over edge types
     for (const auto& edgeType : myEdgeTypes) {
+        if (typeIDs.size() > 0 && typeIDs.count(edgeType.first) == 0) {
+            continue;
+        }
         // open edge type tag
         into.openTag(SUMO_TAG_TYPE);
         // write ID

@@ -1,6 +1,7 @@
 import_config_file:../config_all
 binary:$SUMO_BINARY
 copy_test_path:net.net.xml
+copy_test_path:net.net.xml.gz
 copy_test_path:net2.net.xml
 copy_test_path:net3.net.xml
 copy_test_path:net4.net.xml
@@ -187,7 +188,7 @@ cfg:<movereminder{LINES 2}
 cfg:movereminder
 cfg:<python-script
 cfg:embedded python
-cfg:<osg-view
+cfg:osg-view
 cfg:OpenSceneGraph
 cfg:^$
 weights:<!--{[->]}-->

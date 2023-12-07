@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+# Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 # Copyright (C) 2009-2023 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
@@ -41,13 +41,13 @@ netedit.createDataSet()
 netedit.createDataInterval()
 
 # create TAZRelData
-netedit.leftClick(referencePosition, 180, 180)
-netedit.leftClick(referencePosition, 460, 180)
+netedit.leftClick(referencePosition, 300, 180)
+netedit.leftClick(referencePosition, 700, 180)
 netedit.typeEnter()
 
 # create TAZRelData
-netedit.leftClick(referencePosition, 460, 180)
-netedit.leftClick(referencePosition, 180, 180)
+netedit.leftClick(referencePosition, 700, 180)
+netedit.leftClick(referencePosition, 300, 180)
 netedit.typeEnter()
 
 # go to select mode
@@ -60,7 +60,7 @@ netedit.selectionInvertData()
 netedit.inspectMode()
 
 # inspect TAZRelData
-netedit.leftClick(referencePosition, 300, 250)
+netedit.leftClick(referencePosition, 425, 254)
 
 # check double parameters
 netedit.checkDoubleParameters(referencePosition, netedit.attrs.TAZRelData.inspectSelection.parameters, False, 0, 30)

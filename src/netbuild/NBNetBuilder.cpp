@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -150,7 +150,6 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         myPTStopCont.alignIdSigns();
         PROGRESS_TIME_MESSAGE(before);
     }
-
     // analyze and fix railway topology
     int numAddedBidi = 0;
     if (oc.exists("railway.topology.all-bidi") && oc.getBool("railway.topology.all-bidi")) {
@@ -164,6 +163,7 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         NBTurningDirectionsComputer::computeTurnDirections(myNodeCont, false);
         numAddedBidi = NBRailwayTopologyAnalyzer::repairTopology(myEdgeCont, myPTStopCont, myPTLineCont);
     }
+    NBRailwaySignalGuesser::guessRailSignals(myEdgeCont, myPTStopCont);
     if (numAddedBidi > 0) {
         // update routes
         myPTLineCont.process(myEdgeCont, myPTStopCont, true);
@@ -575,6 +575,9 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         progCount = "(" + toString(numbers.second) + " programs) ";
     }
     WRITE_MESSAGEF(TL(" % traffic light(s) %computed."), toString(numbers.first), progCount);
+    if (oc.exists("opendrive-files") && oc.isSet("opendrive-files") && oc.getBool("opendrive.signal-groups")) {
+        myTLLCont.applyOpenDriveControllers(oc);
+    }
 
     for (std::map<std::string, NBEdge*>::const_iterator i = myEdgeCont.begin(); i != myEdgeCont.end(); ++i) {
         (*i).second->sortOutgoingConnectionsByIndex();
@@ -606,7 +609,7 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
     }
     if (myEdgeCont.getNumEdgeSplits() > 0 && !oc.getBool("no-internal-links")) {
         // edges with custom lengths were split, this has to take into account
-        // internal edge lengts (after geometry computation)
+        // internal edge lengths (after geometry computation)
         myEdgeCont.fixSplitCustomLength();
     }
     // recheck phases for large junctions
@@ -759,6 +762,8 @@ NBNetBuilder::transformCoordinate(Position& from, bool includeInBoundary, GeoCon
             from.setz(hm.getZ(orig));
         }
     }
+    const double eps = 1e-6;
+    from.set(std::round(from.x() / eps) * eps, std::round(from.y() / eps) * eps, std::round(from.z() / eps) * eps);
     return ok;
 }
 
@@ -780,6 +785,7 @@ NBNetBuilder::transformCoordinates(PositionVector& from, bool includeInBoundary,
     }
     return ok;
 }
+
 
 int
 NBNetBuilder::addGeometrySegments(PositionVector& from, const PositionVector& cartesian, const double maxLength) {

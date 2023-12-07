@@ -1,5 +1,5 @@
 /****************************************************************************/
-// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
+// Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
@@ -248,6 +248,8 @@ public:
      */
     static void clearAll();
 
+    /// @brief return whether the given flow is known
+    bool hasFlow(const std::string& id) const;
 
     /** @brief Simulates from timestep start to stop
      * @param[in] start The begin time step of the simulation
@@ -811,6 +813,11 @@ public:
 
     bool isInterrupted() const {
         return myAmInterrupted;
+    }
+
+    /// @brief gui may prevent final meanData reset to keep live data visible
+    virtual bool skipFinalReset() const {
+        return false;
     }
 
     /// @brief find electrical substation by its id
