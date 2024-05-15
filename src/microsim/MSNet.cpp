@@ -1089,7 +1089,6 @@ MSNet::writeOutput() {
                 // does the vehicle have a battery device installed?
                 if (static_cast<MSDevice_ElecHybrid*>(veh->getDevice(typeid(MSDevice_ElecHybrid))) != nullptr) {
                     std::string vehID = veh->getID();
-                    std::size_t dot_pos = output_file_name.find_last_of('.');
                     std::string vehicle_file_name = base_file_name + +"_" + vehID + ext;
                     OutputDevice& dev = OutputDevice::getDevice(vehicle_file_name);
                     std::map<SumoXMLAttr, std::string> attrs;
@@ -1100,6 +1099,7 @@ MSNet::writeOutput() {
                 }
             }
         }
+    }
 
     // elecHybrid dumps
     if (OptionsCont::getOptions().isSet("elechybrid-output")) {
