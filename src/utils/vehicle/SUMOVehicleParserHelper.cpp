@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -186,7 +186,7 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
                 if (rate <= 0) {
                     return handleVehicleError(hardFail, flowParameter, "Invalid rate parameter for exponentially distributed period in the definition of " + toString(tag) + " '" + id + "'.");
                 }
-                flowParameter->repetitionOffset = -TIME2STEPS(rate);
+                flowParameter->poissonRate = rate;
                 poissonFlow = true;
             } else {
                 flowParameter->repetitionOffset = attrs.getSUMOTimeReporting(SUMO_ATTR_PERIOD, id.c_str(), ok);
@@ -696,6 +696,17 @@ SUMOVehicleParserHelper::parseCommonAttributes(const SUMOSAXAttributes& attrs, S
             }
         }
     }
+    // parse parking access rights
+    if (attrs.hasAttribute(SUMO_ATTR_PARKING_BADGES)) {
+        bool ok = true;
+        std::vector<std::string> badges = attrs.get<std::vector<std::string>>(SUMO_ATTR_PARKING_BADGES, ret->id.c_str(), ok);
+        if (!ok) {
+            handleVehicleError(true, ret);
+        } else {
+            ret->parametersSet |= VEHPARS_PARKING_BADGES_SET;
+            ret->parkingBadges = badges;
+        }
+    }
     // parse speed (only used by calibrators flow)
     // also used by vehicle in saved state but this is parsed elsewhere
     if (tag == SUMO_TAG_FLOW && attrs.hasAttribute(SUMO_ATTR_SPEED)) {
@@ -839,6 +850,18 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
                 vType->parametersSet |= VTYPEPARS_EMISSIONCLASS_SET;
             } catch (...) {
                 return handleVehicleTypeError(hardFail, vType, toString(SUMO_ATTR_EMISSIONCLASS) + " with name '" + parsedEmissionClass + "' doesn't exist.");
+            }
+        }
+        if (attrs.hasAttribute(SUMO_ATTR_MASS)) {
+            bool ok = true;
+            const double mass = attrs.get<double>(SUMO_ATTR_MASS, vType->id.c_str(), ok);
+            if (!ok) {
+                return handleVehicleTypeError(hardFail, vType);
+            } else if (mass < 0) {
+                return handleVehicleTypeError(hardFail, vType, toString(SUMO_ATTR_MASS) + " must be equal or greater than 0");
+            } else {
+                vType->mass = mass;
+                vType->parametersSet |= VTYPEPARS_MASS_SET;
             }
         }
         if (attrs.hasAttribute(SUMO_ATTR_IMPATIENCE)) {
@@ -1112,6 +1135,16 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
                 return handleVehicleTypeError(hardFail, vType, "Invalid manoeuver angle times map for vType '" + vType->id + "'");
             }
         }
+        if (attrs.hasAttribute(SUMO_ATTR_PARKING_BADGES)) {
+            bool ok = true;
+            std::vector<std::string> badges = attrs.get<std::vector<std::string>>(SUMO_ATTR_PARKING_BADGES, vType->id.c_str(), ok);
+            if (!ok) {
+                return handleVehicleTypeError(hardFail, vType);
+            } else {
+                vType->parametersSet |= VTYPEPARS_PARKING_BADGES_SET;
+                vType->parkingBadges = badges;
+            }
+        }
         // try to parse Car Following Model params
         if (!parseCFMParams(vType, vType->cfModel, attrs, false)) {
             return handleVehicleTypeError(hardFail, vType, "Invalid parsing embedded VType");
@@ -1202,6 +1235,8 @@ SUMOVehicleParserHelper::parseCFMParams(SUMOVTypeParameter* into, const SumoXMLT
                     return false;
                 }
                 // add parsedCFMAttribute to cfParameter
+                into->cfParameter[it] = parsedCFMAttribute;
+            } else if (it == SUMO_ATTR_SPEED_TABLE || it == SUMO_ATTR_TRACTION_TABLE || it == SUMO_ATTR_RESISTANCE_TABLE) {
                 into->cfParameter[it] = parsedCFMAttribute;
             } else if (it == SUMO_ATTR_CF_IDM_STEPPING) {
                 // declare a int in wich save CFM int attribute
@@ -1383,6 +1418,15 @@ SUMOVehicleParserHelper::getAllowedCFModelAttrs() {
         // Rail
         std::set<SumoXMLAttr> railParams(genericParams);
         railParams.insert(SUMO_ATTR_TRAIN_TYPE);
+        railParams.insert(SUMO_ATTR_SPEED_TABLE);
+        railParams.insert(SUMO_ATTR_TRACTION_TABLE);
+        railParams.insert(SUMO_ATTR_RESISTANCE_TABLE);
+        railParams.insert(SUMO_ATTR_MASSFACTOR);
+        railParams.insert(SUMO_ATTR_MAXPOWER);
+        railParams.insert(SUMO_ATTR_MAXTRACTION);
+        railParams.insert(SUMO_ATTR_RESISTANCE_COEFFICIENT_CONSTANT);
+        railParams.insert(SUMO_ATTR_RESISTANCE_COEFFICIENT_LINEAR);
+        railParams.insert(SUMO_ATTR_RESISTANCE_COEFFICIENT_QUADRATIC);
         allowedCFModelAttrs[SUMO_TAG_CF_RAIL] = railParams;
         allParams.insert(railParams.begin(), railParams.end());
         // ACC

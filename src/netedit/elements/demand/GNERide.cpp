@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -87,17 +87,14 @@ GNERide::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
 
 void
 GNERide::writeDemandElement(OutputDevice& device) const {
-    // open tag
+    writeOriginStop(device);
     device.openTag(SUMO_TAG_RIDE);
-    // write plan attributes
-    writePlanAttributes(device);
-    // write lines
+    writeLocationAttributes(device);
     if (myLines.empty()) {
         device.writeAttr(SUMO_ATTR_LINES, "ANY");
     } else {
         device.writeAttr(SUMO_ATTR_LINES, myLines);
     }
-    // close tag
     device.closeTag();
 }
 
@@ -204,25 +201,13 @@ GNERide::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathM
 
 GNELane*
 GNERide::getFirstPathLane() const {
-    // get previous plan
-    const auto previousPlan = getParentDemandElements().at(0)->getPreviousChildDemandElement(this);
-    if (previousPlan) {
-        // sue the last pathLane of previous plan
-        return previousPlan->getLastPathLane();
-    } else {
-        return getParentEdges().front()->getLaneByDisallowedVClass(SVC_PEDESTRIAN);
-    }
+    return getFirstPlanPathLane();
 }
 
 
 GNELane*
 GNERide::getLastPathLane() const {
-    // check if personPlan ends in a BusStop
-    if (getParentAdditionals().size() > 0) {
-        return getParentAdditionals().front()->getParentLanes().front();
-    } else {
-        return getParentEdges().back()->getLaneByDisallowedVClass(SVC_PEDESTRIAN);
-    }
+    return getLastPlanPathLane();
 }
 
 

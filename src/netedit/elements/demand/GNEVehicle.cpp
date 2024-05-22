@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -437,8 +437,7 @@ GNEVehicle::GNESelectedVehiclesPopupMenu::onCmdTransform(FXObject* obj, FXSelect
 GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net) :
     GNEDemandElement("", net, GLO_VEHICLE, tag, GUIIconSubSys::getIcon(GUIIcon::VEHICLE),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-                                GNEDemandElementFlow(this),
-myVehicleContour(this) {
+GNEDemandElementFlow(this) {
     // reset default values
     resetDefaultValues();
     // set end and vehPerHours as default flow values
@@ -451,8 +450,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, const std::string& vehicleID
     GNEDemandElement(vehicleID, net, (tag == GNE_TAG_FLOW_ROUTE) ? GLO_ROUTEFLOW : GLO_VEHICLE, tag,
                      (tag == GNE_TAG_FLOW_ROUTE) ? GUIIconSubSys::getIcon(GUIIcon::ROUTEFLOW) : GUIIconSubSys::getIcon(GUIIcon::VEHICLE),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {vehicleType, route}, {}),
-GNEDemandElementFlow(this),
-myVehicleContour(this) {
+GNEDemandElementFlow(this) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleID;
     // set manually vtypeID (needed for saving)
@@ -464,8 +462,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, GNEDemandElement* vehicleTyp
     GNEDemandElement(vehicleParameters.id, net, (tag == GNE_TAG_FLOW_ROUTE) ? GLO_ROUTEFLOW : GLO_VEHICLE, tag,
                      (tag == GNE_TAG_FLOW_ROUTE) ? GUIIconSubSys::getIcon(GUIIcon::ROUTEFLOW) : GUIIconSubSys::getIcon(GUIIcon::VEHICLE),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {vehicleType, route}, {}),
-GNEDemandElementFlow(this, vehicleParameters),
-myVehicleContour(this) {
+GNEDemandElementFlow(this, vehicleParameters) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleParameters.id;
     // set manually vtypeID (needed for saving)
@@ -477,8 +474,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, GNEDemandElement* vehicleTyp
     GNEDemandElement(vehicleParameters.id, net, (tag == GNE_TAG_VEHICLE_WITHROUTE) ? GLO_VEHICLE : GLO_ROUTEFLOW, tag,
                      (tag == GNE_TAG_FLOW_ROUTE) ? GUIIconSubSys::getIcon(GUIIcon::ROUTEFLOW) : GUIIconSubSys::getIcon(GUIIcon::VEHICLE),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {vehicleType}, {}),
-GNEDemandElementFlow(this, vehicleParameters),
-myVehicleContour(this) {
+GNEDemandElementFlow(this, vehicleParameters) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleParameters.id;
     // reset routeid
@@ -493,8 +489,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, const std::string& vehicleID
     GNEDemandElement(vehicleID, net, (tag == SUMO_TAG_FLOW) ? GLO_FLOW : GLO_TRIP, tag,
                      (tag == SUMO_TAG_FLOW) ? GUIIconSubSys::getIcon(GUIIcon::FLOW) : GUIIconSubSys::getIcon(GUIIcon::TRIP),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {vehicleType}, {}),
-GNEDemandElementFlow(this),
-myVehicleContour(this) {
+GNEDemandElementFlow(this) {
 }
 
 
@@ -503,8 +498,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, GNEDemandElement* vehicleTyp
     GNEDemandElement(vehicleParameters.id, net, (tag == SUMO_TAG_FLOW) ? GLO_FLOW : GLO_TRIP, tag,
                      (tag == SUMO_TAG_FLOW) ? GUIIconSubSys::getIcon(GUIIcon::FLOW) : GUIIconSubSys::getIcon(GUIIcon::TRIP),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {fromEdge, toEdge}, {}, {}, {vehicleType}, {}),
-GNEDemandElementFlow(this, vehicleParameters),
-myVehicleContour(this) {
+GNEDemandElementFlow(this, vehicleParameters) {
 }
 
 
@@ -514,8 +508,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, const std::string& vehicleID
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {
     fromJunction, toJunction
 }, {}, {}, {}, {vehicleType}, {}),
-GNEDemandElementFlow(this),
-myVehicleContour(this) {
+GNEDemandElementFlow(this) {
 }
 
 
@@ -525,8 +518,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, GNEDemandElement* vehicleTyp
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {
     fromJunction, toJunction
 }, {}, {}, {}, {vehicleType}, {}),
-GNEDemandElementFlow(this, vehicleParameters),
-myVehicleContour(this) {
+GNEDemandElementFlow(this, vehicleParameters) {
 }
 
 
@@ -534,8 +526,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNENet* net, GNEDemandElement* vehicleTyp
     GNEDemandElement(vehicleParameters.id, net, (tag == GNE_TAG_FLOW_TAZS) ? GLO_FLOW : GLO_TRIP, tag,
                      (tag == GNE_TAG_FLOW_TAZS) ? GUIIconSubSys::getIcon(GUIIcon::FLOW_TAZS) : GUIIconSubSys::getIcon(GUIIcon::TRIP_TAZS),
                      GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {fromTAZ, toTAZ}, {vehicleType}, {}),
-GNEDemandElementFlow(this, vehicleParameters),
-myVehicleContour(this) {
+GNEDemandElementFlow(this, vehicleParameters) {
     // mark taz parameters as set
     parametersSet |= VEHPARS_FROM_TAZ_SET;
     parametersSet |= VEHPARS_TO_TAZ_SET;
@@ -878,9 +869,13 @@ GNEVehicle::drawGL(const GUIVisualizationSettings& s) const {
         const Position vehiclePosition = drawSpreadVehicles ? mySpreadGeometry.getShape().front() : myDemandElementGeometry.getShape().front();
         const double vehicleRotation = drawSpreadVehicles ? mySpreadGeometry.getShapeRotations().front() : myDemandElementGeometry.getShapeRotations().front();
         // check that position is valid
-        if ((vehicleColor.alpha() != 0) && (vehiclePosition != Position::INVALID)) {
-            // first push name
-            GLHelper::pushName(getGlID());
+        if (vehiclePosition == Position::INVALID) {
+            return;
+        }
+        // get detail level
+        const auto d = s.getDetailLevel(exaggeration);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
             // first check if if mouse is enough near to this vehicle to draw it
             if (s.drawForRectangleSelection && (myNet->getViewNet()->getPositionInformation().distanceSquaredTo2D(vehiclePosition) >= (vehicleSizeSquared + 2))) {
                 // push draw matrix
@@ -920,11 +915,11 @@ GNEVehicle::drawGL(const GUIVisualizationSettings& s) const {
                     GUIBaseVehicleHelper::drawAction_drawVehicleAsBoxPlus(width, length);
                 } else {
                     // draw the vehicle depending of detail level
-                    if (s.drawDetail(s.detailSettings.vehicleShapes, exaggeration)) {
+                    if (d <= GUIVisualizationSettings::Detail::VehiclePoly) {
                         GUIBaseVehicleHelper::drawAction_drawVehicleAsPoly(s, shape, width, length);
-                    } else if (s.drawDetail(s.detailSettings.vehicleBoxes, exaggeration)) {
+                    } else if (d <= GUIVisualizationSettings::Detail::VehicleBox) {
                         GUIBaseVehicleHelper::drawAction_drawVehicleAsBoxPlus(width, length);
-                    } else if (s.drawDetail(s.detailSettings.vehicleTriangles, exaggeration)) {
+                    } else if (d <= GUIVisualizationSettings::Detail::VehicleTriangle) {
                         GUIBaseVehicleHelper::drawAction_drawVehicleAsTrianglePlus(width, length);
                     }
                     // check if min gap has to be drawn
@@ -963,17 +958,14 @@ GNEVehicle::drawGL(const GUIVisualizationSettings& s) const {
                 if (myTagProperty.isFlow()) {
                     drawFlowLabel(vehiclePosition, vehicleRotation, width, length, exaggeration);
                 }
-                // draw lock icon
-                GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), vehiclePosition, exaggeration);
-                // check if mouse is over element
-                mouseWithinGeometry(vehiclePosition, length * 0.5, width * 0.5, length * -0.5, 0, vehicleRotation);
-                // draw squared shape
-                myVehicleContour.drawDottedContourRectangle(s, vehiclePosition, length * 0.5, width * 0.5, length * -0.5, 0, vehicleRotation, exaggeration,
-                        s.dottedContourSettings.segmentWidth);
             }
-            // pop name
-            GLHelper::popName();
+            // draw lock icon
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), vehiclePosition, exaggeration);
+            // draw dotted contour
+            myVehicleContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
+        // draw squared shape
+        myVehicleContour.calculateContourRectangleShape(s, d, this, vehiclePosition, length * 0.5, width * 0.5, length * -0.5, 0, vehicleRotation, exaggeration);
     }
 }
 
@@ -1040,10 +1032,11 @@ GNEVehicle::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathMa
                                  myNet->getViewNet()->getDemandViewOptions().showAllTrips();
     const bool drawDemandMode = myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand() &&
                                 myNet->getViewNet()->getDemandViewOptions().showAllTrips();
-    const bool drawContour = checkDrawContour();
     // check conditions
-    if (segment->getLane() && !s.drawForRectangleSelection && (drawNetworkMode || drawDemandMode || drawContour || isAttributeCarrierSelected()) &&
-            myNet->getPathManager()->getPathDraw()->checkDrawPathGeometry(s, drawContour, segment->getLane(), myTagProperty.getTag())) {
+    if (segment->getLane() && !s.drawForRectangleSelection && (drawNetworkMode || drawDemandMode || isAttributeCarrierSelected()) &&
+            myNet->getPathManager()->getPathDraw()->checkDrawPathGeometry(s, segment->getLane(), myTagProperty.getTag())) {
+        // get detail level
+        const auto d = s.getDetailLevel(1);
         // calculate width
         const double width = s.vehicleSize.getExaggeration(s, segment->getLane()) * s.widthSettings.tripWidth;
         // calculate startPos
@@ -1074,72 +1067,69 @@ GNEVehicle::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathMa
         } else {
             vehicleGeometry = segment->getLane()->getLaneGeometry();
         }
-        // obtain color
-        const RGBColor pathColor = drawUsingSelectColor() ? s.colorSettings.selectedVehicleColor : s.colorSettings.vehicleTripColor;
-        // Start drawing adding an gl identifier
-        GLHelper::pushName(getGlID());
-        // Add a draw matrix
-        GLHelper::pushMatrix();
-        // Start with the drawing of the area translating matrix to origin
-        glTranslated(0, 0, getType() + offsetFront);
-        // Set color
-        GLHelper::setColor(pathColor);
-        // draw geometry
-        GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), vehicleGeometry, width);
-        // Pop last matrix
-        GLHelper::popMatrix();
-        // Draw name if isn't being drawn for selecting
-        if (!s.drawForRectangleSelection) {
-            drawName(getCenteringBoundary().getCenter(), s.scale, s.addName);
-        }
-        // check if we have to draw a red line to the next segment (if next segment isnt' a junction
-        if (segment->getNextLane()) {
-            // push draw matrix
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // obtain color
+            const RGBColor pathColor = drawUsingSelectColor() ? s.colorSettings.selectedVehicleColor : s.colorSettings.vehicleTripColor;
+            // Add a draw matrix
             GLHelper::pushMatrix();
             // Start with the drawing of the area translating matrix to origin
-            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
-            // Set red color
-            GLHelper::setColor(RGBColor::RED);
-            // get firstPosition (last position of current lane shape)
-            const Position& firstPosition = segment->getLane()->getLaneShape().back();
-            // get lastPosition (first position of next lane shape)
-            const Position& arrivalPosition = segment->getNextLane()->getLaneShape().front();
-            // draw box line
-            GLHelper::drawBoxLine(arrivalPosition,
-                                  RAD2DEG(firstPosition.angleTo2D(arrivalPosition)) - 90,
-                                  firstPosition.distanceTo2D(arrivalPosition), .05);
-            // pop draw matrix
+            glTranslated(0, 0, getType() + offsetFront);
+            // Set color
+            GLHelper::setColor(pathColor);
+            // draw geometry
+            GUIGeometry::drawGeometry(d, vehicleGeometry, width);
+            // Pop last matrix
             GLHelper::popMatrix();
-        }
-        // check if this is the last segment
-        if (segment->isLastSegment() && (getParentJunctions().size() == 0)) {
-            // get geometryEndPos
-            const Position geometryEndPosition = getAttributePosition(GNE_ATTR_PLAN_GEOMETRY_ENDPOS);
-            // check if endPos can be drawn
-            if (!s.drawForRectangleSelection || (myNet->getViewNet()->getPositionInformation().distanceSquaredTo2D(geometryEndPosition) <= ((myArrivalPositionDiameter * myArrivalPositionDiameter) + 2))) {
+            // check if we have to draw a red line to the next segment (if next segment isnt' a junction
+            if (segment->getNextLane()) {
                 // push draw matrix
                 GLHelper::pushMatrix();
                 // Start with the drawing of the area translating matrix to origin
                 myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
-                // translate to geometryEndPos
-                glTranslated(geometryEndPosition.x(), geometryEndPosition.y(), 0);
-                // Set person plan color
-                GLHelper::setColor(pathColor);
-                // resolution of drawn circle depending of the zoom (To improve smoothness)
-                GLHelper::drawFilledCircle(myArrivalPositionDiameter, s.getCircleResolution());
+                // Set red color
+                GLHelper::setColor(RGBColor::RED);
+                // get firstPosition (last position of current lane shape)
+                const Position& firstPosition = segment->getLane()->getLaneShape().back();
+                // get lastPosition (first position of next lane shape)
+                const Position& arrivalPosition = segment->getNextLane()->getLaneShape().front();
+                // draw box line
+                GLHelper::drawBoxLine(arrivalPosition,
+                                      RAD2DEG(firstPosition.angleTo2D(arrivalPosition)) - 90,
+                                      firstPosition.distanceTo2D(arrivalPosition), .05);
                 // pop draw matrix
                 GLHelper::popMatrix();
             }
+            // check if this is the last segment
+            if (segment->isLastSegment() && (getParentJunctions().size() == 0)) {
+                // get geometryEndPos
+                const Position geometryEndPosition = getAttributePosition(GNE_ATTR_PLAN_GEOMETRY_ENDPOS);
+                // check if endPos can be drawn
+                if (!s.drawForRectangleSelection || (myNet->getViewNet()->getPositionInformation().distanceSquaredTo2D(geometryEndPosition) <= ((myArrivalPositionDiameter * myArrivalPositionDiameter) + 2))) {
+                    // push draw matrix
+                    GLHelper::pushMatrix();
+                    // Start with the drawing of the area translating matrix to origin
+                    myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
+                    // translate to geometryEndPos
+                    glTranslated(geometryEndPosition.x(), geometryEndPosition.y(), 0);
+                    // Set person plan color
+                    GLHelper::setColor(pathColor);
+                    // resolution of drawn circle depending of the zoom (To improve smoothness)
+                    GLHelper::drawFilledCircleDetailled(d, myArrivalPositionDiameter);
+                    // pop draw matrix
+                    GLHelper::popMatrix();
+                }
+            }
+            // Draw name if isn't being drawn for selecting
+            drawName(getCenteringBoundary().getCenter(), s.scale, s.addName);
+            // draw dotted contour
+            segment->getContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
-        // Pop name
-        GLHelper::popName();
-        // draw dotted geometry
+        // calculate contour and draw dotted geometry
         if (segment->isFirstSegment() || segment->isLastSegment()) {
-            myContour.drawDottedContourExtruded(s, vehicleGeometry.getShape(), width, 1, segment->isFirstSegment(), segment->isLastSegment(),
-                                                s.dottedContourSettings.segmentWidthSmall);
+            segment->getContour()->calculateContourExtrudedShape(s, d, this, vehicleGeometry.getShape(), width, 1, segment->isFirstSegment(), segment->isLastSegment(), 0);
         } else {
-            myContour.drawDottedContourExtruded(s, segment->getLane()->getLaneShape(), width, 1, segment->isFirstSegment(), segment->isLastSegment(),
-                                                s.dottedContourSettings.segmentWidthSmall);
+            segment->getContour()->calculateContourExtrudedShape(s, d, this, segment->getLane()->getLaneShape(), width, 1, segment->isFirstSegment(), segment->isLastSegment(), 0);
         }
     }
 }
@@ -1153,53 +1143,53 @@ GNEVehicle::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPa
                                  myNet->getViewNet()->getDemandViewOptions().showAllTrips();
     const bool drawDemandMode = myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand() &&
                                 myNet->getViewNet()->getDemandViewOptions().showAllTrips();
-    const bool drawContour = checkDrawContour();
     // check conditions
-    if (!s.drawForRectangleSelection && (drawNetworkMode || drawDemandMode || drawContour || isAttributeCarrierSelected()) &&
-            myNet->getPathManager()->getPathDraw()->checkDrawPathGeometry(s, drawContour, segment, myTagProperty.getTag())) {
-        // Start drawing adding an gl identifier
-        GLHelper::pushName(getGlID());
+    if (!s.drawForRectangleSelection && (drawNetworkMode || drawDemandMode || isAttributeCarrierSelected()) &&
+            myNet->getPathManager()->getPathDraw()->checkDrawPathGeometry(s, segment, myTagProperty.getTag())) {
+        // get detail level
+        const auto d = s.getDetailLevel(1);
         // calculate width
         const double width = s.vehicleSize.getExaggeration(s, segment->getPreviousLane()) * s.widthSettings.tripWidth;
-        // Add a draw matrix
-        GLHelper::pushMatrix();
-        // Start with the drawing of the area translating matrix to origin
-        glTranslated(0, 0, getType() + offsetFront);
-        // Set color of the base
-        if (drawUsingSelectColor()) {
-            GLHelper::setColor(s.colorSettings.selectedVehicleColor);
-        } else {
-            GLHelper::setColor(s.colorSettings.vehicleTripColor);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // Add a draw matrix
+            GLHelper::pushMatrix();
+            // Start with the drawing of the area translating matrix to origin
+            glTranslated(0, 0, getType() + offsetFront);
+            // Set color of the base
+            if (drawUsingSelectColor()) {
+                GLHelper::setColor(s.colorSettings.selectedVehicleColor);
+            } else {
+                GLHelper::setColor(s.colorSettings.vehicleTripColor);
+            }
+            // continue depending if we're in the middle of two lanes or in the begin/end of a junction route
+            if (segment->getPreviousLane() && segment->getNextLane()) {
+                // draw lane2lane
+                GUIGeometry::drawGeometry(d, segment->getPreviousLane()->getLane2laneConnections().getLane2laneGeometry(segment->getNextLane()), width);
+            } else if (segment->getPreviousLane() && myTagProperty.vehicleJunctions()) {
+                // draw line between center of junction and last lane shape
+                GLHelper::drawBoxLines({segment->getPreviousLane()->getLaneShape().back(), getParentJunctions().back()->getPositionInView()}, width);
+            } else if (segment->getNextLane() && myTagProperty.vehicleJunctions()) {
+                // draw line between center of junction and first lane shape
+                GLHelper::drawBoxLines({getParentJunctions().front()->getPositionInView(), segment->getNextLane()->getLaneShape().front()}, width);
+            }
+            // Pop last matrix
+            GLHelper::popMatrix();
+            // draw dotted contour
+            segment->getContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // continue depending if we're in the middle of two lanes or in the begin/end of a junction route
         if (segment->getPreviousLane() && segment->getNextLane()) {
-            // draw lane2lane
-            GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(),
-                                      segment->getPreviousLane()->getLane2laneConnections().getLane2laneGeometry(segment->getNextLane()), width);
+            // calculate contour and draw dotted geometry
+            segment->getContour()->calculateContourExtrudedShape(s, d, this, segment->getPreviousLane()->getLane2laneConnections().getLane2laneGeometry(segment->getNextLane()).getShape(), 0,
+                    width, 1, false, false);
         } else if (segment->getPreviousLane() && myTagProperty.vehicleJunctions()) {
-            // draw line between center of junction and last lane shape
-            GLHelper::drawBoxLines({segment->getPreviousLane()->getLaneShape().back(), getParentJunctions().back()->getPositionInView()}, width);
+            segment->getContour()->calculateContourExtrudedShape(s, d, this, {segment->getPreviousLane()->getLaneShape().back(), getParentJunctions().back()->getPositionInView()}, 0,
+                    width, 1, true, true);
         } else if (segment->getNextLane() && myTagProperty.vehicleJunctions()) {
-            // draw line between center of junction and first lane shape
-            GLHelper::drawBoxLines({getParentJunctions().front()->getPositionInView(), segment->getNextLane()->getLaneShape().front()}, width);
+            segment->getContour()->calculateContourExtrudedShape(s, d, this, {getParentJunctions().front()->getPositionInView(), segment->getNextLane()->getLaneShape().front()}, 0,
+                    width, 1, true, true);
         }
-        // Pop last matrix
-        GLHelper::popMatrix();
-        // continue depending if we're in the middle of two lanes or in the begin/end of a junction route
-        if (segment->getPreviousLane() && segment->getNextLane()) {
-            // draw dotted geometry
-            myContour.drawDottedContourExtruded(s, segment->getPreviousLane()->getLane2laneConnections().getLane2laneGeometry(segment->getNextLane()).getShape(),
-                                                width, 1, false, false, s.dottedContourSettings.segmentWidthSmall);
-
-        } else if (segment->getPreviousLane() && myTagProperty.vehicleJunctions()) {
-            myContour.drawDottedContourExtruded(s, {segment->getPreviousLane()->getLaneShape().back(), getParentJunctions().back()->getPositionInView()},
-                                                width, 1, true, true, s.dottedContourSettings.segmentWidth);
-        } else if (segment->getNextLane() && myTagProperty.vehicleJunctions()) {
-            myContour.drawDottedContourExtruded(s, {getParentJunctions().front()->getPositionInView(), segment->getNextLane()->getLaneShape().front()},
-                                                width, 1, true, true, s.dottedContourSettings.segmentWidth);
-        }
-        // Pop name
-        GLHelper::popName();
     }
 }
 

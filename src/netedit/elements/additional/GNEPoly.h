@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -131,6 +131,14 @@ public:
 
     /// @}
 
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const override;
+
+    /// @}
+
     /// @name inherited from GUIGlObject
     /// @{
     /**@brief Returns the name of the parent object
@@ -153,9 +161,6 @@ public:
      */
     void drawGL(const GUIVisualizationSettings& s) const override;
 
-    double getClickPriority() const override {
-        return getShapeLayer();
-    }
     /// @}
 
     /// @name inherited from GNEAttributeCarrier
@@ -233,9 +238,6 @@ protected:
     /// @brief flag to indicate if polygon is simplified
     bool mySimplifiedShape;
 
-    /// @brief geometry for lengths/rotations
-    GUIGeometry myPolygonGeometry;
-
 private:
     /// @brief set attribute after validation
     void setAttribute(SumoXMLAttr key, const std::string& value) override;
@@ -245,6 +247,21 @@ private:
 
     /// @brief commit move shape
     void commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList) override;
+
+    /// @brief draw polygon
+    void drawPolygon(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                     const RGBColor& color, const double exaggeration) const;
+
+    /// @brief draw contour
+    void drawPolygonContour(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                            const RGBColor& color, const double exaggeration) const;
+
+    /// @brief draw geometry points
+    void drawGeometryPoints(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                            const RGBColor& color, const double exaggeration) const;
+
+    /// @brief draw polygon name and type
+    void drawPolygonNameAndType(const GUIVisualizationSettings& s) const;
 
     /// @brief Invalidated copy constructor.
     GNEPoly(const GNEPoly&) = delete;

@@ -40,11 +40,12 @@ below. Each person must have at least one stage in its plan.
 
 | Attribute           | Type      | Range              | Default         | Remark      |
 |---------------------|-----------|--------------------|-----------------|---------------------------|
-| width               | float (s) | ≥0                 | 0,48            | The person's width [m]        |
-| length              | float (s) | ≥0                 | 0,21            | The person's netto-length (length) (in m)       |
-| mingap              | float (s) | ≥0                 | 0,25            | Empty space after leader [m]                |
-| maxSpeed            | float (s) | ≥0                 | 10,44           | The person's absolute maximum velocity (in m/s)             |
-| desiredMaxSpeed     | float (s) | ≥0                 | 1,39            | The person's desired maximum velocity (in m/s)             |
+| width               | float (m) | ≥0                 | 0.48            | The person's width [m]        |
+| length              | float (m) | ≥0                 | 0.21            | The person's netto-length (length) [m]       |
+| height              | float (m) | ≥0                 | 1.72            | The person's height [m]      |
+| mingap              | float (s) | ≥0                 | 0.25            | Empty space after leader [m]                |
+| maxSpeed            | float (s) | ≥0                 | 10.44           | The person's absolute maximum velocity [m/s]             |
+| desiredMaxSpeed     | float (s) | ≥0                 | 1.39            | The person's desired maximum velocity [m/s]             |
 | speedFactor         | float or [distribution spec](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#defining_a_normal_distribution_for_vehicle_speeds) | >0 | 1.0 | The persons expected multiplier for desiredMaxSpeed   |
 | speedDev          | float                 | ≥0      | 0.1      | The deviation of the speedFactor distribution |
 | color             | [RGB-color](../Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#colors)  |          | "1,1,0" (yellow)    | This person type's color       |
@@ -117,16 +118,17 @@ definitions.
 
 | Attribute  | Type     | Range                              | Default | Remark                                            |
 | ---------- | -------- | ---------------------------------- | ------- | ------------------------------------------------- |
-| lines  | list     | valid line or vehicle ids or *ANY* | ANY      | list of vehicle alternatives to take for the ride |
+| lines  | list     | valid line or vehicle ids or *ANY* | ANY      | list of vehicle alternatives to take for the ride    |
 | from       | string   | valid edge ids                     | \-      | id of the start edge (optional, if it is a subsequent movement or [starts in a vehicle](Persons.md#starting_the_simulation_in_a_vehicle)) |
 | to         | string   | valid edge ids                     | \-      | id of the destination edge (optional, if a busStop or other stopping place is given)  |
-| arrivalPos | float(m) |                                    | end of edge  | arrival position on the destination edge          |
-| busStop    | string   | valid bus stop ids                 | \-      | id of the destination stop                        |
-| parkingArea| string   | valid parkingArea ids              | \-      | id of the destination stop                        |
-| trainStop  | string   | valid trainStop ids              | \-      | id of the destination stop                        |
-| chargingStation| string   | valid chargingStation ids              | \-      | id of the destination stop                        |
-| containerStop| string   | valid containerStop ids              | \-      | id of the destination stop                        |
-| group| string           |               | ""      | id of the travel group. Persons with the same group may share a taxi ride     |
+| fromPos    | float(m) |                                    | middle of edge  | depart position on the start edge          |
+| arrivalPos | float(m) |                                    | end of edge  | arrival position on the destination edge      |
+| busStop    | string   | valid bus stop ids                 | \-      | id of the destination stop                         |
+| parkingArea| string   | valid parkingArea ids              | \-      | id of the destination stop                         |
+| trainStop  | string   | valid trainStop ids                | \-      | id of the destination stop                         |
+| chargingStation| string | valid chargingStation ids        | \-      | id of the destination stop                         |
+| containerStop| string   | valid containerStop ids          | \-      | id of the destination stop                         |
+| group      | string   |                                    | ""      | id of the travel group. Persons with the same group may share a taxi ride |
 
 The vehicle to use has to exist already (either public transport or some
 existing passenger car) and the route to take is defined by the vehicle.
@@ -134,22 +136,25 @@ The person enters the vehicle if it stops on the 'from' edge and any of
 the following conditions are met
 
 - the 'line' attribute of the vehicle or the 'id' of the vehicle is
-  given in the list defined by the 'lines' attribute of the ride OR
+  given in the list defined by the `lines` attribute of the ride OR
   the lines attribute contains 'ANY' and the vehicle stops at the
   destination 'busStop' of the ride (or at the destination edge if no destination busStop is defined).
+- the `lines` attribute can be used to apply taxis, see [taxi](../Simulation/Taxi.md) for more information
 - the vehicle has a triggered stop and the person position is within
   the range of `startpos,endPos` of the stop.
 - the vehicle has a timed stop and the person is waiting within 10m of
   the vehicle position
 
-The position of the person is either it's `departPos` or the arrival position of
+The position of the person is either its `departPos` or the arrival position of
 the preceding plan element
 
 A given bus stop (or any other stopping place) may serve as a replacement for a destination edge and
 arrival position. If an arrival position is given nevertheless it has to
 be inside the range of the stop.
 
-The positions of persons in a vehicle depend on the 'guiShape' parameter of the vehicle as well as it's dimensions. The offset between the front of the vehicle and the first passenger placement can be configured by adding `<param key="frontSeatPos" value="3.14"/>`to the vType definition of the vehicle.
+The positions of persons in a vehicle depend on the 'guiShape' parameter of the vehicle as well as its dimensions. The offset between the front of the vehicle and the first passenger placement can be configured by adding `<param key="frontSeatPos" value="3.14"/>` to the vType definition of the vehicle.
+
+The number of persons sitting side-by-side depends on the vehicle width but can be overruled by setting `<param key="seatingWidth" value="1.3"/>` in the vType definition.
 
 !!! note
     up to version 1.15.0 attribute 'lines' was mandatory.
@@ -201,6 +206,12 @@ possible to model activities with a fixed duration as well as those with
 a fixed end time. If a person needs to be transferred between two
 positions without delay, it is possible to use two stops in conjunction.
 
+## Parameters
+
+All stages can hold user defined parameters in the usual `<param key="k" value="v"/>` form.
+If a stage is generated using a [personTrip](#persontrips) the stages inherited the parameters
+of the trip.
+
 # Simulation behavior
 
 A person is starting her life at her depart time on the source (resp.
@@ -242,7 +253,7 @@ The person stops for the maximum of `currentTime` + `duration` and `until`.
 
 ## Access
 
-Whenever a person starts or ends a walk at a busStop or trainStop (collectively called *stoppingPlace*), an access stage inserted into the person plan under the following conditions:
+Whenever a person starts or ends a walk at a busStop or trainStop (collectively called *stoppingPlace*), an access stage is inserted into the person plan under the following conditions:
 
 - the walk ends on an edge that is different from the stoppingPlace edge and the stoppingPlace has an `<access>` definition that connects it with the final edge of the walk
 - the walk starts on an edge that is different from the stoppingPlace edge and the stoppingPlace has an `<access>` definition that connects it with the first edge of the walk

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -57,6 +57,19 @@ class GUIDialog_EditViewport;
 class GUIDialog_ViewSettings;
 class GUIVisualizationSettings;
 class GUILane;
+
+/// @brief comparator for resolving clicks
+struct ComparatorClickPriority {
+    bool operator()(const GUIGlObject* const a, const GUIGlObject* const b) const {
+        if (a->getClickPriority() == b->getClickPriority()) {
+            // sorty by GUIGlID as second criterion to simplify
+            // duplicate removal
+            return a->getGlID() > b->getGlID();
+        } else {
+            return a->getClickPriority() > b->getClickPriority();
+        }
+    }
+};
 
 // ===========================================================================
 // class definitions
@@ -176,6 +189,9 @@ public:
 
     /// @brief hook to react on change in visualization settings
     virtual long  onVisualizationChange(FXObject*, FXSelector, void*);
+
+    /// @brief filter out duplicate and forbidden objects
+    std::vector<GUIGlObject*> filterContextObjects(const std::vector<GUIGlObject*>& objects);
 
     /// @brief open object dialog at the cursor position
     virtual void openObjectDialogAtCursor(const FXEvent* ev);
@@ -475,7 +491,7 @@ protected:
     virtual void doInit();
 
     /// @brief paints a grid
-    void paintGLGrid();
+    void paintGLGrid() const;
 
     /// @brief Draws a line with ticks, and the length information.
     void displayLegend();
@@ -491,6 +507,9 @@ protected:
 
     /// @brief returns the GUILane at cursor position (implementation depends on view)
     virtual GUILane* getLaneUnderCursor();
+
+    /// @brief returns the id of object under cursor to show their tooltip
+    virtual GUIGlID getToolTipID();
 
     /// @brief returns the id of the front object under the cursor using GL_SELECT
     GUIGlID getObjectUnderCursor();
@@ -514,10 +533,10 @@ protected:
     std::vector<GUIGlObject*> getGUIGlObjectsAtPosition(Position pos, double radius);
 
     /// @brief returns the ids of all objects in the given boundary
-    std::vector<GUIGlID> getObjectsInBoundary(Boundary bound, bool singlePosition);
+    std::vector<GUIGlID> getObjectsInBoundary(Boundary bound);
 
     /// @brief filter internal lanes in Objects under cursor
-    std::vector<GUIGlObject*> filterInernalLanes(const std::vector<GUIGlObject*>& objects) const;
+    std::vector<GUIGlObject*> filterInternalLanes(const std::vector<GUIGlObject*>& objects) const;
 
     /// @brief invokes the tooltip for the given object
     bool showToolTipFor(const GUIGlID idToolTip);
@@ -631,9 +650,6 @@ private:
         /// @brief GLObject
         GUIGlObject* myGLObject;
     };
-
-    /// @fbrief filter elements by layer
-    std::vector<GUIGlObject*> filterGUIGLObjectsByLayer(const std::vector<GUIGlObject*>& objects) const;
 
     // @brief sensitivity for "<>AtPosition(...) functions
     static const double SENSITIVITY;

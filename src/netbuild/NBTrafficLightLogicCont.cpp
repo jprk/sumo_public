@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -372,7 +372,7 @@ NBTrafficLightLogicCont::setOpenDriveSignalParameters() {
         std::map<NBEdge*, std::string> defaultSignalIDs;
         for (const NBConnection& con : def->getControlledLinks()) {
             const NBEdge::Connection& c = con.getFrom()->getConnection(con.getFromLane(), con.getTo(), con.getToLane());
-            if (c.knowsParameter("signalID")) {
+            if (c.hasParameter("signalID")) {
                 defaultSignalIDs[con.getFrom()] = c.getParameter("signalID");
                 def->setParameter("linkSignalID:" + toString(con.getTLIndex()), c.getParameter("signalID"));
             }
@@ -380,7 +380,7 @@ NBTrafficLightLogicCont::setOpenDriveSignalParameters() {
         // oftentimes, signals are placed on connecting road but are meant to apply to all connections from the incoming edge
         for (const NBConnection& con : def->getControlledLinks()) {
             const NBEdge::Connection& c = con.getFrom()->getConnection(con.getFromLane(), con.getTo(), con.getToLane());
-            if (!c.knowsParameter("signalID") && defaultSignalIDs.count(con.getFrom()) != 0) {
+            if (!c.hasParameter("signalID") && defaultSignalIDs.count(con.getFrom()) != 0) {
                 WRITE_WARNINGF(TL("Guessing signalID for link index % at traffic light '%'."), con.getTLIndex(), def->getID());
                 def->setParameter("linkSignalID:" + toString(con.getTLIndex()), defaultSignalIDs[con.getFrom()]);
             }

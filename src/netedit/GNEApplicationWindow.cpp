@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -1547,14 +1547,20 @@ GNEApplicationWindow::updateRecomputingLabel() {
 
 void
 GNEApplicationWindow::closeAllWindows() {
+    // first check if net must be deleted
+    if (myNet != nullptr) {
+        delete myNet;
+        myNet = nullptr;
+        GeoConvHelper::resetLoaded();
+    }
     // check if view has to be saved
     if (myViewNet) {
         myViewNet->saveVisualizationSettings();
+        // clear decals
         myViewNet->getDecals().clear();
     }
     // lock tracker
     myTrackerLock.lock();
-    // clear decals
     // remove trackers and other external windows
     while (!myGLWindows.empty()) {
         delete myGLWindows.front();
@@ -1574,12 +1580,6 @@ GNEApplicationWindow::closeAllWindows() {
     myCartesianCoordinate->setText(TL("N/A"));
     myTestCoordinate->setText(TL("N/A"));
     myTestFrame->hide();
-    // check if net can be deleted
-    if (myNet != nullptr) {
-        delete myNet;
-        myNet = nullptr;
-        GeoConvHelper::resetLoaded();
-    }
     myMessageWindow->unregisterMsgHandlers();
     // Reset textures
     GUITextureSubSys::resetTextures();
@@ -3142,13 +3142,13 @@ GNEApplicationWindow::onCmdSaveNetwork(FXObject* sender, FXSelector sel, void* p
             std::vector<GNENetworkElement*> invalidNetworkElements;
             // iterate over crossings and edges
             for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-                if (edge.second->isNetworkElementValid() == false) {
-                    invalidNetworkElements.push_back(edge.second);
+                if (!edge.second.second->isNetworkElementValid()) {
+                    invalidNetworkElements.push_back(edge.second.second);
                 }
             }
             for (const auto& crossing : myViewNet->getNet()->getAttributeCarriers()->getCrossings()) {
-                if (crossing->isNetworkElementValid() == false) {
-                    invalidNetworkElements.push_back(crossing);
+                if (!crossing.second->isNetworkElementValid()) {
+                    invalidNetworkElements.push_back(crossing.second);
                 }
             }
             // if there are invalid network elements, open GNEFixNetworkElements
@@ -3541,7 +3541,7 @@ GNEApplicationWindow::onUpdSaveTLSPrograms(FXObject* sender, FXSelector, void*) 
     } else {
         // check if there is at least one TLS
         for (const auto& junction : myNet->getAttributeCarriers()->getJunctions()) {
-            if (junction.second->getNBNode()->getControllingTLS().size() > 0) {
+            if (junction.second.second->getNBNode()->getControllingTLS().size() > 0) {
                 return sender->handle(this, FXSEL(SEL_COMMAND, ID_ENABLE), nullptr);
             }
         }
@@ -3904,7 +3904,7 @@ GNEApplicationWindow::onCmdReloadDemandElements(FXObject*, FXSelector, void*) {
     // Create handler
     GNEGeneralHandler handler(myNet, routeFile, true, true);
     // begin undoList operation
-    myUndoList->begin(Supermode::DEMAND, GUIIcon::SUPERMODEDEMAND, "reloading demand elements from '" + routeFile + "'");
+    myUndoList->begin(Supermode::DEMAND, GUIIcon::SUPERMODEDEMAND, TLF("reloading demand elements from '%'", routeFile));
     // clear demand elements
     myNet->clearDemandElements(myUndoList);
     // Run parser for additionals
@@ -4803,6 +4803,7 @@ GNEApplicationWindow::loadAdditionalElements() {
         // begin undolist
         myUndoList->begin(Supermode::NETWORK, GUIIcon::SUPERMODENETWORK, TL("loading additional elements from '") + toString(additionalFiles) + "'");
         // iterate over every additional file
+        bool setSaved = additionalFiles.size() == 1;
         for (const auto& file : additionalFiles) {
             // check if ignore missing imputs
             if (FileHelpers::isReadable(file) || !neteditOptions.getBool("ignore-missing-inputs")) {
@@ -4815,11 +4816,15 @@ GNEApplicationWindow::loadAdditionalElements() {
                 if (!handler.parse()) {
                     WRITE_ERRORF(TL("Loading of % failed."), file);
                 }
+                setSaved &= !handler.isErrorCreatingElement();
                 // set additionals in SumoConfig
                 setInputInSumoOptions(false, false);
                 // disable validation for additionals
                 XMLSubSys::setValidation("auto", "auto", "auto");
             }
+        }
+        if (setSaved) {
+            myNet->getSavingStatus()->additionalsSaved();
         }
         // end undo list
         myUndoList->end();

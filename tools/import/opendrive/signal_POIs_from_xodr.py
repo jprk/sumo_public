@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2014-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -77,7 +77,7 @@ def calculate_lin_m_width(wr_attribs, lin_m):
     wr_attribs hold parameters (sOffset, a,b,c,d)
     lin_m is relative to last lane section offset
     """
-    wr_attribs = {k: float(v) for k, v in wr_attribs.iteritems()}
+    wr_attribs = {k: float(v) for k, v in wr_attribs.items()}
     ds = lin_m - wr_attribs['sOffset']
     pa = np.r_[[wr_attribs[k] for k in 'abcd']]
     va = np.r_[[1., ds, ds * ds, ds * ds * ds]]

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -238,13 +238,13 @@ GNEDistributionFrame::DistributionSelector::onCmdSelectDistribution(FXObject*, F
     const auto& distributions = viewNet->getNet()->getAttributeCarriers()->getDemandElements().at(myDistributionEditor->getDistributionTag());
     // Check if value of myTypeMatchBox correspond of an allowed additional tags
     for (const auto& distribution : distributions) {
-        if (distribution->getID() == myDistributionsComboBox->getText().text()) {
+        if (distribution.second->getID() == myDistributionsComboBox->getText().text()) {
             // set pointer
-            myCurrentDistribution = distribution;
+            myCurrentDistribution = distribution.second;
             // set color of myTypeMatchBox to black (valid)
             myDistributionsComboBox->setTextColor(FXRGB(0, 0, 0));
             // set myCurrentType as inspected element
-            viewNet->setInspectedAttributeCarriers({distribution});
+            viewNet->setInspectedAttributeCarriers({distribution.second});
             // show modules
             myAttributesEditor->showAttributeEditorModule(true);
             myDistributionValuesEditor->showDistributionValuesEditor();
@@ -290,7 +290,7 @@ GNEDistributionFrame::DistributionSelector::fillDistributionComboBox() {
     // fill with distributions sorted by ID
     std::map<std::string, GNEDemandElement*> distributions;
     for (const auto& distribution : ACs->getDemandElements().at(myDistributionEditor->getDistributionTag())) {
-        distributions[distribution->getID()] = distribution;
+        distributions[distribution.second->getID()] = distribution.second;
     }
     for (const auto& distribution : distributions) {
         myDistributionsComboBox->appendIconItem(distribution.first.c_str(), distribution.second->getACIcon());

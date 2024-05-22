@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -865,7 +865,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                             int odLane = laneIndexMap[std::make_pair(from, c.fromLane)];
                             //std::cout << "  fromLane=" << c.fromLane << " odLane=" << odLane << "\n";
                             if (signal.minLane == 0 || (signal.minLane <= odLane && signal.maxLane >= odLane)) {
-                                if (c.knowsParameter("signalID")) {
+                                if (c.hasParameter("signalID")) {
                                     c.setParameter("signalID", c.getParameter("signalID") + " " + signal.id);
                                 } else {
                                     c.setParameter("signalID", signal.id);
@@ -910,7 +910,7 @@ NIImporter_OpenDrive::loadNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
                 for (NBEdge::Connection& c : edge->getConnections()) {
                     int odLane = laneIndexMap[std::make_pair(edge, c.fromLane)];
                     if (signal.minLane == 0 || (signal.minLane <= odLane && signal.maxLane >= odLane)) {
-                        if (c.knowsParameter("signalID")) {
+                        if (c.hasParameter("signalID")) {
                             c.setParameter("signalID", c.getParameter("signalID") + " " + signal.id);
                         } else {
                             c.setParameter("signalID", signal.id);

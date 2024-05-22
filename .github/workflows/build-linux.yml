@@ -23,7 +23,7 @@ jobs:
       matrix:
         build_type: [full, minimal]
         compiler: [gcc, clang]
-        jps_version: ['v1.0.4']
+        jps_version: ['v1.2.0']
         # include:
         #   - build_type: full
         #     jps_version: master
@@ -31,7 +31,7 @@ jobs:
 
     steps:
     - name: Cloning SUMO
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: sumo
         fetch-depth: 0
@@ -51,8 +51,8 @@ jobs:
         sudo pip3 install texttest
 
     - name: Validate CITATION.cff
-      if: matrix.build_type == 'full' && github.repository == 'DLR-TS/sumo'
-      uses: dieghernan/cff-validator@v2.3
+      if: matrix.build_type == 'full' && github.repository == 'DLR-TS/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
+      uses: dieghernan/cff-validator@v3
       with:
         citation-path: sumo/CITATION.cff
 
@@ -61,15 +61,15 @@ jobs:
       uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Cloning jupedsim
-      if: matrix.build_type == 'full' && github.repository == 'DLR-TS/sumo'
-      uses: actions/checkout@v3
+      if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
+      uses: actions/checkout@v4
       with:
         repository: PedestrianDynamics/jupedsim
         ref: ${{ matrix.jps_version }}
         path: jupedsim
 
     - name: Building libjupedsim
-      if: matrix.build_type == 'full' && github.repository == 'DLR-TS/sumo'
+      if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
       run: |
         sudo apt-get install libgeos-dev
         cmake -B jupedsim-build -DCMAKE_INSTALL_PREFIX=jupedsim-install jupedsim
@@ -92,7 +92,7 @@ jobs:
 
     - name: Setting up SonarQube
       if: matrix.build_type == 'full' && github.repository == 'eclipse-sumo/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
-      uses: warchant/setup-sonar-scanner@v7
+      uses: warchant/setup-sonar-scanner@v8
 
     - name: Building SUMO with SonarQube wrapper
       if: matrix.build_type == 'full' && github.repository == 'eclipse-sumo/sumo' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
@@ -115,13 +115,13 @@ jobs:
       if: matrix.build_type == 'full' && (github.repository == 'DLR-TS/sumo' || matrix.compiler == 'gcc')
       run: |
         sudo apt-get install python3-pyproj python3-rtree python3-pandas python3-flake8 python3-autopep8 python3-scipy python3-pulp python3-ezdxf python3-pyperclip python3-polib
-        python -m pip install ortools==9.5.2237
+        python -m pip install -r sumo/tools/req_ci.txt
         python -m pip install -r sumo/tools/requirements.txt
         cd sumo/cmake-build
         make CTEST_OUTPUT_ON_FAILURE=1 examples test
 
     - name: Extra tests
-      if: matrix.build_type == 'full' && github.repository == 'DLR-TS/sumo'
+      if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
       run: |
         sudo apt-get install python2
         sumo/tests/runTests.sh -b ci -a sumo.meso.ci,sumo.extra.ci
@@ -130,19 +130,18 @@ jobs:
 
     - name: Compressing test results
       if: failure()
-      run: |
-        zip -r texttesttmp.zip ~/.texttest/tmp
+      run: zip -r texttesttmp.zip ~/.texttest/tmp
 
     - name: Uploading test results
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: texttesttmp
+        name: texttesttmp-${{ matrix.compiler }}-${{ matrix.build_type }}
         path: texttesttmp.zip
         if-no-files-found: warn
 
     - name: Uploading artifacts (SUMO binaries)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: Linux-${{ matrix.compiler }}-${{ matrix.build_type }}
+        name: linux-${{ matrix.compiler }}-${{ matrix.build_type }}-binaries
         path: sumo/bin

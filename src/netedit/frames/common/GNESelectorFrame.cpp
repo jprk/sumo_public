@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -432,7 +432,7 @@ GNESelectorFrame::SelectionOperation::onCmdInvert(FXObject*, FXSelector, void*) 
 long
 GNESelectorFrame::SelectionOperation::onCmdReduce(FXObject*, FXSelector, void*) {
     // begin undoList operation
-    mySelectorFrameParent->getViewNet()->getUndoList()->begin(Supermode::NETWORK, GUIIcon::SIMPLIFYNETWORK, TL("simplify network"));
+    mySelectorFrameParent->getViewNet()->getUndoList()->begin(Supermode::NETWORK, GUIIcon::SIMPLIFYNETWORK, TL("reduce network"));
     // invert and clear
     onCmdInvert(0, 0, 0);
     onCmdDelete(0, 0, 0);
@@ -456,17 +456,17 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         if (ignoreLocking || !locks.isObjectLocked(GLO_JUNCTION, false)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || junction.second->isAttributeCarrierSelected()) {
-                junction.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || junction.second.second->isAttributeCarrierSelected()) {
+                junction.second.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                junction.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                junction.second.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         } else if (onlyCount) {
             ignoreLocking = askContinueIfLock();
             return true;
         }
         // due we iterate over all junctions, only it's necessary iterate over incoming edges
-        for (const auto& incomingEdge : junction.second->getGNEIncomingEdges()) {
+        for (const auto& incomingEdge : junction.second.second->getGNEIncomingEdges()) {
             // special case for clear
             if (onlyUnselect) {
                 // check if edge selection is locked
@@ -493,7 +493,7 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
                     ignoreLocking = askContinueIfLock();
                     return true;
                 }
-            } else if (mySelectorFrameParent->myViewNet->getNetworkViewOptions().selectEdges()) {
+            } else if (mySelectorFrameParent->myViewNet->checkSelectEdges()) {
                 // check if edge selection is locked
                 if (ignoreLocking || !locks.isObjectLocked(GLO_EDGE, false)) {
                     if (onlyCount) {
@@ -542,7 +542,7 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         }
         // check if crossing selection is locked
         if (ignoreLocking || !locks.isObjectLocked(GLO_CROSSING, false)) {
-            for (const auto& crossing : junction.second->getGNECrossings()) {
+            for (const auto& crossing : junction.second.second->getGNECrossings()) {
                 if (onlyCount) {
                     return true;
                 } else if (onlyUnselect || crossing->isAttributeCarrierSelected()) {
@@ -557,7 +557,7 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         }
         // check if walkingArea selection is locked
         if (ignoreLocking || !locks.isObjectLocked(GLO_WALKINGAREA, false)) {
-            for (const auto& walkingArea : junction.second->getGNEWalkingAreas()) {
+            for (const auto& walkingArea : junction.second.second->getGNEWalkingAreas()) {
                 if (onlyCount) {
                     return true;
                 } else if (onlyUnselect || walkingArea->isAttributeCarrierSelected()) {
@@ -579,10 +579,10 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
                 for (const auto& additional : additionalTag.second) {
                     if (onlyCount) {
                         return true;
-                    } else if (onlyUnselect || additional->isAttributeCarrierSelected()) {
-                        additional->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                    } else if (onlyUnselect || additional.second->isAttributeCarrierSelected()) {
+                        additional.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                     } else {
-                        additional->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                        additional.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                     }
                 }
             }
@@ -599,10 +599,10 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
                 for (const auto& wire : wireTag.second) {
                     if (onlyCount) {
                         return true;
-                    } else if (onlyUnselect || wire->isAttributeCarrierSelected()) {
-                        wire->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                    } else if (onlyUnselect || wire.second->isAttributeCarrierSelected()) {
+                        wire.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                     } else {
-                        wire->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                        wire.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                     }
                 }
             }
@@ -616,28 +616,28 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         for (const auto& TAZ : ACs->getAdditionals().at(SUMO_TAG_TAZ)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || TAZ->isAttributeCarrierSelected()) {
-                TAZ->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || TAZ.second->isAttributeCarrierSelected()) {
+                TAZ.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                TAZ->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                TAZ.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         for (const auto& TAZSource : ACs->getAdditionals().at(SUMO_TAG_TAZSOURCE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || TAZSource->isAttributeCarrierSelected()) {
-                TAZSource->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || TAZSource.second->isAttributeCarrierSelected()) {
+                TAZSource.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                TAZSource->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                TAZSource.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         for (const auto& TAZSink : ACs->getAdditionals().at(SUMO_TAG_TAZSINK)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || TAZSink->isAttributeCarrierSelected()) {
-                TAZSink->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || TAZSink.second->isAttributeCarrierSelected()) {
+                TAZSink.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                TAZSink->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                TAZSink.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -649,10 +649,10 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         for (const auto& polygon : ACs->getAdditionals().at(SUMO_TAG_POLY)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || polygon->isAttributeCarrierSelected()) {
-                polygon->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || polygon.second->isAttributeCarrierSelected()) {
+                polygon.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                polygon->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                polygon.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -664,28 +664,28 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         for (const auto& POI : ACs->getAdditionals().at(SUMO_TAG_POI)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || POI->isAttributeCarrierSelected()) {
-                POI->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || POI.second->isAttributeCarrierSelected()) {
+                POI.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                POI->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                POI.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         for (const auto& POILane : ACs->getAdditionals().at(GNE_TAG_POILANE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || POILane->isAttributeCarrierSelected()) {
-                POILane->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || POILane.second->isAttributeCarrierSelected()) {
+                POILane.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                POILane->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                POILane.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         for (const auto& POIGeo : ACs->getAdditionals().at(GNE_TAG_POIGEO)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || POIGeo->isAttributeCarrierSelected()) {
-                POIGeo->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || POIGeo.second->isAttributeCarrierSelected()) {
+                POIGeo.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                POIGeo->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                POIGeo.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -697,10 +697,10 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         for (const auto& walkableArea : ACs->getAdditionals().at(GNE_TAG_JPS_WALKABLEAREA)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || walkableArea->isAttributeCarrierSelected()) {
-                walkableArea->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || walkableArea.second->isAttributeCarrierSelected()) {
+                walkableArea.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                walkableArea->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                walkableArea.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -711,10 +711,10 @@ GNESelectorFrame::SelectionOperation::processNetworkElementSelection(const bool 
         for (const auto& obstacle : ACs->getAdditionals().at(GNE_TAG_JPS_OBSTACLE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || obstacle->isAttributeCarrierSelected()) {
-                obstacle->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || obstacle.second->isAttributeCarrierSelected()) {
+                obstacle.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                obstacle->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                obstacle.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -738,29 +738,29 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
         for (const auto& route : demandElements.at(SUMO_TAG_ROUTE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || route->isAttributeCarrierSelected()) {
-                route->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || route.second->isAttributeCarrierSelected()) {
+                route.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                route->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                route.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         // iterate over all embedded routes
         for (const auto& vehicle : demandElements.at(GNE_TAG_VEHICLE_WITHROUTE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || vehicle->getChildDemandElements().front()->isAttributeCarrierSelected()) {
-                vehicle->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || vehicle.second->getChildDemandElements().front()->isAttributeCarrierSelected()) {
+                vehicle.second->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                vehicle->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                vehicle.second->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
         for (const auto& routeFlow : demandElements.at(GNE_TAG_FLOW_WITHROUTE)) {
             if (onlyCount) {
                 return true;
-            } else if (onlyUnselect || routeFlow->getChildDemandElements().front()->isAttributeCarrierSelected()) {
-                routeFlow->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+            } else if (onlyUnselect || routeFlow.second->getChildDemandElements().front()->isAttributeCarrierSelected()) {
+                routeFlow.second->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
             } else {
-                routeFlow->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                routeFlow.second->getChildDemandElements().front()->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
             }
         }
     } else if (onlyCount) {
@@ -773,10 +773,10 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
             for (const auto& vehicle : demandElements.at(vehicleTag)) {
                 if (onlyCount) {
                     return true;
-                } else if (onlyUnselect || vehicle->isAttributeCarrierSelected()) {
-                    vehicle->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                } else if (onlyUnselect || vehicle.second->isAttributeCarrierSelected()) {
+                    vehicle.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                 } else {
-                    vehicle->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                    vehicle.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                 }
             }
         }
@@ -790,10 +790,10 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
             for (const auto& person : demandElements.at(personTag)) {
                 if (onlyCount) {
                     return true;
-                } else if (onlyUnselect || person->isAttributeCarrierSelected()) {
-                    person->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                } else if (onlyUnselect || person.second->isAttributeCarrierSelected()) {
+                    person.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                 } else {
-                    person->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                    person.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                 }
             }
         }
@@ -805,7 +805,7 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_PERSON, false)) {
         for (const auto& personTag : NamespaceIDs::persons) {
             for (const auto& person : demandElements.at(personTag)) {
-                for (const auto& personPlan : person->getChildDemandElements()) {
+                for (const auto& personPlan : person.second->getChildDemandElements()) {
                     if (personPlan->getTagProperty().isPersonTrip()) {
                         if (onlyCount) {
                             return true;
@@ -826,7 +826,7 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_PERSON, false)) {
         for (const auto& personTag : NamespaceIDs::persons) {
             for (const auto& person : demandElements.at(personTag)) {
-                for (const auto& personPlan : person->getChildDemandElements()) {
+                for (const auto& personPlan : person.second->getChildDemandElements()) {
                     if (personPlan->getTagProperty().isPlanRide()) {
                         if (onlyCount) {
                             return true;
@@ -847,7 +847,7 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_PERSON, false)) {
         for (const auto& personTag : NamespaceIDs::persons) {
             for (const auto& person : demandElements.at(personTag)) {
-                for (const auto& personPlan : person->getChildDemandElements()) {
+                for (const auto& personPlan : person.second->getChildDemandElements()) {
                     if (personPlan->getTagProperty().isPlanWalk()) {
                         if (onlyCount) {
                             return true;
@@ -870,10 +870,10 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
             for (const auto& container : demandElements.at(containerTag)) {
                 if (onlyCount) {
                     return true;
-                } else if (onlyUnselect || container->isAttributeCarrierSelected()) {
-                    container->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                } else if (onlyUnselect || container.second->isAttributeCarrierSelected()) {
+                    container.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                 } else {
-                    container->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                    container.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                 }
             }
         }
@@ -885,7 +885,7 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_CONTAINER, false)) {
         for (const auto& containerTag : NamespaceIDs::containers) {
             for (const auto& container : demandElements.at(containerTag)) {
-                for (const auto& containerPlan : container->getChildDemandElements()) {
+                for (const auto& containerPlan : container.second->getChildDemandElements()) {
                     if (containerPlan->getTagProperty().isPlanTransport()) {
                         if (onlyCount) {
                             return true;
@@ -906,7 +906,7 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_CONTAINER, false)) {
         for (const auto& containerTag : NamespaceIDs::containers) {
             for (const auto& container : demandElements.at(containerTag)) {
-                for (const auto& containerPlan : container->getChildDemandElements()) {
+                for (const auto& containerPlan : container.second->getChildDemandElements()) {
                     if (containerPlan->getTagProperty().isPlanTranship()) {
                         if (onlyCount) {
                             return true;
@@ -927,15 +927,15 @@ GNESelectorFrame::SelectionOperation::processDemandElementSelection(const bool o
     if (ignoreLocking || !locks.isObjectLocked(GLO_STOP, false)) {
         for (const auto& demandElementTag : demandElements) {
             for (const auto& demandElement : demandElementTag.second) {
-                if (demandElement->getTagProperty().isVehicleStop() ||
-                    demandElement->getTagProperty().isVehicleWaypoint() ||
-                    demandElement->getTagProperty().isPlanStop()) {
+                if (demandElement.second->getTagProperty().isVehicleStop() ||
+                        demandElement.second->getTagProperty().isVehicleWaypoint() ||
+                        demandElement.second->getTagProperty().isPlanStop()) {
                     if (onlyCount) {
                         return true;
-                    } else if (onlyUnselect || demandElement->isAttributeCarrierSelected()) {
-                        demandElement->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                    } else if (onlyUnselect || demandElement.second->isAttributeCarrierSelected()) {
+                        demandElement.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                     } else {
-                        demandElement->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                        demandElement.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                     }
                 }
             }
@@ -959,18 +959,18 @@ GNESelectorFrame::SelectionOperation::processDataElementSelection(const bool onl
     // invert generic datas
     for (const auto& genericDataTag : ACs->getGenericDatas()) {
         for (const auto& genericData : genericDataTag.second) {
-            if (onlyCount && locks.isObjectLocked(genericData->getType(), false)) {
+            if (onlyCount && locks.isObjectLocked(genericData.second->getType(), false)) {
                 ignoreLocking = askContinueIfLock();
                 return true;
-            } else if ((ignoreLocking || (!locks.isObjectLocked(GLO_EDGEDATA, false) && genericData->getType() == GLO_EDGEDATA)) ||
-                       (ignoreLocking || (!locks.isObjectLocked(GLO_EDGERELDATA, false) && genericData->getType() == GLO_EDGERELDATA)) ||
-                       (ignoreLocking || (!locks.isObjectLocked(GLO_TAZRELDATA, false) && genericData->getType() == GLO_TAZRELDATA))) {
+            } else if ((ignoreLocking || (!locks.isObjectLocked(GLO_EDGEDATA, false) && genericData.second->getType() == GLO_EDGEDATA)) ||
+                       (ignoreLocking || (!locks.isObjectLocked(GLO_EDGERELDATA, false) && genericData.second->getType() == GLO_EDGERELDATA)) ||
+                       (ignoreLocking || (!locks.isObjectLocked(GLO_TAZRELDATA, false) && genericData.second->getType() == GLO_TAZRELDATA))) {
                 if (onlyCount) {
                     return true;
-                } else if (onlyUnselect || genericData->isAttributeCarrierSelected()) {
-                    genericData->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
+                } else if (onlyUnselect || genericData.second->isAttributeCarrierSelected()) {
+                    genericData.second->setAttribute(GNE_ATTR_SELECTED, "false", undoList);
                 } else {
-                    genericData->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
+                    genericData.second->setAttribute(GNE_ATTR_SELECTED, "true", undoList);
                 }
             }
         }
@@ -1370,9 +1370,9 @@ GNESelectorFrame::clearCurrentSelection() const {
 
 
 bool
-GNESelectorFrame::selectAttributeCarrier(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNESelectorFrame::selectAttributeCarrier(const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // get front AC
-    auto AC = objectsUnderCursor.getAttributeCarrierFront();
+    auto AC = viewObjects.getAttributeCarrierFront();
     // check AC
     if (AC == nullptr) {
         return false;
@@ -1393,7 +1393,7 @@ GNESelectorFrame::selectAttributeCarrier(const GNEViewNetHelper::ObjectsUnderCur
         return false;
     }
     // filter GLObjects by layer
-    auto filteredGLObjects = GNEViewNetHelper::filterElementsByLayer(objectsUnderCursor.getClickedGLObjects());
+    auto filteredGLObjects = GNEViewNetHelper::filterElementsByLayer(viewObjects.getGLObjects());
     // check if we have to open dialog
     if (filteredGLObjects.size() > 1) {
         myViewNet->openSelectDialogAtCursor(filteredGLObjects);
@@ -1465,7 +1465,7 @@ GNESelectorFrame::handleIDs(const std::vector<GNEAttributeCarrier*>& ACs, const 
             for (const auto& fromWalkingAreaToSelect : edgeToSelect->getFromJunction()->getGNEWalkingAreas()) {
                 ACsToSelect.insert(std::make_pair(fromWalkingAreaToSelect->getID(), fromWalkingAreaToSelect));
             }
-            // select junction destiny and all connections, crossings and walkingAreas
+            // select junction destination and all connections, crossings and walkingAreas
             ACsToSelect.insert(std::make_pair(edgeToSelect->getToJunction()->getID(), edgeToSelect->getToJunction()));
             for (const auto& connectionToSelect : edgeToSelect->getToJunction()->getGNEConnections()) {
                 ACsToSelect.insert(std::make_pair(connectionToSelect->getID(), connectionToSelect));

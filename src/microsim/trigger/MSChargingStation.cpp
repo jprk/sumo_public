@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 #include <cassert>
 #include <utils/common/StringUtils.h>
 #include <utils/vehicle/SUMOVehicle.h>
+#include <microsim/MSParkingArea.h>
 #include <microsim/MSVehicleType.h>
 #include <microsim/MSStoppingPlace.h>
 #include <microsim/devices/MSDevice_Battery.h>
@@ -39,13 +40,12 @@ MSChargingStation::MSChargingStation(const std::string& chargingStationID, MSLan
                                      const std::string& name, double chargingPower, double efficency, bool chargeInTransit,
                                      SUMOTime chargeDelay, const std::string& chargeType, SUMOTime waitingTime) :
     MSStoppingPlace(chargingStationID, SUMO_TAG_CHARGING_STATION, std::vector<std::string>(), lane, startPos, endPos, name),
-    myChargeInTransit(chargeInTransit),
-    myChargingVehicle(false) {
-    if (chargingPower < 0)
+    myChargeInTransit(chargeInTransit) {
+    if (chargingPower < 0) {
         WRITE_WARNING(TLF("Attribute % for chargingStation with ID='%' is invalid (%).", toString(SUMO_ATTR_CHARGINGPOWER), getID(), toString(chargingPower)))
-        else {
-            myChargingPower = chargingPower;
-        }
+    } else {
+        myChargingPower = chargingPower;
+    }
     if (efficency < 0 || efficency > 1) {
         WRITE_WARNING(TLF("Attribute % for chargingStation with ID='%' is invalid (%).", toString(SUMO_ATTR_EFFICIENCY), getID(), toString(efficency)))
     } else {
@@ -69,6 +69,14 @@ MSChargingStation::MSChargingStation(const std::string& chargingStationID, MSLan
     if (getBeginLanePosition() > getEndLanePosition()) {
         WRITE_WARNING(TLF("ChargingStation with ID='getID()' doesn't have a valid position (% < %).", getID(), toString(getBeginLanePosition()), toString(getEndLanePosition())));
     }
+}
+
+
+MSChargingStation::MSChargingStation(const std::string& chargingStationID, const MSParkingArea* parkingArea, const std::string& name, double chargingPower,
+                                     double efficency, bool chargeInTransit, SUMOTime chargeDelay, const std::string& chargeType, SUMOTime waitingTime) :
+    MSChargingStation(chargingStationID, const_cast<MSLane&>(parkingArea->getLane()), parkingArea->getBeginLanePosition(), parkingArea->getEndLanePosition(),
+                      name, chargingPower, efficency, chargeInTransit, chargeDelay, chargeType, waitingTime) {
+    myParkingArea = parkingArea;
 }
 
 
@@ -117,6 +125,11 @@ MSChargingStation::getWaitingTime() const {
 }
 
 
+const MSParkingArea* MSChargingStation::getParkingArea() const {
+    return myParkingArea;
+}
+
+
 void
 MSChargingStation::setChargingVehicle(bool value) {
     myChargingVehicle = value;
@@ -145,13 +158,13 @@ MSChargingStation::addChargeValueForOutput(double WCharged, MSDevice_Battery* ba
     if (battery->getChargingStartTime() > myChargeDelay) {
         if (battery->getHolder().getSpeed() < battery->getStoppingThreshold()) {
             status = "chargingStopped";
-        } else if (myChargeInTransit == true) {
+        } else if (myChargeInTransit) {
             status = "chargingInTransit";
         } else {
             status = "noCharging";
         }
     } else {
-        if (myChargeInTransit == true) {
+        if (myChargeInTransit) {
             status = "waitingChargeInTransit";
         } else if (battery->getHolder().getSpeed() < battery->getStoppingThreshold()) {
             status = "waitingChargeStopped";

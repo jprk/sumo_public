@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -97,23 +97,18 @@ GNEPersonTrip::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
 
 void
 GNEPersonTrip::writeDemandElement(OutputDevice& device) const {
-    // open tag
+    writeOriginStop(device);
     device.openTag(SUMO_TAG_PERSONTRIP);
-    // write plan attributes
-    writePlanAttributes(device);
-    // write modes
+    writeLocationAttributes(device);
     if (myModes.size() > 0) {
         device.writeAttr(SUMO_ATTR_MODES, myModes);
     }
-    // write lines
-    if (myLines.size() > 0) {
+    if (myLines.size() > 0 && (myLines.size() != 1 || myLines.front() != "ANY")) {
         device.writeAttr(SUMO_ATTR_LINES, myLines);
     }
-    // write vTypes
     if (myVTypes.size() > 0) {
         device.writeAttr(SUMO_ATTR_VTYPES, myVTypes);
     }
-    // close tag
     device.closeTag();
 }
 

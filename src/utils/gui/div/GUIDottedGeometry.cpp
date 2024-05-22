@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -91,6 +91,14 @@ GUIDottedGeometry::DottedGeometryColor::getColor(const GUIVisualizationSettings&
                 myColorFlag = true;
                 return RGBColor::BLUE.changedBrightness(-30);
             }
+        case DottedContourType::MOVE:
+            if (myColorFlag) {
+                myColorFlag = false;
+                return RGBColor(220, 0, 0);
+            } else {
+                myColorFlag = true;
+                return RGBColor(220, 0, 0).changedBrightness(-30);
+            }
         case DottedContourType::OVER:
             if (myColorFlag) {
                 myColorFlag = false;
@@ -146,24 +154,27 @@ GUIDottedGeometry::Segment::Segment(PositionVector newShape) :
 GUIDottedGeometry::GUIDottedGeometry() {}
 
 
-GUIDottedGeometry::GUIDottedGeometry(const GUIVisualizationSettings& s, PositionVector shape,
-                                     const bool closeShape, const bool resample) {
+GUIDottedGeometry::GUIDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                     PositionVector shape, const bool closeShape) {
+    // set shape as unresampled shape
+    myUnresampledShape = shape;
     // check if shape has to be closed
-    if (closeShape && (shape.size() > 2)) {
-        shape.closePolygon();
+    if (closeShape && (myUnresampledShape.size() > 2)) {
+        myUnresampledShape.closePolygon();
     }
-    if (shape.size() > 1) {
+    if (myUnresampledShape.size() > 1) {
         // get shape
-        for (int i = 1; i < (int)shape.size(); i++) {
-            myDottedGeometrySegments.push_back(Segment({shape[i - 1], shape[i]}));
-        }
-        // calculate segment length
-        double segmentLength = s.dottedContourSettings.segmentLength;
-        if (shape.length2D() > MAXIMUM_DOTTEDGEOMETRYLENGTH) {
-            segmentLength = shape.length2D() / (MAXIMUM_DOTTEDGEOMETRYLENGTH * 0.5);
+        for (int i = 1; i < (int)myUnresampledShape.size(); i++) {
+            myDottedGeometrySegments.push_back(Segment({myUnresampledShape[i - 1], myUnresampledShape[i]}));
         }
         // check if resample
-        if (resample) {
+        if (d <= GUIVisualizationSettings::Detail::DottedContoursResampled) {
+            // calculate segment length
+            double segmentLength = s.dottedContourSettings.segmentLength;
+            if (myUnresampledShape.length2D() > MAXIMUM_DOTTEDGEOMETRYLENGTH) {
+                segmentLength = myUnresampledShape.length2D() / (MAXIMUM_DOTTEDGEOMETRYLENGTH * 0.5);
+            }
+            // resample all dotted geometries
             for (auto& segment : myDottedGeometrySegments) {
                 segment.shape = segment.shape.resample(segmentLength, true);
             }
@@ -175,16 +186,18 @@ GUIDottedGeometry::GUIDottedGeometry(const GUIVisualizationSettings& s, Position
 
 
 void
-GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, const PositionVector& laneShape,
-                                        const bool resample) {
+GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                        const PositionVector& laneShape) {
+    // set shape as unresampled shape
+    myUnresampledShape = laneShape;
     // reset segments
     myDottedGeometrySegments.clear();
     // get shape
-    for (int i = 1; i < (int)laneShape.size(); i++) {
-        myDottedGeometrySegments.push_back(Segment({laneShape[i - 1], laneShape[i]}));
+    for (int i = 1; i < (int)myUnresampledShape.size(); i++) {
+        myDottedGeometrySegments.push_back(Segment({myUnresampledShape[i - 1], myUnresampledShape[i]}));
     }
     // check if resample
-    if (resample) {
+    if (d <= GUIVisualizationSettings::Detail::DottedContoursResampled) {
         for (auto& segment : myDottedGeometrySegments) {
             segment.shape = segment.shape.resample(s.dottedContourSettings.segmentLength, true);
         }
@@ -195,21 +208,23 @@ GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, const
 
 
 void
-GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, PositionVector shape, const bool closeShape,
-                                        const bool resample) {
+GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                        PositionVector shape, const bool closeShape) {
+    // set shape as unresampled shape
+    myUnresampledShape = shape;
     // reset segments
     myDottedGeometrySegments.clear();
     // check if shape has to be closed
-    if (closeShape && (shape.size() > 2)) {
-        shape.closePolygon();
+    if (closeShape && (myUnresampledShape.size() > 2)) {
+        myUnresampledShape.closePolygon();
     }
-    if (shape.size() > 1) {
+    if (myUnresampledShape.size() > 1) {
         // get shape
-        for (int i = 1; i < (int)shape.size(); i++) {
-            myDottedGeometrySegments.push_back(Segment({shape[i - 1], shape[i]}));
+        for (int i = 1; i < (int)myUnresampledShape.size(); i++) {
+            myDottedGeometrySegments.push_back(Segment({myUnresampledShape[i - 1], myUnresampledShape[i]}));
         }
         // check if resample
-        if (resample) {
+        if (d <= GUIVisualizationSettings::Detail::DottedContoursResampled) {
             for (auto& segment : myDottedGeometrySegments) {
                 segment.shape = segment.shape.resample(s.dottedContourSettings.segmentLength, true);
             }
@@ -222,7 +237,7 @@ GUIDottedGeometry::updateDottedGeometry(const GUIVisualizationSettings& s, Posit
 
 void
 GUIDottedGeometry::drawDottedGeometry(const GUIVisualizationSettings& s, GUIDottedGeometry::DottedContourType type,
-                                      DottedGeometryColor& dottedGeometryColor, const bool addOffset, const double lineWidth) const {
+                                      DottedGeometryColor& dottedGeometryColor, const double lineWidth, const bool addOffset) const {
     // iterate over all segments
     for (auto& segment : myDottedGeometrySegments) {
         // iterate over shape
@@ -254,17 +269,19 @@ GUIDottedGeometry::drawInnenGeometry(const double lineWidth) const {
 
 void
 GUIDottedGeometry::moveShapeToSide(const double value) {
-    // move 2 side
+    // move to side all dotted geometry segments
     for (auto& segment : myDottedGeometrySegments) {
         segment.shape.move2side(value);
     }
+    // also unresampled shape
+    myUnresampledShape.move2side(value);
 }
 
 
 Position
 GUIDottedGeometry::getFrontPosition() const {
-    if (myDottedGeometrySegments.size() > 0 && myDottedGeometrySegments.front().shape.size() > 0) {
-        return myDottedGeometrySegments.front().shape.front();
+    if (myUnresampledShape.size() > 0) {
+        return myUnresampledShape.front();
     } else {
         return Position::INVALID;
     }
@@ -273,11 +290,24 @@ GUIDottedGeometry::getFrontPosition() const {
 
 Position
 GUIDottedGeometry::getBackPosition() const {
-    if (myDottedGeometrySegments.size() > 0 && myDottedGeometrySegments.back().shape.size() > 0) {
-        return myDottedGeometrySegments.back().shape.back();
+    if (myUnresampledShape.size() > 0) {
+        return myUnresampledShape.back();
     } else {
         return Position::INVALID;
     }
+}
+
+
+const PositionVector&
+GUIDottedGeometry::getUnresampledShape() const {
+    return myUnresampledShape;
+}
+
+
+void
+GUIDottedGeometry::clearDottedGeometry() {
+    myDottedGeometrySegments.clear();
+    myUnresampledShape.clear();
 }
 
 

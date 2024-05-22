@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -182,7 +182,7 @@ GNEAdditionalHandler::buildAccess(const CommonXMLStructure::SumoBaseObject* sumo
         if (GNEAttributeCarrier::canParse<double>(pos)) {
             posDouble = GNEAttributeCarrier::parse<double>(pos);
             validPos = checkLanePosition(posDouble, 0, lane->getParentEdge()->getNBEdge()->getFinalLength(), friendlyPos);
-        } else if (pos == "random") {
+        } else if (pos == "random" || pos == "doors") {
             posDouble = INVALID_DOUBLE;
         } else if (pos.empty()) {
             posDouble = 0;
@@ -205,7 +205,7 @@ GNEAdditionalHandler::buildAccess(const CommonXMLStructure::SumoBaseObject* sumo
         WRITE_WARNING(TLF("Could not build access in netedit; The lane '%' doesn't support pedestrians", lane->getID()));
     } else {
         // build access
-        GNEAdditional* access = new GNEAccess(busStop, lane, myNet, posDouble, length, friendlyPos, parameters);
+        GNEAdditional* access = new GNEAccess(busStop, lane, myNet, posDouble, pos, friendlyPos, length, parameters);
         // insert depending of allowUndoRedo
         if (myAllowUndoRedo) {
             myNet->getViewNet()->getUndoList()->begin(access, TL("add access in '") + busStop->getID() + "'");
@@ -269,7 +269,7 @@ void
 GNEAdditionalHandler::buildChargingStation(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id,
         const std::string& laneID, const double startPos, const double endPos, const std::string& name, const double chargingPower,
         const double efficiency, const bool chargeInTransit, const SUMOTime chargeDelay, const std::string& chargeType,
-        const SUMOTime waitingTime, const bool friendlyPosition, const Parameterised::Map& parameters) {
+        const SUMOTime waitingTime, const bool friendlyPosition, const std::string& /* parkingAreaID */, const Parameterised::Map& parameters) {
     // check conditions
     if (!SUMOXMLDefinitions::isValidAdditionalID(id)) {
         writeInvalidID(SUMO_TAG_CHARGING_STATION, id);
@@ -312,9 +312,9 @@ GNEAdditionalHandler::buildChargingStation(const CommonXMLStructure::SumoBaseObj
 
 void
 GNEAdditionalHandler::buildParkingArea(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id, const std::string& laneID,
-                                       const double startPos, const double endPos, const std::string& departPos, const std::string& name, const bool friendlyPosition,
-                                       const int roadSideCapacity, const bool onRoad, const double width, const double length, const double angle,
-                                       const bool lefthand, const Parameterised::Map& parameters) {
+                                       const double startPos, const double endPos, const std::string& departPos, const std::string& name,
+                                       const std::vector<std::string>& badges, const bool friendlyPosition, const int roadSideCapacity, const bool onRoad,
+                                       const double width, const double length, const double angle, const bool lefthand, const Parameterised::Map& parameters) {
     // check conditions
     if (!SUMOXMLDefinitions::isValidAdditionalID(id)) {
         writeInvalidID(SUMO_TAG_PARKING_AREA, id);
@@ -341,7 +341,7 @@ GNEAdditionalHandler::buildParkingArea(const CommonXMLStructure::SumoBaseObject*
         } else {
             // build parkingArea
             GNEAdditional* parkingArea = new GNEParkingArea(id, lane, myNet, startPos, endPos, GNEAttributeCarrier::canParse<double>(departPos) ? departPos : "",
-                    name, friendlyPosition, roadSideCapacity, onRoad,
+                    name, badges, friendlyPosition, roadSideCapacity, onRoad,
                     (width == 0) ? SUMO_const_laneWidth : width, length, angle, lefthand, parameters);
             // insert depending of allowUndoRedo
             if (myAllowUndoRedo) {
@@ -875,7 +875,8 @@ GNEAdditionalHandler::buildCalibratorFlow(const CommonXMLStructure::SumoBaseObje
 
 void
 GNEAdditionalHandler::buildRerouter(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id, const Position& pos,
-                                    const std::vector<std::string>& edgeIDs, const double prob, const std::string& name, const bool off, const SUMOTime timeThreshold,
+                                    const std::vector<std::string>& edgeIDs, const double prob, const std::string& name,
+                                    const bool off, const bool optional, const SUMOTime timeThreshold,
                                     const std::vector<std::string>& vTypes, const Parameterised::Map& parameters) {
     // check conditions
     if (!SUMOXMLDefinitions::isValidAdditionalID(id)) {
@@ -901,12 +902,12 @@ GNEAdditionalHandler::buildRerouter(const CommonXMLStructure::SumoBaseObject* su
                     // move to side
                     laneShape.move2side(3);
                     // create rerouter
-                    rerouter = new GNERerouter(id, myNet, laneShape.positionAtOffset2D(laneShape.length2D() - 6), name, prob, off, timeThreshold, vTypes, parameters);
+                    rerouter = new GNERerouter(id, myNet, laneShape.positionAtOffset2D(laneShape.length2D() - 6), name, prob, off, optional, timeThreshold, vTypes, parameters);
                 } else {
-                    rerouter = new GNERerouter(id, myNet, Position(0, 0), name, prob, off, timeThreshold, vTypes, parameters);
+                    rerouter = new GNERerouter(id, myNet, Position(0, 0), name, prob, off, optional, timeThreshold, vTypes, parameters);
                 }
             } else {
-                rerouter = new GNERerouter(id, myNet, pos, name, prob, off, timeThreshold, vTypes, parameters);
+                rerouter = new GNERerouter(id, myNet, pos, name, prob, off, optional, timeThreshold, vTypes, parameters);
             }
             // create rerouter Symbols
             std::vector<GNEAdditional*> rerouterSymbols;
@@ -2132,7 +2133,7 @@ GNEAdditionalHandler::checkDuplicatedID(const std::vector<SumoXMLTag> tags, cons
         auto additional = myNet->getAttributeCarriers()->retrieveAdditional(tag, id, false);
         // if additional exist, check if overwrite (delete)
         if (additional) {
-            if (myAllowUndoRedo == false) {
+            if (!myAllowUndoRedo) {
                 // only overwrite if allow undo-redo
                 return false;
             } else if (myOverwrite) {

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -650,7 +650,24 @@ MSPModel_Striping::getNextLane(const PState& ped, const MSLane* currentLane, con
                 }
             } else {
                 // walk forward by default
-                nextDir = junction == nextRouteEdge->getToJunction() ? BACKWARD : FORWARD;
+                if (junction == nextRouteEdge->getToJunction()) {
+                    nextDir = BACKWARD;
+                } else if (junction == nextRouteEdge->getFromJunction()) {
+                    nextDir = FORWARD;
+                } else {
+                    // topological disconnect, find a direction that makes sense
+                    // for the future part of the route
+                    ConstMSEdgeVector futureRoute = ped.myStage->getRoute();
+                    futureRoute.erase(futureRoute.begin(), futureRoute.begin() + ped.myStage->getRoutePosition() + 1);
+                    int passedFwd = 0;
+                    int passedBwd = 0;
+                    canTraverse(FORWARD, futureRoute, passedFwd);
+                    canTraverse(BACKWARD, futureRoute, passedBwd);
+                    nextDir = (passedFwd >= passedBwd) ? FORWARD : BACKWARD;
+                    if DEBUGCOND(ped) {
+                        std::cout << " nextEdge=" << nextRouteEdge->getID() << " passedFwd=" << passedFwd << " passedBwd=" << passedBwd << " futureRoute=" << toString(futureRoute) << " nextDir=" << nextDir << "\n";
+                    }
+                }
                 // try to use a direct link as fallback
                 // direct links only exist if built explicitly. They are used to model tl-controlled links if there are no crossings
                 if (ped.myDir == FORWARD) {
@@ -1311,7 +1328,7 @@ MSPModel_Striping::addCrossingVehs(const MSLane* crossing, int stripes, double l
             // the vehicle to enter the junction first has priority
             const MSVehicle* veh = (*it).vehAndGap.first;
             if (veh != nullptr) {
-                Obstacle vo((*it).distToCrossing, 0, OBSTACLE_VEHICLE, veh->getID(), veh->getVehicleType().getWidth() + 2 * minGapToVehicle);
+                Obstacle vo((*it).distToCrossing, 0, OBSTACLE_VEHICLE, veh->getID(), veh->getVehicleType().getWidth() + 2 * minGapToVehicle, veh);
                 // block entry to the crossing in walking direction but allow leaving it
                 Obstacle voBlock = vo;
                 if (dir == FORWARD) {
@@ -1480,7 +1497,7 @@ MSPModel_Striping::getVehicleObstacles(const MSLane* lane, int dir, PState* ped)
                       << "\n";
         }
         if (vehXMaxCheck > minX && vehXMinCheck && vehXMinCheck <= maxX) {
-            Obstacle vo(vehBack, veh->getSpeed() * (bidi ? -1 : 1), OBSTACLE_VEHICLE, veh->getID(), 0);
+            Obstacle vo(vehBack, veh->getSpeed() * (bidi ? -1 : 1), OBSTACLE_VEHICLE, veh->getID(), 0, veh);
             // moving vehicles block space along their path
             vo.xFwd = vehXMax;
             vo.xBack = vehXMin;
@@ -1547,6 +1564,9 @@ MSPModel_Striping::Obstacle::Obstacle(const PState& ped) :
     type(ped.getOType()),
     description(ped.getID()) {
     assert(!ped.myWaitingToEnter);
+    if (type == OBSTACLE_VEHICLE) {
+        vehicle = static_cast<const PStateVehicle&>(ped).getVehicle();
+    }
 }
 
 
@@ -1591,8 +1611,10 @@ MSPModel_Striping::PState::PState(MSPerson* person, MSStageMoving* stage, const 
             myWalkingAreaPath = getArbitraryPath(route.front());
         }
     } else {
-        const bool mayStartForward = canTraverse(FORWARD, route) != UNDEFINED_DIRECTION;
-        const bool mayStartBackward = canTraverse(BACKWARD, route) != UNDEFINED_DIRECTION;
+        int passedFwd = 0;
+        int passedBwd = 0;
+        const bool mayStartForward = canTraverse(FORWARD, route, passedFwd) != UNDEFINED_DIRECTION;
+        const bool mayStartBackward = canTraverse(BACKWARD, route, passedBwd) != UNDEFINED_DIRECTION;
         if DEBUGCOND(*this) {
             std::cout << "  initialize dir for " << myPerson->getID() << " forward=" << mayStartForward << " backward=" << mayStartBackward << "\n";
         }
@@ -1610,6 +1632,15 @@ MSPModel_Striping::PState::PState(MSPerson* person, MSStageMoving* stage, const 
             if DEBUGCOND(*this) {
                 std::cout << " crossingRoute=" << toString(crossingRoute) << "\n";
             }
+        } else if (!mayStartForward && !mayStartBackward) {
+            int lastDisconnect = passedFwd >= passedBwd ? passedFwd : passedBwd;
+            std::string dLoc = TLF(", time=%.", SIMTIME);
+            if (route.size() > 2) {
+                dLoc = TLF("between edge '%' and edge '%', time=%.", route[lastDisconnect - 1]->getID(), route[lastDisconnect]->getID(), SIMTIME);
+            }
+            WRITE_WARNINGF(TL("Person '%' walking from edge '%' to edge '%' has a disconnect%"),
+                           myPerson->getID(), route.front()->getID(), route.back()->getID(), dLoc);
+            myDir =  passedFwd >= passedBwd ? FORWARD : BACKWARD;
         } else {
             myDir = !mayStartBackward ? FORWARD : BACKWARD;
         }
@@ -2120,9 +2151,15 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
         xSpeed = 0;
     }
     if (xSpeed == 0) {
+        if (DEBUGCOND(*this)) {
+            std::cout << " sharedWA=" << (myWalkingAreaFoes.find(&myLane->getEdge()) != myWalkingAreaFoes.end())
+                      << " vehObs=" << Named::getIDSecure(obs[current].vehicle)
+                      << " vehWait=" << STEPS2TIME(obs[current].vehicle ? obs[current].vehicle->getWaitingTime() : 0)
+                      << "\n";
+        }
         if (myWaitingTime > ((myLane->getEdge().isCrossing()
                               // treat shared walkingarea like a crossing to avoid deadlocking vehicles
-                              || (myLane->getEdge().isWalkingArea() && obs[current].type == OBSTACLE_VEHICLE
+                              || (myLane->getEdge().isWalkingArea() && obs[current].vehicle != nullptr && obs[current].vehicle->getWaitingTime() > jamTimeCrossing
                                   && myWalkingAreaFoes.find(&myLane->getEdge()) != myWalkingAreaFoes.end())) ? jamTimeCrossing : jamTime)
                 || (sMax == 0 && obs[0].speed * myDir < 0 && myWaitingTime > jamTimeNarrow)
                 || myAmJammed) {

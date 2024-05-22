@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2017-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2017-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -168,6 +168,12 @@ TrafficLight::getPhaseDuration(const std::string& tlsID) {
 double
 TrafficLight::getNextSwitch(const std::string& tlsID) {
     return STEPS2TIME(Helper::getTLS(tlsID).getActive()->getNextSwitchTime());
+}
+
+
+double
+TrafficLight::getSpentDuration(const std::string& tlsID) {
+    return STEPS2TIME(Helper::getTLS(tlsID).getActive()->getSpentDuration());
 }
 
 int
@@ -997,6 +1003,8 @@ TrafficLight::handleVariable(const std::string& objID, const int variable, Varia
             return wrapper->wrapDouble(objID, variable, getPhaseDuration(objID));
         case TL_NEXT_SWITCH:
             return wrapper->wrapDouble(objID, variable, getNextSwitch(objID));
+        case TL_SPENT_DURATION:
+            return wrapper->wrapDouble(objID, variable, getSpentDuration(objID));
         case TL_CONTROLLED_JUNCTIONS:
             return wrapper->wrapStringList(objID, variable, getControlledJunctions(objID));
         case libsumo::VAR_PARAMETER:

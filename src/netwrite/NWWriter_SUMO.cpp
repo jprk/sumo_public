@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -106,6 +106,12 @@ NWWriter_SUMO::writeNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
     }
     if (oc.exists("internal-junctions.vehicle-width") && !oc.isDefault("internal-junctions.vehicle-width")) {
         attrs[SUMO_ATTR_INTERNAL_JUNCTIONS_VEHICLE_WIDTH] = toString(oc.getFloat("internal-junctions.vehicle-width"));
+    }
+    if (!oc.isDefault("junctions.minimal-shape")) {
+        attrs[SUMO_ATTR_JUNCTIONS_MINIMAL_SHAPE] = toString(oc.getBool("junctions.minimal-shape"));
+    }
+    if (!oc.isDefault("junctions.endpoint-shape")) {
+        attrs[SUMO_ATTR_JUNCTIONS_ENDPOINT_SHAPE] = toString(oc.getBool("junctions.endpoint-shape"));
     }
     device.writeXMLHeader("net", "net_file.xsd", attrs); // street names may contain non-ascii chars
     device.lf();
@@ -415,8 +421,8 @@ NWWriter_SUMO::writeInternalEdges(OutputDevice& into, const NBEdgeCont& ec, cons
         into.writeAttr(SUMO_ATTR_CROSSING_EDGES, c->edges);
         writeLane(into, c->id + "_0", crossingSpeed, NBEdge::UNSPECIFIED_FRICTION, SVC_PEDESTRIAN, 0, SVCAll, SVCAll,
                   NBEdge::UNSPECIFIED_OFFSET, NBEdge::UNSPECIFIED_OFFSET,
-                  StopOffset(), c->width, c->shape, nullptr,
-                  MAX2(c->shape.length(), POSITION_EPS), 0, "", "", false, c->customShape.size() != 0);
+                  StopOffset(), c->width, c->shape, c,
+                  MAX2(c->shape.length(), POSITION_EPS), 0, "", "", false, c->customShape.size() != 0, c->outlineShape);
         into.closeTag();
     }
     // write pedestrian walking areas
@@ -443,6 +449,7 @@ NWWriter_SUMO::getInternalBidi(const NBEdge* e, const NBEdge::Connection& k, dou
     const std::vector<NBEdge::Connection> cons = toBidi->getConnectionsFromLane(-1, fromBidi, -1);
     if (cons.size() > 0) {
         if (e->getNumLanes() == 1 && k.toEdge->getNumLanes() == 1 && fromBidi->getNumLanes() == 1 && toBidi->getNumLanes() == 1) {
+            length = (k.length + cons.back().length) / 2;
             return cons.back().id;
         }
         // do a more careful check in case there are parallel internal edges
@@ -537,7 +544,8 @@ NWWriter_SUMO::writeLane(OutputDevice& into, const std::string& lID,
                          const Parameterised* params, double length, int index,
                          const std::string& oppositeID,
                          const std::string& type,
-                         bool accelRamp, bool customShape) {
+                         bool accelRamp, bool customShape,
+                         const PositionVector& outlineShape) {
     // output the lane's attributes
     into.openTag(SUMO_TAG_LANE).writeAttr(SUMO_ATTR_ID, lID);
     // the first lane of an edge will be the depart lane
@@ -548,11 +556,6 @@ NWWriter_SUMO::writeLane(OutputDevice& into, const std::string& lID,
     }
     writePreferences(into, preferred);
     // some further information
-    if (speed == 0) {
-        WRITE_WARNINGF(TL("Lane '%' has a maximum allowed speed of 0."), lID);
-    } else if (speed < 0) {
-        throw ProcessError("Negative allowed speed (" + toString(speed) + ") on lane '" + lID + "', use --speed.minimum to prevent this.");
-    }
     into.writeAttr(SUMO_ATTR_SPEED, speed);
     if (friction != NBEdge::UNSPECIFIED_FRICTION) {
         into.writeAttr(SUMO_ATTR_FRICTION, friction);
@@ -571,15 +574,8 @@ NWWriter_SUMO::writeLane(OutputDevice& into, const std::string& lID,
         into.writeAttr(SUMO_ATTR_CUSTOMSHAPE, true);
     }
     if (endOffset > 0 || startOffset > 0) {
-        if (startOffset + endOffset < shape.length()) {
-            shape = shape.getSubpart(startOffset, shape.length() - endOffset);
-        } else {
-            WRITE_ERROR("Invalid endOffset " + toString(endOffset) + " at lane '" + lID
-                        + "' with length " + toString(shape.length()) + " (startOffset " + toString(startOffset) + ")");
-            if (!OptionsCont::getOptions().getBool("ignore-errors")) {
-                throw ProcessError();
-            }
-        }
+        assert(startOffset + endOffset < shape.length());
+        shape = shape.getSubpart(startOffset, shape.length() - endOffset);
     }
     into.writeAttr(SUMO_ATTR_SHAPE, shape);
     if (type != "") {
@@ -593,6 +589,9 @@ NWWriter_SUMO::writeLane(OutputDevice& into, const std::string& lID,
     }
     if (stopOffset.isDefined()) {
         writeStopOffsets(into, stopOffset);
+    }
+    if (outlineShape.size() != 0) {
+        into.writeAttr(SUMO_ATTR_OUTLINESHAPE, outlineShape);
     }
 
     if (oppositeID != "" && oppositeID != "-") {

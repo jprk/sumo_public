@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -52,6 +52,7 @@ SUMOVehicleParameter::SUMOVehicleParameter()
       repetitionOffset(-1),
       repetitionTotalOffset(0),
       repetitionProbability(-1),
+      poissonRate(0),
       repetitionEnd(-1),
       line(), fromTaz(), toTaz(), personNumber(0), containerNumber(0),
       speedFactor(-1),
@@ -202,6 +203,10 @@ SUMOVehicleParameter::write(OutputDevice& dev, const OptionsCont& oc, const Sumo
         }
         dev.writeAttr(SUMO_ATTR_INSERTIONCHECKS, checks);
     }
+    // parking access rights
+    if (wasSet(VEHPARS_PARKING_BADGES_SET)) {
+        dev.writeNonEmptyAttr(SUMO_ATTR_PARKING_BADGES, joinToString(parkingBadges, " "));
+    }
 }
 
 
@@ -299,7 +304,7 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev, const bool close, const boo
         dev.writeAttr(SUMO_ATTR_COLLISION, collision);
     }
     // only write friendly position if is true
-    if (friendlyPos == true) {
+    if (friendlyPos) {
         dev.writeAttr(SUMO_ATTR_FRIENDLY_POS, friendlyPos);
     }
     // only write act type if isn't empty
@@ -313,6 +318,23 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev, const bool close, const boo
     }
 }
 
+std::vector<std::string>
+SUMOVehicleParameter::Stop::getStoppingPlaceIDs() const {
+    std::vector<std::string> result;
+    if (busstop != "") {
+        result.push_back(busstop);
+    }
+    if (containerstop != "") {
+        result.push_back(containerstop);
+    }
+    if (chargingStation != "") {
+        result.push_back(chargingStation);
+    }
+    if (parkingarea != "") {
+        result.push_back(parkingarea);
+    }
+    return result;
+}
 
 bool
 SUMOVehicleParameter::parseDepart(const std::string& val, const std::string& element, const std::string& id,
@@ -404,6 +426,8 @@ SUMOVehicleParameter::parseDepartPos(const std::string& val, const std::string& 
         dpd = DepartPosDefinition::BASE;
     } else if (val == "last") {
         dpd = DepartPosDefinition::LAST;
+    } else if (val == "splitFront") {
+        dpd = DepartPosDefinition::SPLIT_FRONT;
     } else if (val == "stop") {
         dpd = DepartPosDefinition::STOP;
     } else {
@@ -828,6 +852,9 @@ SUMOVehicleParameter::getDepartPos() const {
         case DepartPosDefinition::BASE:
             val = "base";
             break;
+        case DepartPosDefinition::SPLIT_FRONT:
+            val = "splitFront";
+            break;
         case DepartPosDefinition::STOP:
             val = "stop";
             break;
@@ -1037,6 +1064,7 @@ SUMOVehicleParameter::getArrivalSpeed() const {
     return val;
 }
 
+
 void
 SUMOVehicleParameter::incrementFlow(double scale, SumoRNG* rng) {
     repetitionsDone++;
@@ -1045,8 +1073,9 @@ SUMOVehicleParameter::incrementFlow(double scale, SumoRNG* rng) {
         if (repetitionOffset >= 0) {
             repetitionTotalOffset += (SUMOTime)((double)repetitionOffset / scale);
         } else {
+            assert(poissonRate > 0);
             // we need to cache this do avoid double generation of the rng in the TIME2STEPS macro
-            const double r = RandHelper::randExp(-STEPS2TIME(repetitionOffset), rng);
+            const double r = RandHelper::randExp(poissonRate, rng);
             repetitionTotalOffset += TIME2STEPS(r / scale);
         }
     }

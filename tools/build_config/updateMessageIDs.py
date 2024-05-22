@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2011-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2011-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -85,6 +85,8 @@ def main(args=None):
             print("The replace string for the search string '%s' is missing. The named search string will be neglected."
                   % options.replace[-1])
             options.replace = options.replace[:-1]
+        # update newline chars in input
+        options.replace = [replaceInput.replace("\\n", "\n") for replaceInput in options.replace]
         for i in range(0, len(options.replace), 2):
             if options.strict:
                 replaceRules.append((options.replace[i], options.replace[i+1],
@@ -135,7 +137,9 @@ def updatePotFile(gettextPath, potFile, replaceRules, options):
                 for occurrence, lineNr in entry.occurrences:
                     if occurrence not in fileReplaceCommands:
                         fileReplaceCommands[occurrence] = []
-                    fileReplaceCommands[occurrence].append((entry.msgid, entry.msgstr, int(lineNr)))
+                    # newline conversion between polib and source code
+                    fileReplaceCommands[occurrence].append((entry.msgid.replace(
+                        "\n", "\\n"), entry.msgstr.replace("\n", "\\n"), int(lineNr)))
                     replaceIDs.append(entry)
 
         # apply the changes to the source code

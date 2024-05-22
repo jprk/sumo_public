@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -819,20 +819,20 @@ GNETAZFrame::TAZChildDefaultParameters::onCmdSetZeroFringeProbabilities(FXObject
         // iterate over all TAZs
         for (const auto& TAZ : myTAZFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getAdditionals().at(SUMO_TAG_TAZ)) {
             // iterate over source/sinks
-            for (const auto& TAZSourceSink : TAZ->getChildAdditionals()) {
+            for (const auto& TAZSourceSink : TAZ.second->getChildAdditionals()) {
                 if (TAZSourceSink->getTagProperty().getTag() == SUMO_TAG_TAZSOURCE) {
                     // set sink probability to 0 for all edges that have no predecessor
                     if (!TAZSourceSink->getParentEdges().front()->hasSuccessors() &&
                             (TAZSourceSink->getAttributeDouble(SUMO_ATTR_WEIGHT) != 0)) {
                         sources.push_back(TAZSourceSink);
-                        TAZs.insert(TAZ);
+                        TAZs.insert(TAZ.second);
                     }
                 } else {
                     // set source probability to 0 for all edges that have no successor
                     if (!TAZSourceSink->getParentEdges().front()->hasPredecessors() &&
                             (TAZSourceSink->getAttributeDouble(SUMO_ATTR_WEIGHT) != 0)) {
                         sinks.push_back(TAZSourceSink);
-                        TAZs.insert(TAZ);
+                        TAZs.insert(TAZ.second);
                     }
                 }
             }
@@ -1362,7 +1362,7 @@ void
 GNETAZFrame::TAZEdgesGraphic::hideTAZEdgesGraphicModule() {
     // iterate over all edges and restore color
     for (const auto& edge : myTAZFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getEdges()) {
-        for (const auto& lane : edge.second->getLanes()) {
+        for (const auto& lane : edge.second.second->getLanes()) {
             lane->setSpecialColor(nullptr);
         }
     }
@@ -1375,9 +1375,9 @@ GNETAZFrame::TAZEdgesGraphic::updateEdgeColors() {
     const std::vector<RGBColor>& scaledColors = GNEViewNetHelper::getRainbowScaledColors();
     // start painting all edges in gray
     for (const auto& edge : myTAZFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getEdges()) {
-        if (!edge.second->isAttributeCarrierSelected()) {
+        if (!edge.second.second->isAttributeCarrierSelected()) {
             // set candidate color (in this case, gray)
-            for (const auto lane : edge.second->getLanes()) {
+            for (const auto lane : edge.second.second->getLanes()) {
                 lane->setSpecialColor(&myEdgeDefaultColor);
             }
         }
@@ -1492,7 +1492,7 @@ GNETAZFrame::hide() {
 
 
 bool
-GNETAZFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNETAZFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // Declare map to keep values
     std::map<SumoXMLAttr, std::string> valuesOfElement;
     if (myDrawingShape->isDrawing()) {
@@ -1503,11 +1503,11 @@ GNETAZFrame::processClick(const Position& clickedPosition, const GNEViewNetHelpe
             myDrawingShape->addNewPoint(clickedPosition);
         }
         return true;
-    } else if ((myCurrentTAZ->getTAZ() == nullptr) || (objectsUnderCursor.getTAZFront() && myCurrentTAZ->getTAZ() && !myTAZSaveChanges->isChangesPending())) {
+    } else if ((myCurrentTAZ->getTAZ() == nullptr) || (viewObjects.getTAZFront() && myCurrentTAZ->getTAZ() && !myTAZSaveChanges->isChangesPending())) {
         // if user click over an TAZ and there isn't changes pending, then select a new TAZ
-        if (objectsUnderCursor.getTAZFront()) {
+        if (viewObjects.getTAZFront()) {
             // avoid reset of Frame if user doesn't click over an TAZ
-            myCurrentTAZ->setTAZ(objectsUnderCursor.getTAZFront());
+            myCurrentTAZ->setTAZ(viewObjects.getTAZFront());
             // update TAZStatistics
             myCurrentTAZ->getTAZ()->updateTAZStatistic();
             myTAZCommonStatistics->updateStatistics();
@@ -1515,20 +1515,20 @@ GNETAZFrame::processClick(const Position& clickedPosition, const GNEViewNetHelpe
         } else {
             return false;
         }
-    } else if (objectsUnderCursor.getEdgeFront()) {
+    } else if (viewObjects.getEdgeFront()) {
         // if toggle Edge is enabled, select edge. In other case create two new source/Sinks
         if (myTAZChildDefaultParameters->getToggleMembership()) {
             // create new source/Sinks or delete it
-            return addOrRemoveTAZMember(objectsUnderCursor.getEdgeFront());
+            return addOrRemoveTAZMember(viewObjects.getEdgeFront());
         } else {
             // first check if clicked edge was previously selected
-            if (myTAZSelectionStatistics->isEdgeSelected(objectsUnderCursor.getEdgeFront())) {
+            if (myTAZSelectionStatistics->isEdgeSelected(viewObjects.getEdgeFront())) {
                 // clear selected edges
                 myTAZSelectionStatistics->clearSelectedEdges();
             } else {
                 // iterate over TAZEdges saved in CurrentTAZ (it contains the Edge and Source/sinks)
                 for (const auto& TAZEdgeColor : myCurrentTAZ->getTAZEdges()) {
-                    if (TAZEdgeColor.edge == objectsUnderCursor.getEdgeFront()) {
+                    if (TAZEdgeColor.edge == viewObjects.getEdgeFront()) {
                         // clear current selection (to avoid having two or more edges selected at the same time using mouse clicks)
                         myTAZSelectionStatistics->clearSelectedEdges();
                         // now select edge
@@ -1557,7 +1557,7 @@ GNETAZFrame::processEdgeSelection(const std::vector<GNEEdge*>& edges) {
             // iterate over edges
             for (const auto& edge : edges) {
                 // first check if edge owns a TAZEge
-                if (myCurrentTAZ->isTAZEdge(edge) == false) {
+                if (!myCurrentTAZ->isTAZEdge(edge)) {
                     // create new TAZ Sources/Sinks
                     addOrRemoveTAZMember(edge);
                 }
@@ -1627,13 +1627,14 @@ GNETAZFrame::shapeDrawed() {
         }
         // check if TAZ has to be created with edges
         if (myTAZParameters->isAddEdgesWithinEnabled()) {
+            // update objects in boundary
+            myViewNet->updateObjectsInBoundary(shape.getBoxBoundary());
+            // get all edge IDs
             std::vector<std::string> edgeIDs;
-            const auto ACsInBoundary = myViewNet->getAttributeCarriersInBoundary(shape.getBoxBoundary(), true);
             // get only edges with geometry around shape
-            for (const auto& AC : ACsInBoundary) {
-                if ((AC.second->getTagProperty().getTag() == SUMO_TAG_EDGE) &&
-                        myViewNet->getNet()->getAttributeCarriers()->isNetworkElementAroundShape(AC.second, shape)) {
-                    edgeIDs.push_back(AC.first);
+            for (const auto& edge : myViewNet->getViewObjectsSelector().getEdges()) {
+                if (myViewNet->getNet()->getAttributeCarriers()->isNetworkElementAroundShape(edge, shape)) {
+                    edgeIDs.push_back(edge->getID());
                 }
             }
             myBaseTAZ->addStringListAttribute(SUMO_ATTR_EDGES, edgeIDs);
@@ -1661,10 +1662,10 @@ GNETAZFrame::addOrRemoveTAZMember(GNEEdge* edge) {
                 // enable save changes button
                 myTAZSaveChanges->enableButtonsAndBeginUndoList();
                 // remove Source and Sinks using GNEChange_TAZElement
-                if (myViewNet->getNet()->getAttributeCarriers()->retrieveAdditional(TAZEdgeColor.source, false)) {
+                if (myViewNet->getNet()->getAttributeCarriers()->retrieveAdditional(TAZEdgeColor.source->getGUIGlObject(), false)) {
                     myViewNet->getUndoList()->add(new GNEChange_Additional(TAZEdgeColor.source, false), true);
                 }
-                if (myViewNet->getNet()->getAttributeCarriers()->retrieveAdditional(TAZEdgeColor.sink, false)) {
+                if (myViewNet->getNet()->getAttributeCarriers()->retrieveAdditional(TAZEdgeColor.sink->getGUIGlObject(), false)) {
                     myViewNet->getUndoList()->add(new GNEChange_Additional(TAZEdgeColor.sink, false), true);
                 }
                 // always refresh TAZ Edges after removing TAZSources/Sinks

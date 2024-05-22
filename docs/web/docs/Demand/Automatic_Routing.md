@@ -41,13 +41,16 @@ The options related to this routing are:
 | **--device.rerouting.adaptation-steps** {{DT_INT}}    | 180            | The number of adaptation steps for averaging (enable for values > 0).                     |
 | **--device.rerouting.with-taz**                  | false          | Use [traffic assignment zones (TAZ/districts)](../Demand/Importing_O/D_Matrices.md#describing_the_taz) as routing end points                        |
 | **--device.rerouting.init-with-loaded-weights**  | false          | Use option **--weight-files** for initializing the edge weights at simulation start           |
+| **--device.rerouting.mode**  | 0          | configure handling of [temporary obstructions](../Simulation/Routing.md#handling_of_temporary_obstructions)    |
+
+
 
 Please note that if a vehicle gets a routing device only rerouting *before insertion* is active by default.
 In order to activate periodic rerouting en route set **--device.rerouting.period**.
 
 # Edge weights
 
-If the routing is enabled for any vehicles, the average travel times in
+If the routing is enabled for any vehicle, the average travel times in
 the net are collected for all edges. If a vehicle needs to be routed
 (either because it gets inserted or because a repeated route choice was
 enabled via the ".period" option) it chooses the fastest route to its
@@ -121,6 +124,7 @@ The following parameters are supported as child elements of a `<vType>`, `<vehic
 - device.rerouting.pre-period
 - device.rerouting.proability
 - device.rerouting.deterministic
+- device.rerouting.mode
 - has.rerouting.device
 
 

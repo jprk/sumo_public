@@ -119,7 +119,7 @@ git push
 ### How do I contribute to the documentation?
 
 The documentation is part of the code repository so the same rules as in the previous question apply.
-If you just want to have a simple typo fixed you can always drop us a line at sumo@dlr.de or at sumo-dev@eclipse.org.
+If you just want to have a simple typo fixed you can always drop us a line at <sumo@dlr.de> or at <sumo-dev@eclipse.org>.
 
 ### How do I cite SUMO
 
@@ -247,8 +247,7 @@ according to the above suggestions.
 
   Unfortunately, we do not have the resources to do other peoples
   projects for free.
-  [Contact](https://www.dlr.de/ts/en/desktopdefault.aspx/tabid-1231/mailcontact-30303/)
-  us for paid consultancy.
+  Contact us for paid consultancy at <sumo@dlr.de>.
   We try to help out with bugs and give pointers to the relevant
   documentation but this free support is limited to what we can do in
   our spare time.
@@ -372,10 +371,10 @@ client version and SUMO version match. When using SUMO version 1.0.0 or larger y
 
 ### How do I access the code repository?
 
-Since 2018-04-10 SUMO moved to [the organizational Eclipse account at GitHub](https://github.com/eclipse-sumo/sumo/). You have the choice to
-access the repository using git or subversion. There are plenty of
-clients for all platforms. If you use the command line client, you
-can checkout sumo using the following command (for git):
+SUMO uses git for version control and [is available on GitHub](https://github.com/eclipse-sumo/sumo/).
+Subversion is not supported anymore.
+There are plenty of git clients for all platforms. If you use the command line client, you
+can checkout sumo using the following command:
 
 ```
 git clone --recursive https://github.com/eclipse-sumo/sumo
@@ -385,16 +384,15 @@ If you want to see the full project history in your git checkout please
 change to the created directory and call
 
 ```
-git fetch origin refs/replace/*:refs/replace/*
+git fetch origin refs/replace/*:refs/replace/*
 ```
 
 For later updates go inside the sumo directory, which has been created,
 and simply type `git pull`.
 
-### Is there further documentation on Git and Subversion?
+### Is there further documentation on Git?
 
-  There are the [Git book](https://git-scm.com/book/) and the
-  [Subversion book](https://svnbook.red-bean.com/) and the [GitHub help](https://help.github.com/) is also worth reading.
+  There is the [Git book](https://git-scm.com/book/) and the [GitHub help](https://help.github.com/) is also worth reading.
 
 ### How to get an older version of SUMO?
 
@@ -404,9 +402,8 @@ and simply type `git pull`.
 
 ### How to check out revision 5499 (or any other outdated sumo)?
 
-  You can use the subversion option "**-r <REVISION_NUMBER\>**"
-  together with the checkout on the command line. If you are using git
-  you can find the correct hash using the git log. You have to consult
+  You can use the following command to find the correct git hash for a subversion revision:
+  `git log | grep trunk@5499 -B 10` in your (git) bash. You have to consult
   your client's documentation if you use a graphical interface. Please
   be aware of the fact that we can only give very limited support for
   older versions.
@@ -415,6 +412,14 @@ and simply type `git pull`.
 
   We compile regularly under Windows 10 using Visual Studio 2019 and have daily builds on
   Linux. SUMO can also be installed on macOS via Homebrew (or built from source).
+
+#### Which python version and package manager should I use?
+
+  Any [Python version which still receives updates](https://devguide.python.org/versions/)
+  should be fine. If you have the choice, use the one before the latest.
+  Please try to install a vanilla python and use only pip or the package manager of your
+  system (e.g. apt). Do not use Anaconda or any derivatives thereof! It tends to break
+  the library search path so the binaries like sumo will not work anymore (and self compiling will not fix it).
 
 ### Can I run multiple versions of SUMO alongside each other?
 
@@ -427,7 +432,8 @@ and simply type `git pull`.
 ### Letters and words are represented as squares in sumo-gui and netedit
 
   Make sure that your computer supports 3D Acceleration and graphical
-  drivers are correctly installed and configured.
+  drivers are correctly installed and configured. It will probably not
+  work on mahcines accessed via RDP or a similar remote desktop protocol.
 
 ### Troubleshooting
 
@@ -703,7 +709,7 @@ see [inspecting connections](Netedit/editModesCommon.md#inspecting_connections)
     rerouters for continuous operation with configurable turning ratios.
   - If the network is not circular to begin with (i.e a single
     road) you can make the network circular in a non-geometrical way
-    by adding a return edge and declaring it's length to be very
+    by adding a return edge and declaring its length to be very
     short (minimum 0.1m). The return edge should have a sensible geometry (i.e. a detour loop) but the length can be made very short so that it does not affect vehicle routes.
 
 !!! caution
@@ -1013,7 +1019,15 @@ Calculated as ` 24 * 3600 * 80000 / 1800 = 3840000 `
 ### How to perform repeated simulations with different results
 
 By default, the same configuration will result in the same behavior even though many parts of the simulation are [randomized](Simulation/Randomness.md).
-To change this, either option **--seed** or option **--random** must be used.
+This reproducibility is often necessary (i.e. for debugging a scenario).
+However, to avoid biases from this "fixed" randomness it is often useful to run the simulation multiple times and perform analysis on the ensemble of results.
+Likewise, in the real world different days have different traffic and it is more reliable to draw conclusions from multiple days rather than a single day.
+
+To change the default randomness, either option **--seed** or option **--random** must be used. The first option sets a user-defined intialization for the random number generator whereas the other picks a random seed (which will be different on every run).
+
+!!! note
+    These options apply to sumo, duarouter and many python tools which employ randomization.
+
 In order to collect distinct output from multiple runs, it is advisable to set option **--output-prefix**.
 Running a simulation 3 times with different results could be done in a batch file like this:
 
@@ -1035,8 +1049,19 @@ i.e. if simulations where run with the option `<statistic-output value="stats.xm
 
 ### How can I get satellite / aerial background images for my simulation
 
-The [osmWebWizard](Tutorials/OSMWebWizard.md) tool provides the simples solution to obtain a scenario with background images.
+The [osmWebWizard](Tutorials/OSMWebWizard.md) tool provides the simplest solution to obtain a scenario with background images.
 Selecting the checkbox 'Satellite background' before generating the scenario is sufficient. To select another image provider, the tool [tileGet.py](Tools/Misc.md#tilegetpy) can also be used.
+
+It is important to know that the network projection will be changed from UTM to [Mercator](https://en.wikipedia.org/wiki/Web_Mercator_projection) if the checkbox "satellite background" is enabled. This is necessary to match the projection of popular satellite image providers. However, this projection has the unwelcome propertie of distorting lengths much more strongly than the default project. Depending on the area being imported, distances could be doubled (or worse).
+
+The revert such a projection to UTM, the following commands may be used:
+
+```
+netconvert -s *.net.xml -p plain --proj.plain-geo
+netconvert -e plain.edg.xml -n plain.nod.xml -x plain.con.xml -i plain.tll.xml --proj.utm
+```
+
+When changing the projection, the satellite background can no longer be used. Any polygons must be recomputed with [polyconvert](polyconvert.md) and the locations of the public transport stops extracted from the OSM must be adapted as well. (the easiest solution is the add `friendlyPos="true"` to all stopping places but this may distort their desired position).
 
 ### sumo-gui breaks
 
@@ -1083,6 +1108,7 @@ command to get a new image for each new timestep.
         traci.simulationStep()
         traci.gui.screenshot("View #0", "images/"+str(i)+".png")
 ```
+A more sophisticated version of this approach is given in the [createScreenshotSequence.py](Tools/Misc.md#createscreenshotsequencepy) tool.
 
 Next you have to glue the images together. This job can be done
 graphically with virtualdub [\[2\]](https://www.virtualdub.org) or via
@@ -1134,6 +1160,17 @@ If your computer supports it, run SUMO using the integrated graphics card (Contr
 
 Install the [Noto Fonts](https://en.wikipedia.org/wiki/Noto_fonts) package for your distribution.
 
+### How can I change the color theme of sumo-gui or netedit?
+
+SUMO uses the fox-toolkit which permits [system-wide and per-application settings](http://www.fox-toolkit.org/registry.html) that can be customized by the user.
+Under windows these settings must be configured using `regedit` i.e. at the registry location `Computer\HKEY_CURRENT_USER\SOFTWARE\sumo-gui\SUMO GUI\SETTINGS`
+
+- Supported color entries are: bordercolor, basecolor, hilitecolor, shadowcolor, backcolor, forecolor, selforecolor, selbackcolor, tipforecolor, tipbackcolor, selmenutextcolor, selmenubackcolor
+  - supported color values are RGB hex codes (#aea395) as well as symbolic names (red). A full list of colornames can be found in [`FXColorNames.cpp`](https://github.com/DLR-TS/SUMOLibraries/blob/main/fox-1.6.57/src/FXColorNames.cpp).
+- The font is configured with: normalfont (i.e. normalfont="Times,100")
+- Further config entries are: typingspeed, clickspeed, scrollspeed, scrolldelay, blinkspeed, animspeed, menupause, tippause, tiptime, dragdelta, wheellines, scrollbarsize, displaygamma
+
+
 ## Upgrading
 
 ### How do I upgrade SUMO?
@@ -1167,6 +1204,12 @@ Install the [Noto Fonts](https://en.wikipedia.org/wiki/Noto_fonts) package for y
   Many python tools require python version 2.7. We aim to have Python
   3 compatibility for [sumolib](Tools/Sumolib.md) and
   [traci](TraCI/Interfacing_TraCI_from_Python.md) however.
+
+### The tool fails when adding an argument with a leading minus sign
+
+  Many of our tools use an argument parser to gather further command line arguments.
+  As the option names usually start with a leading minus, the parser gets confused whether your input is
+  an option or the corresponding value. In this case try the `--option=value` syntax.
 
 ### tools fail with an ImportError
 

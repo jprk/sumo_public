@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -23,7 +23,7 @@
 #include <netedit/changes/GNEChange_Attribute.h>
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/globjects/GLIncludes.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GNEVaporizer.h"
 
@@ -98,6 +98,12 @@ GNEVaporizer::fixAdditionalProblem() {
 }
 
 
+bool
+GNEVaporizer::checkDrawMoveContour() const {
+    return false;
+}
+
+
 void
 GNEVaporizer::updateGeometry() {
     // calculate perpendicular line
@@ -113,11 +119,7 @@ GNEVaporizer::getPositionInView() const {
 
 void
 GNEVaporizer::updateCenteringBoundary(const bool /*updateGrid*/) {
-    myAdditionalBoundary.reset();
-    // add center
-    myAdditionalBoundary.add(getPositionInView());
-    // grow
-    myAdditionalBoundary.grow(10);
+    // nothing to do
 }
 
 
@@ -138,23 +140,23 @@ GNEVaporizer::drawGL(const GUIVisualizationSettings& s) const {
     // Obtain exaggeration of the draw
     const double vaporizerExaggeration = getExaggeration(s);
     // first check if additional has to be drawn
-    if (s.drawAdditionals(vaporizerExaggeration) && myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
-        // declare colors
-        RGBColor vaporizerColor, centralLineColor;
-        // set colors
-        if (drawUsingSelectColor()) {
-            vaporizerColor = s.colorSettings.selectedAdditionalColor;
-            centralLineColor = vaporizerColor.changedBrightness(-32);
-        } else {
-            vaporizerColor = s.additionalSettings.vaporizerColor;
-            centralLineColor = RGBColor::WHITE;
-        }
-        // avoid draw invisible elements
-        if (vaporizerColor.alpha() != 0) {
+    if (myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
+        // get detail level
+        const auto d = s.getDetailLevel(vaporizerExaggeration);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // declare colors
+            RGBColor vaporizerColor, centralLineColor;
+            // set colors
+            if (drawUsingSelectColor()) {
+                vaporizerColor = s.colorSettings.selectedAdditionalColor;
+                centralLineColor = vaporizerColor.changedBrightness(-32);
+            } else {
+                vaporizerColor = s.additionalSettings.vaporizerColor;
+                centralLineColor = RGBColor::WHITE;
+            }
             // draw parent and child lines
             drawParentChildLines(s, s.additionalSettings.connectionColor);
-            // Start drawing adding an gl identificator
-            GLHelper::pushName(getGlID());
             // Add layer matrix matrix
             GLHelper::pushMatrix();
             // translate to front
@@ -162,19 +164,19 @@ GNEVaporizer::drawGL(const GUIVisualizationSettings& s) const {
             // set base color
             GLHelper::setColor(vaporizerColor);
             // Draw the area using shape, shapeRotations, shapeLengths and value of exaggeration
-            GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), myAdditionalGeometry, 0.3 * vaporizerExaggeration);
+            GUIGeometry::drawGeometry(d, myAdditionalGeometry, 0.3 * vaporizerExaggeration);
             // move to front
             glTranslated(0, 0, .1);
             // set central color
             GLHelper::setColor(centralLineColor);
             // Draw the area using shape, shapeRotations, shapeLengths and value of exaggeration
-            GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), myAdditionalGeometry, 0.05 * vaporizerExaggeration);
+            GUIGeometry::drawGeometry(d, myAdditionalGeometry, 0.05 * vaporizerExaggeration);
             // move to icon position and front
             glTranslated(myAdditionalGeometry.getShape().front().x(), myAdditionalGeometry.getShape().front().y(), .1);
             // rotate over lane
             GUIGeometry::rotateOverLane(myAdditionalGeometry.getShapeRotations().front() * -1);
-            // Draw icon depending of Route Probe is selected and if isn't being drawn for selecting
-            if (!s.drawForRectangleSelection && s.drawDetail(s.detailSettings.laneTextures, vaporizerExaggeration)) {
+            // Draw icon depending of level of detail
+            if (d <= GUIVisualizationSettings::Detail::AdditionalDetails) {
                 // set color
                 glColor3d(1, 1, 1);
                 // rotate texture
@@ -193,16 +195,13 @@ GNEVaporizer::drawGL(const GUIVisualizationSettings& s) const {
             }
             // pop layer matrix
             GLHelper::popMatrix();
-            // Pop name
-            GLHelper::popName();
+            // draw additional name
+            drawAdditionalName(s);
+            // draw dotted contour
+            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
-        // draw additional name
-        drawAdditionalName(s);
-        // check if mouse is over element
-        mouseWithinGeometry(myAdditionalGeometry.getShape(), 0.5);
-        // draw dotted geometry
-        myContour.drawDottedContourExtruded(s, myAdditionalGeometry.getShape(), 0.5, vaporizerExaggeration, true, true,
-                                            s.dottedContourSettings.segmentWidth);
+        // calculate contour and draw dotted geometry
+        myAdditionalContour.calculateContourExtrudedShape(s, d, this, myAdditionalGeometry.getShape(), 0.5, vaporizerExaggeration, true, true, 0);
     }
 }
 

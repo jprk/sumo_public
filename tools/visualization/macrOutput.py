@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2021-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2021-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -13,7 +13,8 @@
 # SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
 # @file    macrOutput.py
-# @author  Amirhosein Karbasi
+# @author  Amir hossein Karbasi
+# @author  Mirko Barthauer
 # @date    2021-04-20
 
 
@@ -29,17 +30,19 @@ from collections import Counter
 if "SUMO_HOME" in os.environ:
     sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
 import sumolib  # noqa
+from sumolib.visualization import helpers  # noqa
 
 
 def main(args=None):
 
     ap = sumolib.options.ArgumentParser()
-    ap.add_argument("file", dest="file", category="input", type=ap.file, required=True, help="An XML input file")
+    ap.add_argument("file", category="input", type=ap.file, help="An XML input file")
+    helpers.addPlotOptions(ap)
+    helpers.addInteractionOptions(ap)
     options = ap.parse_args(args=args)
 
-    if args is None or len(args) < 2:
-        print("Error: An xml file must be given as input")
-        sys.exit(1)
+    if options.output is not None and os.path.exists(options.output) and os.path.isfile(options.output):
+        options.output = os.path.dirname(options.output)
 
     df = pdx.read_xml(options.file, ['meandata'])
 
@@ -113,18 +116,24 @@ def main(args=None):
         j = j+_seg
 
     # plot
+    fig, ax = helpers.openFigure(options)
     plt.scatter(MD, MS)
     plt.xlabel("Density (Veh/km)")
     plt.ylabel("Speed (Km/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options,
+                        optOut=None if options.output is None else os.path.join(options.output, "Edge_vk.png"))
+    fig, ax = helpers.openFigure(options)
     plt.scatter(MD, MF)
     plt.xlabel("Density (Veh/km)")
     plt.ylabel("Flow (Veh/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options,
+                        optOut=None if options.output is None else os.path.join(options.output, "Edge_qk.png"))
+    fig, ax = helpers.openFigure(options)
     plt.scatter(MS, MF)
     plt.xlabel("Speed (Km/hr)")
     plt.ylabel("Flow (Veh/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options,
+                        optOut=None if options.output is None else os.path.join(options.output, "Edge_qv.png"))
 
     # calculating meandensity,meanflow,meanspeed (density=laneDensity)
     i = 0
@@ -149,18 +158,24 @@ def main(args=None):
         j = j+_seg
 
     # plot
+    fig, ax = helpers.openFigure(options)
     plt.scatter(lMD, lMS)
     plt.xlabel("Density (Veh/km)")
     plt.ylabel("Speed (Km/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options, optOut=None if options.output is None else os.path.join(
+        options.output, "Lane_vk.png"))
+    fig, ax = helpers.openFigure(options)
     plt.scatter(lMD, lMF)
     plt.xlabel("Density (Veh/km)")
     plt.ylabel("Flow (Veh/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options, optOut=None if options.output is None else os.path.join(
+        options.output, "Lane_qk.png"))
+    fig, ax = helpers.openFigure(options)
     plt.scatter(lMS, lMF)
     plt.xlabel("Speed (Km/hr)")
     plt.ylabel("Flow (Veh/hr)")
-    plt.show()
+    helpers.closeFigure(fig, ax, options, optOut=None if options.output is None else os.path.join(
+        options.output, "Lane_qv.png"))
 
     # Build a csv file
     Macro_Features = {'Density': MD,

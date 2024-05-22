@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,7 +27,7 @@
 #include <netedit/frames/common/GNEMoveFrame.h>
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/globjects/GLIncludes.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 #include <utils/xml/NamespaceIDs.h>
 
 #include "GNEAccess.h"
@@ -47,11 +47,12 @@ myFriendlyPosition(false) {
 }
 
 
-GNEAccess::GNEAccess(GNEAdditional* busStop, GNELane* lane, GNENet* net, double pos, const double length, bool friendlyPos,
-                     const Parameterised::Map& parameters) :
+GNEAccess::GNEAccess(GNEAdditional* busStop, GNELane* lane, GNENet* net, const double pos, const std::string& specialPos,
+                     const bool friendlyPos, const double length, const Parameterised::Map& parameters) :
     GNEAdditional(net, GLO_ACCESS, SUMO_TAG_ACCESS, GUIIconSubSys::getIcon(GUIIcon::ACCESS), "", {}, {}, {lane}, {busStop}, {}, {}),
 Parameterised(parameters),
 myPositionOverLane(pos),
+mySpecialPosition(specialPos),
 myLength(length),
 myFriendlyPosition(friendlyPos) {
     // update centering boundary without updating grid
@@ -95,11 +96,7 @@ GNEAccess::getPositionInView() const {
 
 void
 GNEAccess::updateCenteringBoundary(const bool /*updateGrid*/) {
-    myAdditionalBoundary.reset();
-    // add center
-    myAdditionalBoundary.add(getPositionInView());
-    // grow
-    myAdditionalBoundary.grow(10);
+    // nothing to update
 }
 
 
@@ -190,6 +187,21 @@ void GNEAccess::fixAdditionalProblem() {
 }
 
 
+bool
+GNEAccess::checkDrawMoveContour() const {
+    // get edit modes
+    const auto& editModes = myNet->getViewNet()->getEditModes();
+    // check if we're in move mode
+    if (!myNet->getViewNet()->isMovingElement() && editModes.isCurrentSupermodeNetwork() &&
+            (editModes.networkEditMode == NetworkEditMode::NETWORK_MOVE) && myNet->getViewNet()->checkOverLockedElement(this, mySelected)) {
+        // only move the first element
+        return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
+    } else {
+        return false;
+    }
+}
+
+
 GNEEdge*
 GNEAccess::getEdge() const {
     return getParentLanes().front()->getParentEdge();
@@ -204,29 +216,27 @@ GNEAccess::getParentName() const {
 
 void
 GNEAccess::drawGL(const GUIVisualizationSettings& s) const {
-    // Obtain exaggeration
-    const double accessExaggeration = getExaggeration(s);
     // first check if additional has to be drawn
-    if (s.drawAdditionals(accessExaggeration) && myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
-        // get color
-        RGBColor accessColor;
-        if (drawUsingSelectColor()) {
-            accessColor = s.colorSettings.selectedAdditionalColor;
-        } else if (!getParentAdditionals().front()->getAttribute(SUMO_ATTR_COLOR).empty()) {
-            accessColor = parse<RGBColor>(getParentAdditionals().front()->getAttribute(SUMO_ATTR_COLOR));
-        } else {
-            accessColor = s.colorSettings.busStopColor;
-        }
-        // avoid draw invisible elements
-        if (accessColor.alpha() != 0) {
-            // get distance squared between mouse and access
-            const double distanceSquared = getPositionInView().distanceSquaredTo2D(myNet->getViewNet()->getPositionInformation());
-            // declare radius
-            const double radius = (distanceSquared <= 1) ? 1 : 0.5;
+    if (myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
+        // Obtain exaggeration
+        const double accessExaggeration = getExaggeration(s);
+        // get detail level
+        const auto d = s.getDetailLevel(1);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // radius depends if mouse is over element
+            const double radius = gViewObjectsHandler.isElementSelected(this) ? 1 : 0.5;
+            // get color
+            RGBColor accessColor;
+            if (drawUsingSelectColor()) {
+                accessColor = s.colorSettings.selectedAdditionalColor;
+            } else if (!getParentAdditionals().front()->getAttribute(SUMO_ATTR_COLOR).empty()) {
+                accessColor = parse<RGBColor>(getParentAdditionals().front()->getAttribute(SUMO_ATTR_COLOR));
+            } else {
+                accessColor = s.colorSettings.busStopColor;
+            }
             // draw parent and child lines
             drawParentChildLines(s, accessColor);
-            // Start drawing adding an gl identificator
-            GLHelper::pushName(getGlID());
             // push layer matrix
             GLHelper::pushMatrix();
             // translate to front
@@ -236,23 +246,16 @@ GNEAccess::drawGL(const GUIVisualizationSettings& s) const {
             // translate to geometry position
             glTranslated(myAdditionalGeometry.getShape().front().x(), myAdditionalGeometry.getShape().front().y(), 0);
             // draw circle
-            if (s.drawForRectangleSelection) {
-                GLHelper::drawFilledCircle(radius * accessExaggeration, 8);
-            } else {
-                GLHelper::drawFilledCircle(radius * accessExaggeration, 16);
-            }
+            GLHelper::drawFilledCircleDetailled(d, radius);
             // pop layer matrix
             GLHelper::popMatrix();
-            // pop gl identificator
-            GLHelper::popName();
-            // check if mouse is over access
-            mouseWithinGeometry(myAdditionalGeometry.getShape().front(), (radius * accessExaggeration));
             // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), myAdditionalGeometry.getShape().front(), accessExaggeration, 0.3);
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), myAdditionalGeometry.getShape().front(), accessExaggeration, 0.3);
             // draw dotted contour
-            myContour.drawDottedContourCircle(s, myAdditionalGeometry.getShape().front(), radius, accessExaggeration,
-                                              s.dottedContourSettings.segmentWidthSmall);
+            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidthSmall, true);
         }
+        // calculate contour
+        myAdditionalContour.calculateContourCircleShape(s, d, this, myAdditionalGeometry.getShape().front(), 1, accessExaggeration);
     }
 }
 
@@ -266,7 +269,7 @@ GNEAccess::getAttribute(SumoXMLAttr key) const {
             return getParentLanes().front()->getID();
         case SUMO_ATTR_POSITION:
             if (myPositionOverLane == INVALID_DOUBLE) {
-                return "random";
+                return mySpecialPosition;
             } else {
                 return toString(myPositionOverLane);
             }
@@ -335,7 +338,7 @@ GNEAccess::isValid(SumoXMLAttr key, const std::string& value) {
             }
         }
         case SUMO_ATTR_POSITION:
-            if (value.empty() || (value == "random")) {
+            if (value.empty() || value == "random" || value == "doors") {
                 return true;
             } else {
                 return canParse<double>(value);
@@ -385,8 +388,9 @@ GNEAccess::setAttribute(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_POSITION:
             if (value.empty()) {
                 myPositionOverLane = 0;
-            } else if (value == "random") {
+            } else if (value == "random" || value == "doors") {
                 myPositionOverLane = INVALID_DOUBLE;
+                mySpecialPosition = value;
             } else {
                 myPositionOverLane = parse<double>(value);
             }

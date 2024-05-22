@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -135,7 +135,7 @@ public:
     virtual void buildChargingStation(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id, const std::string& laneID,
                                       const double startPos, const double endPos, const std::string& name, const double chargingPower,
                                       const double efficiency, const bool chargeInTransit, const SUMOTime chargeDelay, const std::string& chargeType,
-                                      const SUMOTime waitingTime, const bool friendlyPosition,
+                                      const SUMOTime waitingTime, const bool friendlyPosition, const std::string& parkingAreaID,
                                       const Parameterised::Map& parameters) = 0;
 
     /**@brief Builds a Parking Area
@@ -156,8 +156,8 @@ public:
      */
     virtual void buildParkingArea(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id, const std::string& laneID,
                                   const double startPos, const double endPos, const std::string& departPos, const std::string& name,
-                                  const bool friendlyPosition, const int roadSideCapacity, const bool onRoad, const double width,
-                                  const double length, const double angle, const bool lefthand, const Parameterised::Map& parameters) = 0;
+                                  const std::vector<std::string>& lines, const bool friendlyPosition, const int roadSideCapacity, const bool onRoad,
+                                  const double width, const double length, const double angle, const bool lefthand, const Parameterised::Map& parameters) = 0;
 
     /**@brief Builds a Parking Space
      * @param[in] sumoBaseObject sumo base object used for build
@@ -334,7 +334,7 @@ public:
      * @param[in] parameters generic parameters
      */
     virtual void buildRerouter(const CommonXMLStructure::SumoBaseObject* sumoBaseObject, const std::string& id, const Position& pos,
-                               const std::vector<std::string>& edgeIDs, const double prob, const std::string& name, const bool off,
+                               const std::vector<std::string>& edgeIDs, const double prob, const std::string& name, const bool off, const bool optional,
                                const SUMOTime timeThreshold, const std::vector<std::string>& vTypes, const Parameterised::Map& parameters) = 0;
 
     /**@brief builds a rerouter interval

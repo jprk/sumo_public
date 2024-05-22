@@ -72,6 +72,7 @@ The following attribute values have a special meaning. Instead of using an attri
 - `@INDEX`: the index of the *other* value within the input file is used.
 - `@RANK`: the index of the *other* value within the sorted (descending) list of values is used
 - `@COUNT`: the number of occurences of the *other* value is used. Together with option **--barplot** or **-hbarplot** this gives a histogram. Binning size can be set via options **--xbin** and **--ybin**.
+- `@DENSITY`: the number of occurences of the *other* value is used, normalized by the total number of values.
 - `@BOX`: one or more [box plots](https://en.wikipedia.org/wiki/Box_plot) of the *other* value are drawn. The **--idattr** is used for grouping and there will be one box plot per id
 - `@NONE`: can be used with option **--idattr** to explicitly avoid grouping
 
@@ -157,7 +158,7 @@ Call `python tools/visualization/plotXMLAttributes.py -i id -x depart -y departD
 
 ### Time to collision over simulation time
 
-The plot is created from the output file of a SUMO simulation for which a global [SSM device](https://sumo.dlr.de/docs/Simulation/Output/SSM_Device.html) has been added. For this example, starting from the [Bologna "acosta" scenario](https://github.com/DLR-TS/sumo-scenarios/tree/main/bologna/acosta), the SUMO configuration file had been modified in order to compute time to collision:
+The plot is created from the output file of a SUMO simulation for which a global [SSM device](../Simulation/Output/SSM_Device.md) has been added. For this example, starting from the [Bologna "acosta" scenario](https://github.com/DLR-TS/sumo-scenarios/tree/main/bologna/acosta), the SUMO configuration file had been modified in order to compute time to collision:
 ```xml
 <configuration xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
@@ -298,7 +299,7 @@ plotXMLAttributes.py tripinfos.xml tripinfos2.xml -x timeLoss -y @COUNT -i @NONE
 
 ## plot_trajectories.py
 
-Create plot of all trajectories in a given **--fcd-output** file. This tool in particular is located in {{SUMO}}/tools.
+Create plot of all trajectories obtained from a file generated through [--fcd-output](../Simulation/Output/FCDOutput.md). This tool in particular is located in {{SUMO}}/tools.
 
 Example use:
 
@@ -586,7 +587,7 @@ visualised as a time line along the simulation time.
 <code> --xticks 0,86401,14400,14 --xtime1 --ygrid \</code><br />
 <code> --ylabel "running vehicles [#]" --xlabel "time" \</code><br />
 <code> --title "running vehicles over time" --adjust .14,.1 </code></p>
-<p>The example shows the numbers of vehicles running in a large-scale scenario of the city of Brunswick over the day for the standard week day classes. "mo.xml", "dido.xml", "fr.xml", "sa.xml", and "so.xml" are <a href="../Simulation/Output/Summary.html" title="wikilink">summary-files</a> resulting from simulations of the weekday-types Monday, Tuesday-Thursday, Friday, Saturday, and Sunday, respectively.</p></td>
+<p>The example shows the numbers of vehicles running in a large-scale scenario of the city of Brunswick over the day for the standard week day classes. "mo.xml", "dido.xml", "fr.xml", "sa.xml", and "so.xml" are <a href="../Simulation/Output/Summary.md" title="wikilink">summary-files</a> resulting from simulations of the weekday-types Monday, Tuesday-Thursday, Friday, Saturday, and Sunday, respectively.</p></td>
 </tr>
 </tbody>
 </table>
@@ -623,7 +624,7 @@ the measure (vehicles) that fall into a bin.
 <code> --title "duration distribution" \</code><br />
 <code> --yticks 14 --xlabelsize 14 --ylabelsize 14 --titlesize 16 \</code><br />
 <code> -l mon,tue-thu,fri,sat,sun --adjust .14,.1 --xlim 0,3600</code></p>
-<p>The example shows the travel time distribution for the vehicles of different week day classes (Braunschweig scenario). "mo.xml", "dido.xml", "fr.xml", "sa.xml", and "so.xml" are <a href="../Simulation/Output/TripInfo.html" title="wikilink">tripinfo-files</a> resulting from simulations of the weekday-types Monday, Tuesday-Thursday, Friday, Saturday, and Sunday, respectively.</p></td>
+<p>The example shows the travel time distribution for the vehicles of different week day classes (Braunschweig scenario). "mo.xml", "dido.xml", "fr.xml", "sa.xml", and "so.xml" are <a href="../Simulation/Output/TripInfo.md" title="wikilink">tripinfo-files</a> resulting from simulations of the weekday-types Monday, Tuesday-Thursday, Friday, Saturday, and Sunday, respectively.</p></td>
 </tr>
 <tr class="even">
 <td><figure>
@@ -667,7 +668,7 @@ using the **--columns** {{DT_INT}}\[,{{DT_INT}}\]\* option. The values are visua
 <code> --xticks 14 --yticks 14 --colors k --ylim 0,125 \</code><br />
 <code> --output nefz.png \</code><br />
 <code> --title "New European Driving Cycle (NEDC)" --titlesize 16</code></p>
-<p>The example shows the <a href="../Tools/Emissions.html#driving_cycles" title="wikilink">New European Driving Cycle (NEDC)</a>.</p></td>
+<p>The example shows the <a href="Emissions.md#driving_cycles" title="wikilink">New European Driving Cycle (NEDC)</a>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -745,6 +746,22 @@ name/value-pairs are visualised as a bar chart.
 | **--vertical**                    | Draws vertical bars (default are horizontal bars)                       |
 | **--no-labels**                   | Does not plot the labels                                                |
 | **-v**<br>**--verbose**               | If set, the progress is printed on the screen                           |
+
+## macrOutput.py
+
+This tool will plot EdgeData output as fundamental diagram graphs (volume-density, speed-density and volume-speed relations, each edge and lane-based).
+This requires the EdgeData input file to have interval data with **sampledSeconds**, **density**, **laneDensity** and **speed** attributes. The tool supports the
+[common options](#common_options). The output is interpreted as a directory rather than a file, though. The output file names are given as:
+
+- Edge_vk.png (speed-density relation)
+- Edge_qk.png (volume-density relation)
+- Edge_qv.png (volume-speed relation)
+- Lane_vk.png (speed-density relation)
+- Lane_qk.png (volume-density relation)
+- Lane_qv.png (volume-speed relation)
+
+Example call: `python macrOutput.py edgeData.xml`
+
 
 ## common options
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -87,6 +87,14 @@ public:
 
     /// @brief fix additional problem (must be reimplemented in all detector children)
     void fixAdditionalProblem();
+
+    /// @}
+
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const;
 
     /// @}
 
@@ -186,6 +194,9 @@ public:
 protected:
     /// @brief TAZ center
     Position myTAZCenter;
+
+    /// @brief TAZ center contour
+    GNEContour myTAZCenterContour;
 
 private:
     /// @brief hint size of vertex

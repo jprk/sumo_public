@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -22,6 +22,7 @@
 
 #include <netbuild/NBEdge.h>
 #include <netbuild/NBVehicle.h>
+#include <netedit/elements/GNEContour.h>
 #include <utils/common/SUMOVehicleClass.h>
 #include <utils/router/SUMOAbstractRouter.h>
 #include <utils/gui/globjects/GUIGlObject.h>
@@ -57,6 +58,9 @@ public:
 
         /// @brief destructor
         ~Segment();
+
+        /// @brief getcontour associated with segment
+        GNEContour* getContour() const;
 
         /// @brief check if segment is the first path's segment
         bool isFirstSegment() const;
@@ -112,6 +116,9 @@ public:
 
         /// @brief flag for check if this segment is a label segment
         bool myLabelSegment;
+
+        /// @brief contour associated with segment
+        GNEContour* myContour;
 
     private:
         /// @brief default constructor
@@ -268,10 +275,10 @@ public:
         void clearPathDraw();
 
         /// @brief check if path element geometry must be drawn in the given lane
-        bool checkDrawPathGeometry(const GUIVisualizationSettings& s, const bool dottedElement, const GNELane* lane, SumoXMLTag tag);
+        bool checkDrawPathGeometry(const GUIVisualizationSettings& s, const GNELane* lane, SumoXMLTag tag);
 
         /// @brief check if path element geometry must be drawn in the given junction
-        bool checkDrawPathGeometry(const GUIVisualizationSettings& s, const bool dottedElement, const Segment* segment, SumoXMLTag tag);
+        bool checkDrawPathGeometry(const GUIVisualizationSettings& s, const Segment* segment, SumoXMLTag tag);
 
     private:
         /// @brief map for saving tags drawn in lanes

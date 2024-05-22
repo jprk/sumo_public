@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -50,7 +50,8 @@ public:
      * @param[in] shape The shape of the lane
      * @param[in] tlIndex The tl-index of the lane
      */
-    GNEInternalLane(GNETLSEditorFrame* editor, const GNEJunction* junctionParent, const std::string& id, const PositionVector& shape, int tlIndex, LinkState state = LINKSTATE_DEADEND);
+    GNEInternalLane(GNETLSEditorFrame* editor, GNEJunction* junctionParent, const std::string& id,
+                    const PositionVector& shape, int tlIndex, LinkState state = LINKSTATE_DEADEND);
 
     /// @brief Destructor
     ~GNEInternalLane();
@@ -87,6 +88,9 @@ public:
     /// @brief check if draw select contour (blue)
     bool checkDrawSelectContour() const;
 
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const;
+
     /// @}
 
     /// @name Functions related with move elements
@@ -117,6 +121,9 @@ public:
      * @see GUIGlObject::getParameterWindow
      */
     GUIParameterTableWindow* getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView& parent);
+
+    /// @brief Returns the boundary to which the view shall be centered in order to show the object
+    Boundary getCenteringBoundary() const;
 
     /// @brief update centering boundary (implies change in RTREE)
     void updateCenteringBoundary(const bool updateGrid);
@@ -191,7 +198,7 @@ protected:
 
 private:
     /// @brief pointer to junction parent
-    const GNEJunction* myJunctionParent;
+    GNEJunction* myJunctionParent;
 
     /// @brief internal lane geometry
     GUIGeometry myInternalLaneGeometry;

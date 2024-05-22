@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -23,6 +23,7 @@
 
 #include <string>
 #include <iostream>
+#include <utils/common/Parameterised.h>
 #include <utils/common/StdDefs.h>
 #include <utils/common/SUMOTime.h>
 #include <utils/vehicle/SUMOVehicleParameter.h>
@@ -79,7 +80,7 @@ public:
      * @brief Every person has a plan comprising of multiple planItems
      *
      */
-    class PlanItem {
+    class PlanItem : public Parameterised {
     public:
         /// @brief Destructor
         virtual ~PlanItem() {}
@@ -134,9 +135,8 @@ public:
         double getDestinationPos() const {
             return (stopDesc.startPos + stopDesc.endPos) / 2;
         }
-        void saveAsXML(OutputDevice& os, const bool /* extended */, const bool /*asTrip*/, OptionsCont& /* options */) const {
-            stopDesc.write(os);
-        }
+        void saveAsXML(OutputDevice& os, const bool extended, const bool asTrip, OptionsCont& options) const;
+
         bool isStop() const {
             return true;
         }

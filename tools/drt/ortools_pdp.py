@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2021-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2021-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -135,7 +135,7 @@ def add_transportation_requests_constraint(data, routing, manager, solver, dista
             # allows to reject the order but gives penalty
             if verbose:
                 print('allow to reject new reservation %s' % (request.id))
-            routing.AddDisjunction([pickup_index, delivery_index], 10000, 2)
+            routing.AddDisjunction([pickup_index, delivery_index], data['penalty'], 2)
 
 
 def add_direct_route_factor_constraint(data, routing, manager, solver, distance_dimension, verbose):

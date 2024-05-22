@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,6 +35,7 @@ public:
         INSPECT,    // Inspecting element
         REMOVE,     // Mouse over element to remove
         SELECT,     // Mouse over element to select
+        MOVE,       // Mouse over element to move
         FRONT,      // Element marked as "front element"
         OVER,       // Mouse over element (orange)
         FROM,       // Element marked as from (green)
@@ -90,17 +91,20 @@ public:
     GUIDottedGeometry();
 
     /// @brief constructor for shapes
-    GUIDottedGeometry(const GUIVisualizationSettings& s, PositionVector shape, const bool closeShape, const bool resample);
+    GUIDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                      PositionVector shape, const bool closeShape);
 
     /// @brief update GUIDottedGeometry (using lane shape)
-    void updateDottedGeometry(const GUIVisualizationSettings& s, const PositionVector& laneShape, const bool resample);
+    void updateDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                              const PositionVector& laneShape);
 
     /// @brief update GUIDottedGeometry (using shape)
-    void updateDottedGeometry(const GUIVisualizationSettings& s, PositionVector shape, const bool closeShape, const bool resample);
+    void updateDottedGeometry(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                              PositionVector shape, const bool closeShape);
 
     /// @brief draw dotted geometry
     void drawDottedGeometry(const GUIVisualizationSettings& s, GUIDottedGeometry::DottedContourType type,
-                            DottedGeometryColor& dottedGeometryColor, const bool addOffset, const double lineWidth) const;
+                            DottedGeometryColor& dottedGeometryColor, const double lineWidth, const bool addOffset) const;
 
     /// @brief draw innen geometry
     void drawInnenGeometry(const double lineWidth) const;
@@ -114,9 +118,18 @@ public:
     /// @brief get back position
     Position getBackPosition() const;
 
+    /// @brief get simple shape (the shape without resampling)
+    const PositionVector& getUnresampledShape() const;
+
+    /// @brief clear dotted geometry
+    void clearDottedGeometry();
+
 private:
     /// @brief calculate shape rotations and lengths
     void calculateShapeRotationsAndLengths();
+
+    /// @brief shape without resampling
+    PositionVector myUnresampledShape;
 
     /// @brief dotted element shape (note: It's centered in 0,0 due scaling)
     std::vector<GUIDottedGeometry::Segment> myDottedGeometrySegments;

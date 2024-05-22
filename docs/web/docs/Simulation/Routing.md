@@ -32,12 +32,12 @@ Using the methods [*traci.vehicle.changeTarget* or *traci.vehicle.rerouteTravelt
 rerouting is triggered for the specified vehicle.
 
 Alternatively, routes can be computed using
-[''traci.simulation.findRoute](../TraCI/Simulation_Value_Retrieval.md)
+[*traci.simulation.findRoute*](../TraCI/Simulation_Value_Retrieval.md)
 and applied using
 [*traci.vehicle.setRoute*](../TraCI/Change_Vehicle_State.md).
 
 For persons, the function
-[''traci.simulation.findIntermodalRoute](../TraCI/Simulation_Value_Retrieval.md)
+[*traci.simulation.findIntermodalRoute*](../TraCI/Simulation_Value_Retrieval.md)
 can be used to compute simple walks as well as [itineraries for public transport](../IntermodalRouting.md).
 
 # Alternative Destinations
@@ -46,6 +46,17 @@ By using [`<rerouter>`-definitions](../Simulation/Rerouter.md), vehicles can be 
 to alternative destinations. A different method is to use [traffic assignment zones (TAZ)](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#traffic_assignement_zones_taz).
 This allows vehicles to change their destination to the best alternative
 from a list of potential destinations.
+
+# Handling of temporary obstructions
+
+By using [`<rerouter>`-definitions](../Simulation/Rerouter.md) of type `<closingReroute allow="..."/>` (or `<closingLaneReroute allow="..."/>` if all lanes are closed) it is possible change road permissions temporarily (i.e. to model construction sites). By default, the simulation will raise an error when loading a route that passes a closed edge or if routing to the destination failes because of an obstruction.
+By setting a vehicle routing mode that includes bit-flag *traci.constants.ROUTING_MODE_IGNORE_TRANSIENT_PERMISSIONS*, this behavior can be changed. Instead vehicles will ignore obstructions until reaching the closed edge and then wait there (potentially [teleporting](Why_Vehicles_are_teleporting.md) after **--time-to-teleport* is reached).
+
+Setting the routing mode (to ignore blockage) can be accomplished in the following ways:
+
+- `traci.vehicle.setRoutingMode(vehID, traci.constants.ROUTING_MODE_IGNORE_TRANSIENT_PERMISSIONS)`
+- sumo option **--device.rerouting.mode 8**
+- defining `<param key="device.rerouting.mode value="8">` in the `vType` or a single `<vehicle>, <trip>` or `<flow>`.
 
 # Travel-time values for routing
 
@@ -58,7 +69,7 @@ argument to *traci.simulation.findRoute*.
 
 The following order of steps is taken to retrieve the travel time for each edge. If a step provides data, this is used, otherwise the next step is attempted:
 
-1.  The vehicle retrieves it's individual data storage. This can be set
+1.  The vehicle retrieves its individual data storage. This can be set
     and retrieved using the TraCI vehicle methods [*change edge travel time information*](../TraCI/Change_Vehicle_State.md#change_edge_travel_time_information_0x58)
     and [*edge travel time information*](../TraCI/Vehicle_Value_Retrieval.md#edge_travel_time_information_0x58).
 2.  The [global edge weights](../Demand/Shortest_or_Optimal_Path_Routing.md#custom_edge_weights)
@@ -118,6 +129,7 @@ As a consequence:
 By default, the objective of the routing algorithms is to minimize the travel time between origin and destination.
 The travel time can either be computed from the speed limits and vehicle maximum speed, it can be estimated at runtime from the simulation state or it can be loaded from a data file. The latter option allows defining travel times for the future.
 An example for the relevance of future travel times would be this:
+
 - a vehicle departs for a long trip at a time where there is no jamming
 - it is known that parts of the network will be jammed later
 - the route of the vehicle computed at departure time can circumvent the jam because the routing algorithm is aware that by the time those edges are reached they will be jammed.
@@ -136,7 +148,7 @@ The travel time is needed to compute at which time a certain edge is reached so 
 When setting the options **--weight-file** and **--weight-attribute**, additional routing efforts are read
 according to the specified attribute. These are only used when calling
 the TraCI function [reroute by effort](../TraCI/Change_Vehicle_State.md). The assumed efforts
-along a vehicles route are are time-based values and the time is
+along a vehicles route are time-based values and the time is
 computed based on the travel time values described above. The effort can
 also be set using *traci.edge.setEffort*.
 
@@ -195,12 +207,12 @@ search and is often faster than dijkstra. Here, the metric *euclidean distance /
 
 ## ALT
 
-By using *astar* together with the option **--astar.landmark-distance** {{DT_FILE}} the ALT-Algorithm is activated.
+By using *astar* together with the option **--astar.landmark-distances** {{DT_FILE}} the ALT-Algorithm is activated.
 The name ALT stands for: **A**\*, **L**andmarks, **t**riangle inequality.
 It uses a precomputed distance table to selected network edges (so-called landmarks) to speed up the search, often by a significant factor.
 
 - A lookup table can be generated by creating a file with one landmark edge id per line (e.g. landmarks.txt)
-and then setting the options **-astar.landmark-distances landmarks.txt --astar.save-landmark-distances lookuptable.txt**.
+and then setting the options **--astar.landmark-distances landmarks.txt --astar.save-landmark-distances lookuptable.txt**.
 - As a rule of thumb using 8-16 edges distributed around the main roads that border the network achieve good ALT-performance. Using more edges is not recommended because each landmark adds a fixed overhead).
 - by using *astar* together with the option **--astar.all-distances** {{DT_FILE}} the A\* algorithm is
   used together with a complete (and often huge) distance table to allow for blazing fast search. This is only recommended for medium sized networks with a high number of routing queries

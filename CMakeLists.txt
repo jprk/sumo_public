@@ -36,9 +36,9 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif ()
 
-project("${PROJECT_NAME}" CXX C)
-set(PACKAGE_VERSION "git")
 cmake_minimum_required(VERSION 3.5)
+project("${PROJECT_NAME}" CXX C)
+set(PACKAGE_VERSION "1.20.0")
 
 # Check if libraries have to be found, depending on SUMO_LIBRARIES
 set(SUMO_LIBRARIES "$ENV{SUMO_LIBRARIES}" CACHE PATH "Location of SUMOLibraries dependencies")
@@ -235,11 +235,10 @@ endif ()
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
 if (CLANG_COMPILER)
     if (WIN32)
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined,integer,unsigned-integer-overflow -fsanitize-blacklist=${CMAKE_SOURCE_DIR}/build_config/clang_sanitize_blacklist.txt")
-        # set iterator de bug level in 0
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined,integer -fsanitize-blacklist=${CMAKE_SOURCE_DIR}/build_config/clang_sanitize_blacklist.txt")
         add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
     else ()
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined,address,integer,unsigned-integer-overflow -fno-omit-frame-pointer -fsanitize-blacklist=${CMAKE_SOURCE_DIR}/build_config/clang_sanitize_blacklist.txt")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined,address,integer -fno-omit-frame-pointer -fsanitize-blacklist=${CMAKE_SOURCE_DIR}/build_config/clang_sanitize_blacklist.txt")
     endif ()
 endif ()
 
@@ -318,6 +317,14 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import build; import pip; build
 if (APPLE)
     # we know that openGL is deprecated for newer MacOS
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGL_SILENCE_DEPRECATION")
+
+    # Xcode 15 on macOS sonoma complains about duplicate libraries for the linker, so we disable the warning for xcode >= 15
+    if (CLANG_COMPILER)
+        string(REGEX MATCH "^[0-9]+" ClangMajorVersion "${CMAKE_CXX_COMPILER_VERSION}")
+        if (ClangMajorVersion GREATER_EQUAL 15)
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-no_warn_duplicate_libraries")
+        endif()
+    endif()
 
     # Recommendation, also add a "brew --prefix" custom command to detect a homebrew build environment
     execute_process(COMMAND brew --prefix RESULT_VARIABLE DETECT_BREW OUTPUT_VARIABLE BREW_PREFIX ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -549,7 +556,7 @@ if (CHECK_OPTIONAL_LIBS)
         find_package(GEOS)
         if (GEOS_FOUND)
             include_directories(SYSTEM ${GEOS_INCLUDE_DIR})
-            set(JPS_VERSION "${jupedsim_VERSION_MINOR}0${jupedsim_VERSION_PATCH}")
+            set(JPS_VERSION "${jupedsim_VERSION_MAJOR}${jupedsim_VERSION_MINOR}${jupedsim_VERSION_PATCH}")
             set(ENABLED_FEATURES "${ENABLED_FEATURES} JuPedSim")
             message(STATUS "Found JuPedSim: ${jupedsim_DIR} ${jupedsim_VERSION}")
         else (GEOS_FOUND)
@@ -716,7 +723,7 @@ if (MVN_EXECUTABLE AND Java_FOUND)
         get_filename_component(JAVA_BIN ${Java_JAVAC_EXECUTABLE} DIRECTORY)
         get_filename_component(JAVA_HOME ${JAVA_BIN} DIRECTORY)
         set(MVN_COMMAND_PREFIX ${CMAKE_COMMAND} -E env JAVA_HOME=${JAVA_HOME})
-#        set(MVN_REPO "-Dmaven.repo.local=${CMAKE_BINARY_DIR}/m2")
+        set(MVN_REPO "-Dmaven.repo.local=${CMAKE_BINARY_DIR}/m2")
     endif ()
     add_custom_target(traas
         COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} ${MVN_REPO} --batch-mode -f tools/contributed/traas/pom.xml clean install

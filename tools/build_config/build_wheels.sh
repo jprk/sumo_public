@@ -1,6 +1,6 @@
 #!/bin/bash
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -60,6 +60,8 @@ for py in /opt/python/cp3[1789]*; do
     $py/bin/python -m build --wheel tools -o dist
     auditwheel repair dist/libsumo*.whl
 done
+# clean up all temporary files except for _skbuild
 rm -rf tools/*.egg-info tools/build_config/*.egg-info tools/build tools/libsumo/data pyproject.toml setup.py tools/setup.py
-chmod 777 dist wheelhouse
-chmod -R a+w _skbuild
+# the resulting wheels are in wheelhouse but we keep also the dist and the _skbuild dir for inspection
+# we make everything writable so that others can clean up
+chmod -R a+w _skbuild dist wheelhouse

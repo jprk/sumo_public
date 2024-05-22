@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -52,6 +52,7 @@
 #include <microsim/transportables/MSTransportableControl.h>
 #include <microsim/traffic_lights/MSRailSignal.h>
 #include <microsim/lcmodels/MSAbstractLaneChangeModel.h>
+#include <mesosim/MELoop.h>
 #include "MSNet.h"
 #include "MSVehicleType.h"
 #include "MSEdge.h"
@@ -245,7 +246,8 @@ MSLane::MSLane(const std::string& id, double maxSpeed, double friction, double l
                SVCPermissions permissions,
                SVCPermissions changeLeft, SVCPermissions changeRight,
                int index, bool isRampAccel,
-               const std::string& type) :
+               const std::string& type,
+               const PositionVector& outlineShape) :
     Named(id),
     myNumericalID(numericalID), myShape(shape), myIndex(index),
     myVehicles(), myLength(length), myWidth(width),
@@ -262,6 +264,7 @@ MSLane::MSLane(const std::string& id, double maxSpeed, double friction, double l
     myCanonicalSuccessorLane(nullptr),
     myBruttoVehicleLengthSum(0), myNettoVehicleLengthSum(0),
     myBruttoVehicleLengthSumToRemove(0), myNettoVehicleLengthSumToRemove(0),
+    myRecalculateBruttoSum(false),
     myLeaderInfo(width, nullptr, 0.),
     myFollowerInfo(width, nullptr, 0.),
     myLeaderInfoTime(SUMOTime_MIN),
@@ -282,6 +285,9 @@ MSLane::MSLane(const std::string& id, double maxSpeed, double friction, double l
     initRestrictions();// may be reloaded again from initialized in MSEdge::closeBuilding
     assert(myRNGs.size() > 0);
     myRNGIndex = numericalID % myRNGs.size();
+    if (outlineShape.size() > 0) {
+        myOutlineShape = new PositionVector(outlineShape);
+    }
 }
 
 
@@ -289,6 +295,7 @@ MSLane::~MSLane() {
     for (MSLink* const l : myLinks) {
         delete l;
     }
+    delete myOutlineShape;
 }
 
 
@@ -691,6 +698,7 @@ MSLane::insertVehicle(MSVehicle& veh) {
             FALLTHROUGH;
         case DepartPosDefinition::BASE:
         case DepartPosDefinition::DEFAULT:
+        case DepartPosDefinition::SPLIT_FRONT:
         default:
             if (pars.departProcedure == DepartDefinition::SPLIT) {
                 pos = getLength();
@@ -699,7 +707,11 @@ MSLane::insertVehicle(MSVehicle& veh) {
                 for (AnyVehicleIterator it = anyVehiclesBegin(); it != end; ++it) {
                     const MSVehicle* cand = *it;
                     if (cand->isStopped() && cand->getNextStopParameter()->split == veh.getID()) {
-                        pos = cand->getBackPositionOnLane() - veh.getVehicleType().getMinGap();
+                        if (pars.departPosProcedure == DepartPosDefinition::SPLIT_FRONT) {
+                            pos = cand->getPositionOnLane() + cand->getVehicleType().getMinGap() + veh.getLength();
+                        } else {
+                            pos = cand->getBackPositionOnLane() - veh.getVehicleType().getMinGap();
+                        }
                         break;
                     }
                 }
@@ -1329,6 +1341,11 @@ MSLane::safeInsertionSpeed(const MSVehicle* veh, double seen, const MSLeaderInfo
                 gap -= (leader->getLength() + leader->getBrakeGap(true));
             }
             if (gap < 0) {
+#ifdef DEBUG_INSERTION
+                if (DEBUG_COND2(veh)) {
+                    std::cout << "    leader=" << leader->getID() << " bPos=" << leader->getBackPositionOnLane(this) << " gap=" << gap << "\n";
+                }
+#endif
                 if ((veh->getParameter().insertionChecks & (int)InsertionCheck::COLLISION) != 0) {
                     return INVALID_SPEED;
                 } else {
@@ -2292,6 +2309,12 @@ MSLane::executeMovements(const SUMOTime t) {
 
 
 void
+MSLane::markRecalculateBruttoSum() {
+    myRecalculateBruttoSum = true;
+}
+
+
+void
 MSLane::updateLengthSum() {
     myBruttoVehicleLengthSum -= myBruttoVehicleLengthSumToRemove;
     myNettoVehicleLengthSum -= myNettoVehicleLengthSumToRemove;
@@ -2301,6 +2324,12 @@ MSLane::updateLengthSum() {
         // avoid numerical instability
         myBruttoVehicleLengthSum = 0;
         myNettoVehicleLengthSum = 0;
+    } else if (myRecalculateBruttoSum) {
+        myBruttoVehicleLengthSum = 0;
+        for (VehCont::const_iterator i = myVehicles.begin(); i != myVehicles.end(); ++i) {
+            myBruttoVehicleLengthSum += (*i)->getVehicleType().getLengthWithGap();
+        }
+        myRecalculateBruttoSum = false;
     }
 }
 
@@ -2483,6 +2512,11 @@ MSLane::isCrossing() const {
     return myEdge->isCrossing();
 }
 
+bool
+MSLane::isWalkingArea() const {
+    return myEdge->isWalkingArea();
+}
+
 
 MSVehicle*
 MSLane::getLastFullVehicle() const {
@@ -2625,11 +2659,18 @@ MSLane::getEntryLink() const {
 
 
 void
-MSLane::setMaxSpeed(double val, bool byVSS, bool byTraCI) {
+MSLane::setMaxSpeed(double val, bool byVSS, bool byTraCI, double jamThreshold) {
     myMaxSpeed = val;
     mySpeedByVSS = byVSS;
     mySpeedByTraCI = byTraCI;
     myEdge->recalcCache();
+    if (MSGlobals::gUseMesoSim) {
+        MESegment* first = MSGlobals::gMesoNet->getSegmentForEdge(*myEdge);
+        while (first != nullptr) {
+            first->setSpeed(val, SIMSTEP, jamThreshold, myIndex);
+            first = first->getNextSegment();
+        }
+    }
 }
 
 
@@ -2898,6 +2939,11 @@ MSLane::getLeaderOnConsecutive(double dist, double seen, double speed, const MSV
                 }
                 if (gap < shortestGap) {
                     shortestGap = gap;
+                    if (ll.vehAndGap.second < 0 && !MSGlobals::gComputeLC) {
+                        // can always continue up to the stop line or crossing point
+                        // @todo: figure out whether this should also impact lane changing
+                        ll.vehAndGap.second = MAX2(seen - nextLane->getLength(), ll.distToCrossing);
+                    }
                     result = ll.vehAndGap;
                 }
             }
@@ -4493,6 +4539,12 @@ MSLane::getSpaceTillLastStanding(const MSVehicle* ego, bool& foundStopped) const
         }
     }
     return getLength() - lengths;
+}
+
+
+bool
+MSLane::allowsVehicleClass(SUMOVehicleClass vclass, int routingMode) const {
+    return (((routingMode & libsumo::ROUTING_MODE_IGNORE_TRANSIENT_PERMISSIONS) ? myOriginalPermissions : myPermissions) & vclass) == vclass;
 }
 
 /****************************************************************************/

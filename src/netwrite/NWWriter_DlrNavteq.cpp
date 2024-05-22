@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -140,7 +140,7 @@ NWWriter_DlrNavteq::writeNodesUnsplitted(const OptionsCont& oc, const NBNodeCont
         avoid.insert(avoid.end(), reservedNodeIDs.begin(), reservedNodeIDs.end());
     }
     IDSupplier idSupplier("", avoid);
-    for (const auto& edgeIt: ec) {
+    for (const auto& edgeIt : ec) {
         const NBEdge* const e = edgeIt.second;
         PositionVector geom = e->getGeometry();
         if (geom.size() > 2) {
@@ -167,9 +167,9 @@ NWWriter_DlrNavteq::writeNodesUnsplitted(const OptionsCont& oc, const NBNodeCont
             if (geom.size() > 2) { // move2side might have changed the number of nodes
                 std::string internalNodeID = e->getID();
                 if (internalNodeID == UNDEFINED
-                    || (nc.retrieve(internalNodeID) != nullptr)
-                    || reservedNodeIDs.count(internalNodeID) > 0
-                    ) {
+                        || (nc.retrieve(internalNodeID) != nullptr)
+                        || reservedNodeIDs.count(internalNodeID) > 0
+                   ) {
                     // need to invent a new name to avoid clashing with the id of a 'real' node or a reserved name
                     if (numericalIDs) {
                         internalNodeID = idSupplier.getNext();
@@ -415,9 +415,9 @@ NWWriter_DlrNavteq::getNavteqLaneCode(const int numLanes) {
 
 int
 NWWriter_DlrNavteq::getBrunnelType(const NBEdge* const edge) {
-    if (edge->knowsParameter("bridge")) {
+    if (edge->hasParameter("bridge")) {
         return 1;
-    } else if (edge->knowsParameter("tunnel")) {
+    } else if (edge->hasParameter("tunnel")) {
         return 4;
     } else if (edge->getTypeID() == "route.ferry") {
         return 10;

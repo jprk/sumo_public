@@ -6,7 +6,63 @@ title: Projects
 
 ### Current Projects
 
-- [MAVEN](https://www.maven-its.eu/) Managing Automated Vehicles
+- [ReTraSON](https://verkehrsforschung.dlr.de/de/projekte/retrason-infrastrukturelle-transformation-suedostniedersachsen)
+   Infrastructure Transformation in Lower Saxony (German)
+
+- [SHOW](https://www.uitp.org/projects/show/)
+shows the integration of fleets of automated vehicles in public transport, demand-responsive transport (DRT), Mobility a Service (MaaS) and Logistics as a Service (LaaS) schemes
+
+- [Spurplan](https://verkehrsforschung.dlr.de/de/projekte/sumo-spurplan-5-deadlock-aufbereitung-fuer-grossraeumige-szenarien)
+SUMO is being expanded and improved in various areas for modeling rail traffic
+
+- [VMo4Orte](https://verkehrsforschung.dlr.de/en/projects/vmo4orte)
+Development of solution modules that can be used to contribute to the transformation of the transport system
+
+- [MoCKiii](https://verkehrsforschung.dlr.de/de/projekte/projekt-mockiii-visualisierte-verkehrsmittelnutzung-fuer-die-stadt-koeln)
+Creation of a dash board with which the city of Cologne can easily detect the current traffic situation, changes in mobility behavior and the traffic situation in order to then be able to initiate suitable countermeasures
+
+- [KoKoVi](https://verkehrsforschung.dlr.de/de/projekte/kokovi)
+Transport as a cooperative and networked system
+
+- [TAPAS](https://verkehrsforschung.dlr.de/en/projects/tapas-model-future-demand-passenger-transport-urban-areas)
+Model for data on the future development of passenger transport demand in urban areas
+
+
+### Past Projects
+
+- [ITS for Asia](https://verkehrsforschung.dlr.de/en/projects/itsforasia)
+Monitoring intersections to identify accident spots
+
+- [Digitaler Knoten 4.0](https://verkehrsforschung.dlr.de/de/projekte/digitaler-knoten-40)
+Investigation of networked, efficient and safe organization of mixed traffic situations
+
+- [UrMo Digital](https://verkehrsforschung.dlr.de/de/projekte/urmo-digital)
+Investigation of mobility and logistics concepts under the influence of digitalization
+
+- [Local Traffic Safety Analyzer (LTSA)](https://verkehrsforschung.dlr.de/de/projekte/local-traffic-safety-analyzer-ltsa)
+In terms of infrastructure, it recognizes and analyzes the road and provides movement lines (trajectories) as well as messages describing the situation for road users
+
+- [DATAMOST](https://verkehrsforschung.dlr.de/en/projects/datamost-data-and-model-based-solutions-transformation-mobility)
+Data and Model-based Solutions for the Transformation of Mobility
+
+- [DIGEST](https://verkehrsforschung.dlr.de/de/projekte/digest-digitaler-zwilling-des-verkehrssystems-strasse)
+Digital twin of the road transport system
+
+- [ALFRIED](https://verkehrsforschung.dlr.de/de/projekte/automatisiertes-und-vernetztes-fahren-der-logistik-am-testfeld-friedrichshafen-kurz)
+Automatisiertes und vernetztes Fahren in der Logistik am Testfeld Friedrichshafen
+
+- [Spurplan-4](https://verkehrsforschung.dlr.de/de/projekte/spurplan-4)
+Simulation of regional rail traffic for regular operations, disrupted operations and planning interventions
+
+- [VM50City](https://verkehrsforschung.dlr.de/de/projekte/vm50kcity-automatisierung-und-digitalisierung-der-verkehrssteuerung-auf)
+Examination of established categories of measures for potential and feasibility for small and medium-sized cities
+
+- [eUVM](https://verkehrsforschung.dlr.de/de/projekte/euvm-reduktion-von-luftschadstoffen-berlin-durch-optimiertes-verkehrsmanagement)
+Testing and implementing suitable measures to reduce traffic-related emissions
+
+- [AutomoVer](https://verkehrsforschung.dlr.de/de/projekte/automatisierung-des-verkehrssystems)
+Development of guidance for decision-makers
+- [MAVEN](http://www.maven-its.eu/) Managing Automated Vehicles
   Enhances Network
 - [TransAID](https://ec.europa.eu/inea/en/horizon-2020/projects/H2020-Transport/Automated-Road-Transport/TransAID)
   new hierarchical traffic management procedures to allow the smooth
@@ -17,25 +73,24 @@ title: Projects
   large-scale traffic for disaster and public event management
 - [I.MoVe](https://verkehrsforschung.dlr.de/de/projekte/imove)
   developing additional car following models
-- [Urban Mobility](https://www.urmo.info/) Intermodal routing and
+- [Urban Mobility](https://web.archive.org/web/20180329070141/http://www.urmo.info/) Intermodal routing and
   modeling of transfer between vehicles in SUMO
 - [Mobility Inside](https://www.mobility-inside.de/) Using SUMO's
   intermodal routing engine
-- [HubChain (german)](https://komob.de/projekte/hub-chain/) simulating
+- [HubChain (german)](http://komob.de/projekte/hub-chain/) simulating
   autonomous public transport in rural areas
-
-### Past Projects
-
-- [VEU](https://www.dlr.de/VEU/). In this project, SUMO is used to
+- [VEU](https://web.archive.org/web/20220802080754/https://verkehrsforschung.dlr.de/de/projekte/veu). In this project, SUMO is used to
   simulated the traffic of Berlin
 - [COLOMBO](https://verkehrsforschung.dlr.de/en/projects/colombo) Cooperative Self-Organizing
   System for low Carbon Mobility at low Penetration Rates
 - [AMITRAN](https://web.archive.org/web/20180815190303/https://www.amitran.eu/)
+CO2 Assessment Methodology for ICT in Transport
 - [MODUM](https://web.archive.org/web/20180831121624/https://modum-project.eu/)
+Addresses the environmental footprint in the transport sector by developing a new approach for pro-active demand-responsive management of traffic
 - [iTetris](https://www.ict-itetris.eu/) An Integrated Wireless and
   Traffic Platform for Real-Time Road Traffic Management Solutions
 - [Delphi](https://www.dlr.de/sc/desktopdefault.aspx/tabid-1262/1765_read-9581): country-wide traffic analysis and prognosis for Germany
-- [ORINOKO](https://www.nuernberg.de/imperia/md/verkehrsplanung/dokumente/orinoko_final_internet.pdf): improvements on mobility in the
+- [ORINOKO](https://web.archive.org/web/20220710041841/https://www.nuernberg.de/imperia/md/verkehrsplanung/dokumente/orinoko_final_internet.pdf): improvements on mobility in the
   city of Nürnberg
 - TrafficOnline: traffic flow estimation using cellular phones
 - [Soccer2006](https://web.archive.org/web/20150705081516/https://www.dlr.de/desktopdefault.aspx/tabid-1296):
@@ -43,7 +98,7 @@ title: Projects
 - Weltjugendtag2005: Traffic prognosis during the world youth day 2005
 - [TrafficTower](https://www.dlr.de/fs/desktopdefault.aspx/tabid-1237/5441_read-12154/):
   A virtual traffic management centre
-- [INVENT](https://www.invent-online.de/): Evaluation of modern traffic
+- [INVENT](https://web.archive.org/web/20070310215410/http://www.invent-online.de/de/projekte.html): Evaluation of modern traffic
   management approaches
 - [OIS](https://web.archive.org/web/20040826034935/https://www.dlr.de/vf/forschung/projekte/ois): Verification of
   using optical sensors for optimization of traffic lights
@@ -78,10 +133,10 @@ title: Projects
   University, Germany
 - [TraNS - Traffic and Network Simulation environment for design, implementation
   and realistic evaluation of VANET
-  applications](https://trans.epfl.ch)
+  applications](https://web.archive.org/web/20190512111856/http://lca.epfl.ch/projects/trans/)
   by Michal Piorkowski, Maxim Raya, Ada Lezama Lugo and Jean-Pierre
-  Hubaux from [Laboratory for Computer Communications and Applications
-  (LCA)](https://lcawww.epfl.ch), [EPFL](https://www.epfl.ch),
+  Hubaux from Laboratory for Computer Communications and Applications
+  (LCA), [EPFL](https://www.epfl.ch),
   Switzerland
   TraNS is the first open-source project providing a full-blown
   application-centric evaluation framework for VANETs. It has a unique
@@ -120,11 +175,11 @@ title: Projects
   layers, not their protocols in detail. This makes it especially fast
   and suitable for application developers.
 - [PedSUMO](https://github.com/M-Colley/pedsumo): PedSUMO is an enhancement to SUMO that explores the dynamic interaction between automated vehicles and pedestrians at unprioritized crossings, focusing on pedestrian behavior in response to vehicle-priority communication methods. This open-source project offers detailed algorithms, parameter insights, and an initial data analysis of Ingolstadt, Germany, paving the way for understanding the complex impact of automated vehicles in urban environments.
-  
+
 
 ### Past Projects
 
-- [Congestion-Aware Vehicular Traffic Routing Using WiFi Hotspots](https://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=F0B31C15E28195C3869E05D0B20B4D70?doi=10.1.1.134.8437&rep=rep1&type=pdf)
+- [Congestion-Aware Vehicular Traffic Routing Using WiFi Hotspots](https://www.cottinghams.com/david/downloads/ciiCongestionPoster.pdf)
   by David N. Cottingham, Jonathan J. Davies, & Alastair R. Beresford
   from the University of Cambridge, UK
   publications: [Cottingham, Davies, Beresford,

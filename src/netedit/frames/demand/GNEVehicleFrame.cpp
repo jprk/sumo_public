@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -162,11 +162,11 @@ void
 GNEVehicleFrame::hide() {
     // reset edge candidates
     for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-        edge.second->resetCandidateFlags();
+        edge.second.second->resetCandidateFlags();
     }
     // reset junctioncandidates
     for (const auto& junction : myViewNet->getNet()->getAttributeCarriers()->getJunctions()) {
-        junction.second->resetCandidateFlags();
+        junction.second.second->resetCandidateFlags();
     }
     // hide frame
     GNEFrame::hide();
@@ -174,7 +174,7 @@ GNEVehicleFrame::hide() {
 
 
 bool
-GNEVehicleFrame::addVehicle(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor, const GNEViewNetHelper::MouseButtonKeyPressed& mouseButtonKeyPressed) {
+GNEVehicleFrame::addVehicle(const GNEViewNetHelper::ViewObjectsSelector& viewObjects, const GNEViewNetHelper::MouseButtonKeyPressed& mouseButtonKeyPressed) {
     // check template AC
     if (myVehicleTagSelector->getCurrentTemplateAC() == nullptr) {
         return false;
@@ -211,16 +211,16 @@ GNEVehicleFrame::addVehicle(const GNEViewNetHelper::ObjectsUnderCursor& objectsU
     myVehicleBaseObject->addStringAttribute(SUMO_ATTR_TYPE, myTypeSelector->getCurrentDemandElement()->getID());
     // set route or edges depending of vehicle type
     if (myVehicleTagSelector->getCurrentTemplateAC()->getTagProperty().vehicleRoute()) {
-        return buildVehicleOverRoute(vehicleTag, objectsUnderCursor.getDemandElementFront());
-    } else if (addEdge && objectsUnderCursor.getEdgeFront()) {
+        return buildVehicleOverRoute(vehicleTag, viewObjects.getDemandElementFront());
+    } else if (addEdge && viewObjects.getEdgeFront()) {
         // add clicked edge in GNEPathCreator
-        return myPathCreator->addEdge(objectsUnderCursor.getEdgeFront(), mouseButtonKeyPressed.shiftKeyPressed(), mouseButtonKeyPressed.controlKeyPressed());
-    } else if (addJunction && objectsUnderCursor.getJunctionFront()) {
+        return myPathCreator->addEdge(viewObjects.getEdgeFront(), mouseButtonKeyPressed.shiftKeyPressed(), mouseButtonKeyPressed.controlKeyPressed());
+    } else if (addJunction && viewObjects.getJunctionFront()) {
         // add clicked junction in GNEPathCreator
-        return myPathCreator->addJunction(objectsUnderCursor.getJunctionFront());
-    } else if (addTAZ && objectsUnderCursor.getTAZFront()) {
+        return myPathCreator->addJunction(viewObjects.getJunctionFront());
+    } else if (addTAZ && viewObjects.getTAZFront()) {
         // add clicked TAZ in GNEPathCreator
-        return myPathCreator->addTAZ(objectsUnderCursor.getTAZFront());
+        return myPathCreator->addTAZ(viewObjects.getTAZFront());
     } else {
         return false;
     }

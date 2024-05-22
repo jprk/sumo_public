@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2015-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2015-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -27,8 +27,8 @@ from __future__ import absolute_import
 import sys
 import os
 import re
+import subprocess
 from os.path import dirname, join
-from subprocess import check_output, CalledProcessError
 from glob import glob
 
 # list of folders and tools
@@ -335,35 +335,52 @@ def generateTemplate(app, appBin):
     @brief generate template for the given app
     """
     print("Obtaining " + app + " template")
+    env = dict(os.environ)
+    # the *SAN_OPTIONS are only relevant for the clang build but should not hurt others
+    env["LSAN_OPTIONS"] = "suppressions=%s/../../build_config/clang_memleak_suppressions.txt" % dirname(__file__)
+    env["UBSAN_OPTIONS"] = "suppressions=%s/../../build_config/clang_ubsan_suppressions.txt" % dirname(__file__)
     # obtain template piping stdout using check_output
     try:
-        template = formatBinTemplate(check_output([appBin, "--save-template", "stdout"], universal_newlines=True))
-    except CalledProcessError as e:
+        template = formatBinTemplate(subprocess.check_output(
+            [appBin, "--save-template", "stdout"], env=env, universal_newlines=True))
+    except subprocess.CalledProcessError as e:
         sys.stderr.write("Error when generating template for " + app + ": '%s'" % e)
         template = ""
     # join variable and formatted template
     return 'const std::string %sTemplate = "%s";\n' % (app, template)
 
 
-def generateToolTemplate(toolDir, toolPath):
+def generateToolTemplates(toolDir, toolPaths, verbose):
     """
     @brief generate tool template
     """
-    toolName = os.path.basename(toolPath)[:-3]
-    # create templateTool
-    d = os.path.dirname(toolPath)
-    templateTool = 'TemplateTool("%s", "tools/%s", "%s",\n' % (toolName, toolPath, PATH_MAPPING.get(d, d))
-    print("Obtaining '" + toolName + "' tool template.")
-    # obtain template piping stdout using check_output
-    try:
-        with open(os.devnull, "w") as null:
-            template = check_output([sys.executable, join(toolDir, toolPath), "--save-template", "stdout"],
-                                    stderr=null, universal_newlines=True)
-        # join variable and formatted template
-        return templateTool + formatToolTemplate(template) + '),\n'
-    except CalledProcessError as e:
-        print("Cannot generate tool template for %s: '%s'." % (toolName, e), file=sys.stderr)
-    return templateTool + '""),\n'
+    print("Obtaining tool templates.")
+    procs = []
+    result = ""
+    for toolPath in toolPaths:
+        toolName = os.path.basename(toolPath)[:-3]
+        if verbose:
+            print("Obtaining '" + toolName + "' tool template.")
+        # obtain template piping stdout using check_output
+        procs.append(subprocess.Popen([sys.executable, join(toolDir, toolPath), "--save-template", "stdout"],
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True))
+    failed = []
+    for p, toolPath in zip(procs, toolPaths):
+        toolName = os.path.basename(toolPath)[:-3]
+        d = os.path.dirname(toolPath)
+        result += 'TemplateTool("%s", "tools/%s", "%s",\n' % (toolName, toolPath, PATH_MAPPING.get(d, d))
+        stdout, stderr = p.communicate()
+        if p.returncode:
+            failed.append(toolName)
+            if verbose:
+                print("Cannot generate tool template for %s: '%s'." % (toolName, stderr), file=sys.stderr)
+            result += '""'
+        else:
+            result += formatToolTemplate(stdout)
+        result += '),\n'
+    if failed:
+        print("Could not generate tool templates for %s." % (", ".join(failed)), file=sys.stderr)
+    return result
 
 
 def checkMod(toolDir, reference):
@@ -387,13 +404,11 @@ def main():
     toolDir = join(dirname(__file__), '..')
     if not os.path.exists("templates.h") or checkMod(toolDir, "templates.h"):
         # write templates.h
-        with open("templates.h", 'w') as templateHeaderFile:
-            # generate templateTool header
+        with open("templates.h", 'w', encoding='utf8') as templateHeaderFile:
             buildTemplateToolHeader(templateHeaderFile)
-            # generate Tool templates
+            is_debug = sys.argv[1].endswith("D") or sys.argv[1].endswith("D.exe")
             print("const std::vector<TemplateTool> templateTools {\n", file=templateHeaderFile)
-            for tool in TOOLS:
-                print(generateToolTemplate(toolDir, tool), file=templateHeaderFile)
+            print(generateToolTemplates(toolDir, TOOLS, is_debug), file=templateHeaderFile)
             print("};\n", file=templateHeaderFile)
             # generate sumo Template
             print(generateTemplate("sumo", sys.argv[1]), file=templateHeaderFile)

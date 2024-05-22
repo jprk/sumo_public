@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -140,7 +140,7 @@ GUIBusStop::getParameterWindow(GUIMainWindow& app,
     ret->mkItem((transportable + " capacity [#]").c_str(), false, myTransportableCapacity);
     ret->mkItem((transportable + " number [#]").c_str(), true, new FunctionBinding<GUIBusStop, int>(this, &MSStoppingPlace::getTransportableNumber));
     ret->mkItem(TL("stopped vehicles [#]"), true, new FunctionBinding<GUIBusStop, int>(this, &MSStoppingPlace::getStoppedVehicleNumber));
-    ret->mkItem(TL("last free pos [m]"), true, new FunctionBinding<GUIBusStop, double>(this, &MSStoppingPlace::getLastFreePos));
+    ret->mkItem(TL("last free pos [m]"), true, new FunctionBinding<GUIBusStop, double>(this, &GUIBusStop::getCroppedLastFreePos));
     // rides-being-waited-on statistic
     std::map<std::string, int> stats;
     for (const MSTransportable* t : getTransportables()) {
@@ -200,7 +200,7 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
     const double signRot = s2 ? myFGSignRot2 : myFGSignRot;
     const Position& signPos = s2 ? myFGSignPos2 : myFGSignPos;
     // draw details unless zoomed out to far
-    if (s.drawDetail(s.detailSettings.stoppingPlaceDetails, exaggeration)) {
+    if (s.drawDetail(10, exaggeration)) {
         GLHelper::pushMatrix();
         // draw the lines
         const double rotSign = MSGlobals::gLefthand ? 1 : -1;
@@ -236,7 +236,7 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
         glTranslated(0, 0, .1);
         GLHelper::setColor(colorSign);
         GLHelper::drawFilledCircle((double) 0.9, noPoints);
-        if (s.drawDetail(s.detailSettings.stoppingPlaceText, exaggeration)) {
+        if (s.drawDetail(10, exaggeration)) {
             if (myElement == SUMO_TAG_CONTAINER_STOP) {
                 GLHelper::drawText("C", Position(), .1, 1.6, color, signRot);
             } else if (myElement == SUMO_TAG_TRAIN_STOP) {
@@ -276,6 +276,11 @@ GUIBusStop::getCenteringBoundary() const {
 const std::string
 GUIBusStop::getOptionalName() const {
     return myName;
+}
+
+double
+GUIBusStop::getCroppedLastFreePos() const {
+    return MAX2(0., getLastFreePos());
 }
 
 /****************************************************************************/

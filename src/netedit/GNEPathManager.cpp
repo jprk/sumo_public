@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -42,7 +42,8 @@ GNEPathManager::Segment::Segment(GNEPathManager* pathManager, PathElement* eleme
     myJunction(nullptr),
     myNextSegment(nullptr),
     myPreviousSegment(nullptr),
-    myLabelSegment(false) {
+    myLabelSegment(false),
+    myContour(new GNEContour) {
     // set previous segment
     if (segments.size() > 0) {
         // set previous segment
@@ -63,7 +64,8 @@ GNEPathManager::Segment::Segment(GNEPathManager* pathManager, PathElement* eleme
     myJunction(junction),
     myNextSegment(nullptr),
     myPreviousSegment(nullptr),
-    myLabelSegment(false) {
+    myLabelSegment(false),
+    myContour(new GNEContour) {
     // set previous segment
     if (segments.size() > 0) {
         // set previous segment
@@ -87,6 +89,14 @@ GNEPathManager::Segment::~Segment() {
     if (myNextSegment) {
         myNextSegment->myPreviousSegment = nullptr;
     }
+    // delete contour
+    delete myContour;
+}
+
+
+GNEContour*
+GNEPathManager::Segment::getContour() const {
+    return myContour;
 }
 
 
@@ -368,7 +378,7 @@ void
 GNEPathManager::PathCalculator::calculateReachability(const SUMOVehicleClass vClass, GNEEdge* originEdge) {
     // first reset reachability of all lanes
     for (const auto& edge : originEdge->getNet()->getAttributeCarriers()->getEdges()) {
-        for (const auto& lane : edge.second->getLanes()) {
+        for (const auto& lane : edge.second.second->getLanes()) {
             lane->resetReachability();
         }
     }
@@ -541,11 +551,9 @@ GNEPathManager::PathDraw::clearPathDraw() {
 
 
 bool
-GNEPathManager::PathDraw::checkDrawPathGeometry(const GUIVisualizationSettings& s, const bool dottedElement, const GNELane* lane, SumoXMLTag tag) {
+GNEPathManager::PathDraw::checkDrawPathGeometry(const GUIVisualizationSettings& s, const GNELane* lane, SumoXMLTag tag) {
     // check conditions
-    if (dottedElement) {
-        return true;
-    } else if (s.drawForPositionSelection || s.drawForRectangleSelection) {
+    if (s.drawForViewObjectsHandler) {
         return true;
     } else if (myLaneDrawedElements.count(lane) > 0) {
         // check tag
@@ -568,11 +576,9 @@ GNEPathManager::PathDraw::checkDrawPathGeometry(const GUIVisualizationSettings& 
 
 
 bool
-GNEPathManager::PathDraw::checkDrawPathGeometry(const GUIVisualizationSettings& s, const bool dottedElement, const Segment* segment, SumoXMLTag tag) {
+GNEPathManager::PathDraw::checkDrawPathGeometry(const GUIVisualizationSettings& s, const Segment* segment, SumoXMLTag tag) {
     // check conditions
-    if (dottedElement) {
-        return true;
-    } else if (s.drawForPositionSelection || s.drawForRectangleSelection) {
+    if (s.drawForViewObjectsHandler) {
         return true;
     } else {
         // declare lane2lane
@@ -809,6 +815,7 @@ GNEPathManager::removePath(PathElement* pathElement) {
 
 void
 GNEPathManager::drawLanePathElements(const GUIVisualizationSettings& s, const GNELane* lane) const {
+    // check detail level and lane segments
     if (myLaneSegments.count(lane) > 0) {
         int numRoutes = 0;
         // first draw selected elements (for drawing over other elements)
@@ -843,6 +850,7 @@ GNEPathManager::drawLanePathElements(const GUIVisualizationSettings& s, const GN
 
 void
 GNEPathManager::drawJunctionPathElements(const GUIVisualizationSettings& s, const GNEJunction* junction) const {
+    // check detail level and junction segments
     if (myJunctionSegments.count(junction) > 0) {
         // first draw selected elements (for drawing over other elements)
         for (const auto& segment : myJunctionSegments.at(junction)) {

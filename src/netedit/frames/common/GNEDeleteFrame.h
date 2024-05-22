@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -223,14 +223,14 @@ public:
     void removeSelectedAttributeCarriers();
 
     /**@brief remove attribute carrier (element)
-     * @param objectsUnderCursor objects under cursors
+     * @param viewObjects objects under cursors
      */
-    void removeAttributeCarrier(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor);
+    void removeAttributeCarrier(const GNEViewNetHelper::ViewObjectsSelector& viewObjects);
 
     /**@brief remove geometry point
-     * @param objectsUnderCursor objects under cursors
+     * @param viewObjects objects under cursors
      */
-    bool removeGeometryPoint(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor);
+    bool removeGeometryPoint(const GNEViewNetHelper::ViewObjectsSelector& viewObjects);
 
     /// @brief get delete options modul
     DeleteOptions* getDeleteOptions() const;

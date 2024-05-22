@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -34,7 +34,7 @@
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/div/GUIParameterTableWindow.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GNEAdditional.h"
 #include "GNETAZ.h"
@@ -83,6 +83,12 @@ GNEAdditional::removeGeometryPoint(const Position /*clickedPosition*/, GNEUndoLi
 
 GUIGlObject*
 GNEAdditional::getGUIGlObject() {
+    return this;
+}
+
+
+const GUIGlObject*
+GNEAdditional::getGUIGlObject() const {
     return this;
 }
 
@@ -141,7 +147,11 @@ GNEAdditional::getExaggeration(const GUIVisualizationSettings& s) const {
 
 Boundary
 GNEAdditional::getCenteringBoundary() const {
-    return myAdditionalBoundary;
+    if (myAdditionalBoundary.isInitialised()) {
+        return myAdditionalBoundary;
+    } else {
+        return myAdditionalContour.getContourBoundary();
+    }
 }
 
 
@@ -166,7 +176,7 @@ GNEAdditional::checkDrawFromContour() const {
         } else if (TAZRelDataFrame->shown()) {
             // check first TAZ
             if (TAZRelDataFrame->getFirstTAZ() == nullptr) {
-                return gPostDrawing.isElementUnderCursor(this);
+                return gViewObjectsHandler.isElementSelected(this);
             } else if (TAZRelDataFrame->getFirstTAZ() == this) {
                 return true;
             }
@@ -225,7 +235,7 @@ GNEAdditional::checkDrawToContour() const {
         } else if (TAZRelDataFrame->shown() && (TAZRelDataFrame->getFirstTAZ() != nullptr)) {
             // check first TAZ
             if (TAZRelDataFrame->getSecondTAZ() == nullptr) {
-                return gPostDrawing.isElementUnderCursor(this);
+                return gViewObjectsHandler.isElementSelected(this);
             } else if (TAZRelDataFrame->getSecondTAZ() == this) {
                 return true;
             }
@@ -287,32 +297,32 @@ GNEAdditional::checkDrawOverContour() const {
             const auto& vehicleTemplate = vehicleFrame->getVehicleTagSelector()->getCurrentTemplateAC();
             // check if vehicle can be placed over from-to TAZs
             if (vehicleTemplate && vehicleTemplate->getTagProperty().vehicleTAZs()) {
-                return myNet->getViewNet()->checkDrawOverContour(this);
+                return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
             }
         } else if (modes.isCurrentSupermodeDemand()) {
             // check if we're in person or personPlan modes
             if (((modes.demandEditMode == DemandEditMode::DEMAND_PERSON) && personFramePlanSelector->markTAZs()) ||
                     ((modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) && personPlanFramePlanSelector->markTAZs())) {
-                return myNet->getViewNet()->checkDrawOverContour(this);
+                return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
             }
         }
     } else if ((myTagProperty.getTag() == SUMO_TAG_BUS_STOP) && modes.isCurrentSupermodeDemand()) {
         // check if we're in person or personPlan modes
         if (((modes.demandEditMode == DemandEditMode::DEMAND_PERSON) && personFramePlanSelector->markBusStops()) ||
                 ((modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) && personPlanFramePlanSelector->markBusStops())) {
-            return myNet->getViewNet()->checkDrawOverContour(this);
+            return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
         }
     } else if ((myTagProperty.getTag() == SUMO_TAG_TRAIN_STOP) && modes.isCurrentSupermodeDemand()) {
         // check if we're in person or personPlan modes
         if (((modes.demandEditMode == DemandEditMode::DEMAND_PERSON) && personFramePlanSelector->markTrainStops()) ||
                 ((modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) && personPlanFramePlanSelector->markTrainStops())) {
-            return myNet->getViewNet()->checkDrawOverContour(this);
+            return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
         }
     } else if ((myTagProperty.getTag() == SUMO_TAG_CONTAINER_STOP) && modes.isCurrentSupermodeDemand()) {
         // check if we're in container or containerPlan modes
         if (((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) && containerFramePlanSelector->markContainerStops()) ||
                 ((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) && containerPlanFramePlanSelector->markContainerStops())) {
-            return myNet->getViewNet()->checkDrawOverContour(this);
+            return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
         }
     }
     return false;
@@ -325,7 +335,7 @@ GNEAdditional::checkDrawDeleteContour() const {
     const auto& editModes = myNet->getViewNet()->getEditModes();
     // check if we're in delete mode
     if (editModes.isCurrentSupermodeNetwork() && (editModes.networkEditMode == NetworkEditMode::NETWORK_DELETE)) {
-        return myNet->getViewNet()->checkDrawDeleteContour(this, mySelected);
+        return myNet->getViewNet()->checkOverLockedElement(this, mySelected);
     } else {
         return false;
     }
@@ -338,7 +348,7 @@ GNEAdditional::checkDrawSelectContour() const {
     const auto& editModes = myNet->getViewNet()->getEditModes();
     // check if we're in select mode
     if (editModes.isCurrentSupermodeNetwork() && (editModes.networkEditMode == NetworkEditMode::NETWORK_SELECT)) {
-        return myNet->getViewNet()->checkDrawSelectContour(this, mySelected);
+        return myNet->getViewNet()->checkOverLockedElement(this, mySelected);
     } else {
         return false;
     }
@@ -398,12 +408,12 @@ GNEAdditional::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
     // Create table
     GUIParameterTableWindow* ret = new GUIParameterTableWindow(app, *this);
     // Iterate over attributes
-    for (const auto& i : myTagProperty) {
+    for (const auto& attributeProperty : myTagProperty) {
         // Add attribute and set it dynamic if aren't unique
-        if (i.isUnique()) {
-            ret->mkItem(i.getAttrStr().c_str(), false, getAttribute(i.getAttr()));
+        if (attributeProperty.isUnique()) {
+            ret->mkItem(attributeProperty.getAttrStr().c_str(), false, getAttribute(attributeProperty.getAttr()));
         } else {
-            ret->mkItem(i.getAttrStr().c_str(), true, getAttribute(i.getAttr()));
+            ret->mkItem(attributeProperty.getAttrStr().c_str(), true, getAttribute(attributeProperty.getAttr()));
         }
     }
     // close building
@@ -419,7 +429,7 @@ GNEAdditional::getOptionalAdditionalName() const {
 
 
 bool
-GNEAdditional::isGLObjectLocked() {
+GNEAdditional::isGLObjectLocked() const {
     if (myNet->getViewNet()->getEditModes().isCurrentSupermodeNetwork()) {
         return myNet->getViewNet()->getLockManager().isObjectLocked(getType(), isAttributeCarrierSelected());
     } else {
@@ -558,7 +568,7 @@ GNEAdditional::setAdditionalID(const std::string& newID) {
 
 void
 GNEAdditional::drawAdditionalID(const GUIVisualizationSettings& s) const {
-    if (s.addName.show(this) && (myAdditionalGeometry.getShape().size() > 0) && !s.drawForRectangleSelection && !s.drawForPositionSelection) {
+    if (s.addName.show(this) && (myAdditionalGeometry.getShape().size() > 0) && !s.drawForRectangleSelection) {
         // calculate middle point
         const double middlePoint = (myAdditionalGeometry.getShape().length2D() * 0.5);
         // calculate position
@@ -577,7 +587,7 @@ GNEAdditional::drawAdditionalID(const GUIVisualizationSettings& s) const {
 
 void
 GNEAdditional::drawAdditionalName(const GUIVisualizationSettings& s) const {
-    if (s.addFullName.show(this) && (myAdditionalGeometry.getShape().size() > 0) && (myAdditionalName != "") && !s.drawForRectangleSelection && !s.drawForPositionSelection) {
+    if (s.addFullName.show(this) && (myAdditionalGeometry.getShape().size() > 0) && (myAdditionalName != "") && !s.drawForRectangleSelection) {
         // calculate middle point
         const double middlePoint = (myAdditionalGeometry.getShape().length2D() * 0.5);
         // calculate position
@@ -677,49 +687,47 @@ GNEAdditional::calculatePerpendicularLine(const double endLaneposition) {
 
 void
 GNEAdditional::drawSquaredAdditional(const GUIVisualizationSettings& s, const Position& pos, const double size, GUITexture texture, GUITexture selectedTexture) const {
-    // Obtain drawing exaggeration
-    const double exaggeration = getExaggeration(s);
     // first check if additional has to be drawn
-    if (s.drawAdditionals(exaggeration) && myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
-        // check if boundary has to be drawn
-        if (s.drawBoundaries) {
-            GLHelper::drawBoundary(getCenteringBoundary());
+    if (myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
+        // draw boundaries
+        GLHelper::drawBoundary(s, getCenteringBoundary());
+        // Obtain drawing exaggeration
+        const double exaggeration = getExaggeration(s);
+        // get detail level
+        const auto d = s.getDetailLevel(exaggeration);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // Add layer matrix
+            GLHelper::pushMatrix();
+            // translate to front
+            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
+            // translate to position
+            glTranslated(pos.x(), pos.y(), 0);
+            // scale
+            glScaled(exaggeration, exaggeration, 1);
+            // set White color
+            glColor3d(1, 1, 1);
+            // rotate
+            glRotated(180, 0, 0, 1);
+            // draw texture
+            if (drawUsingSelectColor()) {
+                GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(selectedTexture), size);
+            } else {
+                GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(texture), size);
+            }
+            // Pop layer matrix
+            GLHelper::popMatrix();
+            // draw lock icon
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), pos, exaggeration, 0.4, 0.5, 0.5);
+            // Draw additional ID
+            drawAdditionalID(s);
+            // draw additional name
+            drawAdditionalName(s);
+            // draw dotted contour
+            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
-        // Start drawing adding an gl identificator
-        GLHelper::pushName(getGlID());
-        // Add layer matrix
-        GLHelper::pushMatrix();
-        // translate to front
-        myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
-        // translate to position
-        glTranslated(pos.x(), pos.y(), 0);
-        // scale
-        glScaled(exaggeration, exaggeration, 1);
-        // set White color
-        glColor3d(1, 1, 1);
-        // rotate
-        glRotated(180, 0, 0, 1);
-        // draw texture
-        if (drawUsingSelectColor()) {
-            GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(selectedTexture), size);
-        } else {
-            GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(texture), size);
-        }
-        // Pop layer matrix
-        GLHelper::popMatrix();
-        // Pop name
-        GLHelper::popName();
-        // draw lock icon
-        GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), pos, exaggeration, 0.4, 0.5, 0.5);
-        // check if mouse is over element
-        mouseWithinGeometry(pos, size, size, 0, 0, 0);
-        // draw squared shape
-        myContour.drawDottedContourRectangle(s, pos, size, size, 0, 0, 0, exaggeration,
-                                             s.dottedContourSettings.segmentWidth);
-        // Draw additional ID
-        drawAdditionalID(s);
-        // draw additional name
-        drawAdditionalName(s);
+        // calculate contour
+        myAdditionalContour.calculateContourRectangleShape(s, d, this, pos, size, size, 0, 0, 0, exaggeration);
     }
 }
 
@@ -727,8 +735,12 @@ GNEAdditional::drawSquaredAdditional(const GUIVisualizationSettings& s, const Po
 void
 GNEAdditional::drawListedAdditional(const GUIVisualizationSettings& s, const Position& parentPosition, const double offsetX, const double extraOffsetY,
                                     const RGBColor baseCol, const RGBColor textCol, GUITexture texture, const std::string text) const {
+    // draw boundaries
+    GLHelper::drawBoundary(s, getCenteringBoundary());
     // first check if additional has to be drawn
-    if (s.drawAdditionals(getExaggeration(s)) && myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
+    if (myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
+        // get detail level
+        const auto d = s.getDetailLevel(1);
         // declare offsets
         const double lineOffset = 0.1875;
         const double baseOffsetX = 6.25;
@@ -747,81 +759,100 @@ GNEAdditional::drawListedAdditional(const GUIVisualizationSettings& s, const Pos
         positionLineB.add(1 + lineOffset + (baseOffsetX * offsetX) + (2 * lineOffset), positionLineB_Y, 0);
         // calculate signPosition position
         Position signPosition = parentPosition;
-        // set position depending of indexes
-        signPosition.add(4.5 + (baseOffsetX * offsetX), (drawPositionIndex * -1) - extraOffsetY + 1, 0);
-        // check if boundary has to be drawn
-        if (s.drawBoundaries) {
-            GLHelper::drawBoundary(getCenteringBoundary());
-        }
-        // Start drawing adding an gl identifier
-        GLHelper::pushName(getGlID());
-        // calculate colors
-        const RGBColor baseColor = isAttributeCarrierSelected() ? s.colorSettings.selectedAdditionalColor : baseCol;
-        const RGBColor secondColor = baseColor.changedBrightness(-30);
-        const RGBColor textColor = isAttributeCarrierSelected() ? s.colorSettings.selectedAdditionalColor.changedBrightness(30) : textCol;
-        // Add layer matrix
-        GLHelper::pushMatrix();
-        // translate to front
-        myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
-        // set line color
-        GLHelper::setColor(s.additionalSettings.connectionColor);
-        // draw both lines
-        GLHelper::drawBoxLine(positionLineA, 0, 0.1, lineOffset);
-        GLHelper::drawBoxLine(positionLineB, 0, 0.1, lineOffset);
-        // check if draw middle lane
-        if (drawPositionIndex != 0) {
-            // calculate length
-            const double length = std::abs(positionLineA_Y - positionLineB_Y);
-            // push middle lane matrix
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // set position depending of indexes
+            signPosition.add(4.5 + (baseOffsetX * offsetX), (drawPositionIndex * -1) - extraOffsetY + 1, 0);
+            // calculate colors
+            const RGBColor baseColor = isAttributeCarrierSelected() ? s.colorSettings.selectedAdditionalColor : baseCol;
+            const RGBColor secondColor = baseColor.changedBrightness(-30);
+            const RGBColor textColor = isAttributeCarrierSelected() ? s.colorSettings.selectedAdditionalColor.changedBrightness(30) : textCol;
+            // Add layer matrix
             GLHelper::pushMatrix();
-            //move and rotate
-            glTranslated(positionLineA.x() + lineOffset, positionLineA.y(), 0);
-            glRotated(90, 0, 0, 1);
-            glTranslated((length * -0.5), 0, 0);
-            // draw line
-            GLHelper::drawBoxLine(Position(0, 0), 0, 0.1, length * 0.5);
-            // pop middle lane matrix
-            GLHelper::popMatrix();
-        }
-        // draw extern rectangle
-        GLHelper::setColor(secondColor);
-        GLHelper::drawBoxLine(signPosition, 0, 0.96, 2.75);
-        // move to front
-        glTranslated(0, -0.06, 0.1);
-        // draw intern rectangle
-        GLHelper::setColor(baseColor);
-        GLHelper::drawBoxLine(signPosition, 0, 0.84, 2.69);
-        // move position down
-        signPosition.add(-2, -0.43, 0);
-        // draw interval
-        GLHelper::drawText(adjustListedAdditionalText(text), signPosition, .1, 0.5, textColor, 0, (FONS_ALIGN_LEFT | FONS_ALIGN_MIDDLE));
-        // move to icon position
-        signPosition.add(-0.3, 0);
-        // check if draw lock icon or rerouter interval icon
-        if (GNEViewNetHelper::LockIcon::checkDrawing(this, getType(), 1)) {
-            // pop layer matrix
-            GLHelper::popMatrix();
-            // Pop name
-            GLHelper::popName();
-            // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), signPosition, 1, 0.4, 0.0, -0.05);
-        } else {
             // translate to front
-            glTranslated(signPosition.x(), signPosition.y(), 0.1);
-            // set White color
-            glColor3d(1, 1, 1);
-            // rotate
-            glRotated(180, 0, 0, 1);
-            // draw texture
-            GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(texture), 0.25);
-            // pop layer matrix
-            GLHelper::popMatrix();
-            // Pop name
-            GLHelper::popName();
+            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
+            // set line color
+            GLHelper::setColor(s.additionalSettings.connectionColor);
+            // draw both lines
+            GLHelper::drawBoxLine(positionLineA, 0, 0.1, lineOffset);
+            GLHelper::drawBoxLine(positionLineB, 0, 0.1, lineOffset);
+            // check if draw middle lane
+            if (drawPositionIndex != 0) {
+                // calculate length
+                const double length = std::abs(positionLineA_Y - positionLineB_Y);
+                // push middle lane matrix
+                GLHelper::pushMatrix();
+                //move and rotate
+                glTranslated(positionLineA.x() + lineOffset, positionLineA.y(), 0);
+                glRotated(90, 0, 0, 1);
+                glTranslated((length * -0.5), 0, 0);
+                // draw line
+                GLHelper::drawBoxLine(Position(0, 0), 0, 0.1, length * 0.5);
+                // pop middle lane matrix
+                GLHelper::popMatrix();
+            }
+            // draw extern rectangle
+            GLHelper::setColor(secondColor);
+            GLHelper::drawBoxLine(signPosition, 0, 0.96, 2.75);
+            // move to front
+            glTranslated(0, -0.06, 0.1);
+            // draw intern rectangle
+            GLHelper::setColor(baseColor);
+            GLHelper::drawBoxLine(signPosition, 0, 0.84, 2.69);
+            // move position down
+            signPosition.add(-2, -0.43, 0);
+            // draw interval
+            GLHelper::drawText(adjustListedAdditionalText(text), signPosition, .1, 0.5, textColor, 0, (FONS_ALIGN_LEFT | FONS_ALIGN_MIDDLE));
+            // move to icon position
+            signPosition.add(-0.3, 0);
+            // check if draw lock icon or rerouter interval icon
+            if (GNEViewNetHelper::LockIcon::checkDrawing(d, this, getType(), 1)) {
+                // pop layer matrix
+                GLHelper::popMatrix();
+                // draw lock icon
+                GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), signPosition, 1, 0.4, 0.0, -0.05);
+            } else {
+                // translate to front
+                glTranslated(signPosition.x(), signPosition.y(), 0.1);
+                // set White color
+                glColor3d(1, 1, 1);
+                // rotate
+                glRotated(180, 0, 0, 1);
+                // draw texture
+                GUITexturesHelper::drawTexturedBox(GUITextureSubSys::getTexture(texture), 0.25);
+                // pop layer matrix
+                GLHelper::popMatrix();
+            }
+            // draw dotted contour
+            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
-        // draw squared shape
-        myContour.drawDottedContourRectangle(s, signPosition, 0.56, 2.75, 0, -2.3, 0, 1,
-                                             s.dottedContourSettings.segmentWidth);
+        // calculate contour
+        myAdditionalContour.calculateContourRectangleShape(s, d, this, signPosition, 0.56, 2.75, 0, -2.3, 0, 1);
+    }
+}
+
+
+bool
+GNEAdditional::drawMovingGeometryPoints(const bool ignoreShift) const {
+    // get modes
+    const auto& modes = myNet->getViewNet()->getEditModes();
+    // check conditions
+    if (modes.isCurrentSupermodeNetwork() && (modes.networkEditMode == NetworkEditMode::NETWORK_MOVE) &&
+            (ignoreShift || myNet->getViewNet()->getMouseButtonKeyPressed().shiftKeyPressed())) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+void
+GNEAdditional::drawDemandElementChildren(const GUIVisualizationSettings& s) const {
+    // draw child demand elements
+    for (const auto& demandElement : getChildDemandElements()) {
+        if (!demandElement->getTagProperty().isPlacedInRTree()) {
+            demandElement->drawGL(s);
+        }
     }
 }
 
@@ -966,6 +997,30 @@ GNEAdditional::getJuPedSimIcon(SumoXMLTag tag) {
 }
 
 
+void
+GNEAdditional::calculateContourPolygons(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                        const double exaggeration, const bool contouredShape) const {
+    // calculate contour depenidng of contoured shape
+    if (contouredShape) {
+        myAdditionalContour.calculateContourClosedShape(s, d, this, myAdditionalGeometry.getShape(), 1);
+    } else {
+        myAdditionalContour.calculateContourExtrudedShape(s, d, this, myAdditionalGeometry.getShape(), s.neteditSizeSettings.polylineWidth,
+                exaggeration, true, true, 0);
+    }
+    // get edit modes
+    const auto& editModes = myNet->getViewNet()->getEditModes();
+    // check if draw geometry points
+    if (editModes.isCurrentSupermodeNetwork() && !myNet->getViewNet()->getViewParent()->getMoveFrame()->getNetworkModeOptions()->getMoveWholePolygons()) {
+        // check if we're in move mode
+        const bool moveMode = (editModes.networkEditMode == NetworkEditMode::NETWORK_MOVE);
+        // get geometry point radius (size depends if we're in move mode)
+        const double geometryPointRaidus = s.neteditSizeSettings.polygonGeometryPointRadius * (moveMode ? 1 : 0.5);
+        // calculate contour geometry points
+        myAdditionalContour.calculateContourAllGeometryPoints(s, d, this, myAdditionalGeometry.getShape(), geometryPointRaidus, exaggeration, moveMode);
+    }
+}
+
+
 GNELane*
 GNEAdditional::getFirstPathLane() const {
     return getParentLanes().front();
@@ -1043,26 +1098,28 @@ GNEAdditional::drawParentChildLines(const GUIVisualizationSettings& s, const RGB
 
 
 void
-GNEAdditional::drawUpGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift) {
-    drawSemiCircleGeometryPoint(viewNet, pos, rot, baseColor, -90, 90, ignoreShift);
+GNEAdditional::drawUpGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                                   const double rot, const RGBColor& baseColor, const bool ignoreShift) const {
+    drawSemiCircleGeometryPoint(s, d, pos, rot, baseColor, -90, 90, ignoreShift);
+}
+
+void
+GNEAdditional::drawDownGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                                     const double rot, const RGBColor& baseColor, const bool ignoreShift) const {
+    drawSemiCircleGeometryPoint(s, d, pos, rot, baseColor, 90, 270, ignoreShift);
+}
+
+void
+GNEAdditional::drawLeftGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                                     const double rot, const RGBColor& baseColor, const bool ignoreShift) const {
+    drawSemiCircleGeometryPoint(s, d, pos, rot, baseColor, -90, 90, ignoreShift);
 }
 
 
 void
-GNEAdditional::drawDownGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift) {
-    drawSemiCircleGeometryPoint(viewNet, pos, rot, baseColor, 90, 270, ignoreShift);
-}
-
-
-void
-GNEAdditional::drawLeftGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift) {
-    drawSemiCircleGeometryPoint(viewNet, pos, rot, baseColor, -90, 90, ignoreShift);
-}
-
-
-void
-GNEAdditional::drawRightGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift) {
-    drawSemiCircleGeometryPoint(viewNet, pos, rot, baseColor, 270, 90, ignoreShift);
+GNEAdditional::drawRightGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                                      const double rot, const RGBColor& baseColor, const bool ignoreShift) const {
+    drawSemiCircleGeometryPoint(s, d, pos, rot, baseColor, 270, 90, ignoreShift);
 }
 
 
@@ -1159,30 +1216,23 @@ GNEAdditional::checkChildAdditionalRestriction() const {
 
 
 void
-GNEAdditional::drawSemiCircleGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor,
-        const double fromAngle, const double toAngle, const bool ignoreShift) {
-    // first check that we're in move mode and shift key is pressed
-    if (viewNet->getEditModes().isCurrentSupermodeNetwork() && (viewNet->getEditModes().networkEditMode == NetworkEditMode::NETWORK_MOVE) &&
-            (viewNet->getMouseButtonKeyPressed().shiftKeyPressed() || ignoreShift)) {
-        // calculate new color
-        const RGBColor color = baseColor.changedBrightness(-50);
+GNEAdditional::drawSemiCircleGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+        const Position& pos, const double rot, const RGBColor& baseColor, const double fromAngle, const double toAngle,
+        const bool /* ignoreShift */) const {
+    // check if draw geometry point
+    if (!s.drawForViewObjectsHandler && (d <= GUIVisualizationSettings::Detail::GeometryPoint)) {
         // push matrix
         GLHelper::pushMatrix();
         // translated to front
         glTranslated(0, 0, 0.1);
-        // set color
-        GLHelper::setColor(color);
-        // push geometry point matrix
-        GLHelper::pushMatrix();
+        // set color depending if check if mouse is over element
+        GLHelper::setColor(baseColor.changedBrightness(-50));
         // translate and rotate
         glTranslated(pos.x(), pos.y(), 0.1);
         glRotated(rot, 0, 0, 1);
         // draw geometry point
-        GLHelper::drawFilledCircle(viewNet->getVisualisationSettings().neteditSizeSettings.additionalGeometryPointRadius,
-                                   viewNet->getVisualisationSettings().getCircleResolution(), fromAngle, toAngle);
+        GLHelper::drawFilledCircleDetailled(d, s.neteditSizeSettings.additionalGeometryPointRadius, fromAngle, toAngle);
         // pop geometry point matrix
-        GLHelper::popMatrix();
-        // pop draw matrix
         GLHelper::popMatrix();
     }
 }

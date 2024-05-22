@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -468,8 +468,8 @@ enum class GUIIcon {
     POIICON_PIN,
     POIICON_NATURE,
     POIICON_HOTEL,
-	POIICON_FUEL,
-	POIICON_CHARGING_STATION,
+    POIICON_FUEL,
+    POIICON_CHARGING_STATION,
     /// @}
 
     /// @name juPedSim elements
@@ -582,6 +582,13 @@ enum class GUIIcon {
     VCLASS_PEDESTRIAN,
     VCLASS_EVEHICLE,
     VCLASS_SHIP,
+    VCLASS_CONTAINER,
+    VCLASS_CABLE_CAR,
+    VCLASS_SUBWAY,
+    VCLASS_AIRCRAFT,
+    VCLASS_WHEELCHAIR,
+    VCLASS_SCOOTER,
+    VCLASS_DRONE,
     VCLASS_CUSTOM1,
     VCLASS_CUSTOM2,
     /// @}
@@ -613,6 +620,13 @@ enum class GUIIcon {
     VCLASS_SMALL_PEDESTRIAN,
     VCLASS_SMALL_EVEHICLE,
     VCLASS_SMALL_SHIP,
+    VCLASS_SMALL_CONTAINER,
+    VCLASS_SMALL_CABLE_CAR,
+    VCLASS_SMALL_SUBWAY,
+    VCLASS_SMALL_AIRCRAFT,
+    VCLASS_SMALL_WHEELCHAIR,
+    VCLASS_SMALL_SCOOTER,
+    VCLASS_SMALL_DRONE,
     VCLASS_SMALL_CUSTOM1,
     VCLASS_SMALL_CUSTOM2,
     /// @}

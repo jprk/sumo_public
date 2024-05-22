@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -106,10 +106,24 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         PROGRESS_TIME_MESSAGE(before);
     }
     if (mayAddOrRemove && oc.exists("keep-edges.postload") && oc.getBool("keep-edges.postload")) {
+        // pre-process lines to set permissions
+        if (!myPTLineCont.getLines().empty()) {
+            before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Revising public transport stops based on pt lines"));
+            myPTLineCont.process(myEdgeCont, myPTStopCont);
+            PROGRESS_TIME_MESSAGE(before);
+        }
         if (oc.isSet("keep-edges.explicit") || oc.isSet("keep-edges.input-file")) {
             before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Removing unwished edges"));
             myEdgeCont.removeUnwishedEdges(myDistrictCont);
             PROGRESS_TIME_MESSAGE(before);
+        }
+        const int removed = myEdgeCont.removeEdgesBySpeed(myDistrictCont);
+        if (removed > 0) {
+            WRITE_MESSAGEF(TL(" Removed % edges because by minimum speed."), removed);
+        }
+        const int removed2 = myEdgeCont.removeEdgesByPermissions(myDistrictCont);
+        if (removed2 > 0) {
+            WRITE_MESSAGEF(TL(" Removed % edges based on vClass."), removed2);
         }
     }
     // Processing pt stops and lines
@@ -635,7 +649,7 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
 
     if (lefthand != oc.getBool("flip-y-axis")) {
         mirrorX();
-    };
+    }
 
     if (oc.exists("geometry.check-overlap")  && oc.getFloat("geometry.check-overlap") > 0) {
         before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Checking overlapping edges"));
@@ -682,6 +696,13 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
     if (MAX2(geoConvHelper.getConvBoundary().xmax(), geoConvHelper.getConvBoundary().ymax()) > 1000000 ||
             MIN2(geoConvHelper.getConvBoundary().xmin(), geoConvHelper.getConvBoundary().ymin()) < -1000000) {
         WRITE_WARNING(TL("Network contains very large coordinates and will probably flicker in the GUI. Check for outlying nodes and make sure the network is shifted to the coordinate origin"));
+    }
+
+    // clean up OSM processing params
+    if (oc.exists("osm-files") && oc.isSet("osm-files")) {
+        for (auto item : myEdgeCont) {
+            item.second->unsetParameter(NBTrafficLightDefinition::OSM_DIRECTION);
+        }
     }
 }
 

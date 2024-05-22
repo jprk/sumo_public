@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -77,39 +77,39 @@ GNECreateEdgeFrame::EdgeTypeSelector::EdgeTypeSelector(GNECreateEdgeFrame* creat
     myCurrentIndex(0) {
     // default edge radio button
     myCreateDefaultEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Create default edge"),
-        this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
+            this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
     // default short radio button
     myCreateDefaultShortEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Create default edge short"),
-        this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
+            this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
     // checkboxes
     myNoPedestriansCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Disallow for pedestrians"),
-        this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
+            this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     myAddSidewalkCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Add sidewalk"),
-        this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
+            this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     myAddBikelaneCheckButton = new FXCheckButton(getCollapsableFrame(), TL("Add bikelane"),
-        this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
+            this, MID_GNE_CREATEEDGEFRAME_CHECKBUTTON, GUIDesignCheckButton);
     // use custom edge radio button
     myCreateCustomEdgeType = new FXRadioButton(getCollapsableFrame(), TL("Use edgeType/template"),
-        this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
+            this, MID_GNE_CREATEEDGEFRAME_SELECTRADIOBUTTON, GUIDesignRadioButton);
     // edge types combo box
     myEdgeTypesComboBox = new MFXComboBoxIcon(getCollapsableFrame(), GUIDesignComboBoxNCol, true, GUIDesignComboBoxVisibleItemsMedium,
-        this, MID_GNE_CREATEEDGEFRAME_SELECTTEMPLATE, GUIDesignComboBoxAttribute);
+            this, MID_GNE_CREATEEDGEFRAME_SELECTTEMPLATE, GUIDesignComboBoxAttribute);
     // create horizontal frame
     FXHorizontalFrame* horizontalFrameButtons = new FXHorizontalFrame(getCollapsableFrame(), GUIDesignAuxiliarHorizontalFrame);
     // create new edge type button
     myAddEdgeTypeButton = GUIDesigns::buildFXButton(horizontalFrameButtons, TL("Add"), "", TL("Add edge type"), GUIIconSubSys::getIcon(GUIIcon::ADD),
-        this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
+                          this, MID_GNE_CREATEEDGEFRAME_ADD, GUIDesignButton);
     // create delete edge type button
     myDeleteEdgeTypeButton = GUIDesigns::buildFXButton(horizontalFrameButtons, TL("Delete"), "", TL("Delete edge type"), GUIIconSubSys::getIcon(GUIIcon::REMOVE),
-        this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
+                             this, MID_GNE_CREATEEDGEFRAME_DELETE, GUIDesignButton);
     // create delete edge type button
     myCreateFromTemplate = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Create from template"), "", TL("Create edgeType from template"), GUIIconSubSys::getIcon(GUIIcon::EDGE),
-        this, MID_GNE_CREATEEDGEFRAME_CREATEFROMTEMPLATE, GUIDesignButton);
+                           this, MID_GNE_CREATEEDGEFRAME_CREATEFROMTEMPLATE, GUIDesignButton);
     // by default, create custom edge
     myCreateDefaultEdgeType->setCheck(TRUE);
     // check if enable disable pedestrians
     for (const auto& junction : createEdgeFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getJunctions()) {
-        if (junction.second->getNBNode()->getCrossings().size() > 0) {
+        if (junction.second.second->getNBNode()->getCrossings().size() > 0) {
             enableCheckBoxDisablePedestrians();
         }
     }
@@ -666,7 +666,6 @@ GNECreateEdgeFrame::Legend::~Legend() {}
 
 GNECreateEdgeFrame::GNECreateEdgeFrame(GNEViewParent* viewParent, GNEViewNet* viewNet) :
     GNEFrame(viewParent, viewNet, TL("Create Edge")),
-    myObjectsUnderSnappedCursor(viewNet),
     myJunctionSource(nullptr) {
     // create custom edge selector
     myEdgeTypeSelector = new EdgeTypeSelector(this);
@@ -685,7 +684,7 @@ GNECreateEdgeFrame::~GNECreateEdgeFrame() {}
 
 
 void
-GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor,
+GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects,
                                  const bool oppositeEdge, const bool chainEdge) {
     // first check if there is an edge template, an edge type (default or custom)
     if (!myEdgeTypeSelector->useDefaultEdgeType() && !myEdgeTypeSelector->useDefaultEdgeTypeShort() &&
@@ -696,13 +695,12 @@ GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewN
     } else if (!myLaneTypeAttributes->areValuesValid()) {
         WRITE_WARNING(TL("Invalid lane attributes"));
     } else {
-        // obtain junction depending of gridEnabled
-        GNEJunction* junction = nullptr;
-        if (objectsUnderCursor.getJunctionFront()) {
-            junction = objectsUnderCursor.getJunctionFront();
-        } else if (myObjectsUnderSnappedCursor.getJunctionFront()) {
-            junction = myObjectsUnderSnappedCursor.getJunctionFront();
+        // if grid is enabled and currently there isn't a junction under mouse, make a new search snapping position to grid
+        if ((viewObjects.getJunctionFront() == nullptr) && myViewNet->getVisualisationSettings().showGrid) {
+            myViewNet->updateObjectsInPosition(myViewNet->snapToActiveGrid(clickedPosition));
         }
+        // obtain junction depending of gridEnabled
+        GNEJunction* junction = viewObjects.getJunctionFront();
         // begin undo list
         if (!myViewNet->getUndoList()->hasCommandGroup()) {
             myViewNet->getUndoList()->begin(GUIIcon::EDGE, TL("create new edge"));
@@ -745,7 +743,7 @@ GNECreateEdgeFrame::processClick(const Position& clickedPosition, const GNEViewN
             }
             update();
         } else {
-            // make sure that junctions source and destiny are different
+            // make sure that junctions source and destination are different
             if (myJunctionSource != junction) {
                 // may fail to prevent double edges
                 GNEEdge* newEdge = myViewNet->getNet()->createEdge(myJunctionSource, junction, nullptr, myViewNet->getUndoList());
@@ -842,12 +840,6 @@ GNECreateEdgeFrame::getJunctionSource() const {
 
 
 void
-GNECreateEdgeFrame::updateObjectsUnderSnappedCursor(const std::vector<GUIGlObject*>& GUIGlObjects) {
-    myObjectsUnderSnappedCursor.updateObjectUnderCursor(GUIGlObjects);
-}
-
-
-void
 GNECreateEdgeFrame::show() {
     // refresh template selector
     myEdgeTypeSelector->refreshEdgeTypeSelector();
@@ -914,7 +906,7 @@ GNECreateEdgeFrame::disablePedestrians(GNEEdge* edge) const {
 
 
 void
-GNECreateEdgeFrame::addBikelane(GNEEdge* edge, const std::string &bikelaneWidth) const {
+GNECreateEdgeFrame::addBikelane(GNEEdge* edge, const std::string& bikelaneWidth) const {
     bool bikelaneFound = false;
     // iterate over lanes
     for (const auto& lane : edge->getLanes()) {
@@ -935,7 +927,7 @@ GNECreateEdgeFrame::addBikelane(GNEEdge* edge, const std::string &bikelaneWidth)
 
 
 void
-GNECreateEdgeFrame::addSidewalk(GNEEdge* edge, const std::string &sidewalkWidth) const {
+GNECreateEdgeFrame::addSidewalk(GNEEdge* edge, const std::string& sidewalkWidth) const {
     bool sidewalkFound = false;
     // iterate over lanes
     for (const auto& lane : edge->getLanes()) {

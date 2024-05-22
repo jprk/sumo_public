@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -43,6 +43,8 @@ enum {
     MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS,
     /// @brief hotkey for mode connecting lanes AND container
     MID_HOTKEY_C_MODE_CONNECT_CONTAINER,
+    /// @brief hotkey for setting a breakpoint
+    MID_HOTKEY_B_BREAKPOINT,
     /// @brief hotkey for perform a single simulation step in SUMO and set delete mode in netedit
     MID_HOTKEY_D_MODE_SINGLESIMULATIONSTEP_DELETE,
     /// @brief hotkey for mode adding edges AND edgeDatas
@@ -159,7 +161,8 @@ enum {
     MID_HOTKEY_ALT_9_TOGGLEEDITOPTION,
     /// @brief Main window closes
     MID_HOTKEY_ALT_F4_CLOSE,
-
+    /// @brief hotkey for setting a breakpoint ahead of the current time
+    MID_HOTKEY_ALT_B_BREAKPOINT_EARLY,
     /// @}
 
     /// @name shift + hotkeys
@@ -1441,7 +1444,7 @@ enum {
     MID_GNE_REROUTEDIALOG_TABLE_CLOSINGLANEREROUTE,
     /// @brief change table route closing reroute
     MID_GNE_REROUTEDIALOG_TABLE_CLOSINGREROUTE,
-    /// @brief change table destiny probability reroute
+    /// @brief change table destination probability reroute
     MID_GNE_REROUTEDIALOG_TABLE_DESTPROBREROUTE,
     /// @brief change table route probability reroute
     MID_GNE_REROUTEDIALOG_TABLE_ROUTEPROBREROUTE,
@@ -1455,7 +1458,7 @@ enum {
     MID_GNE_REROUTEDIALOG_ADD_CLOSINGLANEREROUTE,
     /// @brief add closing reroute
     MID_GNE_REROUTEDIALOG_ADD_CLOSINGREROUTE,
-    /// @brief add destiny probability route
+    /// @brief add destination probability route
     MID_GNE_REROUTEDIALOG_ADD_DESTPROBREROUTE,
     /// @brief add route probability route
     MID_GNE_REROUTEDIALOG_ADD_ROUTEPROBREROUTE,

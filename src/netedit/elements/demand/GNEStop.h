@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -204,6 +204,9 @@ public:
     double getEndGeometryPositionOverLane() const;
 
 protected:
+    /// @brief variable used for draw contours
+    GNEContour myStopContour;
+
     /// @brief boundary used during moving of elements (to avoid insertion in RTREE)
     Boundary myMovingGeometryBoundary;
 
@@ -222,11 +225,16 @@ protected:
     /// @brief check if vehicle stop can be draw
     bool canDrawVehicleStop() const;
 
-    /// @brief draw vehicle stop
-    void drawVehicleStop(const GUIVisualizationSettings& s, const double exaggeration) const;
-
     /// @brief draw index
     bool drawIndex() const;
+
+    /// @brief draw stop over lane
+    void drawStopOverLane(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                          const RGBColor& color, const double width, const double exaggeration) const;
+
+    /// @brief draw stop over stoppingPlace
+    void drawStopOverStoppingPlace(const GUIVisualizationSettings::Detail d, const RGBColor& color,
+                                   const double width, const double exaggeration) const;
 
 private:
     /// @brief method for setting the attribute and nothing else
@@ -242,7 +250,7 @@ private:
     void commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList);
 
     /// @brief draw geometry points
-    void drawGeometryPoints(const GUIVisualizationSettings& s, const RGBColor& baseColor) const;
+    void drawGeometryPoints(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const RGBColor& baseColor) const;
 
     /// @brief get pathStopIndex
     int getPathStopIndex() const;

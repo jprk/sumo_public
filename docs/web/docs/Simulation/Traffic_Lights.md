@@ -77,7 +77,7 @@ If the node type is set to *traffic_light_right_on_red* rather than
 phases (after coming to a stop before entering the traffic stream that
 currently has the green light.
 
-## Intersection layout *incoming*
+## Phase layout *incoming*
 
 - each incoming edge of the intersection gets a separate green phase
 where all directions of movement are allowed
@@ -85,11 +85,11 @@ where all directions of movement are allowed
 than *traffic_light*, then compatible right-turns are allowed
 simultaneously
 
-## Intersection layout *alternateOneWay*
+## Phase layout *alternateOneWay*
 This layout can be used to model alternating access to a road section which can only be used by one direction at a time.
 To make use of this layout, a [joint traffic light](#controlling_multiple_junctions_with_the_same_controller) must be defined for all junctions that border the restricted section. Alternating green phases are separated by an all-red phase that is long enough to clear the interior section.
 
-## Other Intersections
+## Other Phase layouts
 
 - If there are more than 4 roads meeting at an intersection,
 additional green phases are generated
@@ -247,7 +247,7 @@ the input file.
 TLS Link indices can be access using either
 
 - [sumolib](../Tools/Sumolib.md) using
-  [tls.getConnections()](https://sumo.dlr.de/daily/pydoc/sumolib.net.html#TLS)
+  [tls.getConnections()](https://sumo.dlr.de/pydoc/sumolib.net.html#TLS)
 - or [TraCI](../TraCI.md) using
   [traci.trafficlight.getControlledLinks()](../TraCI/Traffic_Lights_Value_Retrieval.md#structure_of_compound_object_controlled_links)
 
@@ -302,13 +302,6 @@ algorithm further. These may be given within the `<tlLogic>`-Element as follows:
 The time gaps which determine the phase extensions are collected by induction loop detectors.
 These detectors are placed automatically at a configurable distance (see below). If the incoming lanes are too short and there is a sequence of unique predecessor lanes, the detector will be placed on a predecessor lane at the computed distance instead.
 
-Each lane incoming to the traffic light will receive a detector. However, not all detectors can be used in all phases.
-In the current implementation, detectors for actuation are only used if all connections from the detector lane gets the unconditional green light ('G') in a particular phase. This is done to prevent useless phase extensions when the first vehicle on a given lane is not allowed to drive.
-A simple fix is often the provide dedicate left turn lanes.
-
-!!! note
-    When setting option **--tls.actuated.jam-threshold** to a value > 0 (i.e. 30), all detectors will be usable, because useless phase extension is automatically avoided if a detector is found to be jammed. Alternatively, this can be configured for individual tls or even individual lanes using `<param>`.
-
 The detector names take the form `TLSID_PROGRAMID_EDGEINDEX.LANEINDEX` where
 
 - **TLSID** is the id of the tlLogic element
@@ -316,8 +309,14 @@ The detector names take the form `TLSID_PROGRAMID_EDGEINDEX.LANEINDEX` where
 - **EDGEINDEX** is a running index that starts at 0 for edge that approaches tls linkIndex 0 (typically the northern approach)
 - **LANEINDEX** is a running index for the current edge that starts at the first vehicular lane (sidewalks do not count)
 
+Each lane incoming to the traffic light will receive a detector. However, not all detectors can be used in all phases.
+In the current implementation, detectors for actuation are only used if all connections from the detector lane gets the unconditional green light ('G') in a particular phase. This is done to prevent useless phase extensions when the first vehicle on a given lane is not allowed to drive. A simple fix is often the provide dedicate left turn lanes.
+
 !!! note
     Sumo will issue a warning of the form "... has no controlling detector" if a phase or link index does not have usable detectors.
+
+!!! note
+    When setting option **--tls.actuated.jam-threshold** to a value > 0 (i.e. 30), all detectors will be usable, because useless phase extension is automatically avoided if a detector is found to be jammed. Alternatively, this can be configured for individual tls (`<param key="jam-threshold" value="30">`) or even individual lanes using `<param key="jam-threshold:LANEID" value="30">` by putting the `<param>` element into the `<tlLogic>` definition.
 
 Detector activation states can optionally be written to the [TLS output](Output/Traffic_Lights.md#optional_output).
 
@@ -330,7 +329,7 @@ Detector activation states can optionally be written to the [TLS output](Output/
   <param key="passing-time" value="2.0"/>
   <param key="vTypes" value=""/>
   <param key="show-detectors" value="false"/>
-  <param key="file" value="NULL"/>
+  <param key="file" value="NUL"/>
   <param key="freq" value="300"/>
   <param key="jam-threshold" value="-1"/>
   <param key="detector-length" value="0"/>
@@ -354,7 +353,8 @@ each lanes maximum speed).
 induction loop detectors](../Simulation/Output/Induction_Loops_Detectors_(E1).md).
 - **coordinated** (true/false) Influence there reference point for time-in-cycle when using [coordination](#coordination)
 - **cycleTime** sets the cycle time (in s) when using [coordination](#coordination). Defaults to the sum of all phase 'durations' values.
-- **jam-threshold**: ignore detected vehicles if they have stood on a detector for the given time or more (activated by setting a position value)
+- **jam-threshold**: ignore detected vehicles if they have stood on a detector for the given time or more
+- **jam-threshold:LANEID**: ignore detected vehicles if they have stood on the detector on the given LANEID for the given time or more
 - **detector-length**: set detector length to the given value (to ensure robust request detection with varying gaps and vehicle positions)
 
 Some parameters are only used when a signal plan with [dynamic phase selection](#dynamic_phase_selection_phase_skipping) is active:
@@ -444,6 +444,7 @@ When a phase uses attribute 'next' with a list of indices. The next phase is cho
 - the current phase is implicitly available for continuation as long as its maxDur is not reached. Detectors of the current phase get a bonus priority
 - the phase with the highest priority is used with phases coming earlier in the next list given precedence over those coming later
 - if there is no traffic, the phases will run through a default cycle defined by the first value in the 'next' attribute
+  - if the traffic light uses [custom switching rules](#type_actuated_with_custom_switching_rules) then the default phase is the **last** value of the 'next' attribute
 - if a particular phase should remain active indefinitely in the absence of traffic it must have its own index in the 'next' list as well as a high maxDur value
 - if an active detector was not served for a given time threshold (param **inactive-threshold**), this detector receives bonus priority according the time it was not served. This can be used to prevent starvation if other phases are consistently preferred due to serving more traffic
 
@@ -503,7 +504,7 @@ of `<tlLogic>` to define named expressions that can be referenced in other expre
 ```xml
 <tlLogic id="example" type="actuated" ...>
    <condition id="C3" value="z:det5 > 5"/>
-   <condition id="C4" value="C3 and z:det6 < 2"/>
+   <condition id="C4" value="C3 and z:det6 &lt; 2"/>
    <condition id="C5" value="g:3 > 20"/>
    ...
 ```

@@ -39,6 +39,13 @@ marouter reads OD matrices and creates route files. These route files
 contain route distributions between traffic assignment zones. Each route
 in the distribution is a fully specified list of network edges.
 
+The number of paths to choose from in each iteration can be configured using
+the **--paths** option. Marouter will use a penalty based method to find multiple paths
+which adds a given penalty to every edge of the previously shortest path and then
+recalculates. If the penalty is too small it might not find a new path by this method
+so the resulting number of paths may be smaller than the number wished for.
+You can configure the penalty using **--paths.penalty** (the default is 1).
+
 ## Capacity-constraint (volume-delay) function
 
 marouter uses a hard-coded capacity-constraint function based on speed
@@ -150,6 +157,7 @@ configuration:
 | **--weights.interpolate** {{DT_BOOL}} | Interpolate edge weights at interval boundaries; *default:* **false** |
 | **--weights.expand** {{DT_BOOL}} | Expand the end of the last loaded weight interval to infinity; *default:* **false** |
 | **--weights.minor-penalty** {{DT_FLOAT}} | Apply the given time penalty when computing routing costs for minor-link internal lanes; *default:* **1.5** |
+| **--weights.tls-penalty** {{DT_FLOAT}} | Apply the given time penalty when computing routing costs across a traffic light; *default:* **0** |
 | **--aggregation-interval** {{DT_TIME}} | Defines the time interval when aggregating single vehicle input; Defaults to one hour; *default:* **3600** |
 | **--capacities.default** {{DT_BOOL}} | Ignore edge priorities when calculating capacities and restraints; *default:* **false** |
 | **--weights.priority-factor** {{DT_FLOAT}} | Consider edge priorities in addition to travel times, weighted by factor; *default:* **0** |

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -87,7 +87,7 @@ void
 GNEContainerFrame::hide() {
     // reset candidate edges
     for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-        edge.second->resetCandidateFlags();
+        edge.second.second->resetCandidateFlags();
     }
     // hide frame
     GNEFrame::hide();
@@ -95,14 +95,14 @@ GNEContainerFrame::hide() {
 
 
 bool
-GNEContainerFrame::addContainer(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEContainerFrame::addContainer(const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // first check that we clicked over an AC
-    if (objectsUnderCursor.getAttributeCarrierFront() == nullptr) {
+    if (viewObjects.getAttributeCarrierFront() == nullptr) {
         return false;
     }
     // obtain tags (only for improve code legibility)
     SumoXMLTag containerTag = myContainerTagSelector->getCurrentTemplateAC()->getTagProperty().getTag();
-    SumoXMLTag clickedACTag = objectsUnderCursor.getAttributeCarrierFront()->getTagProperty().getTag();
+    SumoXMLTag clickedACTag = viewObjects.getAttributeCarrierFront()->getTagProperty().getTag();
     // first check that current selected container is valid
     if (containerTag == SUMO_TAG_NOTHING) {
         myViewNet->setStatusBarText(TL("Current selected container isn't valid."));
@@ -120,15 +120,15 @@ GNEContainerFrame::addContainer(const GNEViewNetHelper::ObjectsUnderCursor& obje
     }
     // add elements to path creator
     if (clickedACTag == SUMO_TAG_LANE) {
-        return myPlanCreator->addEdge(objectsUnderCursor.getLaneFront());
-    } else if (objectsUnderCursor.getAttributeCarrierFront()->getTagProperty().isStoppingPlace()) {
-        return myPlanCreator->addStoppingPlace(objectsUnderCursor.getAdditionalFront());
+        return myPlanCreator->addEdge(viewObjects.getLaneFront());
+    } else if (viewObjects.getAttributeCarrierFront()->getTagProperty().isStoppingPlace()) {
+        return myPlanCreator->addStoppingPlace(viewObjects.getAdditionalFront());
     } else if (clickedACTag == SUMO_TAG_ROUTE) {
-        return myPlanCreator->addRoute(objectsUnderCursor.getDemandElementFront());
+        return myPlanCreator->addRoute(viewObjects.getDemandElementFront());
     } else if (clickedACTag == SUMO_TAG_JUNCTION) {
-        return myPlanCreator->addJunction(objectsUnderCursor.getJunctionFront());
+        return myPlanCreator->addJunction(viewObjects.getJunctionFront());
     } else if (clickedACTag == SUMO_TAG_TAZ) {
-        return myPlanCreator->addTAZ(objectsUnderCursor.getTAZFront());
+        return myPlanCreator->addTAZ(viewObjects.getTAZFront());
     } else {
         return false;
     }

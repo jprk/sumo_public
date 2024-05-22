@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -231,7 +231,7 @@ GUIViewTraffic::buildColorRainbow(const GUIVisualizationSettings& s, GUIColorSch
         int step = MAX2(1, 360 / (int)codes.size());
         int hue = 0;
         for (SVCPermissions p : codes) {
-            scheme.addColor(RGBColor::fromHSV(hue, 1, 1), p);
+            scheme.addColor(RGBColor::fromHSV(hue, 1, 1), (double)p);
             hue = (hue + step) % 360;
         }
         return;
@@ -348,9 +348,6 @@ GUIViewTraffic::getPOIParamKeys() const {
 
 int
 GUIViewTraffic::doPaintGL(int mode, const Boundary& bound) {
-    if (!myVisualizationSettings->drawForPositionSelection && myVisualizationSettings->forceDrawForPositionSelection) {
-        myVisualizationSettings->drawForPositionSelection = true;
-    }
     // init view settings
     glRenderMode(mode);
     glMatrixMode(GL_MODELVIEW);
@@ -363,12 +360,10 @@ GUIViewTraffic::doPaintGL(int mode, const Boundary& bound) {
 
     // draw decals (if not in grabbing mode)
     drawDecals();
-    myVisualizationSettings->scale = myVisualizationSettings->drawForPositionSelection ? myVisualizationSettings->scale : m2p(SUMO_const_laneWidth);
+    myVisualizationSettings->scale = m2p(SUMO_const_laneWidth);
     if (myVisualizationSettings->showGrid) {
         paintGLGrid();
     }
-
-
     glLineWidth(1);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     const float minB[2] = { (float)bound.xmin(), (float)bound.ymin() };

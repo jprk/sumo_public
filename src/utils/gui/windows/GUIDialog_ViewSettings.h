@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -217,6 +217,11 @@ public:
      */
     void setCurrentScheme(const std::string&);
 
+    void hide() {
+        saveWindowPos();
+        FXTopWindow::hide();
+    }
+
 protected:
     /// @brief The parent view (which settings are changed)
     GUISUMOAbstractView* myParent = nullptr;
@@ -317,6 +322,7 @@ protected:
     FXCheckButton* myShowLaneDirection = nullptr;
     FXCheckButton* myShowSublanes = nullptr;
     FXCheckButton* mySpreadSuperposed = nullptr;
+    FXCheckButton* myDisableHideByZoom = nullptr;
     FXRealSpinner* myLaneWidthUpscaleDialer = nullptr;
     FXRealSpinner* myLaneMinWidthDialer = nullptr;
 
@@ -431,10 +437,10 @@ protected:
     FXCheckButton* myDither = nullptr;
     FXCheckButton* myFPS = nullptr;
     FXCheckButton* myDrawBoundaries = nullptr;
-    FXCheckButton* myForceDrawForPositionSelection = nullptr;
     FXCheckButton* myForceDrawForRectangleSelection = nullptr;
     FXCheckButton* myDisableDottedContours = nullptr;
     FXButton* myRecalculateBoundaries = nullptr;
+    FXRealSpinner* myComboRows = nullptr;
 
     /// @brief name panels
     NamePanel* myEdgeNamePanel = nullptr;

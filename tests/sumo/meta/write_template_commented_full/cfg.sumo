@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2023-09-22 15:49:47 by Eclipse SUMO sumo Version v1_18_0+1749-26d8ef39b84
+<!-- generated on 2024-04-12 11:15:26 by Eclipse SUMO sumo Version v1_19_0+1803-069e576fb4d
 -->
 
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -519,14 +519,14 @@
         <!-- Generate INT intermediate points to smooth out lanes within the walkingarea -->
         <pedestrian.striping.walkingarea-detail value="4" type="INT"/>
 
-        <!-- The update interval of the JuPedSim simulation (in seconds) -->
-        <pedestrian.jupedsim.step-length value="0.01" type="TIME"/>
-
-        <!-- The distance to the destination point considered as arrival (in meters) -->
-        <pedestrian.jupedsim.exit-tolerance value="1" type="FLOAT"/>
-
         <!-- Tolerance to apply when matching pedestrian and vehicle positions on boarding at individual stops -->
         <ride.stop-tolerance value="10" type="FLOAT"/>
+
+        <!-- Maximum distance when mapping input coordinates (fromXY etc.) to the road network -->
+        <mapmatch.distance value="100" type="FLOAT"/>
+
+        <!-- Match positions to junctions instead of edges -->
+        <mapmatch.junctions value="false" type="BOOL"/>
 
         <!-- Use FLOAT as a factor on walking speed against vehicle traffic direction -->
         <persontrip.walk-opposite-factor value="1" type="FLOAT"/>
@@ -608,6 +608,9 @@
 
         <!-- Use zones (districts) as routing start- and endpoints -->
         <device.rerouting.with-taz value="false" synonymes="device.routing.with-taz with-taz" type="BOOL"/>
+
+        <!-- Set routing flags (8 ignores temporary blockages) -->
+        <device.rerouting.mode value="0" type="STR"/>
 
         <!-- Use weight files given with option --weight-files for initializing edge weights -->
         <device.rerouting.init-with-loaded-weights value="false" type="BOOL"/>
@@ -1154,6 +1157,21 @@
 
     </friction_device>
 
+    <fcd_replay_device>
+        <!-- The probability for a vehicle to have a &apos;fcd-replay&apos; device -->
+        <device.fcd-replay.probability value="-1" type="FLOAT"/>
+
+        <!-- Assign a &apos;fcd-replay&apos; device to named vehicles -->
+        <device.fcd-replay.explicit value="" synonymes="device.fcd-replay.knownveh" type="STR[]"/>
+
+        <!-- The &apos;fcd-replay&apos; devices are set deterministic using a fraction of 1000 -->
+        <device.fcd-replay.deterministic value="false" type="BOOL"/>
+
+        <!-- FCD file to read -->
+        <device.fcd-replay.file value="" type="FILE"/>
+
+    </fcd_replay_device>
+
     <traci_server>
         <!-- Enables TraCI Server if set -->
         <remote-port value="0" type="INT"/>
@@ -1274,9 +1292,6 @@
 
         <!-- The aggregation period for value tracker windows -->
         <tracker-interval value="1" type="TIME"/>
-
-        <!-- Start with an OpenSceneGraph view instead of the regular 2D view -->
-        <osg-view value="false" type="BOOL"/>
 
         <!-- Enable overlay for screen recognition -->
         <gui-testing value="false" type="BOOL"/>

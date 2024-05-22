@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -133,6 +133,12 @@ GNEDataSet::getGUIGlObject() {
 }
 
 
+const GUIGlObject*
+GNEDataSet::getGUIGlObject() const {
+    return nullptr;
+}
+
+
 void
 GNEDataSet::updateAttributeColors() {
     // first update attribute colors in data interval childrens
@@ -238,6 +244,12 @@ GNEDataSet::checkDrawSelectContour() const {
 }
 
 
+bool
+GNEDataSet::checkDrawMoveContour() const {
+    return false;
+}
+
+
 void
 GNEDataSet::addDataIntervalChild(GNEDataInterval* dataInterval) {
     // check that dataInterval wasn't previously inserted
@@ -245,7 +257,7 @@ GNEDataSet::addDataIntervalChild(GNEDataInterval* dataInterval) {
         // add data interval child
         myDataIntervalChildren[dataInterval->getAttributeDouble(SUMO_ATTR_BEGIN)] = dataInterval;
         // add reference in attributeCarriers
-        myNet->getAttributeCarriers()->insertDataInterval(dataInterval);
+        myNet->getAttributeCarriers()->insertDataInterval(dataInterval, dataInterval);
     } else {
         throw ProcessError(TL("DataInterval was already inserted"));
     }

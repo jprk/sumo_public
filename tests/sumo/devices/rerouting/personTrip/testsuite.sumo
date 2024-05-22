@@ -183,4 +183,9 @@ toJunction_twice
 
 # trip between identical stops
 sameStops
+carNoRoute
+
+# person must transfer between trains of the same line
+pt_looped_need_transfer
+car_between_stops
 errors

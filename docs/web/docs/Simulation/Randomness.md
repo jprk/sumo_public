@@ -41,7 +41,7 @@ A third alternative is to specify a set of routes (`<routeDistribution>`) and le
 
 # Vehicle Type Distributions
 
-A simple way of of modelling a heterogeneous vehicle fleet works by defining a `<vTypeDistribution>` and let each vehicle pick it's type randomly from this distribution. For details, see [vehicle type distributions](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#vehicle_type_distributions).
+A simple way of of modelling a heterogeneous vehicle fleet works by defining a `<vTypeDistribution>` and let each vehicle pick its type randomly from this distribution. For details, see [vehicle type distributions](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#vehicle_type_distributions).
 
 # Speed distribution
 
@@ -115,7 +115,7 @@ and [jtrrouter](../jtrrouter.md) applications support the option **--randomize-f
 When this option is used, each vehicle defined by a `<flow>`-element will be
 given a random departure time which is equidistributed within the time
 interval of the flow. (By default vehicles of a flow are spaced equally
-in time). The departure times computed this way also achieve a [Poisson process](Poisson_point_process#Simulation)
+in time). The departure times computed this way also achieve a [Poisson process](#poisson_process)
 
 # Departure and arrival attributes
 

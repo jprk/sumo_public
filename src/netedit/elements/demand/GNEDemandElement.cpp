@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -31,7 +31,7 @@
 #include <utils/gui/div/GUIParameterTableWindow.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
 #include <utils/gui/div/GUIDesigns.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GNEDemandElement.h"
 #include "GNERouteHandler.h"
@@ -81,6 +81,12 @@ GNEDemandElement::removeGeometryPoint(const Position /*clickedPosition*/, GNEUnd
 
 GUIGlObject*
 GNEDemandElement::getGUIGlObject() {
+    return this;
+}
+
+
+const GUIGlObject*
+GNEDemandElement::getGUIGlObject() const {
     return this;
 }
 
@@ -188,7 +194,7 @@ GNEDemandElement::checkDrawOverContour() const {
             const auto& vehicleTemplate = vehicleFrame->getVehicleTagSelector()->getCurrentTemplateAC();
             // check if vehicle can be placed over route
             if (vehicleTemplate && vehicleTemplate->getTagProperty().vehicleRoute()) {
-                return myNet->getViewNet()->checkDrawOverContour(this);
+                return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
             }
         } else if (modes.isCurrentSupermodeDemand()) {
             // check if we're in person or personPlan modes
@@ -196,7 +202,7 @@ GNEDemandElement::checkDrawOverContour() const {
                     ((modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) && personPlanFramePlanSelector->markRoutes()) ||
                     ((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) && containerFramePlanSelector->markRoutes()) ||
                     ((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) && containerPlanFramePlanSelector->markRoutes())) {
-                return myNet->getViewNet()->checkDrawOverContour(this);
+                return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
             }
         }
     }
@@ -210,7 +216,7 @@ GNEDemandElement::checkDrawDeleteContour() const {
     const auto& editModes = myNet->getViewNet()->getEditModes();
     // check if we're in delete mode
     if (editModes.isCurrentSupermodeDemand() && (editModes.demandEditMode == DemandEditMode::DEMAND_DELETE)) {
-        return myNet->getViewNet()->checkDrawDeleteContour(this, mySelected);
+        return myNet->getViewNet()->checkOverLockedElement(this, mySelected);
     } else {
         return false;
     }
@@ -223,11 +229,25 @@ GNEDemandElement::checkDrawSelectContour() const {
     const auto& editModes = myNet->getViewNet()->getEditModes();
     // check if we're in select mode
     if (editModes.isCurrentSupermodeDemand() && (editModes.demandEditMode == DemandEditMode::DEMAND_SELECT)) {
-        return myNet->getViewNet()->checkDrawSelectContour(this, mySelected);
+        return myNet->getViewNet()->checkOverLockedElement(this, mySelected);
     } else {
         return false;
     }
+}
 
+
+bool
+GNEDemandElement::checkDrawMoveContour() const {
+    // get edit modes
+    const auto& editModes = myNet->getViewNet()->getEditModes();
+    // check if we're in select mode
+    if (!myNet->getViewNet()->isMovingElement() && editModes.isCurrentSupermodeDemand() &&
+            (editModes.demandEditMode == DemandEditMode::DEMAND_MOVE) && myNet->getViewNet()->checkOverLockedElement(this, mySelected)) {
+        // only move the first element
+        return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
+    } else {
+        return false;
+    }
 }
 
 
@@ -282,7 +302,7 @@ GNEDemandElement::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
 
 
 bool
-GNEDemandElement::isGLObjectLocked() {
+GNEDemandElement::isGLObjectLocked() const {
     if (myNet->getViewNet()->getEditModes().isCurrentSupermodeDemand()) {
         return myNet->getViewNet()->getLockManager().isObjectLocked(getType(), isAttributeCarrierSelected());
     } else {
@@ -387,7 +407,8 @@ GNEDemandElement*
 GNEDemandElement::getTypeParent() const {
     if (getParentDemandElements().size() < 1) {
         throw InvalidArgument("This demand element doesn't have a type parent");
-    } else if (!getParentDemandElements().at(0)->getTagProperty().isType()) {
+    } else if (!getParentDemandElements().at(0)->getTagProperty().isType()
+               && !getParentDemandElements().at(0)->getTagProperty().isTypeDist()) {
         throw InvalidArgument("The first parent isn't a type");
     } else if (getParentDemandElements().at(0)->getTagProperty().getTag() == SUMO_TAG_VTYPE) {
         return getParentDemandElements().at(0);
@@ -397,15 +418,15 @@ GNEDemandElement::getTypeParent() const {
         // obtain all types with the given typeDistribution sorted by ID
         std::map<std::string, GNEDemandElement*> sortedTypes;
         for (const auto& type : myNet->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_VTYPE)) {
-            if (type->getAttribute(GNE_ATTR_VTYPE_DISTRIBUTION) == typeDistributionID) {
-                sortedTypes[type->getID()] = type;
+            if (type.second->getAttribute(GNE_ATTR_VTYPE_DISTRIBUTION) == typeDistributionID) {
+                sortedTypes[type.second->getID()] = type.second;
             }
         }
         // return first type, or default vType
         if (sortedTypes.size() > 0) {
             return sortedTypes.begin()->second;
         } else if (myNet->getAttributeCarriers()->getDemandElements().size() > 0) {
-            return *myNet->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_VTYPE).begin();
+            return myNet->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_VTYPE).begin()->second;
         } else {
             throw InvalidArgument("no vTypes");
         }
@@ -695,8 +716,8 @@ GNEDemandElement::getDistributionParents() const {
     // check if the current element is in the distributions
     std::vector<std::string> distributionParents;
     for (const auto& distribution : myNet->getAttributeCarriers()->getDemandElements().at(tagDistribution)) {
-        if (distribution->keyExists(this)) {
-            distributionParents.push_back(distribution->getID());
+        if (distribution.second->keyExists(this)) {
+            distributionParents.push_back(distribution.second->getID());
         }
     }
     return toString(distributionParents);

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 /****************************************************************************/
 #pragma once
 #include <config.h>
+#include <bitset>
 
 #include <utils/common/StringBijection.h>
 
@@ -125,6 +126,8 @@ enum SumoXMLTag {
     SUMO_TAG_ROUTE_PROB_REROUTE,
     /// @brief entry for an alternative parking zone
     SUMO_TAG_PARKING_AREA_REROUTE,
+    /// @brief probability of a via fora reroute
+    SUMO_TAG_VIA_PROB_REROUTE,
     /// @brief A variable speed sign
     SUMO_TAG_VSS,
     /// @brief VSS Symbol
@@ -532,6 +535,7 @@ enum SumoXMLTag {
     /// @}
 };
 
+typedef std::bitset<96> SumoXMLAttrMask;
 
 /**
  * @enum SumoXMLAttr
@@ -614,6 +618,10 @@ enum SumoXMLAttr {
     SUMO_ATTR_ODOMETER           = 61,
     SUMO_ATTR_POSITION_LAT       = 62,
     SUMO_ATTR_SPEED_LAT          = 63,
+
+    // only usable with SumoXMLAttrMask
+    SUMO_ATTR_ARRIVALDELAY       = 64,
+
     /// @}
 
     /// @name common attributes
@@ -709,6 +717,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_SPEEDFACTOR_PREMATURE,
     /// @brief Class specific timing values for vehicle maneuvering through angle ranges
     SUMO_ATTR_MANEUVER_ANGLE_TIMES,
+    SUMO_ATTR_PARKING_BADGES,
     /// @}
 
     /// @name elecHybrid output attributes
@@ -773,6 +782,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_MAXIMUMPOWER,
     /// @brief Vehicle mass
     SUMO_ATTR_VEHICLEMASS,
+    /// @brief Mass equivalent of rotating elements
+    SUMO_ATTR_ROTATINGMASS,
     /// @brief Front surface area
     SUMO_ATTR_FRONTSURFACEAREA,
     /// @brief Air drag coefficient
@@ -887,6 +898,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_SHUT_OFF_STOP,
     /// @brief engine gets switched off if stopping duration exceeds value
     SUMO_ATTR_SHUT_OFF_AUTO,
+    /// @brief additional mass loaded on the vehicle
+    SUMO_ATTR_LOADING,
     /// @}
 
     /// @name Car following model attributes
@@ -948,10 +961,16 @@ enum SumoXMLAttr {
     /// @name Train model attributes
     /// @{
     SUMO_ATTR_TRAIN_TYPE, //used by: Rail
-    /// @}
+    SUMO_ATTR_SPEED_TABLE, // list of speeds for traction and resistance value tables
+    SUMO_ATTR_TRACTION_TABLE, // list of traction values for the speeds table
+    SUMO_ATTR_RESISTANCE_TABLE, // list of resistance values for the speeds table
+    SUMO_ATTR_MASSFACTOR,
+    SUMO_ATTR_MAXPOWER,
+    SUMO_ATTR_MAXTRACTION,
+    SUMO_ATTR_RESISTANCE_COEFFICIENT_CONSTANT,
+    SUMO_ATTR_RESISTANCE_COEFFICIENT_LINEAR,
+    SUMO_ATTR_RESISTANCE_COEFFICIENT_QUADRATIC,
 
-    /// @name Lane changing model attributes
-    /// @{
     SUMO_ATTR_LCA_STRATEGIC_PARAM,
     SUMO_ATTR_LCA_COOPERATIVE_PARAM,
     SUMO_ATTR_LCA_SPEEDGAIN_PARAM,
@@ -999,6 +1018,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_CF_IGNORE_IDS,
     SUMO_ATTR_CF_IGNORE_TYPES,
     /// @}
+    SUMO_ATTR_FLEX_ARRIVAL,
 
     /// @name route alternatives / distribution attributes
     /// @{
@@ -1081,6 +1101,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_TLLINKINDEX2,
     /// @brief edge: the shape in xml-definition
     SUMO_ATTR_SHAPE,
+    /// @brief edge: the outline shape in xml-definition
+    SUMO_ATTR_OUTLINESHAPE,
     /// @brief The information about how to spread the lanes from the given position
     SUMO_ATTR_SPREADTYPE,
     /// @brief The turning radius at an intersection in m
@@ -1195,10 +1217,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_TRAIN_STOP,
     SUMO_ATTR_CONTAINER_STOP,
     SUMO_ATTR_PARKING_AREA,
-    SUMO_ATTR_FROM_BUSSTOP,
-    SUMO_ATTR_FROM_TRAINSTOP,
-    SUMO_ATTR_FROM_CONTAINERSTOP,
     SUMO_ATTR_ROADSIDE_CAPACITY,
+    SUMO_ATTR_ACCEPTED_BADGES,
     SUMO_ATTR_ONROAD,
     SUMO_ATTR_CHARGING_STATION,
     SUMO_ATTR_GROUP,
@@ -1330,6 +1350,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_AVOID_OVERLAP,
     SUMO_ATTR_HIGHER_SPEED,
     SUMO_ATTR_INTERNAL_JUNCTIONS_VEHICLE_WIDTH,
+    SUMO_ATTR_JUNCTIONS_MINIMAL_SHAPE,
+    SUMO_ATTR_JUNCTIONS_ENDPOINT_SHAPE,
     SUMO_ATTR_COMMAND,
 
     SUMO_ATTR_ACTORCONFIG,
@@ -1344,6 +1366,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_ARRIVALTIME,
     SUMO_ATTR_ARRIVALTIMEBRAKING,
     SUMO_ATTR_ARRIVALSPEEDBRAKING,
+    SUMO_ATTR_OPTIONAL,
 
     /// @name ActivityGen Tags
     /// @{
@@ -1499,6 +1522,11 @@ enum SumoXMLAttr {
     GNE_ATTR_FROM_LANEID,
     /// @brief to lane ID (used in GNEConnection)
     GNE_ATTR_TO_LANEID,
+
+    // virtual attributes for easier UI
+    GNE_ATTR_FROM_BUSSTOP,
+    GNE_ATTR_FROM_TRAINSTOP,
+    GNE_ATTR_FROM_CONTAINERSTOP,
     // @}
 
     /// @name train parameters
@@ -1854,12 +1882,14 @@ enum LaneChangeAction {
 enum class LaneChangeModel {
     DK2008,
     LC2013,
+    LC2013_CC,
     SL2015,
     DEFAULT
 };
 
 /// @enum train types
 enum class TrainType {
+    CUSTOM,
     NGT400,
     NGT400_16,
     RB425,

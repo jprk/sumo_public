@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -33,7 +33,7 @@
 #include <utils/distribution/RandomDistributor.h>
 #include <utils/common/SUMOTime.h>
 #include <utils/common/SUMOVehicleClass.h>
-#include "MSNet.h"
+#include <microsim/MSRouterDefs.h>
 
 
 // ===========================================================================
@@ -47,8 +47,6 @@ class MSRoute;
 class MSVehicleType;
 class OutputDevice;
 class MSEdge;
-
-typedef std::shared_ptr<const MSRoute> ConstMSRoutePtr;
 
 
 // ===========================================================================
@@ -543,7 +541,7 @@ public:
         return myMinDecelerationRail;
     }
 
-    void adaptIntermodalRouter(MSNet::MSIntermodalRouter& router) const;
+    void adaptIntermodalRouter(MSTransportableRouter& router) const;
 
     /// @brief sets the demand scaling factor
     void setScale(double scale) {

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -153,7 +153,7 @@ GNEFixNetworkElements::FixOptions::setInvalidElements(const std::vector<GNENetwo
     myTable->setColumnWidth(2, 390);
     myTable->setColumnText(0, "");
     myTable->setColumnText(1, toString(SUMO_ATTR_ID).c_str());
-    myTable->setColumnText(2, "Conflict");
+    myTable->setColumnText(2, TL("Conflict"));
     myTable->getRowHeader()->setWidth(0);
     // Declare pointer to FXTableItem
     FXTableItem* item = nullptr;

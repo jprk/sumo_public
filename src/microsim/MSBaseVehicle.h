@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2010-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2010-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -159,6 +159,11 @@ public:
         return myType->getParameter().vehicleClass;
     }
 
+    /** @brief Returns whether this object is ignoring transient permission
+     * changes (during routing)
+     */
+    bool ignoreTransientPermissions() const;
+
     /** @brief Returns the maximum speed (the minimum of desired and technical maximum speed)
      * @return The vehicle's maximum speed
      */
@@ -185,6 +190,9 @@ public:
     virtual const MSEdge* getCurrentEdge() const {
         return getEdge();
     }
+
+    /// @brief returns the numerical ids of edges to travel
+    const std::set<SUMOTrafficObject::NumericalID> getUpcomingEdgeIDs() const;
 
     /** @brief Returns whether the vehicle stops at the given stopping place */
     bool stopsAt(MSStoppingPlace* stop) const;
@@ -251,6 +259,14 @@ public:
         return myCurrEdge;
     }
 
+    /** @brief Returns the end point for reroutes (usually the last edge of the route)
+     *
+     * @return The rerouting end point
+     */
+    virtual const MSEdge* getRerouteDestination() const {
+        return myRoute->getLastEdge();
+    }
+
     /** @brief Returns the time loss in seconds
      */
     virtual double getTimeLossSeconds() const {
@@ -285,9 +301,10 @@ public:
      *
      * @param[in] t The time for which the route is computed
      * @param[in] router The router to use
+     * @param[in] sink (optionally) a new destination edge
      * @see replaceRoute
      */
-    void reroute(SUMOTime t, const std::string& info, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router, const bool onInit = false, const bool withTaz = false, const bool silent = false);
+    bool reroute(SUMOTime t, const std::string& info, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router, const bool onInit = false, const bool withTaz = false, const bool silent = false, const MSEdge* sink = nullptr);
 
 
     /** @brief Replaces the current route by the given edges
@@ -432,6 +449,11 @@ public:
      */
     int getPersonNumber() const;
 
+    /** @brief Returns the number of leaving persons
+     * @return The number of leaving passengers
+     */
+    int getLeavingPersonNumber() const;
+
     /** @brief Returns the list of persons
      * @return The list of passengers on-board
      */
@@ -471,7 +493,7 @@ public:
     /// @brief returns whether the vehicle serves a public transport line that serves the given stop
     bool isLineStop(double position) const;
 
-    /// @brief check wether the vehicle has jump at the given part of it's route
+    /// @brief check wether the vehicle has jump at the given part of its route
     bool hasJump(const MSRouteIterator& it) const;
 
     /** @brief Validates the current or given route
@@ -546,7 +568,7 @@ public:
     }
 
     /// @brief Returns a device of the given type if it exists, nullptr otherwise
-    MSVehicleDevice* getDevice(const std::type_info& type) const;
+    MSDevice* getDevice(const std::type_info& type) const;
 
 
     /** @brief Replaces the current vehicle type by the one given
@@ -632,6 +654,9 @@ public:
 
     /** @brief get the current  parking area stop or nullptr */
     MSParkingArea* getCurrentParkingArea();
+
+    /// @brief get the valid parking access rights (vehicle settings override vehicle type settings)
+    const std::vector<std::string>& getParkingBadges() const;
 
     /// @brief departure position where the vehicle fits fully onto the edge (if possible)
     double basePos(const MSEdge* edge) const;
@@ -849,19 +874,6 @@ public:
 
 
         /// @brief return the current routing mode
-        int getRoutingMode() const {
-            return myRoutingMode;
-        }
-
-        /** @brief Sets routing behavior
-         * @param[in] value an enum value controlling the different modes
-         */
-        void setRoutingMode(int value) {
-            myRoutingMode = value;
-        }
-
-
-        /// @brief return the current routing mode
         double getExtraImpatience() const {
             return myExtraImpatience;
         }
@@ -873,13 +885,7 @@ public:
             myExtraImpatience = value;
         }
 
-
-        SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouterTT(const int rngIndex, SUMOVehicleClass svc) const;
-
     protected:
-        ///@brief routing mode (see TraCIConstants.h)
-        int myRoutingMode;
-
         /// @brief dynamic impatience offset
         double myExtraImpatience = 0;
 
@@ -898,6 +904,20 @@ public:
 
     virtual bool hasInfluencer() const  = 0;
 
+    /// @brief return routing mode (configures router choice but also handling of transient permission changes)
+    int getRoutingMode() const {
+        return myRoutingMode;
+    }
+
+    /** @brief Sets routing behavior
+     * @param[in] value an enum value controlling the different modes
+     */
+    void setRoutingMode(int value) {
+        myRoutingMode = value;
+    }
+
+
+    SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouterTT() const;
 
     /** @brief Returns the vehicle's internal edge travel times/efforts container
      *
@@ -1067,6 +1087,9 @@ protected:
      */
     bool myAmReversed = false;
 
+    ///@brief routing mode (see TraCIConstants.h)
+    int myRoutingMode;
+
 private:
     const NumericalID myNumericalID;
 
@@ -1086,6 +1109,9 @@ private:
 
     /// @brief remove route at the end of the simulation
     void checkRouteRemoval();
+
+    /// @brief helper function
+    bool insertJump(int nextStopIndex, MSRouteIterator itStart, std::string& errorMsg);
 
 private:
     /// invalidated assignment operator

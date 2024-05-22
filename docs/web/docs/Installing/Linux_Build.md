@@ -16,11 +16,12 @@ To be able to run SUMO on Linux, just follow these steps:
 For ubuntu this boils down to
 
 ```
- sudo apt-get install git cmake python3 g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev python3-dev swig default-jdk maven libeigen3-dev
- git clone --recursive https://github.com/eclipse-sumo/sumo
- export SUMO_HOME="$PWD/sumo"
- cmake -B build .
- cmake --build build -j$(nproc)
+sudo apt-get install git cmake python3 g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev python3-dev swig default-jdk maven libeigen3-dev
+git clone --recursive https://github.com/eclipse-sumo/sumo
+cd sumo
+export SUMO_HOME="$PWD"
+cmake -B build .
+cmake --build build -j$(nproc)
 ```
 
 Each of these steps is described in more detail and with possible
@@ -44,30 +45,26 @@ alternatives below.
   and manual build instructions for the
   libraries](Linux_Build_Libraries.md)
 - Optionally you may want to add
- - ccache (to speed up builds)
- - ffmpeg-devel (for video output),
- - libOpenSceneGraph-devel (for the experimental 3D GUI),
- - gtest (for [unit testing](../Developer/Unit_Tests.md), do not use 1.13 or later)
- - gettext (for internationalization)
- - texttest, xvfb  and tkdiff (for the acceptance tests)
- - flake, astyle and autopep for style checking
- - see also further dependencies [for GUI testing](../Developer/GUI_Testing.md)
+  - ccache (to speed up builds)
+  - ffmpeg-devel (for video output),
+  - libOpenSceneGraph-devel (for the experimental 3D GUI),
+  - gtest (for [unit testing](../Developer/Unit_Tests.md), do not use 1.13 or later)
+  - gettext (for internationalization)
+  - texttest, xvfb  and tkdiff (for the acceptance tests, include python3-gobject for the texttest GUI)
+  - flake, astyle and autopep for style checking
+  - see also further dependencies [for GUI testing](../Developer/GUI_Testing.md)
 
 The package names above are for openSUSE, for ubuntu the call to get the most important optional libraries and tools is:
 
 ```
-sudo apt-get install ccache libavformat-dev libswscale-dev libopenscenegraph-dev python3-pip python3-setuptools
-sudo apt-get install libgtest-dev gettext tkdiff xvfb flake8 astyle python3-autopep8
-pip3 install texttest
+sudo apt-get install ccache libavformat-dev libswscale-dev libopenscenegraph-dev python3-pip python3-build
+sudo apt-get install libgtest-dev gettext tkdiff xvfb flake8 astyle python3-autopep8 python3-gi-cairo gir1.2-gtk-3.0
+sudo apt-get install python3-pyproj python3-rtree python3-pandas python3-pulp python3-ezdxf
+python3 -m pip install texttest
 ```
 
-For the Python tools there are some requirements depending on which tools you want to use. If you want to install
-everything using pip do `pip install -r tools/requirements.txt`. To install the most common dependencies with your
-package manager on ubuntu do:
-
-```
-sudo apt-get install python3-pandas python3-rtree python3-pyproj
-```
+For the Python tools there are some more requirements depending on which tools you want to use. If you want to install
+everything using pip do `python3 -m pip install -r tools/requirements.txt`.
 
 ## Getting the source code
 
@@ -137,13 +134,13 @@ Many of them might be available with the package manager of your distribution an
 to use those. For ubuntu this currently means, you should first do
 
 ```
-sudo apt-get install python3-pyproj python3-rtree python3-pandas python3-flake8 python3-autopep8 python3-scipy python3-pulp python3-ezdxf
+sudo apt-get install python3-pyproj python3-rtree python3-pandas flake8 python3-autopep8 python3-pulp python3-ezdxf
 ```
 
 and then install the remaining parts using pip:
 
 ```
-pip install -r tools/requirements.txt
+python3 -m pip install -r tools/requirements.txt
 ```
 
 The pip installation will ensure that all libraries are there, so it is safe to skip the first `apt-get` step.
@@ -151,12 +148,13 @@ If you need information about the minimum required versions of the packages read
 from the [requirements.txt](https://github.com/eclipse-sumo/sumo/blob/main/tools/requirements.txt). Be aware that
 the minimum versions in the requirements file just reflect our current test server setup, so you might also get away with earlier versions.
 
-You might need to replace `pip` with `pip3` if you are using python3 on Linux.
-
+If you want to reproduce our test server setup exactly, then use the versions in
+[req_test_server.txt](https://github.com/eclipse-sumo/sumo/blob/main/tools/req_test_server.txt)
+Unfortunately some old pip packages are incomplete, so this requires `sudo apt install libspatialindex-dev`.
 
 ## Building the SUMO binaries with cmake
 
-To build with cmake version 3 or higher is required.
+To build with cmake version 3.5 or higher is required.
 
 Create a build folder for cmake (in the SUMO root folder)
 and configure SUMO with the full set of available options like GDAL and
@@ -212,7 +210,7 @@ Our current clang configuration for additional static code checking
 enables the following CXXFLAGS:
 
 ```
--stdlib=libstdc++ -fsanitize=undefined,address,integer,unsigned-integer-overflow -fno-omit-frame-pointer -fsanitize-blacklist=$SUMO_HOME/build_config/clang_sanitize_blacklist.txt
+-stdlib=libstdc++ -fsanitize=undefined,address,integer -fno-omit-frame-pointer -fsanitize-blacklist=$SUMO_HOME/build_config/clang_sanitize_blacklist.txt
 ```
 
 You may of course leave out all the sanitizer-checks you don't want but
@@ -237,6 +235,11 @@ Indirect leak of 72 byte(s) in 1 object(s) allocated from:
 
 set the following environment variable to point to the llvm-symbolizer executable:
 `export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer` before running the executable.
+
+Please note that the undefined behavior checker is very sensitive and will report
+some false negatives also in system libraries. It is recommended to use
+`export UBSAN_OPTIONS=suppressions=$SUMO_HOME/build_config/clang_ubsan_suppressions.txt`
+before calling the executable.
 
 ## Installing the SUMO binaries
 
@@ -315,27 +318,41 @@ improve build speed.
 In this section, you will learn how to build the latest version of the pedestrian simulator JuPedSim and how to compile SUMO with this latest version of JuPedSim. First of all, clone the JuPedSim repository:
 
 ``` bash
-git clone https://github.com/PedestrianDynamics/jupedsim.git
+git clone https://github.com/PedestrianDynamics/jupedsim
 ```
-Note that this will clone the full repository, including the latest version of JuPedSim. **We strongly recommend to build the latest release of JuPedSim (not the latest version), which is officially supported by SUMO.** You can consult the [JuPedSim build procedure](https://github.com/PedestrianDynamics/jupedsim#readme); hereafter we propose a similar procedure. First check which is the [latest release](https://github.com/PedestrianDynamics/jupedsim/releases) then in the cloned directory checkout to the latest release. For example, for JuPedSim release v1.0.3, you would need to type:
+Note that this will clone the full repository, including the latest version of JuPedSim. **We strongly recommend to build the latest release of JuPedSim (not the master branch), which is officially supported by SUMO.** You can consult the [JuPedSim build procedure](https://github.com/PedestrianDynamics/jupedsim#readme); hereafter we propose a similar procedure. First check which is the [latest release](https://github.com/PedestrianDynamics/jupedsim/releases) then in the cloned directory checkout to the latest release and do a regular cmake build. For example, for JuPedSim release v1.1.0, you would need to type:
 
 ``` bash
 cd jupedsim
-git checkout tags/v1.0.3
-cd ..
+git checkout v1.1.0
+cmake -B build .
+cmake --build build
+sudo cmake --install build
 ```
 
-Outside the repository directory, but at the same level, you will need two directories `jupedsim-build` and `jupedsim-install`, so type:
+Now you should make sure GEOS is installed (`sudo apt-get install libgeos-dev`) and
+continue with the [standard build procedure above](#building-the-sumo-binaries-with-cmake).
+
+### Tweaking the JuPedSim build
+
+If you do not want to install jupedsim into your system, you can specify an alternative install directory like this:
 
 ``` bash
-cmake -B jupedsim-build -DCMAKE_INSTALL_PREFIX=../jupedsim-install jupedsim
-cmake --build jupedsim-build
-cmake --install jupedsim-build
+cmake -B build -DCMAKE_INSTALL_PREFIX=$PWD/../jupedsim-install .
+cmake --build build
+cmake --install build
 ```
 
-You can also change the configuration to Debug (with `-DCMAKE_BUILD_TYPE=Debug`) and also enable multithreading (with `-j4`) as usual with CMake. Now to integrate the latest version of JuPedSim into SUMO, you need to have GEOS on your computer, for instance by typing `sudo apt-get install libgeos-dev` in a console. Then, please follow the standard build procedure for MacOS: since the JuPedSim install folder is at the same level of SUMO, it will be found automatically. Alternatively, you can notify CMake where is JuPedSim installed by setting `JUPEDSIM_CUSTOMDIR` when calling CMake.
+This will install jupedsim in the directory `jupedsim-install` right beside the checkout. If you installed jupedsim
+into the system or in a `jupedsim-install` directory beside sumo, the standard cmake call of SUMO will find it
+automatically.
 
-For further remarks on the use of JuPedSim inside SUMO, please consult [this page](../Simulation/Pedestrians.md#jupedsim).
+Please be aware that if you want to install sumo into the system, you also need to install jupedsim into the system.
+To tweak or debug the jupedsim build you can also change the configuration to Debug (with `-DCMAKE_BUILD_TYPE=Debug`)
+and also enable multithreading (with `-j4`) as usual with CMake. If you have different jupedsim versions or choose a
+different install path, you can notify CMake where JuPedSim is installed by setting `JUPEDSIM_CUSTOMDIR` when calling CMake.
+
+For further remarks on the use of JuPedSim inside SUMO, please consult [the documentation on the model](../Simulation/Pedestrians.md#jupedsim).
 
 ## Troubleshooting
 
@@ -370,6 +387,10 @@ sudo yum install freetype-devel
 For details see
 [stackoverflow](https://stackoverflow.com/questions/335928/ld-cannot-find-an-existing-library)
 discussion.
+
+### ld cannot find certain functions in an existing external library
+
+Make sure you don't have an environment like anaconda installed which modifies your library search path.
 
 ### Additional notes for Cygwin users
 

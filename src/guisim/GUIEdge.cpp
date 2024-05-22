@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -628,7 +628,7 @@ void
 GUIEdge::addRerouter() {
     MSEdgeVector edges;
     edges.push_back(this);
-    GUITriggeredRerouter* rr = new GUITriggeredRerouter(getID() + "_dynamic_rerouter", edges, 1, false, 0, "",
+    GUITriggeredRerouter* rr = new GUITriggeredRerouter(getID() + "_dynamic_rerouter", edges, 1, false, false, 0, "", Position::INVALID,
             GUINet::getGUIInstance()->getVisualisationSpeedUp());
 
     MSTriggeredRerouter::RerouteInterval ri;
@@ -661,4 +661,12 @@ GUIEdge::getPendingEmits() const {
     return MSNet::getInstance()->getInsertionControl().getPendingEmits(getLanes()[0]);
 }
 
+double
+GUIEdge::getClickPriority() const {
+    if (!MSGlobals::gUseMesoSim) {
+        // do not select edgse in meso mode
+        return INVALID_PRIORITY;
+    }
+    return GLO_EDGE;
+}
 /****************************************************************************/

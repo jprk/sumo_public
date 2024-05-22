@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -238,8 +238,8 @@ protected:
         /// @brief create an obstacle from ped for ego moving in dir
         Obstacle(const PState& ped);
         /// @brief create an obstacle from explict values
-        Obstacle(double _x, double _speed, ObstacleType _type, const std::string& _description, const double width = 0.)
-            : xFwd(_x + width / 2.), xBack(_x - width / 2.), speed(_speed), type(_type), description(_description) {};
+        Obstacle(double _x, double _speed, ObstacleType _type, const std::string& _description, const double width = 0., const SUMOVehicle* veh = nullptr)
+            : xFwd(_x + width / 2.), xBack(_x - width / 2.), speed(_speed), type(_type), description(_description), vehicle(veh) {};
 
         /// @brief maximal position on the current lane in forward direction
         double xFwd;
@@ -251,6 +251,8 @@ protected:
         ObstacleType type;
         /// @brief the id / description of the obstacle
         std::string description;
+        /// @brief a pointer to the vehicle if this obstacle is one
+        const SUMOVehicle* vehicle = nullptr;
 
         bool closer(const Obstacle& o, int dir);
     };
@@ -415,6 +417,10 @@ protected:
 
         ObstacleType getOType() const {
             return OBSTACLE_VEHICLE;
+        }
+
+        const MSVehicle* getVehicle() const {
+            return myVehicle;
         }
     private:
         const MSVehicle* myVehicle;

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 #include <utils/gui/div/GUIGeometry.h>
 #include <utils/gui/globjects/GUIGlObject.h>
 #include <utils/geom/PositionVector.h>
+#include <netedit/elements/GNEContour.h>
 #include <netedit/GNEMoveElement.h>
 
 
@@ -37,7 +38,9 @@ class GNEDemandElement;
 // ===========================================================================
 // class definitions
 // ===========================================================================
+
 class GNENetworkElement : public GUIGlObject, public GNEHierarchicalElement, public GNEMoveElement {
+
 public:
     /**@brief Constructor.
      * @param[in] net The net to inform about gui updates
@@ -69,6 +72,9 @@ public:
 
     /// @brief get GUIGlObject associated with this AttributeCarrier
     GUIGlObject* getGUIGlObject();
+
+    /// @brief get GUIGlObject associated with this AttributeCarrier (constant)
+    const GUIGlObject* getGUIGlObject() const;
 
     /// @brief set shape edited
     void setShapeEdited(const bool value);
@@ -114,6 +120,9 @@ public:
     /// @brief check if draw select contour (blue)
     virtual bool checkDrawSelectContour() const = 0;
 
+    /// @brief check if draw move contour (red)
+    virtual bool checkDrawMoveContour() const = 0;
+
     /// @}
 
     /// @name inherited from GUIGlObject
@@ -138,7 +147,7 @@ public:
     virtual GUIGLObjectPopupMenu* getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) = 0;
 
     /// @brief Returns the boundary to which the view shall be centered in order to show the object
-    Boundary getCenteringBoundary() const;
+    virtual Boundary getCenteringBoundary() const = 0;
 
     /// @brief update centering boundary (implies change in RTREE)
     virtual void updateCenteringBoundary(const bool updateGrid) = 0;
@@ -150,7 +159,7 @@ public:
     virtual void drawGL(const GUIVisualizationSettings& s) const = 0;
 
     /// @brief check if element is locked
-    bool isGLObjectLocked();
+    bool isGLObjectLocked() const;
 
     /// @brief mark element as front element
     void markAsFrontElement();
@@ -201,11 +210,14 @@ public:
     virtual const Parameterised::Map& getACParametersMap() const = 0;
 
 protected:
-    /// @brief object boundary
-    Boundary myBoundary;
-
     /// @brief flag to check if element shape is being edited
     bool myShapeEdited;
+
+    /// @brief network element contour
+    GNEContour myNetworkElementContour;
+
+    // @brief check if we're drawing using a boundary but element was already selected
+    bool checkDrawingBoundarySelection() const;
 
 private:
     /// @brief set attribute after validation

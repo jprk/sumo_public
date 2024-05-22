@@ -18,7 +18,6 @@ the definition. The declaration values are:
 | -------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
 | **id**         | id (string) | The id of of the rerouter                                                                              |
 | **edges**      | float       | An edge id or a list of edge ids where vehicles shall be rerouted                                      |
-| file           | float       | The path to the definition file (alternatively, the intervals may defined as children of the rerouter) |
 | probability    | float       | The probability for vehicle rerouting (0-1), default 1                                                 |
 | timeThreshold  | time (s)    | minimum accumulated waiting time before the rerouter takes effect (default 0 applies always)           |
 | vTypes         | stringList  | Space-separated list of vType IDs for which this rerouter should apply (default "" applies to all)     |
@@ -276,9 +275,9 @@ cases:
    lack of capacity
 - when a vehicle enters one of the rerouter-edges and the following
    conditions are all met:
-   - it's current destination parkingArea is among the set of
+   - its current destination parkingArea is among the set of
       parkingAreaReroute definitions and has attribute `visible="true"`
-   - it's current destination parkingArea is full
+   - its current destination parkingArea is full
 
 The definition looks like this:
 
@@ -313,7 +312,7 @@ Parking search refers to the situation where a vehicle encounters an occupied pa
 ```
 
 !!! caution
-    Up to version 1.10.0 parking memory was 0 which could cause vehicles to only visited a small set of areas repeatedly
+    Up to version 1.10.0 parking memory was 0 which could cause vehicles to visit only a small set of areas repeatedly.
 
 ### Determining the alternative parking area
 
@@ -342,7 +341,7 @@ vType](../Simulation/GenericParameters.md):
 | parking.distancefrom.weight | 0             | The road distance from the parking area to the vehicles destination      | no                         |
 | parking.timefrom.weight     | 0             | The assumed travel time from the parking area to the vehicle destination | no                         |
 
-When 'parking.probability.weight' is set to a positive value, a random number between 0 and attribute 'probability' is drawn for each candidate parkingArea. This value is then normalized to then range [0,1] by dividing with the maximum probability value of all parkingAreaReroute elements. The negative normalized value is then multiplied with parking.probability.weight to enter into the candidate score.
+When 'parking.probability.weight' is set to a positive value, a random number between 0 and attribute 'probability' is drawn for each candidate parkingArea. This value is then normalized to the range [0,1] by dividing with the maximum probability value of all parkingAreaReroute elements. The negative normalized value is then multiplied with parking.probability.weight to enter into the candidate score.
 
 ### Further parameters to affect parking behavior
 
@@ -391,6 +390,9 @@ along their route (other vehicles are not affected directly).
 5. closing time versus departure time
    - a) vehicle departs after closing becomes active
    - b) vehicle departs before closing becomes active (closing occurs while en-route)
+6. routing mode of the vehicle (set via **--device.rerouting.mode** or vehicle/vtype `<param key="device.rerouting.mode" value="8"/>`)
+   - a) routing mode 0 (or generally, not setting the 4th bit): all hard closings are visible during routing
+   - b) routing mode 8 (or generally setting the 4th bit): all hard-closings are ignored during routing and will never cause a route error
 
 The following vehicle behaviors are possible:
 

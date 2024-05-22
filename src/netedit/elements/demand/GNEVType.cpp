@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -335,6 +335,12 @@ GNEVType::getAttribute(SumoXMLAttr key) const {
                 return toString(desiredMaxSpeed);
             } else {
                 return toString(defaultValues.desiredMaxSpeed);
+            }
+        case SUMO_ATTR_PARKING_BADGES:
+            if (wasSet(VTYPEPARS_PARKING_BADGES_SET)) {
+                return joinToString(parkingBadges, " ");
+            } else {
+                return "";
             }
         case SUMO_ATTR_PERSON_CAPACITY:
             if (wasSet(VTYPEPARS_PERSON_CAPACITY)) {
@@ -1272,14 +1278,17 @@ GNEVType::overwriteVType(GNEDemandElement* vType, const SUMOVTypeParameter newVT
     if (newVTypeParameter.wasSet(VTYPEPARS_OSGFILE_SET)) {
         vType->setAttribute(SUMO_ATTR_OSGFILE, toString(newVTypeParameter.osgFile), undoList);
     }
-    if (newVTypeParameter.knowsParameter(toString(SUMO_ATTR_CARRIAGE_LENGTH))) {
+    if (newVTypeParameter.hasParameter(toString(SUMO_ATTR_CARRIAGE_LENGTH))) {
         vType->setAttribute(SUMO_ATTR_CARRIAGE_LENGTH, newVTypeParameter.getParameter(toString(SUMO_ATTR_CARRIAGE_LENGTH), ""), undoList);
     }
-    if (newVTypeParameter.knowsParameter(toString(SUMO_ATTR_LOCOMOTIVE_LENGTH))) {
+    if (newVTypeParameter.hasParameter(toString(SUMO_ATTR_LOCOMOTIVE_LENGTH))) {
         vType->setAttribute(SUMO_ATTR_LOCOMOTIVE_LENGTH, newVTypeParameter.getParameter(toString(SUMO_ATTR_LOCOMOTIVE_LENGTH), ""), undoList);
     }
-    if (newVTypeParameter.knowsParameter(toString(SUMO_ATTR_CARRIAGE_GAP))) {
+    if (newVTypeParameter.hasParameter(toString(SUMO_ATTR_CARRIAGE_GAP))) {
         vType->setAttribute(SUMO_ATTR_CARRIAGE_GAP, newVTypeParameter.getParameter(toString(SUMO_ATTR_CARRIAGE_GAP), ""), undoList);
+    }
+    if (newVTypeParameter.hasParameter(toString(SUMO_ATTR_PARKING_BADGES))) {
+        vType->setAttribute(SUMO_ATTR_PARKING_BADGES, newVTypeParameter.getParameter(toString(SUMO_ATTR_PARKING_BADGES), ""), undoList);
     }
     // parse parameters
     std::string parametersStr;
@@ -1551,6 +1560,18 @@ GNEVType::setAttribute(SumoXMLAttr key, const std::string& value) {
             // update default values
             updateDefaultVClassAttributes(defaultValues);
             break;
+        case SUMO_ATTR_PARKING_BADGES:
+            if (!value.empty()) {
+                parkingBadges = parse<std::vector<std::string>>(value);
+                // mark parameter as set
+                parametersSet |= VTYPEPARS_PARKING_BADGES_SET;
+            } else {
+                // set default value
+                parkingBadges.clear();
+                // unset parameter
+                parametersSet &= ~VTYPEPARS_PARKING_BADGES_SET;
+            }
+            break;
         case SUMO_ATTR_EMISSIONCLASS:
             if (!value.empty() && (value != toString(defaultValues.emissionClass))) {
                 emissionClass = PollutantsInterface::getClassByName(value);
@@ -1772,7 +1793,7 @@ GNEVType::setAttribute(SumoXMLAttr key, const std::string& value) {
             }
             break;
         case SUMO_ATTR_LOCOMOTIVE_LENGTH:
-            if (!value.empty() && (value != toString(defaultValues.containerCapacity))) {
+            if (!value.empty() && (value != toString(defaultValues.locomotiveLength))) {
                 locomotiveLength = parse<double>(value);
                 // mark parameter as set
                 parametersSet |= VTYPEPARS_LOCOMOTIVE_LENGTH_SET;

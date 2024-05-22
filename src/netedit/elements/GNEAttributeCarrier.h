@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,7 +24,6 @@
 #include <netedit/GNEReferenceCounter.h>
 
 #include "GNETagProperties.h"
-#include "GNEContour.h"
 
 
 // ===========================================================================
@@ -92,6 +91,9 @@ public:
     /// @brief get GUIGlObject associated with this AttributeCarrier
     virtual GUIGlObject* getGUIGlObject() = 0;
 
+    /// @brief get GUIGlObject associated with this AttributeCarrier (constant)
+    virtual const GUIGlObject* getGUIGlObject() const = 0;
+
     /// @brief update pre-computed geometry information
     virtual void updateGeometry() = 0;
 
@@ -99,8 +101,6 @@ public:
 
     /// @name Function related with contourdrawing (can be implemented in children)
     /// @{
-    // check if draw contour
-    bool checkDrawContour() const;
 
     /// @brief check if draw inspect contour (black/white)
     bool checkDrawInspectContour() const;
@@ -125,6 +125,9 @@ public:
 
     /// @brief check if draw select contour (blue)
     virtual bool checkDrawSelectContour() const = 0;
+
+    /// @brief check if draw move contour (red)
+    virtual bool checkDrawMoveContour() const = 0;
 
     /// @}
 
@@ -234,9 +237,6 @@ public:
     /// @brief check if this AC is template
     bool isTemplate() const;
 
-    /// @brief get contour
-    const GNEContour& getContour() const;
-
     /// @brief get tagProperty associated with this Attribute Carrier
     const GNETagProperties& getTagProperty() const;
 
@@ -325,9 +325,6 @@ public:
 protected:
     /// @brief reference to tagProperty associated with this attribute carrier
     const GNETagProperties& myTagProperty;
-
-    /// @brief variable used for draw contours
-    GNEContour myContour;
 
     /// @brief pointer to net
     GNENet* myNet;

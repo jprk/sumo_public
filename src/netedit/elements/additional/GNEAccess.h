@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -49,8 +49,8 @@ public:
      * @param[in] friendlyPos enable or disable friendly positions
      * @param[in] parameters generic parameters
      */
-    GNEAccess(GNEAdditional* busStop, GNELane* lane, GNENet* net, double pos, const double length,
-              bool friendlyPos, const Parameterised::Map& parameters);
+    GNEAccess(GNEAdditional* busStop, GNELane* lane, GNENet* net, const double pos, const std::string& specialPos,
+              const bool friendlyPos, const double length, const Parameterised::Map& parameters);
 
     /// @brief Destructor
     ~GNEAccess();
@@ -82,6 +82,14 @@ public:
 
     /// @brief fix additional problem (must be reimplemented in all detector children)
     void fixAdditionalProblem();
+
+    /// @}
+
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const;
 
     /// @}
 
@@ -159,6 +167,9 @@ public:
 protected:
     /// @brief position over lane
     double myPositionOverLane;
+
+    /// @brief position over lane
+    std::string mySpecialPosition;
 
     /// @brief Access length
     double myLength;

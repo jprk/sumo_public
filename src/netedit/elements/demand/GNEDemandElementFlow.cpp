@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -131,7 +131,7 @@ GNEDemandElementFlow::getFlowAttribute(SumoXMLAttr key) const {
         case SUMO_ATTR_PERIOD:
             return time2string(repetitionOffset);
         case GNE_ATTR_POISSON:
-            return adjustDecimalValue(1 / STEPS2TIME(repetitionOffset));
+            return toString(poissonRate);
         case SUMO_ATTR_PROB:
             return adjustDecimalValue(repetitionProbability);
         case SUMO_ATTR_NUMBER:
@@ -301,12 +301,15 @@ GNEDemandElementFlow::setFlowAttribute(const GNEDemandElement* flowElement, Sumo
         case SUMO_ATTR_PERSONSPERHOUR:
         case SUMO_ATTR_CONTAINERSPERHOUR:
             repetitionOffset = TIME2STEPS(3600 / GNEAttributeCarrier::parse<double>(value));
+            poissonRate = GNEAttributeCarrier::parse<double>(value) / 3600;
             break;
         case SUMO_ATTR_PERIOD:
             repetitionOffset = string2time(value);
+            poissonRate = 1 / STEPS2TIME(repetitionOffset);
             break;
         case GNE_ATTR_POISSON:
-            repetitionOffset = TIME2STEPS(1 / GNEAttributeCarrier::parse<double>(value));
+            poissonRate = GNEAttributeCarrier::parse<double>(value);
+            repetitionOffset = TIME2STEPS(1 / poissonRate);
             break;
         case SUMO_ATTR_PROB:
             repetitionProbability = GNEAttributeCarrier::parse<double>(value);
@@ -403,7 +406,7 @@ GNEDemandElementFlow::setDefaultFlowAttributes(const GNEDemandElement* flowEleme
         if (repetitionOffset < 0) {
             toggleFlowAttribute(SUMO_ATTR_PERIOD, false);
             toggleFlowAttribute(GNE_ATTR_POISSON, true);
-            setFlowAttribute(flowElement, GNE_ATTR_POISSON, time2string(repetitionOffset * -1, false));
+            setFlowAttribute(flowElement, GNE_ATTR_POISSON, toString(poissonRate));
         }
     }
 }

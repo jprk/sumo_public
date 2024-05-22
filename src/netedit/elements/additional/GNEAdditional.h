@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 #include <utils/gui/div/GUIGeometry.h>
 #include <netedit/GNEPathManager.h>
 #include <netedit/GNEMoveElement.h>
+#include <netedit/elements/GNEContour.h>
 #include <utils/common/Parameterised.h>
 #include <utils/geom/PositionVector.h>
 #include <utils/gui/globjects/GUIGlObject.h>
@@ -105,6 +106,9 @@ public:
     /// @brief get GUIGlObject associated with this AttributeCarrier
     GUIGlObject* getGUIGlObject();
 
+    /// @brief get GUIGlObject associated with this AttributeCarrier (constant)
+    const GUIGlObject* getGUIGlObject() const;
+
     /// @brief Returns the name of the object (default "")
     virtual const std::string getOptionalName() const;
 
@@ -183,6 +187,9 @@ public:
     /// @brief check if draw select contour (blue)
     bool checkDrawSelectContour() const;
 
+    /// @brief check if draw move contour (red)
+    virtual bool checkDrawMoveContour() const = 0;
+
     /// @}
 
     /// @name inherited from GUIGlObject
@@ -216,7 +223,7 @@ public:
     virtual void drawGL(const GUIVisualizationSettings& s) const = 0;
 
     /// @brief check if element is locked
-    bool isGLObjectLocked();
+    bool isGLObjectLocked() const;
 
     /// @brief mark element as front element
     void markAsFrontElement();
@@ -313,16 +320,20 @@ public:
     void drawParentChildLines(const GUIVisualizationSettings& s, const RGBColor& color, const bool onlySymbols = false) const;
 
     /// @brief draw up geometry point
-    static void drawUpGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift = false);
+    void drawUpGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                             const double rot, const RGBColor& baseColor, const bool ignoreShift = false) const;
 
     /// @brief draw down geometry point
-    static void drawDownGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift = false);
+    void drawDownGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                               const double rot, const RGBColor& baseColor, const bool ignoreShift = false) const;
 
     /// @brief draw left geometry point
-    static void drawLeftGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift = false);
+    void drawLeftGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                               const double rot, const RGBColor& baseColor, const bool ignoreShift = false) const;
 
     /// @brief draw right geometry point
-    static void drawRightGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor, const bool ignoreShift = false);
+    void drawRightGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const Position& pos,
+                                const double rot, const RGBColor& baseColor, const bool ignoreShift = false) const;
 
     /// @brief get draw position index (used in rerouters and VSS)
     int getDrawPositionIndex() const;
@@ -334,11 +345,14 @@ public:
     static bool areLaneConnected(const std::vector<GNELane*>& lanes);
 
 protected:
-    /// @brief Additional Boundary
+    /// @brief Additional Boundary (used only by additionals placed over grid)
     Boundary myAdditionalBoundary;
 
     /// @brief geometry to be precomputed in updateGeometry(...)
     GUIGeometry myAdditionalGeometry;
+
+    /// @brief variable used for draw additional contours
+    GNEContour myAdditionalContour;
 
     /// @brief name of additional
     std::string myAdditionalName;
@@ -403,6 +417,11 @@ protected:
     void drawListedAdditional(const GUIVisualizationSettings& s, const Position& parentPosition, const double offsetX, const double extraOffsetY,
                               const RGBColor baseCol, const RGBColor textCol, GUITexture texture, const std::string text) const;
 
+    /// @brief check if draw additional extrem geometry points
+    bool drawMovingGeometryPoints(const bool ignoreShift) const;
+
+    /// @brief draw demand element children
+    void drawDemandElementChildren(const GUIVisualizationSettings& s) const;
 
     /// @brief get moveOperation for an element over single lane
     GNEMoveOperation* getMoveOperationSingleLane(const double startPos, const double endPos);
@@ -433,6 +452,15 @@ protected:
 
     /// @}
 
+    /// @name calculate contours
+    /// @{
+
+    /// @brief calculate contour for polygons
+    void calculateContourPolygons(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                  const double exaggeration, const bool contouredShape) const;
+
+    /// @}
+
 private:
     /**@brief check restriction with the number of children
      * @throw ProcessError if is called without be reimplemented in child class
@@ -449,8 +477,9 @@ private:
     virtual void commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList) = 0;
 
     /// @brief draw geometry point
-    static void drawSemiCircleGeometryPoint(const GNEViewNet* viewNet, const Position& pos, const double rot, const RGBColor& baseColor,
-                                            const double fromAngle, const double toAngle, const bool ignoreShift);
+    void drawSemiCircleGeometryPoint(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                     const Position& pos, const double rot, const RGBColor& baseColor,
+                                     const double fromAngle, const double toAngle, const bool ignoreShift) const;
 
     /// @brief adjust listed additional text
     std::string adjustListedAdditionalText(const std::string& text) const;

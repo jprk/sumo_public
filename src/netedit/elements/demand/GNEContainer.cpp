@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -328,9 +328,7 @@ void
 GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
     bool drawContainer = true;
     // check if container can be drawn
-    if (color.alpha() == 0) {
-        drawContainer = false;
-    } else if (!myNet->getViewNet()->getNetworkViewOptions().showDemandElements()) {
+    if (!myNet->getViewNet()->getNetworkViewOptions().showDemandElements()) {
         drawContainer = false;
     } else if (!myNet->getViewNet()->getDataViewOptions().showDemandElements()) {
         drawContainer = false;
@@ -342,20 +340,15 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
     // continue if container can be drawn
     if (drawContainer) {
         // obtain exaggeration (and add the special containerExaggeration)
-        const double exaggeration = getExaggeration(s) + s.detailSettings.personExaggeration;
-        // obtain width and length
-        const double length = getTypeParent()->getAttributeDouble(SUMO_ATTR_LENGTH);
-        const double width = getTypeParent()->getAttributeDouble(SUMO_ATTR_WIDTH);
-        // obtain diameter around container (used to calculate distance bewteen cursor and container)
-        const double distanceSquared = pow(exaggeration * std::max(length, width), 2);
-        // obtain img file
-        const std::string file = getTypeParent()->getAttribute(SUMO_ATTR_IMGFILE);
+        const double exaggeration = getExaggeration(s) + 10;
+        // get detail level
+        const auto d = s.getDetailLevel(exaggeration);
         // obtain position
         const Position containerPosition = getAttributePosition(SUMO_ATTR_DEPARTPOS);
-        // check if container can be drawn
-        if (!(s.drawForPositionSelection && (containerPosition.distanceSquaredTo(myNet->getViewNet()->getPositionInformation()) > distanceSquared))) {
-            // push GL ID
-            GLHelper::pushName(getGlID());
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // obtain img file
+            const std::string file = getTypeParent()->getAttribute(SUMO_ATTR_IMGFILE);
             // push draw matrix
             GLHelper::pushMatrix();
             // Start with the drawing of the area traslating matrix to origin
@@ -387,8 +380,6 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
                     drawJunctionLine(containerPlan);
                 }
             }
-            // pop name
-            GLHelper::popName();
             // draw stack label
             if (myStackedLabelNumber > 0) {
                 drawStackLabel(myStackedLabelNumber, "container", Position(containerPosition.x() - 2.5, containerPosition.y() - 0.8), -90, 1.3, 5, getExaggeration(s));
@@ -424,14 +415,13 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
                 const double value = getColorValue(s, s.containerColorer.getActive());
                 GLHelper::drawTextSettings(s.personValue, toString(value), containerValuePosition, s.scale, s.angle, GLO_MAX - getType());
             }
-            // check if mouse is over element
-            mouseWithinGeometry(containerPosition, 0.5, 0.2, -2.5, 0, 0);
             // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), getPositionInView(), exaggeration);
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), getPositionInView(), exaggeration);
             // draw dotted contour
-            myContour.drawDottedContourRectangle(s, containerPosition, 0.5, 0.2, -2.5, 0, 0, exaggeration,
-                                                 s.dottedContourSettings.segmentWidth);
+            myContainerContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
+        // calculate contour
+        myContainerContour.calculateContourRectangleShape(s, d, this, containerPosition, 0.5, 0.2, -2.5, 0, 0, exaggeration);
     }
 }
 

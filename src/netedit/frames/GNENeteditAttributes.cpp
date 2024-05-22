@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -193,7 +193,7 @@ GNENeteditAttributes::getNeteditAttributesAndValues(CommonXMLStructure::SumoBase
 
 
 void
-GNENeteditAttributes::drawLaneReference(const GUIVisualizationSettings& s, const GNELane* lane) const {
+GNENeteditAttributes::drawLaneReference(const GNELane* lane) const {
     // get element length
     const double elementLength = getElementLength();
     // check lane
@@ -233,13 +233,13 @@ GNENeteditAttributes::drawLaneReference(const GUIVisualizationSettings& s, const
             // set color
             GLHelper::setColor(segmentColor);
             // draw temporal edge
-            GUIGeometry::drawGeometry(s, myFrameParent->getViewNet()->getPositionInformation(), geometry, 0.45);
+            GUIGeometry::drawGeometry(lane->getDrawingConstants()->getDetail(), geometry, 0.45);
             // check if draw starPos
             if (startPos != INVALID_DOUBLE) {
                 // cut start pos
                 geometry.updateGeometry(laneShape, startPos, Position::INVALID, startPos + 0.5, Position::INVALID);
                 // draw startPos
-                GUIGeometry::drawGeometry(s, myFrameParent->getViewNet()->getPositionInformation(), geometry, 1);
+                GUIGeometry::drawGeometry(lane->getDrawingConstants()->getDetail(), geometry, 1);
             } else {
                 // push circle matrix
                 GLHelper::pushMatrix();
@@ -255,7 +255,7 @@ GNENeteditAttributes::drawLaneReference(const GUIVisualizationSettings& s, const
                 // cut endPos
                 geometry.updateGeometry(laneShape, endPos - 0.5, Position::INVALID, endPos, Position::INVALID);
                 // draw endPos
-                GUIGeometry::drawGeometry(s, myFrameParent->getViewNet()->getPositionInformation(), geometry, 1);
+                GUIGeometry::drawGeometry(lane->getDrawingConstants()->getDetail(), geometry, 1);
             } else {
                 // push circle matrix
                 GLHelper::pushMatrix();

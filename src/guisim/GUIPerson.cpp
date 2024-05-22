@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,6 +27,7 @@
 #include <microsim/logging/FunctionBinding.h>
 #include <microsim/transportables/MSPModel_Striping.h>
 #include <microsim/transportables/MSStageWaiting.h>
+#include <microsim/transportables/MSStageWalking.h>
 #include <utils/common/MsgHandler.h>
 #include <utils/common/ScopedLocker.h>
 #include <utils/gui/div/GLHelper.h>
@@ -322,10 +323,10 @@ GUIPerson::drawGL(const GUIVisualizationSettings& s) const {
 
 void
 GUIPerson::drawAction_drawWalkingareaPath(const GUIVisualizationSettings& s) const {
-    MSPersonStage_Walking* stage = dynamic_cast<MSPersonStage_Walking*>(getCurrentStage());
+    MSStageWalking* stage = dynamic_cast<MSStageWalking*>(getCurrentStage());
     if (stage != nullptr) {
         setColor(s);
-        MSPModel_Striping::PState* stripingState = dynamic_cast<MSPModel_Striping::PState*>(stage->getState());
+        MSPModel_Striping::PState* stripingState = dynamic_cast<MSPModel_Striping::PState*>(stage->getPState());
         if (stripingState != nullptr) {
             const MSPModel_Striping::WalkingAreaPath* waPath = stripingState->myWalkingAreaPath;
             if (waPath != nullptr) {
@@ -352,7 +353,7 @@ GUIPerson::drawGLAdditional(GUISUMOAbstractView* const parent, const GUIVisualiz
             RGBColor current = GLHelper::getColor();
             RGBColor darker = current.changedBrightness(-51);
             GLHelper::setColor(darker);
-            MSPersonStage_Walking* stage = dynamic_cast<MSPersonStage_Walking*>(getCurrentStage());
+            MSStageWalking* stage = dynamic_cast<MSStageWalking*>(getCurrentStage());
             assert(stage != 0);
             const double exaggeration = getExaggeration(s);
             const ConstMSEdgeVector& edges = stage->getRoute();

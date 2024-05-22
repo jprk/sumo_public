@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -25,7 +25,7 @@
 #include <netedit/changes/GNEChange_Attribute.h>
 #include <netedit/frames/network/GNETLSEditorFrame.h>
 #include <utils/gui/div/GLHelper.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GNEInductionLoopDetector.h"
 #include "GNEAdditionalHandler.h"
@@ -157,14 +157,14 @@ GNEInductionLoopDetector::checkDrawRelatedContour() const {
 
 void
 GNEInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const {
+    // Obtain exaggeration of the draw
+    const double E1Exaggeration = getExaggeration(s);
     // first check if additional has to be drawn
     if (myNet->getViewNet()->getDataViewOptions().showAdditionals()) {
-        // Obtain exaggeration of the draw
-        const double E1Exaggeration = getExaggeration(s);
-        // check exaggeration
-        if (s.drawAdditionals(E1Exaggeration)) {
-            // obtain scaledSize
-            const double scaledWidth = s.detectorSettings.E1Width * 0.5 * s.scale;
+        // get detail level
+        const auto d = s.getDetailLevel(E1Exaggeration);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
             // declare colors
             RGBColor mainColor, secondColor, textColor;
             // set color
@@ -177,42 +177,30 @@ GNEInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const {
                 secondColor = RGBColor::WHITE;
                 textColor = RGBColor::BLACK;
             }
-            // avoid draw invisible elements
-            if (mainColor.alpha() != 0) {
-                // draw parent and child lines
-                drawParentChildLines(s, s.additionalSettings.connectionColor);
-                // start drawing
-                GLHelper::pushName(getGlID());
-                // push layer matrix
-                GLHelper::pushMatrix();
-                // translate to front
-                myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_E1DETECTOR);
-                // draw E1 shape
-                drawE1Shape(s, E1Exaggeration, scaledWidth, mainColor, secondColor);
-                // Check if the distance is enought to draw details
-                if (s.drawDetail(s.detailSettings.detectorDetails, E1Exaggeration)) {
-                    // draw E1 Logo
-                    drawE1DetectorLogo(s, E1Exaggeration, "E1", textColor);
-                }
-                // pop layer matrix
-                GLHelper::popMatrix();
-                // Pop name
-                GLHelper::popName();
-                // draw lock icon
-                GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), myAdditionalGeometry.getShape().getCentroid(), E1Exaggeration);
-            }
-            // check if mouse is over element
-            mouseWithinGeometry(myAdditionalGeometry.getShape().front(),
-                                2, 1, 0, 0, myAdditionalGeometry.getShapeRotations().front());
+            // draw parent and child lines
+            drawParentChildLines(s, s.additionalSettings.connectionColor);
+            // push layer matrix
+            GLHelper::pushMatrix();
+            // translate to front
+            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_E1DETECTOR);
+            // draw E1 shape
+            drawE1Shape(d, E1Exaggeration, mainColor, secondColor);
+            // draw E1 Logo
+            drawE1DetectorLogo(s, d, E1Exaggeration, "E1", textColor);
+            // pop layer matrix
+            GLHelper::popMatrix();
+            // draw lock icon
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), myAdditionalGeometry.getShape().getCentroid(), E1Exaggeration);
+            // Draw additional ID
+            drawAdditionalID(s);
+            // draw additional name
+            drawAdditionalName(s);
             // draw dotted contour
-            myContour.drawDottedContourRectangle(s, myAdditionalGeometry.getShape().front(), 2, 1, 0, 0,
-                                                 myAdditionalGeometry.getShapeRotations().front(), E1Exaggeration,
-                                                 s.dottedContourSettings.segmentWidth);
+            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
-        // Draw additional ID
-        drawAdditionalID(s);
-        // draw additional name
-        drawAdditionalName(s);
+        // calculate contour rectangle
+        myAdditionalContour.calculateContourRectangleShape(s, d, this, myAdditionalGeometry.getShape().front(), 2, 1, 0, 0,
+                myAdditionalGeometry.getShapeRotations().front(), E1Exaggeration);
     }
 }
 

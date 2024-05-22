@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -209,8 +209,8 @@ protected:
     /// @brief Parameter of the current vehicle, trip, person, container or flow
     SUMOVehicleParameter* myVehicleParameter;
 
-    /// @brief The currently parsed vehicle stop
-    Parameterised* myCurrentStop;
+    /// @brief The stack of currently parsed parameterised objects
+    std::vector<Parameterised*> myParamStack;
 
     /// @brief The insertion time of the vehicle read last
     SUMOTime myLastDepart;
@@ -236,12 +236,6 @@ protected:
     /// @brief The currently parsed vehicle type
     SUMOVTypeParameter* myCurrentVType;
 
-    /// @brief Parameterised used for saving loaded generic parameters that aren't saved in Vehicles or Vehicle Types
-    Parameterised myLoadedParameterised;
-
-    /// @brief generates numerical ids
-    IDSupplier myIdSupplier;
-
     /// @brief The default value for flow begins
     SUMOTime myBeginDefault;
 
@@ -254,7 +248,7 @@ protected:
     /// @brief where stop edges can be inserted into the current route (-1 means no insertion)
     int myInsertStopEdgesAt;
 
-    /// @brief hierachy of elements being parsed
+    /// @brief hierarchy of elements being parsed
     std::vector<int> myElementStack;
 
     /// @brief whether references to internal routes are allowed in this context

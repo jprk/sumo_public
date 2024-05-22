@@ -102,6 +102,12 @@
                                 <xsd:attribute name="visible" type="boolType"/>
                             </xsd:complexType>
                         </xsd:element>
+                        <xsd:element name="viaProbReroute">
+                            <xsd:complexType>
+                                <xsd:attribute name="id" type="idType" use="required"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
+                            </xsd:complexType>
+                        </xsd:element>
                     </xsd:choice>
                     <xsd:attribute name="begin" type="nonNegativeFloatType" use="required"/>
                     <xsd:attribute name="end" type="nonNegativeFloatType" use="required"/>
@@ -352,9 +358,15 @@
                                 <xsd:attribute name="visible" type="boolType"/>
                             </xsd:complexType>
                         </xsd:element>
+                        <xsd:element name="viaProbReroute">
+                            <xsd:complexType>
+                                <xsd:attribute name="id" type="idType" use="required"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
+                            </xsd:complexType>
+                        </xsd:element>
                     </xsd:choice>
-                    <xsd:attribute name="begin" type="nonNegativeFloatType" use="required"/>
-                    <xsd:attribute name="end" type="nonNegativeFloatType" use="required"/>
+                    <xsd:attribute name="begin" type="timeType" use="required"/>
+                    <xsd:attribute name="end" type="timeType" use="required"/>
                 </xsd:complexType>
             </xsd:element>
         </xsd:choice>
@@ -366,7 +378,8 @@
         <xsd:attribute name="pos" type="xsd:string" use="optional"/>
         <xsd:attribute name="name" type="xsd:string" use="optional"/>
         <xsd:attribute name="visible" type="boolType" use="optional"/>
-		<xsd:attribute name="off" type="boolType" use="optional"/>
+        <xsd:attribute name="off" type="boolType" use="optional"/>
+        <xsd:attribute name="optional" type="boolType" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="instantInductionLoopType">
@@ -442,6 +455,7 @@
             </xsd:simpleType>
         </xsd:attribute>
         <xsd:attribute name="waitingTime" type="nonNegativeFloatType" use="optional"/>
+        <xsd:attribute name="parkingArea" type="xsd:string" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="overheadWireSegmentType">
@@ -531,6 +545,7 @@
         <xsd:attribute name="name" type="xsd:string" use="optional"/>
         <xsd:attribute name="departPos" type="floatType" use="optional"/>
         <xsd:attribute name="lefthand" type="boolType" use="optional"/>
+        <xsd:attribute name="acceptedBadges" type="xsd:string" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="parkingSpaceType">
@@ -626,8 +641,11 @@
             <xsd:simpleType>
                 <xsd:restriction base="xsd:string">
                     <xsd:enumeration value=""/>
+                    <xsd:enumeration value="pin"/>
+                    <xsd:enumeration value="tree"/>
                     <xsd:enumeration value="hotel"/>
-                    <xsd:enumeration value="nature"/>
+                    <xsd:enumeration value="fuel"/>
+                    <xsd:enumeration value="charging_station"/>
                 </xsd:restriction>
             </xsd:simpleType>
         </xsd:attribute>

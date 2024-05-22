@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -724,6 +724,11 @@ TraCIAPI::GUIScope::trackVehicle(const std::string& viewID, const std::string& v
 // ---------------------------------------------------------------------------
 // TraCIAPI::InductionLoopScope-methods
 // ---------------------------------------------------------------------------
+
+int TraCIAPI::InductionLoopScope::getIntervalVehicleNumber(const std::string& loopID) const {
+    return getInt(libsumo::VAR_LAST_INTERVAL_NUMBER, loopID);
+}
+
 double
 TraCIAPI::InductionLoopScope::getPosition(const std::string& loopID) const {
     return getDouble(libsumo::VAR_POSITION, loopID);

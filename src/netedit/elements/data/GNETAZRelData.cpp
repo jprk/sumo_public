@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -33,7 +33,7 @@
 #include <netedit/frames/data/GNETAZRelDataFrame.h>
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/globjects/GLIncludes.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GNETAZRelData.h"
 #include "GNEDataInterval.h"
@@ -95,7 +95,7 @@ GNETAZRelData::getColorValue(const GUIVisualizationSettings& s, int activeScheme
         case 4:
             // by numerical attribute value
             try {
-                if (knowsParameter(s.relDataAttr)) {
+                if (hasParameter(s.relDataAttr)) {
                     return StringUtils::toDouble(getParameter(s.relDataAttr, "-1"));
                 } else {
                     return GUIVisualizationSettings::MISSING_DATA;
@@ -251,64 +251,56 @@ GNETAZRelData::fixGenericDataProblem() {
 
 void
 GNETAZRelData::drawGL(const GUIVisualizationSettings& s) const {
-    const auto& color = setColor(s);
+    // draw boundaries
+    GLHelper::drawBoundary(s, getCenteringBoundary());
     // draw TAZRels
-    if ((color.alpha() != 0) && drawTAZRel()) {
-        // check if boundary has to be drawn
-        if (s.drawBoundaries) {
-            GLHelper::drawBoundary(getCenteringBoundary());
-        }
-        // get flag for only draw contour
-        const bool onlyDrawContour = !isGenericDataVisible();
-        // push name (needed for getGUIGlObjectsUnderCursor(...)
-        if (!onlyDrawContour) {
-            GLHelper::pushName(getGlID());
-        }
-        // push matrix
-        GLHelper::pushMatrix();
-        // translate to front
-        myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_TAZ + 1);
-        GLHelper::setColor(color);
-        // check if update lastWidth
-        const double width = onlyDrawContour ? 0.1 :  0.5 * s.tazRelWidthExaggeration;
-        if (width != myLastWidth) {
-            myLastWidth = width;
-            gPostDrawing.markGLObjectToUpdate(const_cast<GNETAZRelData*>(this));
-        }
-        // draw geometry
-        if (onlyDrawContour) {
-            // draw depending of TAZRelDrawing
-            if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-                GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), myTAZRelGeometryCenter, width);
-            } else {
-                GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), myTAZRelGeometry, width);
+    if (drawTAZRel()) {
+        // get detail level
+        const auto d = s.getDetailLevel(1);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            const auto& color = setColor(s);
+            // get flag for only draw contour
+            const bool onlyDrawContour = !isGenericDataVisible();
+            // push matrix
+            GLHelper::pushMatrix();
+            // translate to front
+            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_TAZ + 1);
+            GLHelper::setColor(color);
+            // check if update lastWidth
+            const double width = onlyDrawContour ? 0.1 :  0.5 * s.tazRelWidthExaggeration;
+            if (width != myLastWidth) {
+                myLastWidth = width;
             }
-        } else {
-            // draw depending of TAZRelDrawing
-            const GUIGeometry& geom = (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()
-                                       ? myTAZRelGeometryCenter : myTAZRelGeometry);
-            GUIGeometry::drawGeometry(s, myNet->getViewNet()->getPositionInformation(), geom, width);
-            GLHelper::drawTriangleAtEnd(
-                *(geom.getShape().end() - 2),
-                *(geom.getShape().end() - 1),
-                1.5 + width, 1.5 + width, 0.5 + width);
-        }
-        // pop matrix
-        GLHelper::popMatrix();
-        // pop name
-        if (!onlyDrawContour) {
-            GLHelper::popName();
+            // draw geometry
+            if (onlyDrawContour) {
+                // draw depending of TAZRelDrawing
+                if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
+                    GUIGeometry::drawGeometry(d, myTAZRelGeometryCenter, width);
+                } else {
+                    GUIGeometry::drawGeometry(d, myTAZRelGeometry, width);
+                }
+            } else {
+                // draw depending of TAZRelDrawing
+                const GUIGeometry& geom = (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()
+                                           ? myTAZRelGeometryCenter : myTAZRelGeometry);
+                GUIGeometry::drawGeometry(d, geom, width);
+                GLHelper::drawTriangleAtEnd(
+                    *(geom.getShape().end() - 2),
+                    *(geom.getShape().end() - 1),
+                    1.5 + width, 1.5 + width, 0.5 + width);
+            }
+            // pop matrix
+            GLHelper::popMatrix();
+            // draw dotted contour
+            myTAZRelDataContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         if (myNet->getViewNet()->getDataViewOptions().TAZRelDrawing()) {
-            mouseWithinGeometry(myTAZRelGeometryCenter.getShape(), 0.5);
-            // draw dotted geometry
-            myContour.drawDottedContourExtruded(s, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true,
-                                                s.dottedContourSettings.segmentWidth);
+            // calculate contour and draw dotted geometry
+            myTAZRelDataContour.calculateContourExtrudedShape(s, d, this, myTAZRelGeometryCenter.getShape(), 0.5, 1, true, true, 0);
         } else {
-            mouseWithinGeometry(myTAZRelGeometry.getShape(), 0.5);
-            // draw dotted geometry
-            myContour.drawDottedContourExtruded(s, myTAZRelGeometry.getShape(), 0.5, 1, true, true,
-                                                s.dottedContourSettings.segmentWidth);
+            // calculate contour and draw dotted geometry
+            myTAZRelDataContour.calculateContourExtrudedShape(s, d, this, myTAZRelGeometry.getShape(), 0.5, 1, true, true, 0);
         }
     }
 }

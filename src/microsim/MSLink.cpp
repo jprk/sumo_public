@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -143,6 +143,7 @@ MSLink::MSLink(MSLane* predLane, MSLane* succLane, MSLane* via, LinkDirection di
     myParallelLeft(nullptr),
     myAmIndirect(indirect),
     myRadius(std::numeric_limits<double>::max()),
+    myPermissions(myLaneBefore->getPermissions() & myLane->getPermissions() & (via == nullptr ? SVCAll : via->getPermissions())),
     myJunction(nullptr) {
 
     if (MSGlobals::gLateralResolution > 0) {
@@ -230,7 +231,7 @@ MSLink::setRequestInformation(int index, bool hasFoes, bool isCont,
         myOffFoeLinks = new std::vector<MSLink*>();
         if (isEntryLink()) {
             for (MSLane* foeLane : foeLanes) {
-                assert(foeLane->isInternal());
+                assert(foeLane->isInternal() || foeLane->isCrossing());
                 MSLink* viaLink = foeLane->getIncomingLanes().front().viaLink;
                 if (viaLink->getLaneBefore()->isNormal()) {
                     myOffFoeLinks->push_back(viaLink);
@@ -1474,7 +1475,8 @@ MSLink::getLeaderInfo(const MSVehicle* ego, double dist, std::vector<const MSPer
                 continue;
             }
             // after entering the conflict area, ignore foe vehicles that are not in the way
-            if (distToCrossing < -POSITION_EPS && !inTheWay
+            if ((!MSGlobals::gComputeLC || (ego != nullptr && ego->getLane() == foeLane) || MSGlobals::gSublane)
+                    && distToCrossing < -POSITION_EPS && !inTheWay
                     && (ego == nullptr || !MSGlobals::gComputeLC || distToCrossing < -ego->getVehicleType().getLength())) {
                 if (gDebugFlag1) {
                     std::cout << "   ego entered conflict area\n";
@@ -1643,11 +1645,6 @@ MSLink::getLeaderInfo(const MSVehicle* ego, double dist, std::vector<const MSPer
                                   << "\n";
                     }
                     gap = distToCrossing - ego->getVehicleType().getMinGap() - leaderBackDist2 - foeCrossingWidth;
-                    if (leader->getLaneChangeModel().isStrategicBlocked()) {
-                        // do not encroach on leader when it tries to change lanes
-                        // factor 2 is to give some slack for lane-changing
-                        gap -= leader->getLength() * 2;
-                    }
                 }
                 // if the foe is already moving off the intersection, we may
                 // advance up to the crossing point unless we have the same target or same source
@@ -1908,21 +1905,21 @@ MSLink::getZipperSpeed(const MSVehicle* ego, const double dist, double vSafe,
     if (dist > MAX2(myFoeVisibilityDistance, brakeGap)) {
 #ifdef DEBUG_ZIPPER
         const SUMOTime now = MSNet::getInstance()->getCurrentTimeStep();
-        if (DEBUG_COND_ZIPPER) DEBUGOUT(SIMTIME << " getZipperSpeed ego=" << ego->getID()
-                                            << " dist=" << dist << " ignoring foes (arrival in " << STEPS2TIME(arrivalTime - now) << ")\n")
+        DEBUGOUT(DEBUG_COND_ZIPPER, SIMTIME << " getZipperSpeed ego=" << ego->getID()
+                 << " dist=" << dist << " ignoring foes (arrival in " << STEPS2TIME(arrivalTime - now) << ")\n")
 #endif
-            return vSafe;
+        return vSafe;
     }
 #ifdef DEBUG_ZIPPER
-    if (DEBUG_COND_ZIPPER) DEBUGOUT(SIMTIME << " getZipperSpeed ego=" << ego->getID()
-                                        << " egoAT=" << arrivalTime
-                                        << " dist=" << dist
-                                        << " brakeGap=" << brakeGap
-                                        << " vSafe=" << vSafe
-                                        << " numFoes=" << foes->size()
-                                        << "\n")
+    DEBUGOUT(DEBUG_COND_ZIPPER, SIMTIME << " getZipperSpeed ego=" << ego->getID()
+             << " egoAT=" << arrivalTime
+             << " dist=" << dist
+             << " brakeGap=" << brakeGap
+             << " vSafe=" << vSafe
+             << " numFoes=" << foes->size()
+             << "\n")
 #endif
-        MSLink* foeLink = myFoeLinks[0];
+    MSLink* foeLink = myFoeLinks[0];
     for (const auto& item : *foes) {
         const MSVehicle* foe = dynamic_cast<const MSVehicle*>(item);
         assert(foe != 0);

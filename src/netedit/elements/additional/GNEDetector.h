@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -90,6 +90,14 @@ public:
 
     /// @brief fix additional problem (must be reimplemented in all detector children)
     virtual void fixAdditionalProblem() = 0;
+
+    /// @}
+
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const;
 
     /// @}
 
@@ -192,14 +200,16 @@ protected:
     bool myFriendlyPosition;
 
     /// @brief draw E1 shape
-    void drawE1Shape(const GUIVisualizationSettings& s, const double exaggeration, const double scaledWidth,
+    void drawE1Shape(const GUIVisualizationSettings::Detail d, const double exaggeration,
                      const RGBColor& mainColor, const RGBColor& secondColor) const;
 
     /// @brief draw E1 detector Logo
-    void drawE1DetectorLogo(const GUIVisualizationSettings& s, const double exaggeration, const std::string& logo, const RGBColor& textColor) const;
+    void drawE1DetectorLogo(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                            const double exaggeration, const std::string& logo, const RGBColor& textColor) const;
 
     /// @brief draw E2 detector Logo
-    void drawE2DetectorLogo(const GUIVisualizationSettings& s, const double exaggeration, const std::string& logo, const RGBColor& textColor) const;
+    void drawE2DetectorLogo(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                            const double exaggeration, const std::string& logo, const RGBColor& textColor) const;
 
 private:
     /// @brief set attribute after validation

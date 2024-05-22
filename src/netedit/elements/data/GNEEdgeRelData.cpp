@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -97,7 +97,7 @@ GNEEdgeRelData::getColorValue(const GUIVisualizationSettings& s, int activeSchem
         case 4:
             // by numerical attribute value
             try {
-                if (knowsParameter(s.relDataAttr)) {
+                if (hasParameter(s.relDataAttr)) {
                     return StringUtils::toDouble(getParameter(s.relDataAttr, "-1"));
                 } else {
                     return GUIVisualizationSettings::MISSING_DATA;
@@ -164,12 +164,8 @@ GNEEdgeRelData::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPa
     // get color
     const auto color = setColor(s);
     if (segment->getLane() && (color.alpha() != 0) && myNet->getViewNet()->getEditModes().isCurrentSupermodeData()) {
-        // get flag for only draw contour
-        const bool onlyDrawContour = !isGenericDataVisible();
-        // Start drawing adding an gl identificator
-        if (!onlyDrawContour) {
-            GLHelper::pushName(getGlID());
-        }
+        // get detail level
+        const auto d = s.getDetailLevel(1);
         // draw over all edge's lanes
         for (const auto& laneEdge : segment->getLane()->getParentEdge()->getLanes()) {
             // get lane width
@@ -181,43 +177,35 @@ GNEEdgeRelData::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPa
             myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_EDGERELDATA, offsetFront);
             GLHelper::setColor(RGBColor::BLACK);
             // draw box lines
-            GUIGeometry::drawLaneGeometry(s, myNet->getViewNet()->getPositionInformation(),
-                                          laneEdge->getLaneShape(), laneEdge->getShapeRotations(),
-                                          laneEdge->getShapeLengths(), {}, laneWidth, onlyDrawContour);
+
+
+            GLHelper::drawBoxLines(laneEdge->getLaneShape(), laneEdge->getShapeRotations(),
+                                   laneEdge->getShapeLengths(), laneWidth);
             // translate to top
             glTranslated(0, 0, 0.01);
             GLHelper::setColor(color);
-            // draw interne box lines
-            GUIGeometry::drawLaneGeometry(s, myNet->getViewNet()->getPositionInformation(),
-                                          laneEdge->getLaneShape(), laneEdge->getShapeRotations(),
-                                          laneEdge->getShapeLengths(), {}, laneWidth - 0.1, onlyDrawContour);
+            // draw internal box lines
+            GLHelper::drawBoxLines(laneEdge->getLaneShape(), laneEdge->getShapeRotations(),
+                                   laneEdge->getShapeLengths(), (laneWidth - 0.1));
             // Pop last matrix
             GLHelper::popMatrix();
             // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), getPositionInView(), 1);
-            // check if mouse is over element
-            for (const auto& laneEdgeParent : laneEdge->getParentEdge()->getLanes()) {
-                // get lane drawing constants
-                GNELane::LaneDrawingConstants laneDrawingConstants(s, laneEdgeParent);
-                mouseWithinGeometry(laneEdgeParent->getLaneShape(), laneDrawingConstants.halfWidth * s.edgeRelWidthExaggeration);
-            }
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), getPositionInView(), 1);
             // draw filtered attribute
             if (getParentEdges().front()->getLanes().front() == laneEdge) {
                 drawFilteredAttribute(s, laneEdge->getLaneShape(),
                                       myNet->getViewNet()->getViewParent()->getEdgeRelDataFrame()->getAttributeSelector()->getFilteredAttribute(),
                                       myNet->getViewNet()->getViewParent()->getEdgeRelDataFrame()->getIntervalSelector()->getDataInterval());
             }
-        }
-        // Pop name
-        if (!onlyDrawContour) {
-            GLHelper::popName();
+            // draw dotted contour
+            segment->getContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // draw dotted contour
         if (getParentEdges().front() == segment->getLane()->getParentEdge()) {
-            myContour.drawDottedContourEdge(s, getParentEdges().front(), true, false, s.dottedContourSettings.segmentWidth);
+            segment->getContour()->calculateContourEdge(s, d, getParentEdges().front(), true, false);
         }
         if (getParentEdges().back() == segment->getLane()->getParentEdge()) {
-            myContour.drawDottedContourEdge(s, getParentEdges().back(), false, true, s.dottedContourSettings.segmentWidth);
+            segment->getContour()->calculateContourEdge(s, d, getParentEdges().back(), false, true);
         }
     }
 }
@@ -228,22 +216,15 @@ GNEEdgeRelData::drawJunctionPartialGL(const GUIVisualizationSettings& s, const G
     // get color
     const auto color = setColor(s);
     if ((color.alpha() != 0) && myNet->getViewNet()->getEditModes().isCurrentSupermodeData()) {
+        // get detail level
+        const auto d = s.getDetailLevel(1);
         // get flag for only draw contour
-        const bool onlyDrawContour = !isGenericDataVisible();
-        // Start drawing adding an gl identificator
-        if (!onlyDrawContour) {
-            GLHelper::pushName(getGlID());
-        }
 
         // finish
 
-        // Pop name
-        if (!onlyDrawContour) {
-            GLHelper::popName();
-        }
         // draw dotted contour
         if (segment->getPreviousLane() && segment->getNextLane()) {
-            myContour.drawDottedContourEdges(s, segment->getPreviousLane()->getParentEdge(), segment->getNextLane()->getParentEdge(), s.dottedContourSettings.segmentWidth);
+            segment->getContour()->calculateContourEdges(s, d, segment->getPreviousLane()->getParentEdge(), segment->getNextLane()->getParentEdge());
         }
     }
 }

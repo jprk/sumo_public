@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2012-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -104,6 +104,7 @@ def get_options(args=None):
 
 class Routes:
     """dummy class to allow using the same methods as routeSampler.py"""
+
     def __init__(self):
         self.unique = []
 

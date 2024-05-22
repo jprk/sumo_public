@@ -260,7 +260,7 @@ When using option **--osm.elevation**, z-data is imported from [tags with `key="
 tag is not yet in wide use, tools exist to overlay OSM data with
 elevation data sources
 (https://wiki.openstreetmap.org/wiki/Srtm_to_Nodes). When using the
-osmosis-srtm pluging the option **tagName=ele** must be used since only the ['ele'
+osmosis-srtm plugin the option **tagName=ele** must be used since only the ['ele'
 tag](https://wiki.openstreetmap.org/wiki/Key:ele) is evaluated and the
 plugin would use the ['height'
 tag](https://wiki.openstreetmap.org/wiki/Key:height) by default.
@@ -414,6 +414,16 @@ When setting option **--output.street-names**, the 'name' attribute of every edg
 
 When setting option **--osm.all-attributes**, all OSM tags of a way are exported as [generic params](../../Simulation/GenericParameters.md) of the edge.
 If only a specific selection of tags should be imported, this can be set with option **--osm.extra-attributes**.
+
+## Railway signals
+
+By default, rail signals of category "main" and "combined" are imported. In case the region of interest doesn't provide the necessary level of detail it is possible to customize the import rules using option **--osm.railsignals**. The following values are supported
+
+- *ALL*: imports all signals (key="railway" and value="signal")
+- KEY=VALUE: imports all nodes with a tag where key is "railway:signal:KEY" and value is VALUE
+- KEY=VALUE,KEY2=VALUE2,...: as above with multiple combinations
+- KEY=: imports all nodes with a tag where key is "railway:signal:KEY" (also supports giving a list)
+- *DEFAULT*: equivalent to option value "main=,combined="
 
 # Editing OSM networks
 

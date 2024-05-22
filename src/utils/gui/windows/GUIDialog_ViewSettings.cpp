@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -39,7 +39,7 @@
 #include <utils/importio/LineReader.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/gui/settings/GUISettingsHandler.h>
-#include <utils/gui/div/GUIGlobalPostDrawing.h>
+#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
 
 #include "GUIDialog_EditViewport.h"
 #include "GUIDialog_ViewSettings.h"
@@ -215,6 +215,7 @@ GUIDialog_ViewSettings::setCurrent(GUIVisualizationSettings* settings) {
 
 long
 GUIDialog_ViewSettings::onCmdOk(FXObject*, FXSelector, void*) {
+    getApp()->reg().writeIntEntry("SETTINGS", "comboRows", (int)myComboRows->getValue());
     hide();
     return 1;
 }
@@ -315,6 +316,7 @@ GUIDialog_ViewSettings::onCmdNameChange(FXObject*, FXSelector, void* ptr) {
     myShowLaneDirection->setCheck(mySettings->showLaneDirection);
     myShowSublanes->setCheck(mySettings->showSublanes);
     mySpreadSuperposed->setCheck(mySettings->spreadSuperposed);
+    myDisableHideByZoom->setCheck(mySettings->disableHideByZoom);
     myLaneColorRainbowCheck->setCheck(mySettings->edgeValueHideCheck);
     myLaneColorRainbowThreshold->setValue(mySettings->edgeValueHideThreshold);
     myLaneColorRainbowCheck2->setCheck(mySettings->edgeValueHideCheck2);
@@ -383,7 +385,6 @@ GUIDialog_ViewSettings::onCmdNameChange(FXObject*, FXSelector, void* ptr) {
     myDither->setCheck(mySettings->dither);
     myFPS->setCheck(mySettings->fps);
     myDrawBoundaries->setCheck(mySettings->drawBoundaries);
-    myForceDrawForPositionSelection->setCheck(mySettings->forceDrawForPositionSelection);
     myForceDrawForRectangleSelection->setCheck(mySettings->forceDrawForRectangleSelection);
     myDisableDottedContours->setCheck(mySettings->disableDottedContours);
     myGeometryIndicesPanel->update(mySettings->geometryIndices);
@@ -584,6 +585,7 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     tmpSettings.showLaneDirection = (myShowLaneDirection->getCheck() != FALSE);
     tmpSettings.showSublanes = (myShowSublanes->getCheck() != FALSE);
     tmpSettings.spreadSuperposed = (mySpreadSuperposed->getCheck() != FALSE);
+    tmpSettings.disableHideByZoom = (myDisableHideByZoom->getCheck() != FALSE);
     if (sender == myParamKey) {
         if (tmpSettings.getLaneEdgeScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_EDGE_PARAM_NUMERICAL) {
             tmpSettings.edgeParam = myParamKey->getText().text();
@@ -701,7 +703,6 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     tmpSettings.dither = (myDither->getCheck() != FALSE);
     tmpSettings.fps = (myFPS->getCheck() != FALSE);
     tmpSettings.drawBoundaries = (myDrawBoundaries->getCheck() != FALSE);
-    tmpSettings.forceDrawForPositionSelection = (myForceDrawForPositionSelection->getCheck() != FALSE);
     tmpSettings.forceDrawForRectangleSelection = (myForceDrawForRectangleSelection->getCheck() != FALSE);
     tmpSettings.disableDottedContours = (myDisableDottedContours->getCheck() != FALSE);
     tmpSettings.geometryIndices = myGeometryIndicesPanel->getSettings();
@@ -1669,7 +1670,7 @@ GUIDialog_ViewSettings::SizePanel::update(const GUIVisualizationSizeSettings& se
 long
 GUIDialog_ViewSettings::SizePanel::onCmdSizeChange(FXObject* obj, FXSelector sel, void* ptr) {
     // mark boundaries for recomputing
-    gPostDrawing.recomputeBoundaries = myType;
+    gViewObjectsHandler.recomputeBoundaries = myType;
     // continue as a normal change
     return myDialogViewSettings->onCmdColorChange(obj, sel, ptr);
 }
@@ -1678,7 +1679,7 @@ GUIDialog_ViewSettings::SizePanel::onCmdSizeChange(FXObject* obj, FXSelector sel
 void
 GUIDialog_ViewSettings::buildHeader(FXVerticalFrame* contentFrame) {
     FXHorizontalFrame* horizontalFrame = new FXHorizontalFrame(contentFrame, GUIDesignViewSettingsHorizontalFrame1);
-    mySchemeName = new MFXComboBoxIcon(horizontalFrame, 20, true, GUIDesignComboBoxVisibleItemsSmall,
+    mySchemeName = new MFXComboBoxIcon(horizontalFrame, 20, true, GUIDesignComboBoxVisibleItemsMedium,
                                        this, MID_SIMPLE_VIEW_NAMECHANGE, GUIDesignViewSettingsComboBox1);
     for (const auto& name : gSchemeStorage.getNames()) {
         const int index = mySchemeName->appendIconItem(name.c_str());
@@ -1822,6 +1823,7 @@ GUIDialog_ViewSettings::buildStreetsFrame(FXTabBook* tabbook) {
 
     myShowRails = new FXCheckButton(matrixLanes, TL("Show rails"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     myShowRails->setCheck(mySettings->showRails);
+
     mySpreadSuperposed = new FXCheckButton(matrixLanes, TL("Spread bidirectional railways/roads"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     mySpreadSuperposed->setHelpText(TL("Make both directional edges for a bidirectional railways or roads visible"));
     mySpreadSuperposed->setCheck(mySettings->spreadSuperposed);
@@ -1977,10 +1979,14 @@ GUIDialog_ViewSettings::buildPersonsFrame(FXTabBook* tabbook) {
     myShowPedestrianNetwork = new FXCheckButton(m105, TL("Show JuPedSim pedestrian network"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     myShowPedestrianNetwork->setCheck(mySettings->showPedestrianNetwork);
     myPedestrianNetworkColor = new FXColorWell(m105, MFXUtils::getFXColor(mySettings->pedestrianNetworkColor), this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsColorWell);
+#ifdef JPS_VERSION
     if (mySettings->netedit) {
+#endif
         myShowPedestrianNetwork->disable();
         myPedestrianNetworkColor->disable();
+#ifdef JPS_VERSION
     }
+#endif
 }
 
 
@@ -2308,18 +2314,23 @@ GUIDialog_ViewSettings::buildOpenGLFrame(FXTabBook* tabbook) {
     FXScrollWindow* scrollWindow = new FXScrollWindow(tabbook);
     FXVerticalFrame* verticalFrame = new FXVerticalFrame(scrollWindow, GUIDesignViewSettingsVerticalFrame2);
 
+    FXMatrix* m81 = new FXMatrix(verticalFrame, 2, GUIDesignMatrixViewSettings);
+    new FXLabel(m81, TL("Combobox max rows"), nullptr, GUIDesignViewSettingsLabel1);
+    myComboRows = new FXRealSpinner(m81, 10, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignViewSettingsSpinDial1);
+    myComboRows->setValue(GUIDesignComboBoxVisibleItemsLarge);
     FXMatrix* m82 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myDither = new FXCheckButton(m82, TL("Dither"), this, MID_SIMPLE_VIEW_COLORCHANGE);
-    myDither->setCheck(mySettings->dither);
+    myDisableHideByZoom = new FXCheckButton(m82, TL("Disable hide by zoom"), this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myDisableHideByZoom->setHelpText(TL("Disable hiding edges with high zoom out"));
+    myDisableHideByZoom->setCheck(mySettings->disableHideByZoom);
     FXMatrix* m83 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myFPS = new FXCheckButton(m83, "FPS", this, MID_SIMPLE_VIEW_COLORCHANGE);
-    myFPS->setCheck(mySettings->fps);
+    myDither = new FXCheckButton(m83, TL("Dither"), this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myDither->setCheck(mySettings->dither);
     FXMatrix* m84 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myDrawBoundaries = new FXCheckButton(m84, TL("Draw boundaries"), this, MID_SIMPLE_VIEW_COLORCHANGE);
-    myDrawBoundaries->setCheck(mySettings->drawBoundaries);
+    myFPS = new FXCheckButton(m84, "FPS", this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myFPS->setCheck(mySettings->fps);
     FXMatrix* m85 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
-    myForceDrawForPositionSelection = new FXCheckButton(m85, TL("Force draw for position selection"), this, MID_SIMPLE_VIEW_COLORCHANGE);
-    myForceDrawForPositionSelection->setCheck(mySettings->forceDrawForPositionSelection);
+    myDrawBoundaries = new FXCheckButton(m85, TL("Draw boundaries"), this, MID_SIMPLE_VIEW_COLORCHANGE);
+    myDrawBoundaries->setCheck(mySettings->drawBoundaries);
     FXMatrix* m86 = new FXMatrix(verticalFrame, 1, GUIDesignMatrixViewSettings);
     myForceDrawForRectangleSelection = new FXCheckButton(m86, TL("Force draw for rectangle selection"), this, MID_SIMPLE_VIEW_COLORCHANGE);
     myForceDrawForRectangleSelection->setCheck(mySettings->forceDrawForRectangleSelection);

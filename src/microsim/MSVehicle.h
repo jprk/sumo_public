@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -667,10 +667,14 @@ public:
      *
      * The value is reset if the vehicle moves faster than 0.1m/s
      * Intentional stopping does not count towards this time.
+     * If accumulated is true the time is aggregated over a configurable interval.
      * @return The time the vehicle is standing
      */
-    SUMOTime getWaitingTime() const {
-        return myWaitingTime;
+    SUMOTime getWaitingTime(const bool accumulated = false) const {
+        if (!accumulated) {
+            return myWaitingTime;
+        }
+        return myWaitingTimeCollector.cumulatedWaitingTime(MSGlobals::gWaitingTimeMemory);
     }
 
     /** @brief Returns the SUMOTime spent driving since startup (speed was larger than 0.1m/s)
@@ -701,21 +705,13 @@ public:
     }
 
 
-    /** @brief Returns the SUMOTime waited (speed was lesser than 0.1m/s) within the last t millisecs
-     *
-     * @return The time the vehicle was standing within the configured memory interval
-     */
-    SUMOTime getAccumulatedWaitingTime() const {
-        return myWaitingTimeCollector.cumulatedWaitingTime(MSGlobals::gWaitingTimeMemory);
-    }
-
     /** @brief Returns the number of seconds waited (speed was lesser than 0.1m/s) within the last millisecs
      *
      * @return The time the vehicle was standing within the last t millisecs
      */
 
     double getAccumulatedWaitingSeconds() const {
-        return STEPS2TIME(getAccumulatedWaitingTime());
+        return STEPS2TIME(getWaitingTime(true));
     }
 
     /** @brief Returns the time loss in seconds
@@ -913,6 +909,9 @@ public:
      */
     void updateBestLanes(bool forceRebuild = false, const MSLane* startLane = 0);
 
+    /** @brief Update the lane brutto occupancy after a change in minGap
+     * */
+    void updateLaneBruttoSum();
 
     /** @brief Returns the best sequence of lanes to continue the route starting at myLane
      * @return The bestContinuations of the LaneQ for myLane (see LaneQ)
@@ -948,7 +947,7 @@ public:
 
     /* @brief returns the current signed offset from the lane that is most
      * suited for continuing the current route (in the strategic sense of reducing lane-changes)
-     * - 0 if the vehicle is one it's best lane
+     * - 0 if the vehicle is on its best lane
      * - negative if the vehicle should change to the right
      * - positive if the vehicle should change to the left
      */
@@ -1048,12 +1047,12 @@ public:
      * Compute distance that will be covered, if the vehicle moves to a given position on its route,
      * starting at its current position.
      * @param destPos:  position on the destination edge that shall be reached
-     * @param destEdge: destination edge that shall be reached
+     * @param destLane: destination lane that shall be reached
      * @return      distance from the vehicles current position to the destination position,
      *          or a near infinite real value if the destination position is not contained
      *          within the vehicles route or the vehicle is not active
      */
-    double getDistanceToPosition(double destPos, const MSEdge* destEdge) const;
+    double getDistanceToPosition(double destPos, const MSLane* destLane) const;
 
 
     /** @brief Processes stops, returns the velocity needed to reach the stop
@@ -1939,7 +1938,7 @@ protected:
     SUMOTime myJunctionEntryTimeNeverYield;
     SUMOTime myJunctionConflictEntryTime;
 
-    /// @brief duration of driving (speed > SUMO_const_haltingSpeed) after the last halting eposide
+    /// @brief duration of driving (speed > SUMO_const_haltingSpeed) after the last halting episode
     SUMOTime myTimeSinceStartup;
 
 protected:
@@ -2061,6 +2060,11 @@ public:
         return 0.5 * getCarFollowModel().getMaxAccel();
     }
 
+    /* @brief return the previous lane in this vehicles route including internal lanes
+     * @param[in] current The lane of which the predecessor should be returned
+     * @param[in,out] routeIndex The index of the current or previous non-internal edge in the route
+     */
+    const MSLane* getPreviousLane(const MSLane* current, int& furtherIndex) const;
 
 protected:
 
@@ -2129,6 +2133,9 @@ protected:
 
     /// @brief remove vehicle from further lanes (on leaving the network)
     void cleanupFurtherLanes();
+
+    /// @brief comparison between different continuations from the same lane
+    static bool betterContinuation(const LaneQ* bestConnectedNext, const LaneQ& m);
 
 private:
     /// @brief The per vehicle variables of the car following model

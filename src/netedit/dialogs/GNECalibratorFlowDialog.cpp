@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -124,12 +124,12 @@ GNECalibratorFlowDialog::GNECalibratorFlowDialog(GNEAdditional* editedCalibrator
 
     // fill comboBox of VTypes
     for (const auto& vType : myEditedAdditional->getNet()->getViewNet()->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_VTYPE)) {
-        myComboBoxVehicleType->appendIconItem(vType->getID().c_str(), vType->getACIcon());
+        myComboBoxVehicleType->appendIconItem(vType.second->getID().c_str(), vType.second->getACIcon());
     }
 
     // fill comboBox of Routes
     for (const auto& route : myEditedAdditional->getNet()->getViewNet()->getNet()->getAttributeCarriers()->getDemandElements().at(SUMO_TAG_ROUTE)) {
-        myComboBoxRoute->appendIconItem(route->getID().c_str(), route->getACIcon());
+        myComboBoxRoute->appendIconItem(route.second->getID().c_str(), route.second->getACIcon());
     }
 
     // update tables
@@ -139,7 +139,7 @@ GNECalibratorFlowDialog::GNECalibratorFlowDialog(GNEAdditional* editedCalibrator
     initChanges();
 
     // add element if we aren't updating an existent element
-    if (myUpdatingElement == false) {
+    if (!myUpdatingElement) {
         myEditedAdditional->getNet()->getViewNet()->getUndoList()->add(new GNEChange_Additional(myEditedAdditional, true), true);
     }
 
@@ -157,7 +157,7 @@ GNECalibratorFlowDialog::onCmdAccept(FXObject*, FXSelector, void*) {
     std::string operation2 = myUpdatingElement ? ("updated") : ("created");
     std::string parentTagString = myEditedAdditional->getParentAdditionals().at(0)->getTagStr();
     std::string tagString = myEditedAdditional->getTagStr();
-    if (myCalibratorFlowValid == false) {
+    if (!myCalibratorFlowValid) {
         // write warning if netedit is running in testing mode
         WRITE_DEBUG("Opening FXMessageBox of type 'warning'");
         // open warning dialog box

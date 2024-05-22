@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -102,10 +102,10 @@ GNEGenericDataFrame::DataSetSelector::refreshDataSetSelector(const GNEDataSet* c
     // fill myDataSetsComboBox with all DataSets
     for (const auto& dataSet : myGenericDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getDataSets()) {
         // check if we have to set currentItemIndex
-        if ((currentItemIndex == -1) && (dataSet == currentDataSet)) {
+        if ((currentItemIndex == -1) && (dataSet.second == currentDataSet)) {
             currentItemIndex = myDataSetsComboBox->getNumItems();
         }
-        myDataSetsComboBox->appendIconItem(dataSet->getID().c_str(), dataSet->getACIcon());
+        myDataSetsComboBox->appendIconItem(dataSet.second->getID().c_str(), dataSet.second->getACIcon());
     }
     // check if we have to set current element
     if (currentItemIndex != -1) {
@@ -545,7 +545,7 @@ GNEGenericDataFrame::hide() {
     if (myPathCreator) {
         // reset candidate edges
         for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-            edge.second->resetCandidateFlags();
+            edge.second.second->resetCandidateFlags();
         }
     }
     // hide frame

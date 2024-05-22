@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -281,11 +281,11 @@ GNEMeanDataFrame::MeanDataSelector::MeanDataSelector(GNEMeanDataFrame* typeFrame
     myMeanDataComboBox = new MFXComboBoxIcon(getCollapsableFrame(), GUIDesignComboBoxNCol, false, GUIDesignComboBoxVisibleItemsMedium,
             this, MID_GNE_SET_TYPE, GUIDesignComboBox);
     // add meanDatas
-    for (const auto& vMeanData : myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag)) {
-        myMeanDataComboBox->appendIconItem(vMeanData->getID().c_str(), vMeanData->getACIcon());
+    for (const auto& meanData : myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag)) {
+        myMeanDataComboBox->appendIconItem(meanData.second->getID().c_str(), meanData.second->getACIcon());
     }
     if (myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag).size() > 0) {
-        myCurrentMeanData = *myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag).begin();
+        myCurrentMeanData = myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag).begin()->second;
     } else {
         myCurrentMeanData = nullptr;
     }
@@ -335,7 +335,7 @@ GNEMeanDataFrame::MeanDataSelector::refreshMeanDataSelector(bool afterChangingID
     // get mean datas sorted by ID
     std::map<std::string, GNEMeanData*> sortedMeanDatas;
     for (const auto& meanData : myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag)) {
-        sortedMeanDatas[meanData->getID()] = meanData;
+        sortedMeanDatas[meanData.second->getID()] = meanData.second;
     }
     // clear items
     myMeanDataComboBox->clearItems();
@@ -344,7 +344,7 @@ GNEMeanDataFrame::MeanDataSelector::refreshMeanDataSelector(bool afterChangingID
         myMeanDataComboBox->appendIconItem(sortedMeanData.first.c_str(), sortedMeanData.second->getACIcon());
     }
     // make sure that mean data exists
-    if (myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->retrieveMeanData(myCurrentMeanData, false)) {
+    if (myCurrentMeanData && myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->retrieveMeanData(myCurrentMeanData->getTagProperty().getTag(), myCurrentMeanData->getID(), false)) {
         bool validMeanData = false;
         for (int i = 0; i < (int)myMeanDataComboBox->getNumItems(); i++) {
             if (myMeanDataComboBox->getItemText(i) == myCurrentMeanData->getID()) {
@@ -398,10 +398,10 @@ GNEMeanDataFrame::MeanDataSelector::onCmdSelectItem(FXObject*, FXSelector, void*
     // get current meanData type
     SumoXMLTag meanDataTag = myMeanDataFrameParent->myMeanDataTypeSelector->getCurrentMeanData().getTag();
     // Check if value of myMeanDataMatchBox correspond of an allowed additional tags
-    for (const auto& vMeanData : myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag)) {
-        if (vMeanData->getID() == myMeanDataComboBox->getText().text()) {
+    for (const auto& meanData : myMeanDataFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getMeanDatas().at(meanDataTag)) {
+        if (meanData.second->getID() == myMeanDataComboBox->getText().text()) {
             // set pointer
-            myCurrentMeanData = vMeanData;
+            myCurrentMeanData = meanData.second;
             // set color of myMeanDataMatchBox to black (valid)
             myMeanDataComboBox->setTextColor(FXRGB(0, 0, 0));
             // refresh meanData editor module

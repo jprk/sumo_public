@@ -39,7 +39,7 @@ stop is an area on a lane. The parameters have the following meanings:
 
 ## Access Lanes
 
-Each bus stop may have additional child elements to model access from
+Each bus or train stop may have additional child elements to model access from
 other parts of the network (e.g. road access to a stop on the rail
 network). This takes the following form:
 
@@ -56,9 +56,14 @@ OSM](../Tutorials/PT_from_OpenStreetMap.md#initial_network_and_public_transit_in
 | Attribute Name | Value Type | Value Range         | Description                                                    |
 | -------------- | ---------- | ------------------- | -------------------------------------------------------------- |
 | **lane**       | string     | id                  | The name of the lane from which this stop may also be accessed |
-| **pos**        | float      | position along lane | The position along the lane from which the stop is reached     |
+| **pos**        | float, "random", "doors"      | position along lane | The position along the lane from which the stop is reached     |
 | length         | float      | >= 0 | The distance for computing the access time of pedestrians that use this element|
 | friendlyPos    | bool       |      | Whether an invalid **pos** should be silently converted to the closest correct approximation |
+
+The value `doors` is currently only used when exiting a train or bus. The starting position for a
+subsequent walk of the exiting passengers will be randomly chosen among the door positions of the train or bus.
+The door positions themselves cannot be defined but they are derived from the number of carriages
+and the number of doors per carriage of the vehicle, see [carriage definition](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#carriages)
 
 # Letting Vehicles stop at a bus stop
 
@@ -113,7 +118,7 @@ intermediate edges:
 The vehicle will take the fastest path between *from*-edge and *to*-edge
 that visits all stops in their correct order.
 
-Even the trip attributes 'from' and 'to' can be omitted to let the bus start at the first stop and end at the last. Using `departPos="stop"`, the vehicle will be inserted directly at the first stop in it's route:
+Even the trip attributes 'from' and 'to' can be omitted to let the bus start at the first stop and end at the last. Using `departPos="stop"`, the vehicle will be inserted directly at the first stop in its route:
 ```xml
    <trip id="0" type="BUS" depart="0" color="1,1,0" departPos="stop">
        <stop busStop="busstop1" duration="20"/>

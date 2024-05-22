@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -70,7 +70,8 @@ MSInductLoop::MSInductLoop(const std::string& id, MSLane* const lane,
     myPosition(positionInMeters),
     myEndPosition(myPosition + length),
     myNeedLock(needLocking || MSGlobals::gNumSimThreads > 1),
-    myLastLeaveTime(SIMTIME),
+    // initialize in a way which doesn't impact actualted traffic lights at simulation start (yet doesn't look ugly in the outputs)
+    myLastLeaveTime(-3600),
     myOverrideTime(-1),
     myOverrideEntryTime(-1),
     myVehicleDataCont(),

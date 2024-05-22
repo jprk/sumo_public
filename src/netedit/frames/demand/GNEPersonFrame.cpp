@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -87,7 +87,7 @@ void
 GNEPersonFrame::hide() {
     // reset candidate edges
     for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-        edge.second->resetCandidateFlags();
+        edge.second.second->resetCandidateFlags();
     }
     // hide frame
     GNEFrame::hide();
@@ -95,14 +95,13 @@ GNEPersonFrame::hide() {
 
 
 bool
-GNEPersonFrame::addPerson(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEPersonFrame::addPerson(const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // first check that we clicked over an AC
-    if (objectsUnderCursor.getAttributeCarrierFront() == nullptr) {
+    if (viewObjects.getAttributeCarrierFront() == nullptr) {
         return false;
     }
     // obtain tags (only for improve code legibility)
     SumoXMLTag personTag = myPersonTagSelector->getCurrentTemplateAC()->getTagProperty().getTag();
-    SumoXMLTag clickedACTag = objectsUnderCursor.getAttributeCarrierFront()->getTagProperty().getTag();
     // first check that current selected person is valid
     if (personTag == SUMO_TAG_NOTHING) {
         myViewNet->setStatusBarText(TL("Current selected person isn't valid."));
@@ -118,20 +117,26 @@ GNEPersonFrame::addPerson(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnd
         myViewNet->setStatusBarText(TL("Current selected person plan isn't valid."));
         return false;
     }
-    // add elements to path creator
-    if (clickedACTag == SUMO_TAG_LANE) {
-        return myPlanCreator->addEdge(objectsUnderCursor.getLaneFront());
-    } else if (objectsUnderCursor.getAttributeCarrierFront()->getTagProperty().isStoppingPlace()) {
-        return myPlanCreator->addStoppingPlace(objectsUnderCursor.getAdditionalFront());
-    } else if (clickedACTag == SUMO_TAG_ROUTE) {
-        return myPlanCreator->addRoute(objectsUnderCursor.getDemandElementFront());
-    } else if (clickedACTag == SUMO_TAG_JUNCTION) {
-        return myPlanCreator->addJunction(objectsUnderCursor.getJunctionFront());
-    } else if (clickedACTag == SUMO_TAG_TAZ) {
-        return myPlanCreator->addTAZ(objectsUnderCursor.getTAZFront());
-    } else {
-        return false;
+    for (GNEAdditional* o : viewObjects.getAdditionals()) {
+        if (o->getTagProperty().isStoppingPlace()) {
+            return myPlanCreator->addStoppingPlace(o);
+        }
     }
+    for (GNEDemandElement* o : viewObjects.getDemandElements()) {
+        if (o->getTagProperty().getTag() == SUMO_TAG_ROUTE) {
+            return myPlanCreator->addRoute(o);
+        }
+    }
+    if (!viewObjects.getLanes().empty()) {
+        return myPlanCreator->addEdge(viewObjects.getLanes().front());
+    }
+    if (!viewObjects.getJunctions().empty()) {
+        return myPlanCreator->addJunction(viewObjects.getJunctions().front());
+    }
+    if (!viewObjects.getTAZs().empty()) {
+        return myPlanCreator->addTAZ(viewObjects.getTAZs().front());
+    }
+    return false;
 }
 
 

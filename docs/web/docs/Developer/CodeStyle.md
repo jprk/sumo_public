@@ -2,6 +2,11 @@
 title: CodeStyle
 ---
 
+# Automated style checking
+
+The easiest way to enforce the SUMO code style for C++ and Python
+is to enable the [pre-commit checks](GitStuff.md#git-commit-hooks).
+
 # C++ Code
 
 We try to have the code compatible to a wide range of C++11 compatible
@@ -100,7 +105,7 @@ extended character information use TeX or HTML notation instead.
 ## Throw-declarations
 
 - We are not using throw-declarations, see:
-  <https://www.gotw.ca/publications/mill22.htm> (thanks to Björn
+  <http://www.gotw.ca/publications/mill22.htm> (thanks to Björn
   Hendriks); we'll remove the existing ones subsequently.
 
 ## Object Handling
@@ -162,7 +167,7 @@ If your script needs Python 3 then state python3 there.
 
 ## Python2 / Python3 compatibility
 
-Our main development focuses on Python 3.5 and later but we strive for
+Our main development focuses on Python 3.7 and later but we strive for
 Python 2 compatibility. When writing or editing scripts, keep the
 following in mind:
 
@@ -193,7 +198,7 @@ following in mind:
 
 For further information about possible error sources and difficulties
 resulting in Python 3 compatibility see also
-<https://python3porting.com/> and
+<http://python3porting.com/> and
 <https://docs.python.org/3/howto/pyporting.html>
 
 ## Template

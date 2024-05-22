@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -54,6 +54,10 @@ public:
                       const std::string& name, double chargingPower, double efficency, bool chargeInTransit,
                       SUMOTime chargeDelay, const std::string& chargeType, SUMOTime waitingTime);
 
+    MSChargingStation(const std::string& chargingStationID, const MSParkingArea* parkingArea, const std::string& name, double chargingPower,
+                      double efficency, bool chargeInTransit, SUMOTime chargeDelay, const std::string& chargeType,
+                      SUMOTime waitingTime);
+
     /// @brief destructor
     ~MSChargingStation();
 
@@ -74,6 +78,11 @@ public:
 
     /// @brief Get waiting time
     SUMOTime getWaitingTime() const;
+
+    /** @brief Get the parking area the charging station is placed on
+     * @return pointer to the parking area or nullptr
+     */
+    const MSParkingArea* getParkingArea() const;
 
     /// @brief enable or disable charging vehicle
     void setChargingVehicle(bool value);
@@ -159,10 +168,13 @@ protected:
     SUMOTime myWaitingTime = 0;
 
     /// @brief Check if in the current TimeStep chargingStation is charging a vehicle
-    bool myChargingVehicle;
+    bool myChargingVehicle = false;
 
     /// @brief total energy charged by this charging station
     double myTotalCharge = 0;
+
+    /// @brief parkingArea the charging station is placed on
+    const MSParkingArea* myParkingArea = nullptr;
 
     /// @brief map with the charges of this charging station (key = vehicleID)
     std::map<std::string, std::vector<Charge> > myChargeValues;

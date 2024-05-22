@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -184,20 +184,20 @@ GNEAdditionalFrame::show() {
 
 
 bool
-GNEAdditionalFrame::addAdditional(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEAdditionalFrame::addAdditional(const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // first check that current selected additional is valid
     if (myAdditionalTagSelector->getCurrentTemplateAC() == nullptr) {
         myViewNet->setStatusBarText(TL("Current selected additional isn't valid."));
         return false;
     }
     // check if add or remove edge
-    if (myEdgesSelector->isShown() && objectsUnderCursor.getEdgeFront()) {
-        myEdgesSelector->toggleSelectedElement(objectsUnderCursor.getEdgeFront());
+    if (myEdgesSelector->isShown() && viewObjects.getEdgeFront()) {
+        myEdgesSelector->toggleSelectedElement(viewObjects.getEdgeFront());
         return true;
     }
     // check if add or remove lane
-    if (myLanesSelector->isShown() && objectsUnderCursor.getLaneFront()) {
-        myLanesSelector->toggleSelectedElement(objectsUnderCursor.getLaneFront());
+    if (myLanesSelector->isShown() && viewObjects.getLaneFront()) {
+        myLanesSelector->toggleSelectedElement(viewObjects.getLaneFront());
         return true;
     }
     // show warning dialogbox and stop check if input parameters are valid
@@ -214,16 +214,16 @@ GNEAdditionalFrame::addAdditional(const GNEViewNetHelper::ObjectsUnderCursor& ob
     // obtain attributes and values
     myAdditionalAttributes->getAttributesAndValues(myBaseAdditional, true);
     // fill netedit attributes
-    if (!myNeteditAttributes->getNeteditAttributesAndValues(myBaseAdditional, objectsUnderCursor.getLaneFront())) {
+    if (!myNeteditAttributes->getNeteditAttributesAndValues(myBaseAdditional, viewObjects.getLaneFront())) {
         return false;
     }
     // If consecutive Lane Selector is enabled, it means that either we're selecting lanes or we're finished or we'rent started
     if (tagProperties.hasAttribute(SUMO_ATTR_EDGE) || (tagProperties.getTag() == SUMO_TAG_VAPORIZER)) {
-        return buildAdditionalOverEdge(objectsUnderCursor.getLaneFront(), tagProperties);
+        return buildAdditionalOverEdge(viewObjects.getLaneFront(), tagProperties);
     } else if (tagProperties.hasAttribute(SUMO_ATTR_LANE)) {
-        return buildAdditionalOverLane(objectsUnderCursor.getLaneFront(), tagProperties);
+        return buildAdditionalOverLane(viewObjects.getLaneFront(), tagProperties);
     } else if (tagProperties.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) {
-        return myConsecutiveLaneSelector->addLane(objectsUnderCursor.getLaneFront());
+        return myConsecutiveLaneSelector->addLane(viewObjects.getLaneFront());
     } else {
         return buildAdditionalOverView(tagProperties);
     }
@@ -280,7 +280,7 @@ GNEAdditionalFrame::createPath(const bool /* useLastRoute */) {
                 // parse common attributes
                 if (buildAdditionalCommonAttributes(tagProperty)) {
                     // show warning dialogbox and stop check if input parameters are valid
-                    if (myAdditionalAttributes->areValuesValid() == false) {
+                    if (!myAdditionalAttributes->areValuesValid()) {
                         myAdditionalAttributes->showWarningMessage();
                     } else {
                         // declare additional handler
@@ -382,7 +382,7 @@ GNEAdditionalFrame::createBaseAdditionalObject(const GNETagProperties& tagProper
     // check if additional is child
     if (tagProperty.isChild()) {
         // get additional under cursor
-        const GNEAdditional* additionalUnderCursor = myViewNet->getObjectsUnderCursor().getAdditionalFront();
+        const GNEAdditional* additionalUnderCursor = myViewNet->getViewObjectsSelector().getAdditionalFront();
         // if user click over an additional element parent, mark int in ParentAdditionalSelector
         if (additionalUnderCursor && (additionalUnderCursor->getTagProperty().getTag() == tagProperty.getParentTags().front())) {
             // update parent additional selected
@@ -600,7 +600,7 @@ GNEAdditionalFrame::buildAdditionalOverView(const GNETagProperties& tagPropertie
         }
     }
     // show warning dialogbox and stop check if input parameters are valid
-    if (myAdditionalAttributes->areValuesValid() == false) {
+    if (!myAdditionalAttributes->areValuesValid()) {
         myAdditionalAttributes->showWarningMessage();
         return false;
     } else {

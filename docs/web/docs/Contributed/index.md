@@ -31,7 +31,7 @@ supported.
 
 - [LiSuM](../Tools/LiSuM.md)
 
-    a middleware that couples [LISA+](https://www.schlothauer.de/en/software-systems/lisa/) and SUMO to simulate real-world
+    a middleware that couples [LISA+](https://www.schlothauer.de/software-lisa) and SUMO to simulate real-world
     traffic light controllers and execute real-world traffic control software within SUMO.
 
 - [SAGA](https://github.com/lcodeca/SUMOActivityGen/blob/master/docs/SUMOActivityGen.md)
@@ -73,7 +73,7 @@ The following extensions are managed and supported by other parties.
 
     connects SUMO to ns-3
 
-- [TraNS](https://trans.epfl.ch/)
+- [TraNS](https://web.archive.org/web/20190512111856/http://lca.epfl.ch/projects/trans/)
 
     connects SUMO to ns-2
 

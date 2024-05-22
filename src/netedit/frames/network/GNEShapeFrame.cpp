@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -196,7 +196,6 @@ GNEShapeFrame::GEOPOICreator::onCmdCreateGEOPOI(FXObject*, FXSelector, void*) {
             if (myLatLonRadioButton->getCheck() == TRUE) {
                 geoPos.swapXY();
             }
-            GeoConvHelper::getFinal().x2cartesian_const(geoPos);
             // add lon/lat
             myShapeFrameParent->myBaseShape->addDoubleAttribute(SUMO_ATTR_LON, geoPos.x());
             myShapeFrameParent->myBaseShape->addDoubleAttribute(SUMO_ATTR_LAT, geoPos.y());
@@ -208,6 +207,7 @@ GNEShapeFrame::GEOPOICreator::onCmdCreateGEOPOI(FXObject*, FXSelector, void*) {
             if (myCenterViewAfterCreationCheckButton->getCheck() == TRUE) {
                 // create a boundary over given GEO Position and center view over it
                 Boundary centerPosition;
+                GeoConvHelper::getFinal().x2cartesian_const(geoPos);
                 centerPosition.add(geoPos);
                 centerPosition = centerPosition.grow(10);
                 myShapeFrameParent->myViewNet->getViewParent()->getView()->centerTo(centerPosition);
@@ -263,7 +263,7 @@ GNEShapeFrame::show() {
 
 
 bool
-GNEShapeFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor, bool& updateTemporalShape) {
+GNEShapeFrame::processClick(const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects, bool& updateTemporalShape) {
     // reset updateTemporalShape
     updateTemporalShape = false;
     // check if current selected shape is valid
@@ -273,11 +273,11 @@ GNEShapeFrame::processClick(const Position& clickedPosition, const GNEViewNetHel
         // continue depending of tag
         switch (shapeTag) {
             case SUMO_TAG_POI:
-                return processClickPOI(shapeTag, clickedPosition, objectsUnderCursor);
+                return processClickPOI(shapeTag, clickedPosition, viewObjects);
             case GNE_TAG_POIGEO:
-                return processClickPOIGeo(clickedPosition, objectsUnderCursor);
+                return processClickPOIGeo(clickedPosition, viewObjects);
             case GNE_TAG_POILANE:
-                return processClickPOILanes(clickedPosition, objectsUnderCursor);
+                return processClickPOILanes(clickedPosition, viewObjects);
             case SUMO_TAG_POLY:
             case GNE_TAG_JPS_WALKABLEAREA:
             case GNE_TAG_JPS_OBSTACLE:
@@ -427,9 +427,9 @@ GNEShapeFrame::processClickPolygons(const Position& clickedPosition, bool& updat
 
 
 bool
-GNEShapeFrame::processClickPOI(SumoXMLTag POITag, const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEShapeFrame::processClickPOI(SumoXMLTag POITag, const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // show warning dialogbox and stop if input parameters are invalid
-    if (myShapeAttributes->areValuesValid() == false) {
+    if (!myShapeAttributes->areValuesValid()) {
         myShapeAttributes->showWarningMessage();
         return false;
     }
@@ -438,7 +438,7 @@ GNEShapeFrame::processClickPOI(SumoXMLTag POITag, const Position& clickedPositio
     // obtain shape attributes and values
     myShapeAttributes->getAttributesAndValues(myBaseShape, true);
     // obtain netedit attributes and values
-    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, objectsUnderCursor.getLaneFront());
+    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, viewObjects.getLaneFront());
     // Check if ID has to be generated
     if (!myBaseShape->hasStringAttribute(SUMO_ATTR_ID)) {
         myBaseShape->addStringAttribute(SUMO_ATTR_ID, myViewNet->getNet()->getAttributeCarriers()->generateAdditionalID(POITag));
@@ -458,9 +458,9 @@ GNEShapeFrame::processClickPOI(SumoXMLTag POITag, const Position& clickedPositio
 
 
 bool
-GNEShapeFrame::processClickPOIGeo(const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEShapeFrame::processClickPOIGeo(const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // show warning dialogbox and stop if input parameters are invalid
-    if (myShapeAttributes->areValuesValid() == false) {
+    if (!myShapeAttributes->areValuesValid()) {
         myShapeAttributes->showWarningMessage();
         return false;
     }
@@ -469,7 +469,7 @@ GNEShapeFrame::processClickPOIGeo(const Position& clickedPosition, const GNEView
     // obtain shape attributes and values
     myShapeAttributes->getAttributesAndValues(myBaseShape, true);
     // obtain netedit attributes and values
-    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, objectsUnderCursor.getLaneFront());
+    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, viewObjects.getLaneFront());
     // Check if ID has to be generated
     if (!myBaseShape->hasStringAttribute(SUMO_ATTR_ID)) {
         myBaseShape->addStringAttribute(SUMO_ATTR_ID, myViewNet->getNet()->getAttributeCarriers()->generateAdditionalID(SUMO_TAG_POI));
@@ -492,14 +492,14 @@ GNEShapeFrame::processClickPOIGeo(const Position& clickedPosition, const GNEView
 
 
 bool
-GNEShapeFrame::processClickPOILanes(const Position& clickedPosition, const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor) {
+GNEShapeFrame::processClickPOILanes(const Position& clickedPosition, const GNEViewNetHelper::ViewObjectsSelector& viewObjects) {
     // abort if lane is nullptr
-    if (objectsUnderCursor.getLaneFront() == nullptr) {
+    if (viewObjects.getLaneFront() == nullptr) {
         WRITE_WARNING(TL("POILane can be only placed over lanes"));
         return false;
     }
     // show warning dialogbox and stop if input parameters are invalid
-    if (myShapeAttributes->areValuesValid() == false) {
+    if (!myShapeAttributes->areValuesValid()) {
         myShapeAttributes->showWarningMessage();
         return false;
     }
@@ -508,15 +508,15 @@ GNEShapeFrame::processClickPOILanes(const Position& clickedPosition, const GNEVi
     // obtain shape attributes and values
     myShapeAttributes->getAttributesAndValues(myBaseShape, true);
     // obtain netedit attributes and values
-    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, objectsUnderCursor.getLaneFront());
+    myNeteditAttributes->getNeteditAttributesAndValues(myBaseShape, viewObjects.getLaneFront());
     // Check if ID has to be generated
     if (!myBaseShape->hasStringAttribute(SUMO_ATTR_ID)) {
         myBaseShape->addStringAttribute(SUMO_ATTR_ID, myViewNet->getNet()->getAttributeCarriers()->generateAdditionalID(SUMO_TAG_POI));
     }
     // obtain Lane
-    myBaseShape->addStringAttribute(SUMO_ATTR_LANE, objectsUnderCursor.getLaneFront()->getID());
+    myBaseShape->addStringAttribute(SUMO_ATTR_LANE, viewObjects.getLaneFront()->getID());
     // obtain position over lane
-    myBaseShape->addDoubleAttribute(SUMO_ATTR_POSITION, objectsUnderCursor.getLaneFront()->getLaneShape().nearest_offset_to_point2D(clickedPosition));
+    myBaseShape->addDoubleAttribute(SUMO_ATTR_POSITION, viewObjects.getLaneFront()->getLaneShape().nearest_offset_to_point2D(clickedPosition));
     // add shape
     addShape();
     // refresh shape attributes

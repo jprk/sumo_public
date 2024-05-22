@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -70,6 +70,15 @@ public:
 
     /// @brief fix additional problem (must be reimplemented in all detector children)
     void fixAdditionalProblem();
+
+    /// @}
+
+    /// @name Function related with contour drawing
+    /// @{
+
+    /// @brief check if draw move contour (red)
+    bool checkDrawMoveContour() const;
+
     /// @}
 
     /// @name Functions related with geometry of element
@@ -167,14 +176,16 @@ protected:
     void setStoppingPlaceGeometry(double movingToSide);
 
     /// @brief draw lines
-    void drawLines(const GUIVisualizationSettings& s, const std::vector<std::string>& lines, const RGBColor& color) const;
+    void drawLines(const GUIVisualizationSettings::Detail d, const std::vector<std::string>& lines,
+                   const RGBColor& color) const;
 
     /// @brief draw sign
-    void drawSign(const GUIVisualizationSettings& s, const double exaggeration, const RGBColor& baseColor,
-                  const RGBColor& signColor, const std::string& word) const;
+    void drawSign(const GUIVisualizationSettings::Detail d, const double exaggeration,
+                  const RGBColor& baseColor, const RGBColor& signColor, const std::string& word) const;
 
-    // draw stoppingPlace children
-    void drawStoppingPlaceChildren(const GUIVisualizationSettings& s) const;
+    /// @brief check object in view
+    void calculateStoppingPlaceContour(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
+                                       const double width, const bool movingGeometryPoints) const;
 
 private:
     /// @brief set attribute after validation

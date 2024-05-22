@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -232,8 +232,8 @@ GUITriggeredRerouter::GUITriggeredRerouterPopupMenu::onCmdOpenManip(FXObject*,
 // -------------------------------------------------------------------------
 
 GUITriggeredRerouter::GUITriggeredRerouter(const std::string& id, const MSEdgeVector& edges, double prob,
-        bool off, SUMOTime timeThreshold, const std::string& vTypes, SUMORTree& rtree) :
-    MSTriggeredRerouter(id, edges, prob, off, timeThreshold, vTypes),
+        bool off, bool optional, SUMOTime timeThreshold, const std::string& vTypes, const Position& pos, SUMORTree& rtree) :
+    MSTriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos),
     GUIGlObject_AbstractAdd(GLO_REROUTER, id, GUIIconSubSys::getIcon(GUIIcon::REROUTER)),
     myShiftProbDistIndex(0) {
     // add visualisation objects for edges which trigger the rerouter

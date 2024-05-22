@@ -52,7 +52,7 @@ Unix-like environments. Documentation can be found in the
 - [Manual for
   libtool](https://www.gnu.org/software/libtool/manual/libtool.html), and
 - the
-  [Autobook](https://sources.redhat.com/autobook/autobook/autobook_toc.html).
+  [Autobook](https://sourceware.org/autobook/).
 
 #### The Libraries
 
@@ -190,7 +190,7 @@ libfox-1.6-dev.
 sudo yum install xerces-c-devel cmake libxerces-c-dev  gdal-devel proj-develgl2ps-devel gcc-c++
 ```
 
-You need to download fox-toolkit from it's website and build manually
+You need to download fox-toolkit from its website and build manually
 https://www.fox-toolkit.org/download.html
 
 #### Cygwin

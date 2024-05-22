@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -329,9 +329,7 @@ GNEPerson::drawGL(const GUIVisualizationSettings& s) const {
     bool drawPerson = true;
     const auto personColor = setColor(s);
     // check if person can be drawn
-    if (personColor.alpha() == 0) {
-        drawPerson = false;
-    } else if (!myNet->getViewNet()->getNetworkViewOptions().showDemandElements()) {
+    if (!myNet->getViewNet()->getNetworkViewOptions().showDemandElements()) {
         drawPerson = false;
     } else if (!myNet->getViewNet()->getDataViewOptions().showDemandElements()) {
         drawPerson = false;
@@ -343,20 +341,21 @@ GNEPerson::drawGL(const GUIVisualizationSettings& s) const {
     // continue if person can be drawn
     if (drawPerson) {
         // obtain exaggeration (and add the special personExaggeration)
-        const double exaggeration = getExaggeration(s) + s.detailSettings.personExaggeration;
-        // obtain width and length
-        const double length = getTypeParent()->getAttributeDouble(SUMO_ATTR_LENGTH);
-        const double width = getTypeParent()->getAttributeDouble(SUMO_ATTR_WIDTH);
-        // obtain diameter around person (used to calculate distance bewteen cursor and person)
-        const double distanceSquared = pow(exaggeration * std::max(length, width), 2);
-        // obtain img file
-        const std::string file = getTypeParent()->getAttribute(SUMO_ATTR_IMGFILE);
+        const double exaggeration = getExaggeration(s) + 10;
         // obtain position
         const Position personPosition = getAttributePosition(SUMO_ATTR_DEPARTPOS);
-        // check if person can be drawn
-        if (!(s.drawForPositionSelection && (personPosition.distanceSquaredTo(myNet->getViewNet()->getPositionInformation()) > distanceSquared))) {
-            // push GL ID
-            GLHelper::pushName(getGlID());
+        if (personPosition == Position::INVALID) {
+            return;
+        }
+        // get detail level
+        const auto d = s.getDetailLevel(exaggeration);
+        // draw geometry only if we'rent in drawForObjectUnderCursor mode
+        if (!s.drawForViewObjectsHandler) {
+            // obtain width and length
+            const double length = getTypeParent()->getAttributeDouble(SUMO_ATTR_LENGTH);
+            const double width = getTypeParent()->getAttributeDouble(SUMO_ATTR_WIDTH);
+            // obtain img file
+            const std::string file = getTypeParent()->getAttribute(SUMO_ATTR_IMGFILE);
             // push draw matrix
             GLHelper::pushMatrix();
             // Start with the drawing of the area traslating matrix to origin
@@ -408,8 +407,8 @@ GNEPerson::drawGL(const GUIVisualizationSettings& s) const {
             if (myTagProperty.isFlow()) {
                 drawFlowLabel(Position(personPosition.x() - 1, personPosition.y() - 0.25), -90, 1.8, 2, getExaggeration(s));
             }
-            // pop name
-            GLHelper::popName();
+            // draw lock icon
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), personPosition, exaggeration, s.dottedContourSettings.segmentWidth);
             // draw name
             drawName(personPosition, s.scale, s.personName, s.angle);
             if (s.personValue.show(this)) {
@@ -417,14 +416,11 @@ GNEPerson::drawGL(const GUIVisualizationSettings& s) const {
                 const double value = getColorValue(s, s.personColorer.getActive());
                 GLHelper::drawTextSettings(s.personValue, toString(value), personValuePosition, s.scale, s.angle, GLO_MAX - getType());
             }
-            // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(this, getType(), personPosition, exaggeration, s.dottedContourSettings.segmentWidth);
-            // check if mouse is over element
-            mouseWithinGeometry(personPosition, 0.5, 0.5, 0, 0, 0);
             // draw dotted contour
-            myContour.drawDottedContourRectangle(s, personPosition, 0.5, 0.5, 0, 0, 0, exaggeration,
-                                                 s.dottedContourSettings.segmentWidth);
+            myPersonContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
+        // calculate contour
+        myPersonContour.calculateContourRectangleShape(s, d, this, personPosition, 0.5, 0.5, 0, 0, 0, exaggeration);
     }
 }
 

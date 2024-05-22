@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -124,7 +124,7 @@ ShapeHandler::addPOI(const SUMOSAXAttributes& attrs, const bool ignorePruning, c
     const double lanePosLat = attrs.getOpt<double>(SUMO_ATTR_POSITION_LAT, id.c_str(), ok, 0);
     std::string icon = attrs.getOpt<std::string>(SUMO_ATTR_ICON, id.c_str(), ok, myDefaultIcon);
     // check icon
-    if (SUMOXMLDefinitions::POIIcons.hasString(icon) == false) {
+    if (!SUMOXMLDefinitions::POIIcons.hasString(icon)) {
         WRITE_WARNING(TLF("Invalid icon % for POI '%', using default", icon, id));
         icon = "none";
     }
@@ -142,7 +142,7 @@ ShapeHandler::addPOI(const SUMOSAXAttributes& attrs, const bool ignorePruning, c
     const double width = attrs.getOpt<double>(SUMO_ATTR_WIDTH, id.c_str(), ok, Shape::DEFAULT_IMG_WIDTH);
     const double height = attrs.getOpt<double>(SUMO_ATTR_HEIGHT, id.c_str(), ok, Shape::DEFAULT_IMG_HEIGHT);
     // check if ID is valid
-    if (SUMOXMLDefinitions::isValidTypeID(id) == false) {
+    if (!SUMOXMLDefinitions::isValidTypeID(id)) {
         WRITE_WARNING(TL("Invalid characters for PoI ID"));
         ok = false;
     }
@@ -216,7 +216,7 @@ ShapeHandler::addPoly(const SUMOSAXAttributes& attrs, const bool ignorePruning, 
     bool ok = true;
     const std::string id = myPrefix + attrs.get<std::string>(SUMO_ATTR_ID, nullptr, ok);
     // check if ID is valid
-    if (SUMOXMLDefinitions::isValidTypeID(id) == false) {
+    if (!SUMOXMLDefinitions::isValidTypeID(id)) {
         WRITE_WARNING(TL("Invalid characters for Poly ID"));
         ok = false;
     }

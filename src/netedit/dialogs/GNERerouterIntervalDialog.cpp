@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -194,7 +194,7 @@ GNERerouterIntervalDialog::GNERerouterIntervalDialog(GNEAdditional* rerouterInte
     initChanges();
 
     // add element if we aren't updating an existent element
-    if (myUpdatingElement == false) {
+    if (!myUpdatingElement) {
         myEditedAdditional->getNet()->getViewNet()->getUndoList()->add(new GNEChange_Additional(myEditedAdditional, true), true);
     }
 
@@ -211,7 +211,7 @@ GNERerouterIntervalDialog::onCmdAccept(FXObject*, FXSelector, void*) {
     // set strings for dialogs
     std::string errorTitle = "Error" + toString(myUpdatingElement ? "updating" : "creating") + " " + myEditedAdditional->getTagStr() + " of " + myEditedAdditional->getParentAdditionals().at(0)->getTagStr();
     std::string operationType = myEditedAdditional->getParentAdditionals().at(0)->getTagStr() + "'s " + myEditedAdditional->getTagStr() + " cannot be " + (myUpdatingElement ? "updated" : "created") + " because ";
-    if (myBeginEndValid == false) {
+    if (!myBeginEndValid) {
         // write warning if netedit is running in testing mode
         WRITE_DEBUG("Opening FXMessageBox of type 'warning'");
         // open warning Box
@@ -309,7 +309,7 @@ GNERerouterIntervalDialog::onCmdAddClosingLaneReroute(FXObject*, FXSelector, voi
     // first check if there is lanes in the network
     if (myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().size() > 0) {
         // get lane
-        GNELane* lane = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second->getLanes().front();
+        GNELane* lane = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second.second->getLanes().front();
         // create closing lane reroute
         GNEClosingLaneReroute* closingLaneReroute = new GNEClosingLaneReroute(myEditedAdditional, lane, SVCAll);
         // add it using undoList
@@ -329,7 +329,7 @@ GNERerouterIntervalDialog::onCmdAddClosingReroute(FXObject*, FXSelector, void*) 
     // first check if there is lanes in the network
     if (myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().size() > 0) {
         // get edge
-        GNEEdge* edge = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second;
+        GNEEdge* edge = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second.second;
         // create closing reroute
         GNEClosingReroute* closingReroute = new GNEClosingReroute(myEditedAdditional, edge, SVCAll);
         // add it using undoList
@@ -349,7 +349,7 @@ GNERerouterIntervalDialog::onCmdAddDestProbReroute(FXObject*, FXSelector, void*)
     // first check if there is lanes in the network
     if (myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().size() > 0) {
         // get edge
-        GNEEdge* edge = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second;
+        GNEEdge* edge = myEditedAdditional->getNet()->getAttributeCarriers()->getEdges().begin()->second.second;
         // create closing reroute and add it to table
         GNEDestProbReroute* destProbReroute = new GNEDestProbReroute(myEditedAdditional, edge, 1);
         // add it using undoList
@@ -371,7 +371,7 @@ GNERerouterIntervalDialog::onCmdAddRouteProbReroute(FXObject*, FXSelector, void*
     // check if there is at least one route
     if (routes.size() > 0) {
         // create route Prob Reroute
-        GNERouteProbReroute* routeProbReroute = new GNERouteProbReroute(myEditedAdditional, *routes.begin(), 1);
+        GNERouteProbReroute* routeProbReroute = new GNERouteProbReroute(myEditedAdditional, routes.begin()->second, 1);
         myEditedAdditional->getNet()->getViewNet()->getUndoList()->add(new GNEChange_Additional(routeProbReroute, true), true);
         myRouteProbReroutesEdited.push_back(routeProbReroute);
         // update route prob reroutes table
@@ -386,7 +386,7 @@ GNERerouterIntervalDialog::onCmdAddParkingAreaReroute(FXObject*, FXSelector, voi
     // first check if there is lanes in the network
     if (myEditedAdditional->getNet()->getAttributeCarriers()->getAdditionals().at(SUMO_TAG_PARKING_AREA).size() > 0) {
         // get parking area
-        GNEAdditional* parkingArea = *myEditedAdditional->getNet()->getAttributeCarriers()->getAdditionals().at(SUMO_TAG_PARKING_AREA).begin();
+        GNEAdditional* parkingArea = myEditedAdditional->getNet()->getAttributeCarriers()->getAdditionals().at(SUMO_TAG_PARKING_AREA).begin()->second;
         // create parkingAreaReroute and add it to table
         GNEParkingAreaReroute* parkingAreaReroute = new GNEParkingAreaReroute(myEditedAdditional, parkingArea, 1, 1);
         // add it using undoList

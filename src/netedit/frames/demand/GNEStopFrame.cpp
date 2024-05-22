@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -183,7 +183,7 @@ GNEStopFrame::show() {
 
 
 bool
-GNEStopFrame::addStop(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor, const GNEViewNetHelper::MouseButtonKeyPressed& mouseButtonKeyPressed) {
+GNEStopFrame::addStop(const GNEViewNetHelper::ViewObjectsSelector& viewObjects, const GNEViewNetHelper::MouseButtonKeyPressed& mouseButtonKeyPressed) {
     // first check stop type
     if (myStopTagSelector->getCurrentTemplateAC() == nullptr) {
         WRITE_WARNING(TL("Selected Stop type isn't valid."));
@@ -191,10 +191,10 @@ GNEStopFrame::addStop(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCu
     }
     // check if we're selecting a new stop parent
     if (mouseButtonKeyPressed.shiftKeyPressed()) {
-        if (objectsUnderCursor.getDemandElementFront() &&
-                (objectsUnderCursor.getDemandElementFront()->getTagProperty().isVehicle() || objectsUnderCursor.getDemandElementFront()->getTagProperty().getTag() == SUMO_TAG_ROUTE)) {
-            myStopParentSelector->setDemandElement(objectsUnderCursor.getDemandElementFront());
-            WRITE_WARNINGF(TL("Selected % '%' as stop parent."), objectsUnderCursor.getDemandElementFront()->getTagStr(), objectsUnderCursor.getDemandElementFront()->getID());
+        if (viewObjects.getDemandElementFront() &&
+                (viewObjects.getDemandElementFront()->getTagProperty().isVehicle() || viewObjects.getDemandElementFront()->getTagProperty().getTag() == SUMO_TAG_ROUTE)) {
+            myStopParentSelector->setDemandElement(viewObjects.getDemandElementFront());
+            WRITE_WARNINGF(TL("Selected % '%' as stop parent."), viewObjects.getDemandElementFront()->getTagStr(), viewObjects.getDemandElementFront()->getID());
             return true;
         } else {
             WRITE_WARNING(TL("Selected Stop parent isn't valid."));
@@ -208,7 +208,7 @@ GNEStopFrame::addStop(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCu
         }
         // create stop base object
         getStopParameter(myStopTagSelector->getCurrentTemplateAC()->getTagProperty().getTag(),
-                         objectsUnderCursor.getLaneFront(), objectsUnderCursor.getAdditionalFront());
+                         viewObjects.getLaneFront(), viewObjects.getAdditionalFront());
         if (myStopParentBaseObject->getTag() != SUMO_TAG_NOTHING) {
             myRouteHandler.buildStop(myStopParentBaseObject->getSumoBaseObjectChildren().front(),
                                      myStopParentBaseObject->getSumoBaseObjectChildren().front()->getStopParameter());

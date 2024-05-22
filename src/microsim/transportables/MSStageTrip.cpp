@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,6 +35,7 @@
 #include <microsim/MSVehicleControl.h>
 #include <microsim/transportables/MSStageDriving.h>
 #include <microsim/transportables/MSStageWaiting.h>
+#include <microsim/transportables/MSStageWalking.h>
 #include <microsim/transportables/MSTransportable.h>
 #include <microsim/transportables/MSPerson.h>
 #include <microsim/transportables/MSStageTrip.h>
@@ -53,7 +54,7 @@ MSStageTrip::MSStageTrip(const MSEdge* origin, MSStoppingPlace* fromStop,
                          const std::string& vTypes, const double speed, const double walkFactor,
                          const std::string& group,
                          const double departPosLat, const bool hasArrivalPos, const double arrivalPos):
-    MSStage(destination, toStop, arrivalPos, MSStageType::TRIP, group),
+    MSStage(MSStageType::TRIP, destination, toStop, arrivalPos, 0.0, group),
     myOrigin(origin),
     myOriginStop(fromStop),
     myDuration(duration),
@@ -70,9 +71,12 @@ MSStageTrip::~MSStageTrip() {}
 
 MSStage*
 MSStageTrip::clone() const {
-    return new MSStageTrip(myOrigin, const_cast<MSStoppingPlace*>(myOriginStop),
-                           myDestination, myDestinationStop, myDuration,
-                           myModeSet, myVTypes, mySpeed, myWalkFactor, myGroup, myDepartPosLat, myHaveArrivalPos, myArrivalPos);
+    MSStage* const clon = new MSStageTrip(myOrigin, const_cast<MSStoppingPlace*>(myOriginStop),
+                                          myDestination, myDestinationStop, myDuration,
+                                          myModeSet, myVTypes, mySpeed, myWalkFactor, myGroup,
+                                          myDepartPosLat, myHaveArrivalPos, myArrivalPos);
+    clon->setParameters(*this);
+    return clon;
 }
 
 
@@ -180,7 +184,7 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
             }
         }
         bool carUsed = false;
-        std::vector<MSNet::MSIntermodalRouter::TripItem> result;
+        std::vector<MSTransportableRouter::TripItem> result;
         int stageIndex = 1;
         double departPos = previous->getArrivalPos();
         MSStoppingPlace* const prevStop = previous->getDestinationStop();
@@ -191,7 +195,9 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
                                                 departPos, myOriginStop == nullptr ? "" : myOriginStop->getID(),
                                                 myArrivalPos, myDestinationStop == nullptr ? "" : myDestinationStop->getID(),
                                                 transportable->getMaxSpeed() * myWalkFactor, vehicle, myModeSet, time, result)) {
-            for (std::vector<MSNet::MSIntermodalRouter::TripItem>::iterator it = result.begin(); it != result.end(); ++it) {
+            double totalCost = 0;
+            for (std::vector<MSTransportableRouter::TripItem>::iterator it = result.begin(); it != result.end(); ++it) {
+                totalCost += it->cost;
                 if (!it->edges.empty()) {
                     MSStoppingPlace* bs = MSNet::getInstance()->getStoppingPlace(it->destStop, SUMO_TAG_BUS_STOP);
                     double localArrivalPos = bs != nullptr ? bs->getAccessPos(it->edges.back()) : it->edges.back()->getLength() / 2.;
@@ -229,7 +235,9 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
                                 localArrivalPos = 0;
                             }
                         }
-                        previous = new MSPerson::MSPersonStage_Walking(transportable->getID(), it->edges, bs, myDuration, mySpeed, depPos, localArrivalPos, myDepartPosLat);
+                        previous = new MSStageWalking(transportable->getID(), it->edges, bs, myDuration, mySpeed, depPos, localArrivalPos, myDepartPosLat);
+                        previous->setParameters(*this);
+                        previous->setCosts(it->cost);
                         transportable->appendStage(previous, stageIndex++);
                     } else if (isTaxi) {
                         const ConstMSEdgeVector& prevEdges = previous->getEdges();
@@ -244,14 +252,18 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
                                 previous->setArrivalPos(MAX2(0.0, last->getLength() - 10));
                             }
                         }
-                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, std::vector<std::string>({ "taxi" }), myGroup);
+                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, 0.0, std::vector<std::string>({ "taxi" }), myGroup);
+                        previous->setParameters(*this);
+                        previous->setCosts(it->cost);
                         transportable->appendStage(previous, stageIndex++);
                     } else if (vehicle != nullptr && it->line == vehicle->getID()) {
                         if (bs == nullptr && it + 1 != result.end()) {
                             // we have no defined endpoint and are in the middle of the trip, drive as far as possible
                             localArrivalPos = it->edges.back()->getLength();
                         }
-                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, std::vector<std::string>({ it->line }));
+                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, 0.0, std::vector<std::string>({ it->line }));
+                        previous->setParameters(*this);
+                        previous->setCosts(it->cost);
                         transportable->appendStage(previous, stageIndex++);
                         vehicle->replaceRouteEdges(it->edges, -1, 0, "person:" + transportable->getID(), true);
                         vehicle->setArrivalPos(localArrivalPos);
@@ -259,7 +271,9 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
                         vehControl.addVehicle(vehPar->id, vehicle);
                         carUsed = true;
                     } else {
-                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, std::vector<std::string>({ it->line }), myGroup, it->intended, TIME2STEPS(it->depart));
+                        previous = new MSStageDriving(rideOrigin, it->edges.back(), bs, localArrivalPos, 0.0, std::vector<std::string>({ it->line }), myGroup, it->intended, TIME2STEPS(it->depart));
+                        previous->setParameters(*this);
+                        previous->setCosts(it->cost);
                         transportable->appendStage(previous, stageIndex++);
                     }
                 }
@@ -268,9 +282,12 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
                 // mark the last stage
                 transportable->getNextStage(stageIndex - 1)->markSet(VEHPARS_ARRIVALPOS_SET);
             }
+            setCosts(totalCost);
         } else {
             // append stage so the GUI won't crash due to inconsistent state
-            transportable->appendStage(new MSPerson::MSPersonStage_Walking(transportable->getID(), ConstMSEdgeVector({ myOrigin, myDestination }), myDestinationStop, myDuration, mySpeed, previous->getArrivalPos(), myArrivalPos, myDepartPosLat), stageIndex++);
+            previous = new MSStageWalking(transportable->getID(), ConstMSEdgeVector({ myOrigin, myDestination }), myDestinationStop, myDuration, mySpeed, previous->getArrivalPos(), myArrivalPos, myDepartPosLat);
+            previous->setParameters(*this);
+            transportable->appendStage(previous, stageIndex++);
             if (MSGlobals::gCheckRoutes) {  // if not pedestrians will teleport
                 if (vehicle != nullptr) {
                     vehControl.deleteVehicle(vehicle, true);
@@ -285,9 +302,9 @@ MSStageTrip::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now
     if (transportable->getNumStages() == oldNumStages) {
         // append stage so the GUI won't crash due to inconsistent state
         if (myOriginStop != nullptr && myOriginStop == myDestinationStop) {
-            transportable->appendStage(new MSStageWaiting(myDestination, myDestinationStop, 0, -1, previous->getArrivalPos(), "sameStop", false));
+            transportable->appendStage(new MSStageWaiting(myDestination, myDestinationStop, 0, -1, previous->getArrivalPos(), "sameStop", false), 1);
         } else {
-            transportable->appendStage(new MSPerson::MSPersonStage_Walking(transportable->getID(), ConstMSEdgeVector({ myOrigin, myDestination }), myDestinationStop, myDuration, mySpeed, previous->getArrivalPos(), myArrivalPos, myDepartPosLat), -1);
+            transportable->appendStage(new MSStageWalking(transportable->getID(), ConstMSEdgeVector({ myOrigin, myDestination }), myDestinationStop, myDuration, mySpeed, previous->getArrivalPos(), myArrivalPos, myDepartPosLat), 1);
             if (MSGlobals::gCheckRoutes) {  // if not pedestrians will teleport
                 return "Empty route between " + getOriginDescription() + " and " + getDestinationDescription() + " for person '" + transportable->getID() + "'.";
             }
@@ -366,6 +383,9 @@ MSStageTrip::routeOutput(const bool /*isPerson*/, OutputDevice& os, const bool /
         }
         if (walkFactorSet) {
             os.writeAttr(SUMO_ATTR_WALKFACTOR, myWalkFactor);
+        }
+        if (OptionsCont::getOptions().getBool("vehroute-output.cost")) {
+            os.writeAttr(SUMO_ATTR_COST, getCosts());
         }
         os.closeTag();
     }

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -130,7 +130,7 @@ GNEVehicleTypeDialog::VTypeAttributes::VClassRow::setVariable() {
                 myVTypeAttributesParent->myCarriageLength->updateValue(toString(defaultVTypeParameters.containerCapacity));
             }
             if (!myVTypeAttributesParent->myVehicleTypeDialog->myEditedDemandElement->isAttributeEnabled(SUMO_ATTR_LOCOMOTIVE_LENGTH)) {
-                myVTypeAttributesParent->myLocomotiveLength->updateValue(toString(defaultVTypeParameters.containerCapacity));
+                myVTypeAttributesParent->myLocomotiveLength->updateValue(toString(defaultVTypeParameters.locomotiveLength));
             }
             // update GUIShape
             if (myComboBoxVClass->getText().empty()) {
@@ -242,6 +242,27 @@ GNEVehicleTypeDialog::VTypeAttributes::VClassRow::setVClassLabelImage() {
                 break;
             case SVC_SHIP:
                 myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_SHIP));
+                break;
+            case SVC_CONTAINER:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_CABLE_CAR:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_SUBWAY:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_AIRCRAFT:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_WHEELCHAIR:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_SCOOTER:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
+                break;
+            case SVC_DRONE:
+                myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
                 break;
             case SVC_CUSTOM1:
                 myComboBoxVClassLabelImage->setIcon(GUIIconSubSys::getIcon(GUIIcon::VCLASS_CUSTOM1));
@@ -1767,7 +1788,7 @@ GNEVehicleTypeDialog::GNEVehicleTypeDialog(GNEDemandElement* editedVehicleType, 
     initChanges();
 
     // add element if we aren't updating an existent element
-    if (myUpdatingElement == false) {
+    if (!myUpdatingElement) {
         myEditedDemandElement->getNet()->getViewNet()->getUndoList()->add(new GNEChange_DemandElement(myEditedDemandElement, true), true);
     }
 
@@ -1787,7 +1808,7 @@ GNEVehicleTypeDialog::~GNEVehicleTypeDialog() {}
 
 long
 GNEVehicleTypeDialog::onCmdAccept(FXObject*, FXSelector, void*) {
-    if (myVehicleTypeValid == false) {
+    if (!myVehicleTypeValid) {
         // write warning if netedit is running in testing mode
         WRITE_DEBUG("Opening FXMessageBox of type 'warning'");
         std::string operation1 = myUpdatingElement ? ("updating") : ("creating");

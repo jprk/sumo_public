@@ -1,6 +1,6 @@
 #!/bin/bash
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2023 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -43,7 +43,7 @@ git pull >> $MAKELOG 2>&1 || (echo "git pull failed" | tee -a $STATUSLOG; tail -
 git submodule update >> $MAKELOG 2>&1 || (echo "git submodule update failed" | tee -a $STATUSLOG; tail -10 $MAKELOG)
 GITREV=`tools/build_config/version.py -`
 date >> $MAKELOG
-mkdir -p build/$FILEPREFIX && cd build/$FILEPREFIX
+mkdir -p wheelhouse build/$FILEPREFIX && cd build/$FILEPREFIX
 cmake ${CONFIGURE_OPT:5} -DCMAKE_INSTALL_PREFIX=$PREFIX ../.. >> $MAKELOG 2>&1 || (echo "cmake failed" | tee -a $STATUSLOG; tail -10 $MAKELOG)
 if make -j32 >> $MAKELOG 2>&1; then
   date >> $MAKELOG
@@ -125,14 +125,6 @@ basename $TESTLOG >> $STATUSLOG
 date >> $STATUSLOG
 echo "--" >> $STATUSLOG
 
-# netedit tests
-if test -e $SUMO_BINDIR/netedit -a $SUMO_BINDIR/netedit -nt build/$FILEPREFIX/Makefile; then
-  if test "$FILEPREFIX" == "gcc4_64"; then
-    tests/runNeteditDailyTests.sh -b ${FILEPREFIX}netedit -name $TESTLABEL >> $TESTLOG 2>&1
-    tests/runTests.sh -b ${FILEPREFIX} -name $TESTLABEL -coll >> $TESTLOG 2>&1
-  fi
-fi
-
 WHEELLOG=$PREFIX/${FILEPREFIX}wheel.log
 rm -rf dist dist_native
 # native macOS M1 wheels and Linux ARM
@@ -143,15 +135,21 @@ if test ${FILEPREFIX: -2} == "M1"; then
   python3 tools/build_config/version.py tools/build_config/setup-libsumo.py tools/setup.py
   python3 -m build --wheel tools -o dist > $WHEELLOG 2>&1
   python3 -c 'import os,sys; v="cp%s%s"%sys.version_info[:2]; os.rename(sys.argv[1], sys.argv[1].replace("%s-%s"%(v,v), "py2.py3-none"))' dist/eclipse_sumo-*
-  # the credentials are in ~/.pypirc
-  twine upload --skip-existing -r testpypi dist/*
   mv dist dist_native  # just as backup
+  # the docker script will create _skbuild, dist and wheelhouse dir owned by root but writable for everyone
+  # we only need wheelhouse, the rest is for inspecting if errors occur
   docker run --rm -v $PWD:/opt/sumo --workdir /opt/sumo manylinux2014_aarch64 tools/build_config/build_wheels.sh $HTTPS_PROXY >> $WHEELLOG 2>&1
-  twine upload --skip-existing -r testpypi wheelhouse/*
 fi
 # Linux x64 wheels
 if test ${FILEPREFIX} == "gcc4_64"; then
-  mv dist dist_native  # just as backup
-  docker run --rm -v $PWD:/opt/sumo --workdir /opt/sumo manylinux2014_x64 tools/build_config/build_wheels.sh $HTTPS_PROXY v1.0.4 > $WHEELLOG 2>&1
-  cp build_config/$FILEPREFIX/*.whl wheelhouse
+  docker run --rm -v $PWD:/opt/sumo --workdir /opt/sumo manylinux2014_x64 tools/build_config/build_wheels.sh $HTTPS_PROXY v1.2.0 > $WHEELLOG 2>&1
+  cp build/$FILEPREFIX/*.whl wheelhouse
+fi
+
+# netedit tests
+if test -e $SUMO_BINDIR/netedit -a $SUMO_BINDIR/netedit -nt build/$FILEPREFIX/Makefile; then
+  if test "$FILEPREFIX" == "gcc4_64"; then
+    tests/runNeteditDailyTests.sh -b ${FILEPREFIX}netedit -name $TESTLABEL >> $TESTLOG 2>&1
+    tests/runTests.sh -b ${FILEPREFIX} -name $TESTLABEL -coll >> $TESTLOG 2>&1
+  fi
 fi

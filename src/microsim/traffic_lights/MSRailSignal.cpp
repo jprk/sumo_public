@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -435,7 +435,7 @@ MSRailSignal::initDriveWays(const SUMOVehicle* ego, bool update) {
                                 // init driveway
                                 li.getDriveWay(ego);
                                 if (update && rs->isActive()) {
-                                    // vehicle may have rerouted it's intial trip
+                                    // vehicle may have rerouted its intial trip
                                     // after the states have been set
                                     // @note: This is a hack because it could lead to invalid tls-output
                                     // (it's still an improvement over switching based on default driveways)
@@ -984,6 +984,14 @@ MSRailSignal::DriveWay::conflictLaneOccupied(const std::string& joinVehicle, boo
 #endif
                         continue;
                     }
+                    if (foe->isStopped() && foe->getNextStopParameter()->join == ego->getID()) {
+#ifdef DEBUG_SIGNALSTATE
+                        if (gDebugFlag4) {
+                            std::cout << "    ignore " << foe->getID() << " for which ego is join-target\n";
+                        }
+#endif
+                        continue;
+                    }
                 }
             }
             if (myStoreVehicles && store) {
@@ -1335,6 +1343,13 @@ MSRailSignal::DriveWay::buildRoute(MSLink* origin, double length,
             if (next != end) {
                 // no connection found, jump to next route edge
                 toLane = (*next)->getLanes()[0];
+#ifdef DEBUG_DRIVEWAY_BUILDROUTE
+                if (gDebugFlag4) {
+                    std::cout << "      abort: turn-around or jump\n";
+                }
+#endif
+                myFoundReversal = true;
+                return;
             } else {
 #ifdef DEBUG_DRIVEWAY_BUILDROUTE
                 if (gDebugFlag4) {

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -34,6 +34,9 @@ GUIShortcutsSubSys::buildAccelerators(FXAccelTable* accelTable, FXObject* target
 
     accelTable->addAccel(parseKey(KEY_a), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS));
     accelTable->addAccel(parseKey(KEY_A), target, FXSEL(SEL_COMMAND, MID_HOTKEY_A_MODE_STARTSIMULATION_ADDITIONALS_STOPS));
+
+    accelTable->addAccel(parseKey(KEY_b), target, FXSEL(SEL_COMMAND, MID_HOTKEY_B_BREAKPOINT));
+    accelTable->addAccel(parseKey(KEY_B), target, FXSEL(SEL_COMMAND, MID_HOTKEY_B_BREAKPOINT));
 
     accelTable->addAccel(parseKey(KEY_c), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_CONTAINER));
     accelTable->addAccel(parseKey(KEY_C), target, FXSEL(SEL_COMMAND, MID_HOTKEY_C_MODE_CONNECT_CONTAINER));
@@ -272,6 +275,8 @@ GUIShortcutsSubSys::buildAccelerators(FXAccelTable* accelTable, FXObject* target
     accelTable->addAccel(parseKey(KEY_9, KEYMODIFIER_ALT), target, FXSEL(SEL_COMMAND, MID_HOTKEY_ALT_9_TOGGLEEDITOPTION));
 
     accelTable->addAccel(parseKey(KEY_F4, KEYMODIFIER_ALT), target, FXSEL(SEL_COMMAND, MID_HOTKEY_ALT_F4_CLOSE));
+    accelTable->addAccel(parseKey(KEY_b, KEYMODIFIER_ALT), target, FXSEL(SEL_COMMAND, MID_HOTKEY_ALT_B_BREAKPOINT_EARLY));
+    accelTable->addAccel(parseKey(KEY_B, KEYMODIFIER_ALT), target, FXSEL(SEL_COMMAND, MID_HOTKEY_ALT_B_BREAKPOINT_EARLY));
 }
 
 

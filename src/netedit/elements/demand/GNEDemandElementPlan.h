@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -77,6 +77,9 @@ public:
     static std::pair<SumoXMLTag, GUIIcon> getContainerStopTagIcon(const GNEEdge* edge, const GNEAdditional* containerStop);
 
 protected:
+    /// @brief variable used for draw contours
+    GNEContour myPlanContour;
+
     /// @brief constructor
     GNEDemandElementPlan(GNEDemandElement* planElement, const double departPosition, const double arrivalPosition);
 
@@ -86,7 +89,10 @@ protected:
     GNEMoveOperation* getPlanMoveOperation();
 
     /// @brief write plan element common attributes
-    void writePlanAttributes(OutputDevice& device) const;
+    void writeLocationAttributes(OutputDevice& device) const;
+
+    /// @brief write initial stop stage if plan starts at a stopping place
+    void writeOriginStop(OutputDevice& device) const;
 
     /// @brief Returns an own popup-menu
     GUIGLObjectPopupMenu* getPlanPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent);
@@ -183,19 +189,14 @@ protected:
     double myArrivalPosition;
 
 private:
-    /// @brief check if draw plan depending of zoom
-    bool drawPlanZoom(const GUIVisualizationSettings& s) const;
-
     /// @brief draw from arrow
-    void drawFromArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment,
-                       const bool dottedElement) const;
+    void drawFromArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment) const;
 
     /// @brief draw to arrow
-    void drawToArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment,
-                     const bool dottedElement) const;
+    void drawToArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment) const;
 
     /// @brief draw to arrow
-    void drawEndPosition(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const bool duplicateWidth) const;
+    void drawEndPosition(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const GNEPathManager::Segment* segment, const bool duplicateWidth) const;
 
     /// @brief pointer to plan element
     GNEDemandElement* myPlanElement;

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -49,6 +49,9 @@ public:
     SUMOTime execute(SUMOTime time);
 
     bool usingInternalLanes() override;
+    bool usingShortcuts() override {
+        return myHaveAdditionalWalkableAreas;
+    }
     void registerArrived();
     int getActiveNumber() override;
     void clearState() override;
@@ -72,8 +75,10 @@ private:
     */
     class PState : public MSTransportableStateAdapter {
     public:
-        PState(MSPerson* person, MSStageMoving* stage, JPS_JourneyDescription journey, JPS_JourneyId journeyId, JPS_StageId stageId, const PositionVector& waypoints);
+        PState(MSPerson* person, MSStageMoving* stage, JPS_JourneyId journeyId, JPS_StageId stageId, const std::vector<std::pair<Position, double> >& waypoints);
         ~PState() override;
+
+        void reinit(MSStageMoving* stage, JPS_JourneyId journeyId, JPS_StageId stageId, const std::vector<std::pair<Position, double> >& waypoints);
 
         Position getPosition(const MSStageMoving& stage, SUMOTime now) const override;
         void setPosition(double x, double y);
@@ -84,8 +89,10 @@ private:
         double getAngle(const MSStageMoving& stage, SUMOTime now) const override;
         void setAngle(double angle);
 
-        MSStageMoving* getStage();
-        MSPerson* getPerson();
+        MSStageMoving* getStage() const;
+        void setStage(MSStageMoving* const stage);
+
+        MSPerson* getPerson() const;
 
         void setLanePosition(double lanePosition);
         double getEdgePos(const MSStageMoving& stage, SUMOTime now) const override;
@@ -93,7 +100,7 @@ private:
         SUMOTime getWaitingTime(const MSStageMoving& stage, SUMOTime now) const override;
         double getSpeed(const MSStageMoving& stage) const override;
         const MSEdge* getNextEdge(const MSStageMoving& stage) const override;
-        const Position& getNextWaypoint() const;
+        const std::pair<Position, double>& getNextWaypoint() const;
         JPS_AgentId getAgentId() const;
 
         /// @brief whether the transportable has finished walking
@@ -127,12 +134,10 @@ private:
     private:
         MSPerson* myPerson;
         MSStageMoving* myStage;
-        /// @brief handle to the JPS journey, only needed for freeing the memory later
-        JPS_JourneyDescription myJourney;
         /// @brief id of the journey, needed for modifying it
         JPS_JourneyId myJourneyId;
         JPS_StageId myStageId;
-        PositionVector myWaypoints;
+        std::vector<std::pair<Position, double> > myWaypoints;
         JPS_AgentId myAgentId;
         Position myPosition;
         Position myPreviousPosition; // Will be initialized to zero automatically.
@@ -140,44 +145,85 @@ private:
         double myLanePosition;
         /// @brief whether the pedestrian is waiting to start its walk
         bool myWaitingToEnter;
-        int myNumStages;
     };
 
+    /// @brief The network on which the simulation runs.
     MSNet* const myNetwork;
+
+    /// @brief The shape container used to add polygons to the rendering pipeline.
+    ShapeContainer& myShapeContainer;
+
+    /// @brief Timestep used in the JuPedSim simulator.
     const SUMOTime myJPSDeltaT;
+
+    /// @brief Threshold to decide if a pedestrian has ended its journey or not.
     const double myExitTolerance;
+
     int myNumActivePedestrians = 0;
     std::vector<PState*> myPedestrianStates;
 
-    GEOSGeometry* myGEOSPedestrianNetwork;
-    bool myIsPedestrianNetworkConnected;
+    /// @brief The GEOS polygon containing all computed connected components of the pedestrian network.
+    GEOSGeometry* myGEOSPedestrianNetwork; // Kept because the largest component refers to it.
 
-    JPS_GeometryBuilder myJPSGeometryBuilder;
-    JPS_Geometry myJPSGeometry;
-    JPS_CollisionFreeSpeedModelBuilder myJPSModelBuilder;
+    /// @brief The GEOS polygon representing the largest (by area) connected component of the pedestrian network.
+    const GEOSGeometry* myGEOSPedestrianNetworkLargestComponent;
+
+    bool myHaveAdditionalWalkableAreas;
+
+    /// @brief The JPS polygon representing the largest connected component of the pedestrian network.
+    JPS_Geometry myJPSGeometry; // Kept because of dynamic geometry switching and JPS_Simulation object.
+
+    /// @brief The JPS polygon representing the largest connected component plus carriages and ramps.
+    JPS_Geometry myJPSGeometryWithTrainsAndRamps;
     JPS_OperationalModel myJPSModel;
     JPS_Simulation myJPSSimulation;
+
+    /// @brief Structure that keeps data related to vanishing areas (and other types of areas).
+    struct AreaData {
+        const std::string id;
+        const std::string areaType;
+        const std::vector<JPS_Point> areaBoundary;
+        const Parameterised::Map params;
+
+        /// @brief The last time a pedestrian was removed in a vanishing area.
+        SUMOTime lastRemovalTime;
+    };
+
+    /// @brief Array of special areas.
+    std::vector<AreaData> myAreas;
+
+    /// @brief Array of stopped trains, used to detect whether to add carriages and ramps to the geometry.
+    std::vector<SUMOTrafficObject::NumericalID> myAllStoppedTrainIDs;
 
     static const int GEOS_QUADRANT_SEGMENTS;
     static const double GEOS_MITRE_LIMIT;
     static const double GEOS_MIN_AREA;
+    static const double GEOS_BUFFERED_SEGMENT_WIDTH;
+    static const double CARRIAGE_RAMP_LENGTH;
+    static const RGBColor PEDESTRIAN_NETWORK_COLOR;
+    static const RGBColor PEDESTRIAN_NETWORK_CARRIAGES_AND_RAMPS_COLOR;
+    static const std::string PEDESTRIAN_NETWORK_ID;
+    static const std::string PEDESTRIAN_NETWORK_CARRIAGES_AND_RAMPS_ID;
 
-    void initialize();
-    void tryPedestrianInsertion(PState* state);
-    bool addWaypoint(JPS_JourneyDescription journey, JPS_StageId& predecessor, const Position& point);
+    void initialize(const OptionsCont& oc);
+    void tryPedestrianInsertion(PState* state, const Position& p);
+    bool addWaypoint(JPS_JourneyDescription journey, JPS_StageId& predecessor, const Position& point, const std::string& agentID, const double radius);
     static MSLane* getNextPedestrianLane(const MSLane* const currentLane);
     static const Position& getAnchor(const MSLane* const lane, const MSEdge* const edge, MSEdgeVector incoming);
     static const MSEdgeVector getAdjacentEdgesOfEdge(const MSEdge* const edge);
     static const MSEdge* getWalkingAreaInbetween(const MSEdge* const edge, const MSEdge* const otherEdge);
     static GEOSGeometry* createGeometryFromCenterLine(PositionVector centerLine, double width, int capStyle);
-    static GEOSGeometry* createGeometryFromShape(PositionVector shape);
+    static GEOSGeometry* createGeometryFromShape(PositionVector shape, std::string junctionID = std::string(""), std::string shapeID = std::string(""), bool isInternalShape = false);
     static GEOSGeometry* createGeometryFromAnchors(const Position& anchor, const MSLane* const lane, const Position& otherAnchor, const MSLane* const otherLane);
     GEOSGeometry* buildPedestrianNetwork(MSNet* network);
-    static PositionVector getCoordinates(const GEOSGeometry* geometry);
+    static GEOSCoordSequence* convertToGEOSPoints(PositionVector shape);
     static std::vector<JPS_Point> convertToJPSPoints(const GEOSGeometry* geometry);
-    static std::vector<JPS_Point> convertToJPSPoints(const PositionVector& coordinates);
-    static double getHoleArea(const GEOSGeometry* hole);
-    void preparePolygonForDrawing(const GEOSGeometry* polygon, const std::string& polygonId);
-    void preparePolygonForJPS(const GEOSGeometry* polygon);
-    static void dumpGeometry(const GEOSGeometry* polygon, const std::string& filename);
+    static PositionVector convertToSUMOPoints(const GEOSGeometry* geometry);
+    static double getLinearRingArea(const GEOSGeometry* linearRing);
+    void removePolygonFromDrawing(const std::string& polygonId);
+    void preparePolygonForDrawing(const GEOSGeometry* polygon, const std::string& polygonId, const RGBColor& color);
+    static const GEOSGeometry* getLargestComponent(const GEOSGeometry* polygon, int& nbrComponents, double& maxArea, double& totalArea);
+    static JPS_Geometry buildJPSGeometryFromGEOSGeometry(const GEOSGeometry* polygon);
+    static void dumpGeometry(const GEOSGeometry* polygon, const std::string& filename, bool useGeoCoordinates = false);
+    static double getRadius(const MSVehicleType& vehType);
 };

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -72,11 +72,11 @@ GNEOverlappedInspection::~GNEOverlappedInspection() {}
 
 
 void
-GNEOverlappedInspection::showOverlappedInspection(const GNEViewNetHelper::ObjectsUnderCursor& objectsUnderCursor, const Position& clickedPosition) {
+GNEOverlappedInspection::showOverlappedInspection(const GNEViewNetHelper::ViewObjectsSelector& viewObjects, const Position& clickedPosition) {
     // first clear myOverlappedACs
     myOverlappedACs.clear();
     // get cliked ACs
-    auto clickedACs = objectsUnderCursor.getClickedAttributeCarriers();
+    auto clickedACs = viewObjects.getAttributeCarriers();
     // check if filter edges
     if ((clickedACs.size() > 0) && (clickedACs.front()->getTagProperty().getTag() == SUMO_TAG_LANE)) {
         // iterate over clickedAcs and remove edges

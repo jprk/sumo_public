@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -178,6 +178,23 @@ ROPerson::Ride::saveAsXML(OutputDevice& os, const bool extended, OptionsCont& op
     os.closeTag(comment);
 }
 
+
+void
+ROPerson::Stop::saveAsXML(OutputDevice& os, const bool /*extended*/, const bool /*asTrip*/, OptionsCont& /*options*/) const {
+    stopDesc.write(os, false);
+    std::string comment = "";
+    for (std::string sID : stopDesc.getStoppingPlaceIDs()) {
+        const std::string name = RONet::getInstance()->getStoppingPlaceName(sID);
+        if (name != "") {
+            comment += name + " ";
+        }
+    }
+    if (comment != "") {
+        comment =  " <!-- " + comment + " -->";
+    }
+    stopDesc.writeParams(os);
+    os.closeTag(comment);
+}
 
 void
 ROPerson::Walk::saveAsXML(OutputDevice& os, const bool extended, OptionsCont& options) const {

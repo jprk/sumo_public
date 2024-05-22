@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2023 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -121,7 +121,7 @@ GNERouteFrame::RouteModeSelector::areParametersValid() {
         myRouteFrameParent->myPathLegend->hidePathLegendModule();
         // reset all flags
         for (const auto& edge : myRouteFrameParent->myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-            edge.second->resetCandidateFlags();
+            edge.second.second->resetCandidateFlags();
         }
         // update view net
         myRouteFrameParent->myViewNet->update();
@@ -221,7 +221,7 @@ void
 GNERouteFrame::hide() {
     // reset candidate edges
     for (const auto& edge : myViewNet->getNet()->getAttributeCarriers()->getEdges()) {
-        edge.second->resetCandidateFlags();
+        edge.second.second->resetCandidateFlags();
     }
     GNEFrame::hide();
 }

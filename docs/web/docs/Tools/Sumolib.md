@@ -14,12 +14,10 @@ To use the library, the {{SUMO}}/tools directory must be on the python load
 path. This is typically done with a stanza like this:
 
 ```python
-import os, sys
+import os
+import sys
 if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:   
-    sys.exit("please declare environment variable 'SUMO_HOME'")
+    sys.path.append(os.path.join(os.environ['SUMO_HOME'], 'tools'))
 ```
 
 # loading a network file
@@ -103,7 +101,7 @@ x, y = net.convertLonLat2XY(lon, lat)
 edges = net.getNeighboringEdges(x, y, radius)
 # pick the closest edge
 if len(edges) > 0:
-    distancesAndEdges = sorted([(dist, edge) for edge, dist in edges])
+    distancesAndEdges = sorted([(dist, edge) for edge, dist in edges], key=lambda x:x[0])
     dist, closestEdge = distancesAndEdges[0]
 ```
 

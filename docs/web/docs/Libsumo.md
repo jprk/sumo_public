@@ -36,7 +36,7 @@ The following things currently do not work (or work differently than with the Tr
 - libsumo by itself cannot be used to [connect multiple clients to the simulation](TraCI/Interfacing_TraCI_from_Python.md#controlling_the_same_simulation_from_multiple_clients) (though connecting normal TraCI clients to a libsumo instance is possible)
 - running parallel instances of libsumo requires the [multiprocessing module (in python)](https://docs.python.org/3/library/multiprocessing.html)
 
-To avoid the limitations with respect to GUI, multi-clients support, you can also use [libraci](Libtraci.md). This is a C++ traci client library which is fully API-compatible with libsumo.
+To avoid the limitations with respect to GUI, multi-clients support, you can also use [libtraci](Libtraci.md). This is a C++ traci client library which is fully API-compatible with libsumo.
 
 # Building and Installing it
 
@@ -92,6 +92,9 @@ import as above.
 Please note the extra `#define` for enabling GUI code which is not needed if you do not or cannot use the GUI (Windows).
 
 ### Example Code (test.cpp)
+
+The example assumes you have the named sumocfg file in your current working directory and the SUMO `bin` directory included 
+in the `PATH` environmental variable. Otherwise you need to provide the full file path.
 
 ```cpp
 #include <iostream>
