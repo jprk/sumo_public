@@ -33,6 +33,7 @@
 #include <utils/distribution/RandomDistributor.h>
 #include <utils/common/SUMOTime.h>
 #include <utils/common/SUMOVehicleClass.h>
+#include <utils/common/Command.h>
 #include <microsim/MSRouterDefs.h>
 
 
@@ -139,7 +140,10 @@ public:
      * @param[discard] Whether the vehicle is discard during loading (scale < 1)
      * @todo Isn't this quite insecure?
      */
-    virtual void deleteVehicle(SUMOVehicle* v, bool discard = false);
+    virtual void deleteVehicle(SUMOVehicle* v, bool discard = false, bool wasKept = false);
+
+    /** @brief when a vehicle is kept after arrival, schedule later deletion **/
+    void deleteKeptVehicle(SUMOVehicle* veh);
 
     void fixVehicleCounts() {
         myLoadedVehNo++;
@@ -636,6 +640,18 @@ protected:
 
 
 private:
+    class DeleteKeptVehicle : public Command {
+    public:
+        DeleteKeptVehicle(SUMOVehicle* veh) : myVehicle(veh) {};
+        ~DeleteKeptVehicle() {};
+        SUMOTime execute(SUMOTime currentTime);
+    private:
+        SUMOVehicle* myVehicle;
+    private:
+        /// @brief Invalidated assignment operator.
+        DeleteKeptVehicle& operator=(const DeleteKeptVehicle&) = delete;
+    };
+
     /// @name Vehicle type container
     /// @{
 
@@ -660,6 +676,8 @@ private:
 
     /// @brief The scaling factor (especially for inc-dua)
     double myScale;
+
+    SUMOTime myKeepTime;
 
     /// @brief The maximum speed factor for all vehicles in the network
     double myMaxSpeedFactor;

@@ -135,3 +135,9 @@ alightingPersons
 
 # check handling of stops (#14789)
 changeTarget
+
+# retrieve vehicle information after arrival
+keepAfterArrival
+
+# retrieve vehicle information after arrival with state saving and loading
+keepAfterArrival_state

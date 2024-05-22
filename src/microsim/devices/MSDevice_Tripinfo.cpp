@@ -773,6 +773,16 @@ MSDevice_Tripinfo::getParameter(const std::string& key) const {
         return toString(myWaitingCount);
     } else if (key == toString(SUMO_ATTR_STOPTIME)) {
         return toString(STEPS2TIME(myStoppingTime));
+    } else if (key == toString(SUMO_ATTR_ARRIVALTIME)) {
+        return toString(STEPS2TIME(myArrivalTime));
+    } else if (key == toString(SUMO_ATTR_ARRIVALLANE)) {
+        return toString(myArrivalLane);
+    } else if (key == toString(SUMO_ATTR_ARRIVALPOS)) {
+        return toString(myArrivalPos);
+    } else if (key == toString(SUMO_ATTR_ARRIVALPOS_LAT)) {
+        return toString(myArrivalPosLat);
+    } else if (key == toString(SUMO_ATTR_ARRIVALSPEED)) {
+        return toString(myArrivalSpeed);
     }
     throw InvalidArgument("Parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
 }
@@ -884,7 +894,8 @@ MSDevice_Tripinfo::saveState(OutputDevice& out) const {
             internals << myDepartLane << " " << myDepartPosLat << " ";
         }
         internals << myDepartSpeed << " " << myRouteLength << " " << myWaitingTime << " " << myAmWaiting << " " << myWaitingCount << " ";
-        internals << myStoppingTime << " " << myParkingStarted;
+        internals << myStoppingTime << " " << myParkingStarted << " ";
+        internals << myArrivalTime << " " << myArrivalLane << " " << myArrivalPos << " " << myArrivalPosLat << " " << myArrivalSpeed;
         out.writeAttr(SUMO_ATTR_STATE, internals.str());
         out.closeTag();
     }
@@ -899,6 +910,7 @@ MSDevice_Tripinfo::loadState(const SUMOSAXAttributes& attrs) {
     }
     bis >> myDepartSpeed >> myRouteLength >> myWaitingTime >> myAmWaiting >> myWaitingCount;
     bis >> myStoppingTime >> myParkingStarted;
+    bis >> myArrivalTime >> myArrivalLane >> myArrivalPos >> myArrivalPosLat >> myArrivalSpeed;
 }
 
 

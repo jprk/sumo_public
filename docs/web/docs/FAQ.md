@@ -1045,6 +1045,29 @@ The tool [attributeStats.py](Tools/Output.md#attributestatspy) can be used to ge
 i.e. if simulations where run with the option `<statistic-output value="stats.xml">/`, the command
 `tools/output/attributeStats.py *.stats.xml` will generate statistics on each of the attributes in the statistic-output file over all runs.
 
+### How to simulate autonomous vehicles?
+
+All vehicles in SUMO are autonomous (in the sense of having their routes, speeds and lane changing decision controlled by a computer algorithm).
+Most [carFollowModels](Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#car-following_models) in SUMO are meant to mimic human driving behavior in order to capture traffic effects caused by non-autonomous vehicles.
+The carFollowModels [ACC](Car-Following-Models/ACC.md) and [CACC](Car-Following-Models/CACC.md) are intended to reflect automated driving functions.
+
+The default carFollowModel *Krauss* is simple/general enough to allow parameterization for both human and automated driving. The correct parameters however, depend on the user assumptions about the automated fleet:
+
+- possibly, autonomous vehicles must drive more cautiously than human drivers (i.e. with a larger value of the desired time headway `tau`)
+- possibly, autonomous vehicles may drive at lower time headways than human drivers because they have better sensing or faster actuation (i.e. with a lower valuue of the desired time headway `tau`)
+
+Functions that are meant to capture specific human behaviors can be switched of directly
+- imperfect acceleration, dawdling: `sigma="0"`
+- imperfect compliance with the speed limit: `speedDev="0"` in the `vType` or `speedFactor="1"` in the `<vehicle>`
+
+Further safey-critical behaviors are described at [Safety](Simulation/Safety.md#safety-related_parameters).
+
+### Why are queuing vehicles on a lane drawn as stacked in sumo-gui?
+
+If no [collisions](Simulation/Safety.md#collisions) have been reported, this is due to [length-geometry mismatch](Simulation/Distances.md#length-geometry-mismatch) and not [scaling the vehicle length
+to geometry](sumo-gui.md#scaling).
+
+
 ## Visualization
 
 ### How can I get satellite / aerial background images for my simulation
@@ -1091,7 +1114,7 @@ it depends on the chosen resolution and screen size of the simulation.
 
 The second approach needs a sumo-gui version which has support for
 ffmpeg compiled in (for the windows downloads this is the extra
-version). When in doubt open the about dialog (press F2) and read the
+version). When in doubt open the about dialog (press F12) and read the
 line mentioning the compiled features (like Proj) whether it includes
 FFmpeg. If so, you can use the screenshot button to start video
 recording. Just enter a filename ending with ".h264" or ".hevc"
@@ -1260,7 +1283,8 @@ SSL certificates try: `pip install certifi`.
 
 ### [osmWebWizard.py](Tools/Import/OSM.md#osmWebWizard.py) fails to load the browser page on Linux
 
-This happens when you are using a version of Firefox that was installed from a [snap package](https://en.wikipedia.org/wiki/Snap_(software)) (Which is the default since Ubuntu 22.04).
+This happens when you are using a browser that was installed from a flatpak or a
+[snap package](https://en.wikipedia.org/wiki/Snap_(software)) (which is the default since Ubuntu 22.04).
 As a work-around you can [install a .deb package](https://askubuntu.com/questions/1399383/how-to-install-firefox-as-a-traditional-deb-package-without-snap-in-ubuntu-22).
 
 ## (Communication) Network Simulators
