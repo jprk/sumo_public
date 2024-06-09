@@ -1055,7 +1055,10 @@ MSNet::writeOutput() {
 
     // battery dumps
     if (OptionsCont::getOptions().isSet("battery-output")) {
-
+        MSBatteryExport::writeAggregated(OutputDevice::getDeviceByOption("battery-output"), myStep, 
+                               oc.getInt("battery-output.precision")); 
+        
+#ifdef RICE_UNIFINSHED_CODE
         if (oc.getBool("battery-output.aggregated")) {
             // build a xml file with aggregated device.battery output
             MSBatteryExport::writeAggregated(OutputDevice::getDeviceByOption("battery-output"), myStep,
@@ -1099,6 +1102,7 @@ MSNet::writeOutput() {
                 }
             }
         }
+#endif
     }
 
     // elecHybrid dumps
