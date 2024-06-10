@@ -461,12 +461,35 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
 
     if (MSGlobals::gOverheadWireSolver && newOverheadWireSegment->isThereVoltageSource()) {
 #ifdef HAVE_EIGEN
-        newOverheadWireSegment->getCircuit()->addElement(
-            "voltage_source_" + newOverheadWireSegment->getID(),
-            mySubstationVoltage,
+        Circuit* circuit = newOverheadWireSegment->getCircuit();
+
+        // if node "voltage_source_node" does not exist (i.e. there is no voltage source in the circuit yet),
+        // we create the node and we "connect" it to the traction substation, that is modelled as one voltage source and serial resistor
+        if (circuit->getNode("voltage_source_node") == nullptr) {
+            circuit->addNode("voltage_source_node");
+            circuit->addNode("voltage_source_resistor_node");
+            circuit->addElement(
+                "voltage_source",
+                mySubstationVoltage,
+                circuit->getNode("voltage_source_resistor_node"),
+                circuit->getNode("negNode_ground"),
+                Element::ElementType::VOLTAGE_SOURCE_traction_wire);
+
+            circuit->addElement(
+                "voltage_source_resistance",
+                0.12,
+                circuit->getNode("voltage_source_node"),
+                circuit->getNode("voltage_source_resistor_node"),
+                Element::ElementType::RESISTOR_traction_wire);
+        }
+        // connect the start of overhead wire segment with the voltage source using a small resistor element (for simple computation of the circuit) 
+        circuit->addElement(
+            "voltage_source_node" + newOverheadWireSegment->getID(),
+            0.001,
             newOverheadWireSegment->getCircuitStartNodePos(),
-            newOverheadWireSegment->getCircuit()->getNode("negNode_ground"),
-            Element::ElementType::VOLTAGE_SOURCE_traction_wire);
+            circuit->getNode("voltage_source_node"),
+            Element::ElementType::RESISTOR_traction_wire);
+
 #else
         WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
