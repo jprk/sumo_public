@@ -593,6 +593,7 @@ Vehicle size is affected by the following features
 - **Draw with constant size when zoomed out**: Increases vehicle size (relative to road network) and thereby keeps them visible when zooming out
 It is also possible to scale the size of the vehicle according its attributes.
 - **Scale size**: Selects scaling by a given attribute (i.e. speed). The user may configure a table of scaling factors corresponding to a list of numerical values (with automatic interpolation). This works similar to color interpolation.
+- **Scale length with geometry** : Deactivating this option makes a difference in networks with mismatching edge length values (e.g. given length value greater than the one derived from geometry) - vehicles can be drawn longer / shorter than they actually extend physically along the lane.
 
 ### Textual annotations
 
@@ -1029,7 +1030,7 @@ settings
 ## Using Live Data
 
 Instead of loading data from a file you can visualize the aggregated data that is currently being collected by the simulation.
-For this you need to color 'by live edgeData' and select the id of the configure `edgeData` (or `laneData`) element.
+For this you need to color 'by live edgeData' and select the id of the configured `edgeData` (or `laneData`) element.
 This will always show the current aggregation interval (so the collected data is reset to 0 at the start of a new interval).
 By using the option **--edgedata-output FILE** or **--lanedata-output FILE** you can quickly configure a data collection that aggregates over the whole simulation.
 

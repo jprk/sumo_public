@@ -167,10 +167,10 @@ HelpersEnergy::acceleration(const SUMOEmissionClass /* c */, const PollutantsInt
     // Power delivered by the drive
     if (P > 0) {
         // Assumption: Efficiency of myPropulsionEfficiency when accelerating
-        Prest = P * 3600 * param->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY);
+        Prest = P * 3600;// *param->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY);
     } else {
         // Assumption: Efficiency of myRecuperationEfficiency when recuperating
-        Prest = P * 3600 / param->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY);
+        Prest = P * 3600;// / param->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY);
     }
 
     // calculate power drop due to a potential energy difference

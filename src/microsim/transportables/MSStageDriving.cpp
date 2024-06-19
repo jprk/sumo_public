@@ -244,6 +244,11 @@ MSStageDriving::proceed(MSNet* net, MSTransportable* transportable, SUMOTime now
             throw ProcessError("Vehicle '" + vehID + "' not found for triggered departure of " +
                                (isPerson ? "person" : "container") + " '" + transportable->getID() + "'.");
         }
+        const int pCap = startVeh->getVehicleType().getParameter().personCapacity;
+        if (startVeh->getPersonNumber() >= pCap) {
+            WRITE_WARNING(TLF("Vehicle '%' exceeds personCapacity % when placing triggered person '%', time=%",
+                        startVeh->getID(), pCap, transportable->getID(), time2string(SIMSTEP)));
+        }
         myDeparted = now;
         setVehicle(startVeh);
         if (myOriginStop != nullptr) {
@@ -334,6 +339,17 @@ MSStageDriving::registerWaiting(MSTransportable* transportable, SUMOTime now) {
     myWaitingEdge->addTransportable(transportable);
 }
 
+SUMOTime
+MSStageDriving::getDuration() const {
+    return myArrived >= 0 ? myArrived - myWaitingSince : SUMOTime_MAX;
+}
+
+
+SUMOTime
+MSStageDriving::getTravelTime() const {
+    return myArrived >= 0 ? myArrived - myDeparted : SUMOTime_MAX;
+}
+
 
 SUMOTime
 MSStageDriving::getWaitingTime() const {
@@ -350,7 +366,6 @@ MSStageDriving::getTimeLoss(const MSTransportable* /*transportable*/) const {
 void
 MSStageDriving::tripInfoOutput(OutputDevice& os, const MSTransportable* const transportable) const {
     const SUMOTime now = MSNet::getInstance()->getCurrentTimeStep();
-    const SUMOTime departed = myDeparted >= 0 ? myDeparted : now;
     const SUMOTime waitingTime = getWaitingTime();
     const SUMOTime duration = myArrived - myDeparted;
     MSDevice_Tripinfo::addRideTransportData(transportable->isPerson(), myVehicleDistance, duration, myVehicleVClass, myVehicleLine, waitingTime);

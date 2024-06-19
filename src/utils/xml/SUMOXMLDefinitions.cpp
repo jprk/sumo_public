@@ -508,6 +508,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "collisionMinGapFactor",  SUMO_ATTR_COLLISION_MINGAP_FACTOR },
     { "boardingDuration",       SUMO_ATTR_BOARDING_DURATION },
     { "loadingDuration",        SUMO_ATTR_LOADING_DURATION },
+    { "boardingFactor",         SUMO_ATTR_BOARDING_FACTOR },
     { "scale",                  SUMO_ATTR_SCALE },
     { "insertionChecks",        SUMO_ATTR_INSERTIONCHECKS },
     { "timeToTeleport",         SUMO_ATTR_TIME_TO_TELEPORT },
@@ -1072,6 +1073,7 @@ StringBijection<int>::Entry SUMOXMLDefinitions::attrs[] = {
     { "fromBusStop",                        GNE_ATTR_FROM_BUSSTOP },
     { "fromTrainStop",                      GNE_ATTR_FROM_TRAINSTOP },
     { "fromContainerStop",                  GNE_ATTR_FROM_CONTAINERSTOP },
+    { "isRoundabout",                       GNE_ATTR_IS_ROUNDABOUT },
 
     { "carriageLength",     SUMO_ATTR_CARRIAGE_LENGTH },
     { "locomotiveLength",   SUMO_ATTR_LOCOMOTIVE_LENGTH },
