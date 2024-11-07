@@ -93,7 +93,7 @@ public:
     virtual double getMaxSpeed(const MSTransportable* const transportable = nullptr) const = 0;
 
     /// @brief move forward and return whether the transportable arrived
-    virtual bool moveToNextEdge(MSTransportable* transportable, SUMOTime currentTime, int prevDir, MSEdge* nextInternal = 0) = 0;
+    virtual bool moveToNextEdge(MSTransportable* transportable, SUMOTime currentTime, int prevDir, MSEdge* nextInternal = nullptr, const bool isReplay = false) = 0;
 
     /// @brief add the move reminders for the current lane on entry
     virtual void activateEntryReminders(MSTransportable* person, const bool isDepart = false) {
@@ -132,6 +132,20 @@ public:
 
     /// @brief interpret custom depart lane
     static const MSLane* checkDepartLane(const MSEdge* edge, SUMOVehicleClass svc, int laneIndex, const std::string& id);
+
+    bool equals(const MSStage& s) const {
+        if (!MSStage::equals(s)) {
+            return false;
+        }
+        // this is safe because MSStage already checked that the type fits
+        const MSStageMoving& sm = static_cast<const MSStageMoving&>(s);
+        return myRoute == sm.myRoute &&
+               myRouteID == sm.myRouteID &&
+               mySpeed == sm.mySpeed &&
+               myDepartPos == sm.myDepartPos &&
+               myDepartPosLat == sm.myDepartPosLat &&
+               myDepartLane == sm.myDepartLane;
+    }
 
 protected:
     /// @brief state that is to be manipulated by MSPModel

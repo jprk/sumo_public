@@ -75,6 +75,7 @@ const int VEHPARS_PARKING_BADGES_SET = 2 << 30;
 
 const int STOP_INDEX_END = -1;
 const int STOP_INDEX_FIT = -2;
+const int STOP_INDEX_REPEAT = -3;
 
 const int STOP_START_SET = 1;
 const int STOP_END_SET = 2;
@@ -465,11 +466,17 @@ public:
         /// @brief at which position in the stops list
         int index = 0;
 
+        /// @brief at which position within the route (only used for state saving)
+        mutable int routeIndex = 0;
+
         /// @brief Information for the output which parameter were set
         int parametersSet = 0;
 
         /// @brief Whether this stop was triggered by a collision
         bool collision = false;
+
+        /// @brief Whether this stop was triggered by a car failure / mechanical problem / lack of energy
+        bool breakDown = false;
 
         /// @brief return flags as per Vehicle::getStops
         int getFlags() const;
@@ -781,7 +788,13 @@ public:
     mutable std::vector<std::string> via;
 
     /// @brief The parking access rights
-    mutable std::vector <std::string> parkingBadges;
+    std::vector<std::string> parkingBadges;
+
+    /// @brief The modes a person or container can use
+    SVCPermissions modes;
+
+    /// @brief The types of usable (auto-generated) vehicles for a person / container
+    std::string vTypes;
 
     /// @brief The static number of persons in the vehicle when it departs (not including boarding persons)
     int personNumber;

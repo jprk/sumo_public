@@ -162,8 +162,26 @@ public:
 
     };
 
+    /** @struct ApproachingPersonInformation
+     * @brief A structure holding the information about persons approaching a pedestrian crossing link
+     */
+    struct ApproachingPersonInformation {
+        /** @brief Constructor
+         * @param[in] waitingTime The time during which the vehicle is waiting at this link
+         *   this needs to be placed here because MSVehicle::myWaitingTime is updated in between
+         *   calls to opened() causing order dependencies
+         **/
+        ApproachingPersonInformation(const SUMOTime _arrivalTime, const SUMOTime _leavingTime) :
+            arrivalTime(_arrivalTime), leavingTime(_leavingTime) {}
+        /// @brief The time the vehicle's front arrives at the link
+        const SUMOTime arrivalTime;
+        /// @brief The estimated time at which the vehicle leaves the link
+        const SUMOTime leavingTime;
+    };
+
     typedef std::map<const SUMOVehicle*, const ApproachingVehicleInformation, ComparatorNumericalIdLess> ApproachInfos;
-    typedef std::vector<const SUMOVehicle*> BlockingFoes;
+    typedef std::vector<const SUMOTrafficObject*> BlockingFoes;
+    typedef std::map<const MSPerson*, ApproachingPersonInformation> PersonApproachInfos;
 
     enum ConflictFlag {
         CONFLICT_DEFAULT,
@@ -272,10 +290,14 @@ public:
     /** @brief Sets the information about an approaching vehicle */
     void setApproaching(const SUMOVehicle* approaching, ApproachingVehicleInformation ai);
 
+    /** @brief Sets the information about an approaching person (only for a pedestrian crossing) */
+    void setApproachingPerson(const MSPerson* approaching, const SUMOTime arrivalTime, const SUMOTime leaveTime);
+
     /// @brief removes the vehicle from myApproachingVehicles
     void removeApproaching(const SUMOVehicle* veh);
 
-    void addBlockedLink(MSLink* link);
+    /// @brief removes the person from myApproachingPersons
+    void removeApproachingPerson(const MSPerson* person);
 
     /* @brief return information about this vehicle if it is registered as
      * approaching (dummy values otherwise)
@@ -302,7 +324,8 @@ public:
                 double posLat = 0,
                 BlockingFoes* collectFoes = nullptr,
                 bool ignoreRed = false,
-                const SUMOTrafficObject* ego = nullptr) const;
+                const SUMOTrafficObject* ego = nullptr,
+                double dist = -1) const;
 
     /** @brief Returns the information whether this link is blocked
      * Valid after the vehicles have set their requests
@@ -321,15 +344,7 @@ public:
      **/
     bool blockedAtTime(SUMOTime arrivalTime, SUMOTime leaveTime, double arrivalSpeed, double leaveSpeed,
                        bool sameTargetLane, double impatience, double decel, SUMOTime waitingTime,
-                       BlockingFoes* collectFoes = nullptr, const SUMOTrafficObject* ego = nullptr, bool lastWasContRed = false) const;
-
-
-    bool isBlockingAnyone() const {
-        return myApproachingVehicles.size() != 0;
-    }
-
-    bool willHaveBlockedFoe() const;
-
+                       BlockingFoes* collectFoes = nullptr, const SUMOTrafficObject* ego = nullptr, bool lastWasContRed = false, double dist = -1) const;
 
 
     /** @brief Returns the information whether a vehicle is approaching on one of the link's foe streams
@@ -403,6 +418,10 @@ public:
      */
     void setTLState(LinkState state, SUMOTime t);
 
+    /** @brief Sets the currently active tlLogic
+     * @param[in] logic The currently active logic
+     */
+    void setTLLogic(const MSTrafficLightLogic* logic);
 
     /** @brief Returns the connected lane
      *
@@ -484,6 +503,9 @@ public:
         return myFoeVisibilityDistance;
     }
 
+    double getDistToFoePedCrossing() const {
+        return myDistToFoePedCrossing;
+    }
 
     /** @brief Returns whether this link belongs to a junction where more than one edge is incoming
      *
@@ -719,6 +741,9 @@ private:
     /// @brief return CustomConflict with foeLane if it is defined
     const CustomConflict* getCustomConflict(const MSLane* foeLane) const;
 
+    /// @brief add information about another pedestrian crossing
+    void updateDistToFoePedCrossing(double dist);
+
 private:
     /// @brief The lane behind the junction approached by this link
     MSLane* myLane;
@@ -727,7 +752,7 @@ private:
     MSLane* myLaneBefore;
 
     ApproachInfos myApproachingVehicles;
-    std::set<MSLink*> myBlockedFoeLinks;
+    PersonApproachInfos* myApproachingPersons;
 
     /// @brief The position within this respond
     int myIndex;
@@ -760,6 +785,9 @@ private:
     ///        and no foe is approaching. Defaults to 4.5m.
     ///        For zipper links (major) this is the distance at which zipper merging starts (and foes become "visible")
     double myFoeVisibilityDistance;
+
+    /// @brief distance from the stop line to the first pedestrian crossing or maxdouble
+    double myDistToFoePedCrossing;
 
     /// @brief Whether any foe links exist
     bool myHasFoes;

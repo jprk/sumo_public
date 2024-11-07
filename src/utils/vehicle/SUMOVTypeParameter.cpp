@@ -49,6 +49,8 @@ std::set<SumoXMLAttr> SUMOVTypeParameter::AllowedJMAttrs({
     SUMO_ATTR_JM_SIGMA_MINOR,
     SUMO_ATTR_JM_STOPLINE_GAP,
     SUMO_ATTR_JM_TIMEGAP_MINOR,
+    SUMO_ATTR_JM_STOPSIGN_WAIT,
+    SUMO_ATTR_JM_ALLWAYSTOP_WAIT,
 });
 
 
@@ -342,6 +344,7 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
       speedFactorPremature(-1),
       frontSeatPos(1.7),
       seatingWidth(-1),
+      boardingFactor(1),
       parametersSet(0),
       saved(false),
       onlyReferenced(false) {
@@ -558,6 +561,9 @@ SUMOVTypeParameter::write(OutputDevice& dev) const {
     }
     if (wasSet(VTYPEPARS_SPEEDFACTOR_PREMATURE_SET)) {
         dev.writeAttr(SUMO_ATTR_SPEEDFACTOR_PREMATURE, speedFactorPremature);
+    }
+    if (wasSet(VTYPEPARS_BOARDING_FACTOR_SET)) {
+        dev.writeAttr(SUMO_ATTR_BOARDING_FACTOR, boardingFactor);
     }
     if (wasSet(VTYPEPARS_LANE_CHANGE_MODEL_SET)) {
         dev.writeAttr(SUMO_ATTR_LANE_CHANGE_MODEL, lcModel);
@@ -788,6 +794,10 @@ SUMOVTypeParameter::initRailVisualizationParameters() {
     if (hasParameter("carriageGap")) {
         carriageGap = StringUtils::toDouble(getParameter("carriageGap"));
         parametersSet |= VTYPEPARS_CARRIAGE_GAP_SET;
+    }
+    if (hasParameter("carriageDoors")) {
+        carriageDoors = StringUtils::toInt(getParameter("carriageDoors"));
+        parametersSet |= VTYPEPARS_CARRIAGE_DOORS_SET;
     }
     if (hasParameter("frontSeatPos")) {
         frontSeatPos = StringUtils::toDouble(getParameter("frontSeatPos"));

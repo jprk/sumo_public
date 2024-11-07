@@ -214,6 +214,12 @@ public:
     std::string getAttribute(SumoXMLAttr key) const;
     std::string getAttributeForSelection(SumoXMLAttr key) const;
 
+    /* @brief method for getting the Attribute of an XML key in Position format
+     * @param[in] key The attribute key
+     * @return position with the value associated to key
+     */
+    PositionVector getAttributePositionVector(SumoXMLAttr key) const;
+
     /* @brief method for setting the attribute and letting the object perform additional changes
      * @param[in] key The attribute key
      * @param[in] value The new value
@@ -489,7 +495,7 @@ private:
     void drawEdgeShape(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d) const;
 
     /// @brief draw children
-    void drawChildrens(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d) const;
+    void drawChildrens(const GUIVisualizationSettings& s) const;
 
     /// @brief calculate contours
     void calculateEdgeContour(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d) const;

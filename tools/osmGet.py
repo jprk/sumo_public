@@ -159,7 +159,10 @@ def readCompressed(options, conn, urlpath, query, roadTypesJSON, getShapes, file
     print(response.status, response.reason)
     if response.status == 200:
         with open(filename, "wb") as out:
-            lines = gzip.decompress(response.read())
+            if response.getheader('Content-Encoding') == 'gzip':
+                lines = gzip.decompress(response.read())
+            else:
+                lines = response.read()
             declClose = lines.find(b'>') + 1
             lines = (lines[:declClose]
                      + b"\n"
@@ -280,7 +283,7 @@ def get(args=None):
         codeSet = set()
         # deal with invalid characters
         bad_chars = [';', ':', '!', "*", ')', '(', '-', '_', '%', '&', '/', '=', '?', '$', '//', '\\', '#', '<', '>']
-        for line in sumolib.xml._open(osmFile, encoding='utf8'):
+        for line in sumolib.openz(osmFile):
             subSet = set()
             if 'wikidata' in line and line.split('"')[3][0] == 'Q':
                 basicData = line.split('"')[3]

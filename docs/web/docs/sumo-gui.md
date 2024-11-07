@@ -84,7 +84,7 @@ Pressing the left mouse button within the view and moving the mouse with
 the button pressed, will shift the network. Moving the mouse up and down
 while pressing the right mouse button changes the zoom of the network.
 It is also possible to change the zoom by using the mouse wheel (holding
-*<SHIFT\>* increases the zooming speed and holding *<CTRL\>* lowers it).
+<kbd>Shift</kbd> increases the zooming speed and holding <kbd>Ctrl</kbd> lowers it).
 Zooming is either focused on the center of the screen or on the cursor
 position. The zoom style can be selected with the
 ![icon_zoomstyle.png](images/icon_zoomstyle.png "Zoomstyle") button.
@@ -117,29 +117,29 @@ methods:
 - via menu *Edit-\>Breakpoints*
 - by setting option **--breakpoints TIME1,TIME2,...**
 - by loading [Configuration Files](#configuration_files) with breakpoint information
-- by clicking on an underlined time value in the message/warning log area. The breakpoint will be set 5s *before* the time value. This offset is configurable via the 'Settings'-menu (**CTRL+H**). To investigate the reason for a teleport warning, setting the offset to 305s before the teleport event is recommended.
+- by clicking on an underlined time value in the message/warning log area. The breakpoint will be set 5s *before* the time value. This offset is configurable via the 'Settings'-menu (<kbd>Ctrl</kbd> + <kbd>H</kbd>). To investigate the reason for a teleport warning, setting the offset to 305s before the teleport event is recommended.
 
 ## Keyboard Shortcuts
 
 Various menu items are accessible via keyboard shortcuts. These are
-documented directly in the menu. (i.e. Ctrl-l Ctrl-e opens the edge
-locator, Ctrl-d performs a single simulation step). Additional shortcuts
+documented directly in the menu. (i.e. <kbd>Ctrl</kbd> + <kbd>l</kbd>, <kbd>Ctrl</kbd> + <kbd>e</kbd> opens the edge
+locator, <kbd>Ctrl</kbd> + <kbd>d</kbd> performs a single simulation step). Additional shortcuts
 are listed below:
 
-- Ctrl-LeftClick: toggle selection status of object under cursor
-- Arrow Keys: move the view
-- Ctrl + Arrow keys: move the view less
-- Alt + Arrow keys: move the view a lot
-- PageUp / PageDow: change simulation delay
+- <kbd>Ctrl</kbd> + <kbd>LeftClick</kbd>: toggle selection status of object under cursor
+- <kbd>Arrow keys</kbd>: move the view
+- <kbd>Ctrl</kbd> + <kbd>Arrow keys</kbd>: move the view less
+- <kbd>Alt</kbd> + <kbd>Arrow keys</kbd>: move the view a lot
+- <kbd>Page Up</kbd> / <kbd>Page Down</kbd>: change simulation delay
 - \+/-, Keypad +/-: zoom in/out
 - Home/Keypad Home: recenter view
-- F9: open view settings dialog
-- Shift-LeftClick:
+- <kbd>F9</kbd>: open view settings dialog
+- <kbd>Shift</kbd> + <kbd>LeftClick</kbd>:
   - vehicle: start tracking
   - rerouter: change routeProbReroute probabilities
 - Double-LeftClick: stop tracking
-- Ctrl + J: toggle 'show junction shapes'
-- Ctrl + K: toggle 'show secondary edge shape' (loaded with option **--alternative-net-file**)
+- <kbd>Ctrl</kbd> + <kbd>J</kbd>: toggle 'show junction shapes'
+- <kbd>Ctrl</kbd> + <kbd>K</kbd>: toggle 'show secondary edge shape' (loaded with option **--alternative-net-file**)
 
 ## Object Properties / Right-Click-Functions
 
@@ -155,7 +155,7 @@ The following objects can be accessed by right-click:
 
 - Vehicles (some attributes are only available when using a specific
   simulation model, i.e. [MESO](Simulation/Meso.md) or [sublane
-  model](Simulation/SublaneModel.md#New_Parameters))
+  model](Simulation/SublaneModel.md#new_parameters))
 - Persons
 - Lanes
 - Junctions
@@ -205,7 +205,7 @@ A plotting window (acceleration over time) is shown below:
 ![plotted_accel.png](images/plotted_accel.png "Acceleration plotted over time")
 
 Clicking on additional Attribute plot symbols opens up new plotting windows.
-By activating the 'Multiplot'-checkbox, any additional attribute plots wil be added to that plot window instead of opening a new plot window.
+By activating the 'Multiplot'-checkbox, any additional attribute plots will be added to that plot window instead of opening a new plot window.
 
 When moving the mouse over a plot window, plot point closest to the mouse cursor is highlighted and its *x* and *y* values are printed in blue along the plot axes.
 
@@ -593,6 +593,7 @@ Vehicle size is affected by the following features
 - **Draw with constant size when zoomed out**: Increases vehicle size (relative to road network) and thereby keeps them visible when zooming out
 It is also possible to scale the size of the vehicle according its attributes.
 - **Scale size**: Selects scaling by a given attribute (i.e. speed). The user may configure a table of scaling factors corresponding to a list of numerical values (with automatic interpolation). This works similar to color interpolation.
+- **Scale length with geometry** : Deactivating this option makes a difference in networks with mismatching edge length values (e.g. given length value greater than the one derived from geometry) - vehicles can be drawn longer / shorter than they actually extend physically along the lane.
 
 ### Textual annotations
 
@@ -1029,7 +1030,7 @@ settings
 ## Using Live Data
 
 Instead of loading data from a file you can visualize the aggregated data that is currently being collected by the simulation.
-For this you need to color 'by live edgeData' and select the id of the configure `edgeData` (or `laneData`) element.
+For this you need to color 'by live edgeData' and select the id of the configured `edgeData` (or `laneData`) element.
 This will always show the current aggregation interval (so the collected data is reset to 0 at the start of a new interval).
 By using the option **--edgedata-output FILE** or **--lanedata-output FILE** you can quickly configure a data collection that aggregates over the whole simulation.
 
@@ -1115,7 +1116,7 @@ output or in error messages. The following visualization settings are
 helpful:
 
 - Junction settings:
-  - disable *draw junction shape* (toggle with hotkey CTRL+J)
+  - disable *draw junction shape* (toggle with hotkey <kbd>Ctrl</kbd> + <kbd>J</kbd>)
   - *show internal edge name*
   - *show internal junction name*
   - *show link junction index* (to see the correspondence between IDs and link indices)

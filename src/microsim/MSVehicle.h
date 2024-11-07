@@ -1025,6 +1025,10 @@ public:
      */
     SUMOTime collisionStopTime() const;
 
+    /** @brief Returns how long the vehicle has been stopped already due to lack of energy.
+     */
+    bool brokeDown() const;
+
     /** @brief Returns the information whether the vehicle is fully controlled via TraCI
      * @return Whether the vehicle is remote-controlled
      */
@@ -1992,6 +1996,11 @@ protected:
                 accelV = MIN2(accelV, v);
             }
         }
+
+        inline void adaptStopSpeed(const double v) {
+            myVLinkWait = MIN2(myVLinkWait, v);
+        }
+
         inline double getLeaveSpeed() const {
             return accelV < 0 ? myVLinkPass : accelV;
         }
@@ -2066,6 +2075,10 @@ public:
      */
     const MSLane* getPreviousLane(const MSLane* current, int& furtherIndex) const;
 
+    /// @brief checks for link leaders on the given link
+    void checkLinkLeader(const MSLink* link, const MSLane* lane, double seen,
+                         DriveProcessItem* const lastLink, double& v, double& vLinkPass, double& vLinkWait, bool& setRequest,
+                         bool isShadowLink = false) const;
 protected:
 
     /* @brief adapt safe velocity in accordance to multiple vehicles ahead:
@@ -2087,10 +2100,6 @@ protected:
                                DriveProcessItem* const lastLink,
                                double& v, double& vLinkPass) const;
 
-    /// @brief checks for link leaders on the given link
-    void checkLinkLeader(const MSLink* link, const MSLane* lane, double seen,
-                         DriveProcessItem* const lastLink, double& v, double& vLinkPass, double& vLinkWait, bool& setRequest,
-                         bool isShadowLink = false) const;
 
     /// @brief checks for link leaders of the current link as well as the parallel link (if there is one)
     void checkLinkLeaderCurrentAndParallel(const MSLink* link, const MSLane* lane, double seen,

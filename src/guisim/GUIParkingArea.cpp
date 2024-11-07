@@ -14,6 +14,7 @@
 /// @file    GUIParkingArea.cpp
 /// @author  Mirco Sturari
 /// @author  Jakob Erdmann
+/// @author  Mirko Barthauer
 /// @date    Tue, 19.01.2016
 ///
 // A area where vehicles can park next to the road (gui version)
@@ -59,7 +60,7 @@ GUIParkingArea::GUIParkingArea(const std::string& id, const std::vector<std::str
                                bool lefthand) :
     MSParkingArea(id, lines, badges, lane, frompos, topos, capacity, width, length, angle, name, onRoad, departPos, lefthand),
     GUIGlObject_AbstractAdd(GLO_PARKING_AREA, id, GUIIconSubSys::getIcon(GUIIcon::PARKINGAREA)) {
-    const double offsetSign = MSGlobals::gLefthand ? -1 : 1;
+    const double offsetSign = (MSGlobals::gLefthand || lefthand) ? -1 : 1;
     myShapeRotations.reserve(myShape.size() - 1);
     myShapeLengths.reserve(myShape.size() - 1);
     int e = (int) myShape.size() - 1;
@@ -75,7 +76,8 @@ GUIParkingArea::GUIParkingArea(const std::string& id, const std::vector<std::str
     mySignRot = 0;
     if (tmp.length() != 0) {
         mySignRot = myShape.rotationDegreeAtOffset(double((myShape.length() / 2.)));
-        mySignRot -= 90;
+        const double rotSign = MSGlobals::gLefthand ? -1 : 1;
+        mySignRot -= 90 * rotSign;
     }
     myBoundary = myShape.getBoxBoundary();
     myBoundary.grow(20);

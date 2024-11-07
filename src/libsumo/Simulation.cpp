@@ -646,6 +646,7 @@ Simulation::findIntermodalRoute(const std::string& from, const std::string& to,
             pars.push_back(new SUMOVehicleParameter());
             pars.back()->vtypeid = DEFAULT_TAXITYPE_ID;
             pars.back()->id = mode;
+            pars.back()->line = mode;
             modeSet |= SVC_TAXI;
         } else if (mode == toString(PersonMode::PUBLIC)) {
             pars.push_back(nullptr);
@@ -693,10 +694,11 @@ Simulation::findIntermodalRoute(const std::string& from, const std::string& to,
         SUMOVehicle* vehicle = nullptr;
         if (vehPar != nullptr) {
             MSVehicleType* type = MSNet::getInstance()->getVehicleControl().getVType(vehPar->vtypeid);
+            const bool isTaxi = type != nullptr && type->getID() == DEFAULT_TAXITYPE_ID && vehPar->line == "taxi";
             if (type == nullptr) {
                 throw TraCIException("Unknown vehicle type '" + vehPar->vtypeid + "'.");
             }
-            if (type->getVehicleClass() != SVC_IGNORING && (fromEdge->getPermissions() & type->getVehicleClass()) == 0) {
+            if (type->getVehicleClass() != SVC_IGNORING && (fromEdge->getPermissions() & type->getVehicleClass()) == 0 && !isTaxi) {
                 WRITE_WARNINGF(TL("Ignoring vehicle type '%' when performing intermodal routing because it is not allowed on the start edge '%'."), type->getID(), from);
             } else {
                 ConstMSRoutePtr const routeDummy = std::make_shared<MSRoute>(vehPar->id, ConstMSEdgeVector({ fromEdge }), false, nullptr, std::vector<SUMOVehicleParameter::Stop>());
@@ -778,6 +780,50 @@ Simulation::getParameter(const std::string& objectID, const std::string& key) {
             return toString(GeoConvHelper::getFinal().getOffsetBase());
         } else {
             throw TraCIException("Invalid net parameter '" + attrName + "'");
+        }
+    } else if (StringUtils::startsWith(key, "stats.")) {
+        if (objectID != "") {
+            throw TraCIException("Simulation parameter '" + key + "' is not supported for object id '" + objectID + "'. Use empty id for stats");
+        }
+        const std::string attrName = key.substr(6);
+        const MSVehicleControl& vc = MSNet::getInstance()->getVehicleControl();
+        const MSTransportableControl* pc = MSNet::getInstance()->hasPersons() ? &MSNet::getInstance()->getPersonControl() : nullptr;
+        if (attrName == "vehicles.loaded") {
+            return toString(vc.getLoadedVehicleNo());
+        } else if (attrName == "vehicles.inserted") {
+            return toString(vc.getDepartedVehicleNo());
+        } else if (attrName == "vehicles.running") {
+            return toString(vc.getRunningVehicleNo());
+        } else if (attrName == "vehicles.waiting") {
+            return toString(MSNet::getInstance()->getInsertionControl().getWaitingVehicleNo());
+        } else if (attrName == "teleports.total") {
+            return toString(vc.getTeleportCount());
+        } else if (attrName == "teleports.jam") {
+            return toString(vc.getTeleportsJam());
+        } else if (attrName == "teleports.yield") {
+            return toString(vc.getTeleportsYield());
+        } else if (attrName == "teleports.wrongLane") {
+            return toString(vc.getTeleportsWrongLane());
+        } else if (attrName == "safety.collisions") {
+            return toString(vc.getCollisionCount());
+        } else if (attrName == "safety.emergencyStops") {
+            return toString(vc.getEmergencyStops());
+        } else if (attrName == "safety.emergencyBraking") {
+            return toString(vc.getEmergencyBrakingCount());
+        } else if (attrName == "persons.loaded") {
+            return toString(pc != nullptr ? pc->getLoadedNumber() : 0);
+        } else if (attrName == "persons.running") {
+            return toString(pc != nullptr ? pc->getRunningNumber() : 0);
+        } else if (attrName == "persons.jammed") {
+            return toString(pc != nullptr ? pc->getJammedNumber() : 0);
+        } else if (attrName == "personTeleports.total") {
+            return toString(pc != nullptr ? pc->getTeleportCount() : 0);
+        } else if (attrName == "personTeleports.abortWait") {
+            return toString(pc != nullptr ? pc->getTeleportsAbortWait() : 0);
+        } else if (attrName == "personTeleports.wrongDest") {
+            return toString(pc != nullptr ? pc->getTeleportsWrongDest() : 0);
+        } else {
+            throw TraCIException("Invalid stats parameter '" + attrName + "'");
         }
     } else if (StringUtils::startsWith(key, "parkingArea.")) {
         const std::string attrName = key.substr(12);

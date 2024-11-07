@@ -66,7 +66,7 @@
         <xsd:attribute name="lcSpeedGainRight" type="nonNegativeFloatType"/>
         <xsd:attribute name="lcSpeedGainLookahead" type="nonNegativeFloatType"/>
         <xsd:attribute name="lcCooperativeRoundabout" type="nonNegativeFloatType"/>
-        <xsd:attribute name="lcCooperativeSpeed" type="nonNegativeFloatType"/>
+        <xsd:attribute name="lcCooperativeSpeed" type="nonNegativeFloatTypeWithErrorValue"/>
         <xsd:attribute name="lcTurnAlignmentDistance" type="nonNegativeFloatType"/>
         <xsd:attribute name="lcImpatience" type="nonNegativeFloatType"/>
         <xsd:attribute name="lcTimeToImpatience" type="nonNegativeFloatType"/>
@@ -102,6 +102,8 @@
         </xsd:attribute>
         <xsd:attribute name="jmStoplineGap" type="nonNegativeFloatType"/>
         <xsd:attribute name="jmTimegapMinor" type="nonNegativeFloatType"/>
+        <xsd:attribute name="jmStopSignWait" type="xsd:float"/>
+        <xsd:attribute name="jmAllwayStopWait" type="xsd:float"/>
         <xsd:attribute name="sigma">
             <xsd:simpleType>
                 <xsd:restriction base="xsd:float">
@@ -241,7 +243,8 @@
         <xsd:attribute name="startupDelay" type="nonNegativeFloatType"/>
         <xsd:attribute name="timeToTeleport" type="floatType"/>
         <xsd:attribute name="timeToTeleportBidi" type="floatType"/>
-        <xsd:attribute name="speedFactorPremature" type="floatType"/>
+        <xsd:attribute name="speedFactorPremature" type="nonNegativeFloatType"/>
+        <xsd:attribute name="boardingFactor" type="floatType"/>
         <xsd:attribute name="speedTable" type="xsd:string"/>
         <xsd:attribute name="tractionTable" type="xsd:string"/>
         <xsd:attribute name="resistanceTable" type="xsd:string"/>
@@ -931,6 +934,7 @@
                     <xsd:attribute name="modes" type="xsd:string"/>
                     <xsd:attribute name="vTypes" type="xsd:string"/>
                     <xsd:attribute name="departPos" type="departPosType"/>
+                    <xsd:attribute name="departPosLat" type="departPosLatType"/>
                     <xsd:attribute name="arrivalPos" type="arrivalPosType"/>
                     <xsd:attribute name="walkFactor" type="positiveFloatType"/>
                     <xsd:attribute name="costs" type="xsd:string"/>
@@ -1044,6 +1048,10 @@
                 <xsd:complexType>
                     <xsd:attribute name="from" type="xsd:string"/>
                     <xsd:attribute name="to" type="xsd:string"/>
+                    <xsd:attribute name="fromTaz" type="xsd:string"/>
+                    <xsd:attribute name="toTaz" type="xsd:string"/>
+                    <xsd:attribute name="fromJunction" type="xsd:string"/>
+                    <xsd:attribute name="toJunction" type="xsd:string"/>
                     <xsd:attribute name="busStop" type="xsd:string"/>
                     <xsd:attribute name="trainStop" type="xsd:string"/>
                     <xsd:attribute name="parkingArea" type="xsd:string"/>
@@ -1066,6 +1074,10 @@
                     <xsd:attribute name="edges" type="xsd:string"/>
                     <xsd:attribute name="from" type="xsd:string"/>
                     <xsd:attribute name="to" type="xsd:string"/>
+                    <xsd:attribute name="fromTaz" type="xsd:string"/>
+                    <xsd:attribute name="toTaz" type="xsd:string"/>
+                    <xsd:attribute name="fromJunction" type="xsd:string"/>
+                    <xsd:attribute name="toJunction" type="xsd:string"/>
                     <xsd:attribute name="busStop" type="xsd:string"/>
                     <xsd:attribute name="trainStop" type="xsd:string"/>
                     <xsd:attribute name="parkingArea" type="xsd:string"/>

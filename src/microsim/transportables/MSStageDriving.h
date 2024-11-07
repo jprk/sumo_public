@@ -177,6 +177,8 @@ public:
     bool canLeaveVehicle(const MSTransportable* t, const SUMOVehicle& veh, const MSStop& stop);
 
     SUMOTime getTimeLoss(const MSTransportable* transportable) const;
+    SUMOTime getDuration() const;
+    SUMOTime getTravelTime() const;
     SUMOTime getWaitingTime() const;
 
     /** @brief Saves the current state into the given stream
@@ -186,6 +188,17 @@ public:
     /** @brief Reconstructs the current state
      */
     void loadState(MSTransportable* transportable, std::istringstream& state);
+
+    bool equals(const MSStage& s) const {
+        if (!MSStage::equals(s)) {
+            return false;
+        }
+        // this is safe because MSStage already checked that the type fits
+        const MSStageDriving& sd = static_cast<const MSStageDriving&>(s);
+        return myOrigin == sd.myOrigin &&
+               myLines == sd.myLines &&
+               myIntendedVehicleID == sd.myIntendedVehicleID;
+    }
 
 protected:
     /// the origin edge

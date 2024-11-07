@@ -67,6 +67,7 @@ public:
 
     void setTrajectory(MSDevice_FCDReplay::Trajectory* const t) {
         myTrajectory = t;
+        myTrajectoryIndex = 1;
     }
 
     bool move(SUMOTime currentTime);
@@ -81,6 +82,7 @@ private:
 
     class MovePedestrians : public Command {
     public:
+        MovePedestrians();
         SUMOTime execute(SUMOTime currentTime);
     private:
         /// @brief Invalidated assignment operator.
@@ -88,7 +90,9 @@ private:
     };
 
 private:
-    MSDevice_FCDReplay::Trajectory* myTrajectory = nullptr;
+    const MSDevice_FCDReplay::Trajectory* myTrajectory = nullptr;
+
+    int myTrajectoryIndex = 0;
 
     /// @brief whether an event for pedestrian processing was added
     static bool myAmActive;

@@ -27,10 +27,12 @@
 #include <netedit/changes/GNEChange_Attribute.h>
 #include <netedit/changes/GNEChange_Lane.h>
 #include <netedit/elements/additional/GNERouteProbe.h>
+#include <netedit/elements/demand/GNEPlanParents.h>
 #include <netedit/elements/demand/GNERoute.h>
 #include <netedit/frames/common/GNEInspectorFrame.h>
 #include <netedit/frames/common/GNEDeleteFrame.h>
 #include <netedit/frames/common/GNEMoveFrame.h>
+#include <netedit/frames/data/GNEEdgeRelDataFrame.h>
 #include <netedit/frames/demand/GNEVehicleFrame.h>
 #include <netedit/frames/demand/GNEPersonFrame.h>
 #include <netedit/frames/demand/GNEPersonPlanFrame.h>
@@ -199,59 +201,108 @@ GNEEdge::getPositionInView() const {
 
 bool
 GNEEdge::checkDrawFromContour() const {
-    // get modes
+    // get modes and viewParent (for code legibility)
     const auto& modes = myNet->getViewNet()->getEditModes();
-    // get current GNEPlanCreator
-    GNEPlanCreator* planCreator = nullptr;
-    if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_PERSON)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getPersonFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getPersonPlanFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getContainerFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getContainerPlanFrame()->getPlanCreator();
-    }
-    // continue depending of planCreator
-    if (planCreator) {
-        // check if this is the from edge
-        if (planCreator->getFromEdge() == this) {
+    const auto& viewParent = myNet->getViewNet()->getViewParent();
+    // continue depending of current status
+    if (myNet->getViewNet()->getInspectedAttributeCarriers().size() == 1) {
+        // get inspected element
+        const auto inspectedAC = myNet->getViewNet()->getInspectedAttributeCarriers().front();
+        // check if starts in this edge
+        if (inspectedAC->getTagProperty().vehicleEdges() && inspectedAC->hasAttribute(SUMO_ATTR_FROM) && (inspectedAC->getAttribute(SUMO_ATTR_FROM) == getID())) {
             return true;
-        } else {
-            // mark all consecutive edges
-            for (const auto& edge : planCreator->getConsecutiveEdges()) {
-                if (edge == this) {
-                    return true;
-                }
+        }
+    } else if (modes.isCurrentSupermodeDemand()) {
+        // get current GNEPlanCreator
+        GNEPlanCreator* planCreator = nullptr;
+        if (modes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
+            planCreator = viewParent->getPersonFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
+            planCreator = viewParent->getPersonPlanFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
+            planCreator = viewParent->getContainerFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
+            planCreator = viewParent->getContainerPlanFrame()->getPlanCreator();
+        }
+        // continue depending of planCreator
+        if (planCreator) {
+            if (planCreator->getPlanParameteres().fromEdge == getID()) {
+                return true;
+            }
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
+            const auto& selectedEdges = viewParent->getVehicleFrame()->getPathCreator()->getSelectedEdges();
+            // check if this is the first selected edge
+            if ((selectedEdges.size() > 0) && (selectedEdges.front() == this)) {
+                return true;
+            }
+        }
+    } else if (modes.isCurrentSupermodeData()) {
+        // get TAZRelDataFrame
+        const auto& getEdgeRelDataFrame = viewParent->getEdgeRelDataFrame();
+        if (getEdgeRelDataFrame->shown()) {
+            // check first Edge
+            if (getEdgeRelDataFrame->getPathCreator()->getSelectedEdges().empty()) {
+                return gViewObjectsHandler.isElementSelected(this);
+            } else if (getEdgeRelDataFrame->getPathCreator()->getSelectedEdges().front() == this) {
+                return true;
             }
         }
     }
+    // nothing to draw
     return false;
 }
 
 
 bool
 GNEEdge::checkDrawToContour() const {
-    // get modes
+    // get modes and viewParent (for code legibility)
     const auto& modes = myNet->getViewNet()->getEditModes();
-    // get current GNEPlanCreator
-    GNEPlanCreator* planCreator = nullptr;
-    if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_PERSON)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getPersonFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getPersonPlanFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getContainerFrame()->getPlanCreator();
-    } else if (modes.isCurrentSupermodeDemand() && (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN)) {
-        planCreator = myNet->getViewNet()->getViewParent()->getContainerPlanFrame()->getPlanCreator();
-    }
-    // continue depending of planCreator
-    if (planCreator) {
-        // check if this is the to edge
-        if (planCreator->getToEdge() == this) {
+    const auto& viewParent = myNet->getViewNet()->getViewParent();
+    // continue depending of current status
+    if (myNet->getViewNet()->getInspectedAttributeCarriers().size() == 1) {
+        // get inspected element
+        const auto inspectedAC = myNet->getViewNet()->getInspectedAttributeCarriers().front();
+        // check if starts in this edge
+        if (inspectedAC->getTagProperty().vehicleEdges() && inspectedAC->hasAttribute(SUMO_ATTR_TO) && (inspectedAC->getAttribute(SUMO_ATTR_TO) == getID())) {
             return true;
         }
+    } else if (modes.isCurrentSupermodeDemand()) {
+        // get current GNEPlanCreator
+        GNEPlanCreator* planCreator = nullptr;
+        if (modes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
+            planCreator = viewParent->getPersonFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
+            planCreator = viewParent->getPersonPlanFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
+            planCreator = viewParent->getContainerFrame()->getPlanCreator();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
+            planCreator = viewParent->getContainerPlanFrame()->getPlanCreator();
+        }
+        // continue depending of planCreator
+        if (planCreator) {
+            if (planCreator->getPlanParameteres().toEdge == getID()) {
+                return true;
+            }
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
+            const auto& selectedEdges = viewParent->getVehicleFrame()->getPathCreator()->getSelectedEdges();
+            // check if this is the last selected edge
+            if ((selectedEdges.size() > 1) && (selectedEdges.back() == this)) {
+                return true;
+            }
+        }
+    } else if (modes.isCurrentSupermodeData()) {
+        // get TAZRelDataFrame
+        const auto& getEdgeRelDataFrame = viewParent->getEdgeRelDataFrame();
+        if (getEdgeRelDataFrame->shown()) {
+            // check first Edge
+            if (getEdgeRelDataFrame->getPathCreator()->getSelectedEdges().empty()) {
+                return gViewObjectsHandler.isElementSelected(this);
+            } else if (getEdgeRelDataFrame->getPathCreator()->getSelectedEdges().back() == this) {
+                return true;
+            }
+        }
     }
+    // nothing to draw
     return false;
 }
 
@@ -264,29 +315,40 @@ GNEEdge::checkDrawRelatedContour() const {
 
 bool
 GNEEdge::checkDrawOverContour() const {
-    // get modes
+    // get modes and viewParent (for code legibility)
     const auto& modes = myNet->getViewNet()->getEditModes();
-    // get frames
-    const auto& vehicleFrame = myNet->getViewNet()->getViewParent()->getVehicleFrame();
-    const auto& personFramePlanSelector = myNet->getViewNet()->getViewParent()->getPersonFrame()->getPlanSelector();
-    const auto& personPlanFramePlanSelector = myNet->getViewNet()->getViewParent()->getPersonPlanFrame()->getPlanSelector();
-    const auto& containerFramePlanSelector = myNet->getViewNet()->getViewParent()->getContainerFrame()->getPlanSelector();
-    const auto& containerPlanFramePlanSelector = myNet->getViewNet()->getViewParent()->getContainerPlanFrame()->getPlanSelector();
-    // check if we're in vehicle mode
-    if (vehicleFrame->shown()) {
-        // get current vehicle template
-        const auto vehicleTemplate = vehicleFrame->getVehicleTagSelector()->getCurrentTemplateAC();
-        // check if vehicle can be placed over from-to edges
-        if (vehicleTemplate && vehicleTemplate->getTagProperty().vehicleEdges()) {
-            return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
+    const auto& viewParent = myNet->getViewNet()->getViewParent();
+    const auto& viewObjectsSelector = myNet->getViewNet()->getViewObjectsSelector();
+    if (modes.isCurrentSupermodeDemand()) {
+        // get current plan selector
+        GNEPlanSelector* planSelector = nullptr;
+        if (modes.demandEditMode == DemandEditMode::DEMAND_PERSON) {
+            planSelector = viewParent->getPersonFrame()->getPlanSelector();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) {
+            planSelector = viewParent->getPersonPlanFrame()->getPlanSelector();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) {
+            planSelector = viewParent->getContainerFrame()->getPlanSelector();
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) {
+            planSelector = viewParent->getContainerPlanFrame()->getPlanSelector();
         }
-    } else if (modes.isCurrentSupermodeDemand()) {
-        // check if we're in person or personPlan modes
-        if (((modes.demandEditMode == DemandEditMode::DEMAND_PERSON) && personFramePlanSelector->markEdges()) ||
-                ((modes.demandEditMode == DemandEditMode::DEMAND_PERSONPLAN) && personPlanFramePlanSelector->markEdges()) ||
-                ((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINER) && containerFramePlanSelector->markEdges()) ||
-                ((modes.demandEditMode == DemandEditMode::DEMAND_CONTAINERPLAN) && containerPlanFramePlanSelector->markEdges())) {
-            return myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this;
+        // continue depending of plan selector
+        if (planSelector && planSelector->markEdges() && (viewObjectsSelector.getEdgeFront() == this)) {
+            if (viewObjectsSelector.getAttributeCarrierFront()->getTagProperty().isStoppingPlace()) {
+                return false;
+            } else if (viewObjectsSelector.getAttributeCarrierFront()->getTagProperty().isTAZElement()) {
+                return false;
+            } else if (viewObjectsSelector.getAttributeCarrierFront()->getTagProperty().getTag() == SUMO_TAG_JUNCTION) {
+                return false;
+            } else {
+                return true;
+            }
+        } else if (modes.demandEditMode == DemandEditMode::DEMAND_VEHICLE) {
+            // get current vehicle template
+            const auto& vehicleTemplate = viewParent->getVehicleFrame()->getVehicleTagSelector()->getCurrentTemplateAC();
+            // check if vehicle can be placed over from-to TAZs
+            if (vehicleTemplate && vehicleTemplate->getTagProperty().vehicleEdges()) {
+                return myNet->getViewNet()->getViewObjectsSelector().getEdgeFront() == this;
+            }
         }
     }
     return false;
@@ -360,19 +422,34 @@ GNEEdge::checkDrawMoveContour() const {
     // get edit modes
     const auto& editModes = myNet->getViewNet()->getEditModes();
     // check if we're in move mode
-    if (!myNet->getViewNet()->isMovingElement() && editModes.isCurrentSupermodeNetwork() &&
+    if (!myNet->getViewNet()->isCurrentlyMovingElements() && editModes.isCurrentSupermodeNetwork() &&
             (editModes.networkEditMode == NetworkEditMode::NETWORK_MOVE)) {
-        // check lanes
-        for (const auto& lane : myLanes) {
-            if (myNet->getViewNet()->checkOverLockedElement(lane, mySelected) &&
-                    (myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == lane)) {
+        // check if we're editing this network element
+        const GNENetworkElement* editedNetworkElement = myNet->getViewNet()->getEditNetworkElementShapes().getEditedNetworkElement();
+        if (editedNetworkElement) {
+            if (editedNetworkElement == this) {
+                return true;
+            } else {
+                // check lanes
+                for (const auto& lane : myLanes) {
+                    if (editedNetworkElement == lane) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            // check lanes
+            for (const auto& lane : myLanes) {
+                if (myNet->getViewNet()->checkOverLockedElement(lane, mySelected) &&
+                        (myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == lane)) {
+                    return true;
+                }
+            }
+            // check edge
+            if (myNet->getViewNet()->checkOverLockedElement(this, mySelected) &&
+                    (myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this)) {
                 return true;
             }
-        }
-        // check edge
-        if (myNet->getViewNet()->checkOverLockedElement(this, mySelected) &&
-                (myNet->getViewNet()->getViewObjectsSelector().getGUIGlObjectFront() == this)) {
-            return true;
         }
         // nothing to draw
         return false;
@@ -607,16 +684,9 @@ GNEEdge::getOptionalName() const {
 
 GUIGLObjectPopupMenu*
 GNEEdge::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
-    GUIGLObjectPopupMenu* ret = new GUIGLObjectPopupMenu(app, parent, *this);
-    buildPopupHeader(ret, app);
-    buildCenterPopupEntry(ret);
-    buildNameCopyPopupEntry(ret);
-    // build selection and show parameters menu
-    myNet->getViewNet()->buildSelectionACPopupEntry(ret, this);
-    buildShowParamsPopupEntry(ret);
-    // build position copy entry
-    buildPositionCopyEntry(ret, app);
-    return ret;
+    // if we call this function, that's mean that we're clicked over a edge geometry point, then
+    // open the popup dialog of the lane[0] (back)
+    return myLanes.back()->getPopUpMenu(app, parent);
 }
 
 
@@ -629,7 +699,7 @@ GNEEdge::getOppositeEdges() const {
 void
 GNEEdge::drawGL(const GUIVisualizationSettings& s) const {
     // check drawing boundary selection and size boundary
-    if (checkDrawingBoundarySelection() && s.checkBoundarySizeDrawing(myEdgeBoundary.getWidth(), myEdgeBoundary.getHeight())) {
+    if (checkDrawingBoundarySelection() && s.checkDrawEdge(myEdgeBoundary)) {
         // draw boundary
         GLHelper::drawBoundary(s, getCenteringBoundary());
         // get detail level from the first lane
@@ -659,7 +729,7 @@ GNEEdge::drawGL(const GUIVisualizationSettings& s) const {
         getFromJunction()->drawGL(s);
         getToJunction()->drawGL(s);
         // draw childrens
-        drawChildrens(s, d);
+        drawChildrens(s);
     }
 }
 
@@ -956,79 +1026,52 @@ GNEEdge::getGNECrossings() {
 void
 GNEEdge::copyTemplate(const GNEEdgeTemplate* edgeTemplate, GNEUndoList* undoList) {
     // copy edge-specific attributes
-    setAttribute(SUMO_ATTR_NUMLANES,        edgeTemplate->getAttribute(SUMO_ATTR_NUMLANES),         undoList);
-    setAttribute(SUMO_ATTR_TYPE,            edgeTemplate->getAttribute(SUMO_ATTR_TYPE),             undoList);
-    setAttribute(SUMO_ATTR_PRIORITY,        edgeTemplate->getAttribute(SUMO_ATTR_PRIORITY),         undoList);
-    setAttribute(SUMO_ATTR_SPREADTYPE,      edgeTemplate->getAttribute(SUMO_ATTR_SPREADTYPE),       undoList);
-    setAttribute(GNE_ATTR_STOPOFFSET,       edgeTemplate->getAttribute(GNE_ATTR_STOPOFFSET),        undoList);
-    setAttribute(GNE_ATTR_STOPOEXCEPTION,   edgeTemplate->getAttribute(GNE_ATTR_STOPOEXCEPTION),    undoList);
-    // copy raw values for lane-specific attributes
-    if (isValid(SUMO_ATTR_SPEED, edgeTemplate->getAttribute(SUMO_ATTR_SPEED))) {
-        setAttribute(SUMO_ATTR_SPEED,       edgeTemplate->getAttribute(SUMO_ATTR_SPEED),            undoList);
+    for (const auto& attProperty : myTagProperty) {
+        if (attProperty.isCopyable() && isValid(attProperty.getAttr(), edgeTemplate->getAttribute(attProperty.getAttr()))) {
+            setAttribute(attProperty.getAttr(), edgeTemplate->getAttribute(attProperty.getAttr()), undoList);
+        }
     }
-    if (isValid(SUMO_ATTR_FRICTION, edgeTemplate->getAttribute(SUMO_ATTR_FRICTION))) {
-        setAttribute(SUMO_ATTR_FRICTION,    edgeTemplate->getAttribute(SUMO_ATTR_FRICTION),      undoList);
-    }
-    if (isValid(SUMO_ATTR_WIDTH, edgeTemplate->getAttribute(SUMO_ATTR_WIDTH))) {
-        setAttribute(SUMO_ATTR_WIDTH,       edgeTemplate->getAttribute(SUMO_ATTR_WIDTH),            undoList);
-    }
-    if (isValid(SUMO_ATTR_ENDOFFSET, edgeTemplate->getAttribute(SUMO_ATTR_ENDOFFSET))) {
-        setAttribute(SUMO_ATTR_ENDOFFSET,   edgeTemplate->getAttribute(SUMO_ATTR_ENDOFFSET),        undoList);
-    }
+    // also copy parameters
+    setAttribute(GNE_ATTR_PARAMETERS, edgeTemplate->getAttribute(GNE_ATTR_PARAMETERS), undoList);
     // copy lane attributes as well
     for (int i = 0; i < (int)myLanes.size(); i++) {
-        myLanes[i]->setAttribute(SUMO_ATTR_ALLOW,           edgeTemplate->getLaneTemplates().at(i)->getAttribute(SUMO_ATTR_ALLOW),          undoList);
-        myLanes[i]->setAttribute(SUMO_ATTR_SPEED,           edgeTemplate->getLaneTemplates().at(i)->getAttribute(SUMO_ATTR_SPEED),          undoList);
-        myLanes[i]->setAttribute(SUMO_ATTR_FRICTION,        edgeTemplate->getLaneTemplates().at(i)->getAttribute(SUMO_ATTR_FRICTION),       undoList);
-        myLanes[i]->setAttribute(SUMO_ATTR_WIDTH,           edgeTemplate->getLaneTemplates().at(i)->getAttribute(SUMO_ATTR_WIDTH),          undoList);
-        myLanes[i]->setAttribute(SUMO_ATTR_ENDOFFSET,       edgeTemplate->getLaneTemplates().at(i)->getAttribute(SUMO_ATTR_ENDOFFSET),      undoList);
-        myLanes[i]->setAttribute(GNE_ATTR_STOPOFFSET,       edgeTemplate->getLaneTemplates().at(i)->getAttribute(GNE_ATTR_STOPOFFSET),      undoList);
-        myLanes[i]->setAttribute(GNE_ATTR_STOPOEXCEPTION,   edgeTemplate->getLaneTemplates().at(i)->getAttribute(GNE_ATTR_STOPOEXCEPTION),  undoList);
+        for (const auto& attProperty : edgeTemplate->getLaneTemplates().at(i)->getTagProperty()) {
+            if (attProperty.isCopyable() && myLanes[i]->isValid(attProperty.getAttr(), edgeTemplate->getLaneTemplates().at(i)->getAttribute(attProperty.getAttr()))) {
+                myLanes[i]->setAttribute(attProperty.getAttr(), edgeTemplate->getLaneTemplates().at(i)->getAttribute(attProperty.getAttr()),  undoList);
+            }
+        }
+        // also copy parameters
+        myLanes[i]->setAttribute(GNE_ATTR_PARAMETERS, edgeTemplate->getLaneTemplates().at(i)->getAttribute(GNE_ATTR_PARAMETERS), undoList);
     }
 }
 
 
 void
 GNEEdge::copyEdgeType(const GNEEdgeType* edgeType, GNEUndoList* undoList) {
-    // get lane type properties
-    const auto laneTypeProperties = getTagProperty(SUMO_TAG_LANETYPE);
+    // get tag properties
+    const auto& edgeProperties = getTagProperty(SUMO_TAG_EDGE);
+    const auto& laneProperties = getTagProperty(SUMO_TAG_LANE);
+    const auto& edgeTypeProperties = getTagProperty(SUMO_TAG_TYPE);
+    const auto& laneTypeProperties = getTagProperty(SUMO_TAG_LANETYPE);
     // set type (only for info)
     setAttribute(SUMO_ATTR_TYPE, edgeType->getAttribute(SUMO_ATTR_ID), undoList);
-    // set num lanes
-    setAttribute(SUMO_ATTR_NUMLANES, edgeType->getAttribute(SUMO_ATTR_NUMLANES), undoList);
-    // set speed
-    setAttribute(SUMO_ATTR_SPEED, edgeType->getAttribute(SUMO_ATTR_SPEED), undoList);
-    // set friction
-    setAttribute(SUMO_ATTR_FRICTION, edgeType->getAttribute(SUMO_ATTR_FRICTION), undoList);
-    // set allow (no disallow)
-    setAttribute(SUMO_ATTR_ALLOW, edgeType->getAttribute(SUMO_ATTR_ALLOW), undoList);
-    // set spreadType
-    setAttribute(SUMO_ATTR_SPREADTYPE, edgeType->getAttribute(SUMO_ATTR_SPREADTYPE), undoList);
-    // set width
-    setAttribute(SUMO_ATTR_WIDTH, edgeType->getAttribute(SUMO_ATTR_WIDTH), undoList);
-    // set priority
-    setAttribute(SUMO_ATTR_PRIORITY, edgeType->getAttribute(SUMO_ATTR_PRIORITY), undoList);
-    // set parameters
+    // copy attributes
+    for (const auto& attrProperty : edgeTypeProperties) {
+        if (attrProperty.isCopyable() && edgeProperties.hasAttribute(attrProperty.getAttr())) {
+            setAttribute(attrProperty.getAttr(), edgeType->getAttribute(attrProperty.getAttr()), undoList);
+        }
+    }
     setAttribute(GNE_ATTR_PARAMETERS, edgeType->getAttribute(GNE_ATTR_PARAMETERS), undoList);
     // copy lane attributes as well
     for (int i = 0; i < (int)myLanes.size(); i++) {
-        // now copy custom lane values
-        if (edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_SPEED) != laneTypeProperties.getAttributeProperties(SUMO_ATTR_SPEED).getDefaultValue()) {
-            myLanes[i]->setAttribute(SUMO_ATTR_SPEED, edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_SPEED), undoList);
-        }
-        if (edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_ALLOW) != laneTypeProperties.getAttributeProperties(SUMO_ATTR_ALLOW).getDefaultValue()) {
-            myLanes[i]->setAttribute(SUMO_ATTR_ALLOW, edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_ALLOW), undoList);
-        }
-        if (edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_DISALLOW) != laneTypeProperties.getAttributeProperties(SUMO_ATTR_DISALLOW).getDefaultValue()) {
-            myLanes[i]->setAttribute(SUMO_ATTR_DISALLOW, edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_DISALLOW), undoList);
-        }
-        if (edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_WIDTH) != laneTypeProperties.getAttributeProperties(SUMO_ATTR_WIDTH).getDefaultValue()) {
-            myLanes[i]->setAttribute(SUMO_ATTR_WIDTH, edgeType->getLaneTypes().at(i)->getAttribute(SUMO_ATTR_WIDTH), undoList);
+        for (const auto& attrProperty : laneTypeProperties) {
+            if (attrProperty.isCopyable() && laneProperties.hasAttribute(attrProperty.getAttr()) && (edgeType->getLaneTypes().at(i)->getAttribute(attrProperty.getAttr()) != laneTypeProperties.getAttributeProperties(attrProperty.getAttr()).getDefaultValue())) {
+                myLanes[i]->setAttribute(attrProperty.getAttr(), edgeType->getLaneTypes().at(i)->getAttribute(attrProperty.getAttr()), undoList);
+            }
         }
         if (edgeType->getLaneTypes().at(i)->getAttribute(GNE_ATTR_PARAMETERS).size() > 0) {
             myLanes[i]->setAttribute(GNE_ATTR_PARAMETERS, edgeType->getLaneTypes().at(i)->getAttribute(GNE_ATTR_PARAMETERS), undoList);
         }
-        // more checks here
     }
 }
 
@@ -1143,10 +1186,23 @@ GNEEdge::getAttribute(SumoXMLAttr key) const {
             } else {
                 return "";
             }
+        case GNE_ATTR_IS_ROUNDABOUT:
+            return myNBEdge->getFromNode()->isRoundabout() && myNBEdge->getToNode()->isRoundabout() ? True : False;
         case GNE_ATTR_SELECTED:
             return toString(isAttributeCarrierSelected());
         case GNE_ATTR_PARAMETERS:
             return myNBEdge->getParametersStr();
+        default:
+            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+    }
+}
+
+
+PositionVector
+GNEEdge::getAttributePositionVector(SumoXMLAttr key) const {
+    switch (key) {
+        case SUMO_ATTR_SHAPE:
+            return myNBEdge->getInnerGeometry();
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
     }
@@ -1238,6 +1294,12 @@ GNEEdge::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList* un
         case GNE_ATTR_MODIFICATION_STATUS:
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_STOPOFFSET:
+            // special case for stop offset, because affects to stopOffsetExceptions (#15297)
+            if (canParse<double>(value) && (parse<double>(value) == 0)) {
+                GNEChange_Attribute::changeAttribute(this, GNE_ATTR_STOPOEXCEPTION, "", undoList);
+            }
+            GNEChange_Attribute::changeAttribute(this, key, value, undoList);
+            break;
         case GNE_ATTR_STOPOEXCEPTION:
         case GNE_ATTR_PARAMETERS:
             GNEChange_Attribute::changeAttribute(this, key, value, undoList);
@@ -1383,7 +1445,11 @@ GNEEdge::isValid(SumoXMLAttr key, const std::string& value) {
         case GNE_ATTR_BIDIR:
             return canParse<bool>(value) && (!parse<bool>(value) || myNBEdge->isBidiEdge(true));
         case GNE_ATTR_STOPOFFSET:
-            return canParse<double>(value) && (parse<double>(value) >= 0);
+            if (value.empty()) {
+                return true;
+            } else {
+                return canParse<double>(value) && (parse<double>(value) >= 0);
+            }
         case GNE_ATTR_STOPOEXCEPTION:
             return canParseVehicleClasses(value);
         case GNE_ATTR_SELECTED:
@@ -1403,6 +1469,8 @@ GNEEdge::isAttributeEnabled(SumoXMLAttr key) const {
             return myNBEdge->isBidiEdge(true);
         case GNE_ATTR_STOPOEXCEPTION:
             return myNBEdge->myEdgeStopOffset.getOffset() > 0;
+        case GNE_ATTR_IS_ROUNDABOUT:
+            return false;
         default:
             return true;
     }
@@ -1900,14 +1968,14 @@ GNEEdge::setAttribute(SumoXMLAttr key, const std::string& value) {
             }
             break;
         case GNE_ATTR_STOPOFFSET:
-            myNBEdge->myEdgeStopOffset.setOffset(parse<double>(value));
+            if (value.empty()) {
+                myNBEdge->myEdgeStopOffset.setOffset(0);
+            } else {
+                myNBEdge->myEdgeStopOffset.setOffset(parse<double>(value));
+            }
             break;
         case GNE_ATTR_STOPOEXCEPTION:
-            if (value.empty()) {
-                myNBEdge->myEdgeStopOffset.reset();
-            } else {
-                myNBEdge->myEdgeStopOffset.setExceptions(value);
-            }
+            myNBEdge->myEdgeStopOffset.setExceptions(value);
             break;
         case GNE_ATTR_PARAMETERS:
             myNBEdge->setParametersStr(value);
@@ -2773,31 +2841,28 @@ GNEEdge::drawLaneStopOffset(const GUIVisualizationSettings& s, const GUIVisualiz
 
 
 void
-GNEEdge::drawChildrens(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d) const {
-    // check if draw children elements
-    if (s.drawForViewObjectsHandler || (d <= GUIVisualizationSettings::Detail::Additionals)) {
-        // draw child additional
-        for (const auto& additional : getChildAdditionals()) {
-            additional->drawGL(s);
-        }
-        // draw person stops
-        if (myNet->getViewNet()->getNetworkViewOptions().showDemandElements() && myNet->getViewNet()->getDataViewOptions().showDemandElements()) {
-            for (const auto& stopEdge : getChildDemandElements()) {
-                if ((stopEdge->getTagProperty().getTag() == GNE_TAG_STOPPERSON_EDGE) || (stopEdge->getTagProperty().getTag() == GNE_TAG_STOPCONTAINER_EDGE)) {
-                    stopEdge->drawGL(s);
-                }
-            }
-        }
-        // draw vehicles
-        const std::map<const GNELane*, std::vector<GNEDemandElement*> > vehiclesMap = getVehiclesOverEdgeMap();
-        for (const auto& vehicleMap : vehiclesMap) {
-            for (const auto& vehicle : vehicleMap.second) {
-                vehicle->drawGL(s);
-            }
-        }
-        // draw TAZ elements
-        drawTAZElements(s);
+GNEEdge::drawChildrens(const GUIVisualizationSettings& s) const {
+    // draw child additional
+    for (const auto& additional : getChildAdditionals()) {
+        additional->drawGL(s);
     }
+    // draw person stops
+    if (myNet->getViewNet()->getNetworkViewOptions().showDemandElements() && myNet->getViewNet()->getDataViewOptions().showDemandElements()) {
+        for (const auto& stopEdge : getChildDemandElements()) {
+            if ((stopEdge->getTagProperty().getTag() == GNE_TAG_STOPPERSON_EDGE) || (stopEdge->getTagProperty().getTag() == GNE_TAG_STOPCONTAINER_EDGE)) {
+                stopEdge->drawGL(s);
+            }
+        }
+    }
+    // draw vehicles
+    const std::map<const GNELane*, std::vector<GNEDemandElement*> > vehiclesMap = getVehiclesOverEdgeMap();
+    for (const auto& vehicleMap : vehiclesMap) {
+        for (const auto& vehicle : vehicleMap.second) {
+            vehicle->drawGL(s);
+        }
+    }
+    // draw TAZ elements
+    drawTAZElements(s);
 }
 
 
@@ -2817,7 +2882,7 @@ GNEEdge::calculateEdgeContour(const GUIVisualizationSettings& s, const GUIVisual
         // check if we're in move mode
         const bool moveMode = (myNet->getViewNet()->getEditModes().networkEditMode == NetworkEditMode::NETWORK_MOVE);
         // calculate contour
-        myNetworkElementContour.calculateContourEdge(s, d, this, true, true);
+        myNetworkElementContour.calculateContourEdge(s, d, this, this, true, true);
         // calculate edge geometry points
         myNetworkElementContour.calculateContourEdgeGeometryPoints(s, d, this, geometryPointRadius, moveMode, firstExtrem, lastExtrem);
     }
