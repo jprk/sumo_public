@@ -32,8 +32,9 @@
 #include <utils/common/WrappingCommand.h>
 #include <utils/traction_wire/Circuit.h>
 
-// Resistivity of Cu is 1.69*10^-8 Ohm*m. A cross-section S of the overhead wire used in Pilsen is 150 mm^2. So the "resistivity/S" is 0.000113 Ohm/m.
-const double WIRE_RESISTIVITY = (double)2 * 0.000113;
+// Resistivity of Cu is 1.69*10^-8 Ohm*m. A cross-section S of the overhead wire is assumed to be 150 mm^2.  So the "resistivity/S" is 0.000113 Ohm/m.
+// Resistivity of Cu is 1.83*10^-8 Ohm*m (pesimistic est). A cross-section S of the overhead wire used in Pilsen is 100 mm^2. So the "resistivity/S" is 0.000183 Ohm/m.
+const double WIRE_RESISTIVITY = (double)2 * 0.000183;
 
 // Conversion macros
 #define WATTHR2JOULE(_x) ((_x)*3600.0)
