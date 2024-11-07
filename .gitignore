@@ -55,11 +55,15 @@
 /bin/liblibsumojni.jnilib
 /bin/liblibtracijni.jnilib
 /bin/libsumofmi2.dylib
+#
+/cmake_build
 # data dir
 /data/locale
 /data/templates
 /data/po/*.pot
 /data/proj
+/data/emissions/PHEMlight
+/data/emissions/PHEMlight.x
 # docs dir, make artifacts
 /docs/doxygen
 /docs/examples
