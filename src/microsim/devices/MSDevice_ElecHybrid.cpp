@@ -236,33 +236,21 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
        neighboring lanes. This check has to be performed at every simulation step as the
        overhead wires for trolleybuses will typically end at a bus stop that is located somewhere
        in the middle of the lane. */
-<<<<<<< HEAD
-    std::string overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(veh.getLane(), veh.getPositionOnLane(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-
-    //check overhead line on the left neighboring lane
-    if (overheadWireSegmentID == "" && veh.getEdge()->leftLane(veh.getLane()) != nullptr) {
-        overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(veh.getEdge()->leftLane(veh.getLane()), veh.getPositionOnLane(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-    }
-    //check overhead line on the right neighboring lane
-    if (overheadWireSegmentID == "" && veh.getEdge()->rightLane(veh.getLane()) != nullptr) {
-        overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(veh.getEdge()->rightLane(veh.getLane()), veh.getPositionOnLane(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-=======
     double vehPositionOnLane = veh.getPositionOnLane();
     const MSLane* vehLane = veh.getLane();
     MSEdge& vehEdge = veh.getLane()->getEdge(); //const MSEdge* vehEdge = veh.getEdge();
-    /* this two commands give different resutls:
+    /* These two commands give different resutls:
             MSLane*  a = veh.getLane()->getEdge().rightLane(veh.getLane());
             MSLane*  b = veh.getEdge()->rightLane(veh.getLane());
     */
     std::string overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(vehLane, vehPositionOnLane, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-    //check overhead line on the left neighbouring lane
+    /* Check overhead wire on the left neighbouring lane */
     if (overheadWireSegmentID == "" && vehEdge.leftLane(vehLane) != nullptr) {
         overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(vehEdge.leftLane(vehLane), vehPositionOnLane, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
     }
-    //check overhead line on the right neighbouring lane
+    /* Check overhead wire on the right neighbouring lane */
     if (overheadWireSegmentID == "" && vehEdge.rightLane(veh.getLane()) != nullptr) {
         overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(vehEdge.rightLane(vehLane), vehPositionOnLane, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
->>>>>>> 2f3f7672758092f8bc171a39b274a7966228ed1c
     }
 
     /* Store the amount of power that could not be recuperated. */
