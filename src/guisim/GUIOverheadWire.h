@@ -66,10 +66,11 @@ public:
     * @param[in] lane The lane the overhead wire segment is placed on
     * @param[in] frompos Begin position of the overhead wire segment on the lane
     * @param[in] topos End position of the overhead wire segment on the lane
+    * @param[in] owt The wire type object containing electic parameters of this overhead wire
     * @param[in] voltageSource If the segment is the place of the connection of a traction substation
     */
     GUIOverheadWire(const std::string& id, MSLane& lane, double frompos, double topos,
-                    bool voltageSource);
+                    OverheadWireType& owt, bool voltageSource);
 
     /// @brief Destructor
     ~GUIOverheadWire();

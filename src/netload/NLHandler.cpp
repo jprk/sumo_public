@@ -200,6 +200,9 @@ NLHandler::myStartElement(int element,
             case SUMO_TAG_OVERHEAD_WIRE_SECTION:
                 myTriggerBuilder.parseAndBuildOverheadWireSection(myNet, attrs);
                 break;
+            case SUMO_TAG_OVERHEAD_WIRE_TYPE:
+                myTriggerBuilder.parseAndBuildOverheadWireType(myNet, attrs);
+                break;
             case SUMO_TAG_TRACTION_SUBSTATION:
                 myTriggerBuilder.parseAndBuildTractionSubstation(myNet, attrs);
                 break;

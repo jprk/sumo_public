@@ -34,7 +34,9 @@
 
 // Resistivity of Cu is 1.69*10^-8 Ohm*m. A cross-section S of the overhead wire is assumed to be 150 mm^2.  So the "resistivity/S" is 0.000113 Ohm/m.
 // Resistivity of Cu is 1.83*10^-8 Ohm*m (pesimistic est). A cross-section S of the overhead wire used in Pilsen is 100 mm^2. So the "resistivity/S" is 0.000183 Ohm/m.
-const double WIRE_RESISTIVITY = (double)2 * 0.000183;
+// const double WIRE_RESISTIVITY = (double)2 * 0.000183;
+const double WIRE_RESISTIVITY = (double)1.83e-8;  // Ohm*m
+const double WIRE_CROSSSECTION = (double)100.0;  // mm^2
 
 // Conversion macros
 #define WATTHR2JOULE(_x) ((_x)*3600.0)
@@ -56,6 +58,39 @@ class Named;
 // ===========================================================================
 // class definitions
 // ===========================================================================
+
+/**
+* @class OverheadWireType
+* @brief Definition of overhead wire type (material and dimensions)
+*/
+class OverheadWireType : public Named {
+
+    /// @brief Resistivity of the wire material [ohm*m]
+    double myResistivity;
+    /// @brief Cross-section area of the wire [mm^2]
+    double myCrossSection;
+    /// @brief Resistance of the material per unit length [ohm/m]
+    double myResistancePerLength;
+
+public:
+    /// @brief Constructor
+    OverheadWireType(const std::string& typeID, double resistivity, double crossSection) :
+        Named(typeID),
+        myResistivity(resistivity),
+        myCrossSection(crossSection)
+    {
+        myResistancePerLength = myResistivity / (myCrossSection * 1e-6);
+    };
+
+    // @brief Get the resistance of this wire type per unit length [ohm/m]
+    double getResistancePerLength() const {
+        return myResistancePerLength;
+    };
+};
+
+// @brief Default overhead wire type that will be used when no wire type has been specified
+const OverheadWireType WIRE_DEFAULTTYPE("default", WIRE_RESISTIVITY, WIRE_CROSSSECTION);
+
 /**
 * @class MSOverheadWire
 * @brief Definition of overhead wire segment
@@ -66,10 +101,18 @@ public:
 
     /// @brief constructor
     MSOverheadWire(const std::string& overheadWireSegmentID, MSLane& lane, double startPos, double endPos,
-                   bool voltageSource);
+                   OverheadWireType& owt, bool voltageSource);
 
     /// @brief destructor
     ~MSOverheadWire();
+
+    /// @brief Get the resistance of this overhead wire
+    double getResistance();
+
+    // @brief Get the resistance of this overhead wire per unit length [ohm/m]
+    double getResistancePerLength() const {
+        return myWireType.getResistancePerLength();
+    };
 
     /// @brief Get overhead wire's voltage
     double getVoltage() const;
@@ -207,6 +250,9 @@ protected:
     };
 
     void static writeVehicle(OutputDevice& out, const std::vector<Charge>& chargeSteps, int iStart, int iEnd, double charged);
+
+    /// @brief Electric parameters of this overhead wire
+    OverheadWireType myWireType;
 
     /// @brief Overhead wire's voltage
     double myVoltage;

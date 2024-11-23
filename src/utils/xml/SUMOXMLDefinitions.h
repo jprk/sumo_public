@@ -143,6 +143,8 @@ enum SumoXMLTag {
     SUMO_TAG_OVERHEAD_WIRE_SEGMENT,
     /// @brief  An overhead wire section
     SUMO_TAG_OVERHEAD_WIRE_SECTION,
+    /// @brief  Definition of a overhead wire type with given electric parameters
+    SUMO_TAG_OVERHEAD_WIRE_TYPE,
     /// @brief  An overhead wire clamp (connection of wires in opposite directions)
     SUMO_TAG_OVERHEAD_WIRE_CLAMP,
     /// @brief a vtypeprobe detector
@@ -994,10 +996,10 @@ enum SumoXMLAttr {
     /// @name elecHybrid output attributes
     /// @{
     /// @brief power charging from overhead wire to battery if the battery SoC is not full
-    SUMO_ATTR_OVERHEADWIRECHARGINGPOWER,
+    SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER,
     /// @}
 
-    /// @name overheadWire attributes
+    /// @name overheadWire (and possibly also overheadWireType) attributes
     /// @{
     SUMO_ATTR_OVERHEAD_WIRE_SEGMENT,
     SUMO_ATTR_OVERHEAD_WIRE_SEGMENTS,
@@ -1009,8 +1011,12 @@ enum SumoXMLAttr {
     SUMO_ATTR_CURRENTLIMIT,
     /// @brief id of a traction substation substation
     SUMO_ATTR_SUBSTATIONID,
-    /// @brief resistivity of overhead wires
+    /// @brief id of a wire type to be used for this overhead wire
+    SUMO_ATTR_OVERHEAD_WIRE_TYPEID,
+    /// @brief resistivity of overhead wire in ohm * metre
     SUMO_ATTR_OVERHEAD_WIRE_RESISTIVITY,
+    /// @brief cross-section of overhead wire in mm2
+    SUMO_ATTR_OVERHEAD_WIRE_CROSSSECTION,
     /// @brief forbidden lanes for overhead wire segment
     SUMO_ATTR_OVERHEAD_WIRE_FORBIDDEN,
     /// @brief overhead wire clamps for overhead wire segment

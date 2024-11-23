@@ -119,8 +119,8 @@ GUITriggerBuilder::buildChargingStation(MSNet& net, const std::string& id, MSLan
 
 void
 GUITriggerBuilder::buildOverheadWireSegment(MSNet& net, const std::string& id, MSLane* lane, double frompos, double topos,
-        bool voltageSource) {
-    GUIOverheadWire* overheadWire = new GUIOverheadWire(id, *lane, frompos, topos, voltageSource);
+        OverheadWireType& owt, bool voltageSource) {
+    GUIOverheadWire* overheadWire = new GUIOverheadWire(id, *lane, frompos, topos, owt, voltageSource);
     if (!net.addStoppingPlace(SUMO_TAG_OVERHEAD_WIRE_SEGMENT, overheadWire)) {
         delete overheadWire;
         throw InvalidArgument("Could not build overheadWireSegment '" + id + "'; probably declared twice.");

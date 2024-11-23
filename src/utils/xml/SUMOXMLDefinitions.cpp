@@ -88,6 +88,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "tractionSubstation",                     SUMO_TAG_TRACTION_SUBSTATION },
     { "overheadWireSegment",                    SUMO_TAG_OVERHEAD_WIRE_SEGMENT },   // <- Deprecate
     { "overheadWire",                           SUMO_TAG_OVERHEAD_WIRE_SECTION },
+    { "overheadWireType",                       SUMO_TAG_OVERHEAD_WIRE_TYPE },
     { "overheadWireClamp",                      SUMO_TAG_OVERHEAD_WIRE_CLAMP },
     { "vTypeProbe",                             SUMO_TAG_VTYPEPROBE },
     { "routes",                                 SUMO_TAG_ROUTES },
@@ -791,7 +792,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "maneuverAngleTimes",     SUMO_ATTR_MANEUVER_ANGLE_TIMES },
     { "parkingBadges",          SUMO_ATTR_PARKING_BADGES },
     // MSDevice_ElecHybrid
-    { "overheadWireChargingPower",      SUMO_ATTR_OVERHEADWIRECHARGINGPOWER },
+    { "overheadWireChargingPower",      SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER },
     // OverheadWire
     { "overheadWireSegment",    SUMO_ATTR_OVERHEAD_WIRE_SEGMENT },
     { "segments",               SUMO_ATTR_OVERHEAD_WIRE_SEGMENTS },     // <- deprecate
@@ -800,6 +801,8 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "currentLimit",           SUMO_ATTR_CURRENTLIMIT },
     { "substationId",           SUMO_ATTR_SUBSTATIONID },
     { "wireResistivity",        SUMO_ATTR_OVERHEAD_WIRE_RESISTIVITY },
+    { "wireCrossSection",       SUMO_ATTR_OVERHEAD_WIRE_CROSSSECTION },
+    { "wireTypeId",             SUMO_ATTR_OVERHEAD_WIRE_TYPEID },
     { "forbiddenInnerLanes",    SUMO_ATTR_OVERHEAD_WIRE_FORBIDDEN },
     { "clamps",                 SUMO_ATTR_OVERHEAD_WIRE_CLAMPS },       // <- deprecate
     { "idSegmentStartClamp",    SUMO_ATTR_OVERHEAD_WIRE_CLAMP_START },  // <- deprecate

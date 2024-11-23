@@ -45,6 +45,7 @@ class MSRouteProbe;
 
 class METriggeredCalibrator;
 
+class OverheadWireType;
 
 // ===========================================================================
 // class definitions
@@ -221,6 +222,14 @@ public:
      */
     void parseAndBuildChargingStation(MSNet& net, const SUMOSAXAttributes& attrs);
 
+    /** @brief Parses values and builds an overhead wire type entry
+    *
+    * @param[in] net The network the overhead wire type belongs to
+    * @param[in] attrs SAXattributes which define the trigger
+    * @exception InvalidArgument If a parameter is not valid
+    */
+    void parseAndBuildOverheadWireType(MSNet& net, const SUMOSAXAttributes& attrs);
+
     /** @brief Parses its values and builds an overhead wire segment
     *
     * @param[in] net The network the overhead wire segment belongs to
@@ -349,10 +358,11 @@ protected:
     * @param[in] lane The lane the overhead wire segment is placed on
     * @param[in] frompos Begin position of the overhead wire segment on the lane
     * @param[in] topos End position of the overhead wire segment  on the lane
-    * @param[in] voltageSource default voltage of overhead wire segment (unused) TODORICE
+    * @param[in] owt The wire type object containing electic parameters of this overhead wire
+    * @param[in] voltageSource Default voltage of overhead wire segment (unused) TODORICE
     * @exception InvalidArgument If the overhead wire segment can not be added to the net (is duplicate according to the id)
     */
-    virtual void buildOverheadWireSegment(MSNet& net, const std::string& id, MSLane* lane, double frompos, double topos, bool voltageSource);
+    virtual void buildOverheadWireSegment(MSNet& net, const std::string& id, MSLane* lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource);
 
     /** @brief Builds an overhead wire inner segments
     *
@@ -363,9 +373,10 @@ protected:
                  or the inner "frontConnection" lane with a regular lane, or the inner "frontConnection" lane with the inner "behindConnection" lane
     * @param[in] frontConnection The inner lane that connects a regular lane with the inner "connection" lane
     * @param[in] behindConnection The inner lane that connects the inner "connection" lane with a regular lane
+    * @param[in] owt The write type object containing electic parameters of this overhead wire
     * @exception InvalidArgument If the over can not be added to the net (is duplicate according to the id)
     */
-    void buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection);
+    void buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection, OverheadWireType& owt);
 
     /** @brief Builds a traction substation
     *
@@ -522,7 +533,9 @@ protected:
     MSParkingArea* myParkingArea;
     /// @brief The currently parsed stop to add access points to
     MSStoppingPlace* myCurrentStop;
-
+    /// @brief The map of overhead wire types
+    std::map <std::string, OverheadWireType> myOverheadWireTypeMap;
+    /// @brief Has the warning about missing Eigen library been displayed already?
     bool myHaveWarnedAboutEigen = false;
     bool myParkingAreaCapacitySet = false;
 };

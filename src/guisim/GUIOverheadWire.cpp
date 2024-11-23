@@ -52,8 +52,8 @@
 // ===========================================================================
 // method definitions
 // ===========================================================================
-GUIOverheadWire::GUIOverheadWire(const std::string& id, MSLane& lane, double frompos, double topos, bool voltageSource) :
-    MSOverheadWire(id, lane, frompos, topos, voltageSource),
+GUIOverheadWire::GUIOverheadWire(const std::string& id, MSLane& lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource) :
+    MSOverheadWire(id, lane, frompos, topos, owt, voltageSource),
     GUIGlObject_AbstractAdd(GLO_OVERHEAD_WIRE_SEGMENT, id, GUIIconSubSys::getIcon(GUIIcon::OVERHEADWIRE)) {
     myFGShape = lane.getShape();
     myFGShape = myFGShape.getSubpart(
@@ -275,7 +275,7 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
     GLHelper::drawBoxLines(myFGShape, myFGShapeRotations, myFGShapeLengths, exaggeration / 8, 0, -0.5);
 
 
-    // draw details unless zoomed out to far
+    // draw details unless zoomed out too far
     if (s.scale * exaggeration >= 10 && myVoltageSource) {
 
         // push charging power matrix

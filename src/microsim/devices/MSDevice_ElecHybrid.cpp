@@ -107,7 +107,7 @@ MSDevice_ElecHybrid::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDe
 
         // obtain overheadWireChargingPower
         double overheadWireChargingPower = 0;
-        attrName = toString(SUMO_ATTR_OVERHEADWIRECHARGINGPOWER);
+        attrName = toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER);
         if (typeParams.hasParameter(attrName)) {
             const std::string ocp = typeParams.getParameter(attrName, "-1");
             try {
@@ -176,7 +176,7 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     }
 
     if (overheadWireChargingPower < 0) {
-        WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_OVERHEADWIRECHARGINGPOWER), toString(overheadWireChargingPower));
+        WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER), toString(overheadWireChargingPower));
     } else {
         myOverheadWireChargingPower = overheadWireChargingPower;
     }
@@ -935,7 +935,7 @@ MSDevice_ElecHybrid::setParameter(const std::string& key, const std::string& val
         myActualBatteryCapacity = doubleValue;
     } else if (key == toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY)) {
         myMaximumBatteryCapacity = doubleValue;
-    } else if (key == toString(SUMO_ATTR_OVERHEADWIRECHARGINGPOWER)) {
+    } else if (key == toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER)) {
         myOverheadWireChargingPower = doubleValue;
     } else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
         WRITE_WARNING(TL("Setting the vehicle mass via parameters is deprecated, please use setMass for the vehicle or its type."));
