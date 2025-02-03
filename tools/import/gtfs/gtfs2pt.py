@@ -68,6 +68,7 @@ def get_options(args=None):
     ap.add_argument("--sort", action="store_true", default=False, category="processing",
                     help="sorting the output-file")
     ap.add_argument("--stops", category="input", type=ap.file, help="file with predefined stop positions to use")
+    ap.add_argument("--use-gtfs-stopids", category="input", action="store_true", default=False, help="use stop identifiers from GTFS")
     ap.add_argument("-H", "--human-readable-time", category="output", dest="hrtime", default=False, action="store_true",
                     help="write times as h:m:s")
 
@@ -265,8 +266,9 @@ def map_stops(options, net, routes, rout, edgeMap, fixedStops):
         typedNet = sumolib.net.readNet(typedNetFile)
         seen = set()
         fixed = {}
+        # Parse the FCD output that has been extended with `gtfsid` attribute specifying the concrete stopping place.
         for veh in sumolib.xml.parse_fast(inp, "vehicle", ("id", "x", "y", "until", "name",
-                                                           "fareZone", "fareSymbol", "startFare")):
+                                                           "gtfsid", "fareZone", "fareSymbol", "startFare")):
             stopName = veh.attr_name
             addAttrs = ' friendlyPos="true" name="%s"' % stopName
             params = ""
@@ -312,7 +314,11 @@ def map_stops(options, net, routes, rout, edgeMap, fixedStops):
                 stopLength = options.tram_stop_length
             else:
                 stopLength = options.train_stop_length
-            stop = "%s.%s" % (rid, stopIndex)
+            if options.use_gtfs_stopids:
+                stop = "gtfs_%s" % veh.gtfsid
+            else:
+                # This is the original
+                stop = "%s.%s" % (rid, stopIndex)
             if stop in fixedStops:
                 s = fixedStops[stop]
                 laneID, start, end = s.lane, float(s.startPos), float(s.endPos)
