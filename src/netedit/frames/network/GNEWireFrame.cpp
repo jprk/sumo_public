@@ -66,7 +66,7 @@ GNEWireFrame::show() {
     // show frame
     GNEFrame::show();
     if (!myWarnedExperimental) {
-        FXMessageBox::warning(getApp(), MBOX_OK, TL("Experimental Part"), "%s", TL("Warning: The netedit overhead editor is still in experimental state."));
+        FXMessageBox::warning(getApp(), MBOX_OK, TL("Experimental Part"), "%s", TL("Warning: The netedit overhead wire editor is still in experimental state."));
         myWarnedExperimental = true;
     }
 }
