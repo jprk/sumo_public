@@ -828,6 +828,10 @@ public:
     /// @brief return whether given electrical substation exists in the network
     bool existTractionSubstation(const std::string& substationId);
 
+    /// @brief check overhead electrical circuit
+    /// This has to be public as it is called by NLBuilder::build()
+    bool checkOverheadCircuits();
+
     /// @brief string constants for simstep stages
     static const std::string STAGE_EVENTS;
     static const std::string STAGE_MOVEMENTS;

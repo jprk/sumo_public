@@ -1655,6 +1655,14 @@ MSNet::checkBidiEdges() {
 }
 
 bool
+MSNet::checkOverheadCircuits() {
+    // returns FALSE on error, unlike the functions above
+    // no check at the moment
+    WRITE_WARNING("Overhead wire circuit is not being checked yet.")
+    return true;
+}
+
+bool
 MSNet::warnOnce(const std::string& typeAndID) {
     if (myWarnedOnce.find(typeAndID) == myWarnedOnce.end()) {
         myWarnedOnce[typeAndID] = true;

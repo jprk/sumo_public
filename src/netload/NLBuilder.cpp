@@ -205,6 +205,13 @@ NLBuilder::build() {
         if (!load("additional-files")) {
             return false;
         }
+        // if we set up a set of overhead wire circuits, we need to check that all circuits are properly
+        // conditioned and connected to voltage sources
+        if (!myNet.checkOverheadCircuits()) {
+            return false;
+        }
+
+
         // load shapes with separate handler
         NLShapeHandler sh("", myNet.getShapeContainer());
         if (!ShapeHandler::loadFiles(myOptions.getStringVector("additional-files"), sh)) {
