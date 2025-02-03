@@ -439,6 +439,8 @@ private:
     double mySubstationVoltage;
     Circuit* myCircuit;
     std::vector<MSOverheadWire*> myOverheadWireSegments;
+    /// @brief A space separated list of overhead wire segments that serve as voltage sources
+    std::string myVoltageSources;
     std::vector<MSDevice_ElecHybrid*> myElecHybrid;
     std::vector<MSLane*> myForbiddenLanes;
     static Command* myCommandForSolvingCircuit;

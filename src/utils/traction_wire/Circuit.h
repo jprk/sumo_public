@@ -216,13 +216,16 @@ public:
     // gets voltage across element or node "name"
     double getVoltage(std::string name);
 
-    // gets the resistance of an element.
+    // gets the resistance of an element
     double getResistance(std::string name);
 
-    // gets the number of voltage sources in the circuit.
+    // gets the number of voltage sources in the circuit
     int getNumVoltageSources();
 
-    // checks if the circuit's connections are correct.
+    // gets the list holding space-separated voltage source names in the circuit
+    std::string getVoltageSourcesNames();
+
+    // checks if the circuit's connections are correct
     bool checkCircuit(std::string substationId = "");
 
 #ifdef HAVE_EIGEN
@@ -230,7 +233,7 @@ public:
     bool solve();
 #endif
 
-    // cleans up after superposition.
+    // cleans up after superposition
     void cleanUpSP();
 
     //replaces unusedNode with newNode everywhere in the circuit, modifies the ids of other nodes and elements, decreases the id by one and deletes unusedNode

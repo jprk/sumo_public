@@ -979,3 +979,15 @@ bool Circuit::checkCircuit(std::string substationId) {
 int Circuit::getNumVoltageSources() {
     return (int) voltageSources->size();
 }
+
+std::string Circuit::getVoltageSourcesNames() {
+    std::ostringstream oss;
+    for (auto& voltageSource : *voltageSources) {
+        if (voltageSource != voltageSources->front()) {
+            oss << " ";
+        }
+        oss << toString(voltageSource->getId());
+    }
+
+    return oss.str();
+}

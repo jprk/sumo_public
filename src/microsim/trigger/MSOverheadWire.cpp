@@ -464,6 +464,10 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
     }
 
     if (MSGlobals::gOverheadWireSolver && newOverheadWireSegment->isThereVoltageSource()) {
+        // Add the segment to the list of segments powering the circuit
+        if (!myVoltageSources.empty()) myVoltageSources += " ";
+        myVoltageSources += newOverheadWireSegment->getID();
+
 #ifdef HAVE_EIGEN
         Circuit* circuit = newOverheadWireSegment->getCircuit();
 
@@ -778,7 +782,9 @@ MSTractionSubstation::solveCircuit(SUMOTime /*currentTime*/) {
     myCircuit->solve();
 
     if (myCircuit->getAlphaBest() != 1.0) {
-        WRITE_WARNINGF(TL("The requested total power could not be delivered by the overhead wire. Only % of originally requested power was provided."), toString(myCircuit->getAlphaBest()));
+        WRITE_WARNINGF(TL("The requested total power could not be delivered by the overhead wire at `%`. Only % of originally requested power was provided."), 
+            myID,
+            toString(myCircuit->getAlphaBest()));
     }
 #endif
 
@@ -851,6 +857,7 @@ MSTractionSubstation::writeTractionSubstationOutput(OutputDevice& output) {
     }
     output.writeAttr(SUMO_ATTR_LENGTH, length);
     output.writeAttr("numVoltageSources", myCircuit->getNumVoltageSources());
+    output.writeAttr("voltageSourcesElementNames", myVoltageSources);
     output.writeAttr("numClamps", myOverheadWireClamps.size());
     output.writeAttr(SUMO_ATTR_CHARGINGSTEPS, myChargeValues.size());
 
