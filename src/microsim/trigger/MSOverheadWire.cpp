@@ -727,21 +727,7 @@ MSTractionSubstation::solveCircuit(SUMOTime /*currentTime*/) {
         it->setCurrentFromOverheadWire(current);
         it->setVoltageOfOverheadWire(voltage);
 
-        // Calulate energy charged
-        double energyIn = WATT2WATTHR(voltage * current);  // [Wh]
-
-        // Compute energy charged into/from battery considering recuperation and propulsion efficiency (not considering battery capacity)
-        double energyCharged = it->computeChargedEnergy(energyIn);
-
-        // Update energy saved in the battery pack and return trully charged energy considering limits of battery
-        double realEnergyCharged = it->storeEnergyToBattery(energyCharged);
-
-        it->setEnergyCharged(realEnergyCharged);
-
-        // Add energy wasted to the total sum
-        it->updateTotalEnergyWasted(energyCharged - realEnergyCharged);
-        // Add the energy provided by the overhead wire segment to the output of the segment
-        it->getActOverheadWireSegment()->addChargeValueForOutput(energyIn, it);
+        it->getPowerManagement()->distributePower(voltage * current, true, true, it);
     }
 
     return 0;

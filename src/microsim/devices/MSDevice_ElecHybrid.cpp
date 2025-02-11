@@ -22,6 +22,7 @@
 // installed, that is being charged from the overhead wires.
 /****************************************************************************/
 #include <config.h>
+#include <tuple>
 
 #include <string.h> //due to strncmp
 #include <ctime> //due to clock()
@@ -153,6 +154,7 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     // RICE_TODO: make these two parameters user configurable
     mySOCMin(0.005),              // Minimum SOC of the battery
     mySOCMax(0.980),              // Maximum SOC of the battery
+    myPowerManagement(nullptr),
     myActOverheadWireSegment(nullptr),         // Initially the vehicle isn't under any overhead wire segment
     myPreviousOverheadWireSegment(nullptr),    // Initially the vehicle wasn't under any overhead wire segment
     veh_elem(nullptr),
@@ -161,6 +163,8 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
 
     EnergyParams* const params = myHolder.getEmissionParameters();
     params->setDouble(SUMO_ATTR_MAXIMUMPOWER, holder.getVehicleType().getParameter().getDouble(toString(SUMO_ATTR_MAXIMUMPOWER), 100000.));
+
+    myPowerManagement = new MSPowerManagement();
 
     if (maximumBatteryCapacity < 0) {
         WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY), toString(maximumBatteryCapacity));
@@ -204,7 +208,9 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
     assert(!std::isnan(myConsum));
 
     // is battery pack discharged (from previous timestep)
-    if (myActualBatteryCapacity < mySOCMin * myMaximumBatteryCapacity) {
+    // the elecHybrid vehicle is stopping due to low SOC when the soc is below (mySOCMin + 1 percentage point) of myMaximumBatteryCapacity
+    // TODO_RICE parametrize (mySOCMin + 1 percentage point)
+    if (myActualBatteryCapacity < (mySOCMin+0.01) * myMaximumBatteryCapacity) {
         myBatteryDischargedLogic = true;
     } else {
         myBatteryDischargedLogic = false;
@@ -370,24 +376,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
 
                 element_pos->setResistance(element_pos->getResistance() - resistance);
 
-
-                // Set the power requirement to the consumption + charging power.
-                // RICE_TODO: The charging power could be different when moving and when not. Add a parameter.
-                // Note that according to PMDP data, the charging power seems to be the same in both situations,
-                // ignoring the potential benefits of using a higher charging power when the vehicle is moving.
-                if (myActualBatteryCapacity < mySOCMax * myMaximumBatteryCapacity) {
-                    veh_elem->setPowerWanted(WATTHR2WATT(myConsum) + myOverheadWireChargingPower);
-                } else {
-                    veh_elem->setPowerWanted(WATTHR2WATT(myConsum));
-                }
-
-                // No recuperation to overheadwire (only to the batterypack)
-                if (!MSGlobals::gOverheadWireRecuperation && veh_elem->getPowerWanted() < 0.0) {
-                    // the value of energyWasted is properly computed and updated after solving circuit by the solver
-                    // energyWasted = 0;
-                    veh_elem->setPowerWanted(0.0);
-                }
-
+                
                 // RICE_TODO: The voltage in the solver should never exceed or drop below some limits. Maximum allowed voltage is typically 800 V.
                 // The numerical solver that computes the circuit state needs initial values of electric currents and
                 // voltages from which it will start the iterative solving process. We prefer to reuse the "old" values
@@ -400,6 +389,18 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                     // WRITE_WARNINGF(TL("The initial voltage is was % V, replacing it with substation voltage % V."), toString(voltage), toString(actualSubstation->getSubstationVoltage()));
                     voltage = actualSubstation->getSubstationVoltage();
                 }
+
+                // Set the power requirement to the consumption + charging power.
+                // RICE_TODO: The charging power could be different when moving and when not. Add a parameter.
+                // Note that according to PMDP data, the charging power seems to be the same in both situations,
+                // ignoring the potential benefits of using a higher charging power when the vehicle is moving.
+
+                // double powerDemand = computePowerDemand(myConsum, myActualBatteryCapacity, double speed, double voltage, bool hasTrolley, bool hasBattery);
+                auto powerDemands = myPowerManagement->computePowerDemand(myConsum, myActualBatteryCapacity, veh.getSpeed(), voltage, true, true);
+                double powerDemandFromOvereadWire = powerDemands.first;
+                veh_elem->setPowerWanted(powerDemandFromOvereadWire);
+
+
                 // Initial value of the electric current flowing into the vehicle that will be used by the solver
                 double current = -(veh_elem->getPowerWanted() / voltage);
                 veh_elem->setCurrent(current);
@@ -413,14 +414,12 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                 /*
                     No substation on this wire ...
                 */
-                // RICE_TODO myCharging = false; current 0 or nan, voltage 0 or nan, maybe write warning that the overhead wire is not connected to any substation,
-
-                // Energy flowing to/from the battery pack [Wh] has to completely cover vehicle consumption.
-                myEnergyCharged = -myConsum;
-                // Update Battery charge
-                myActualBatteryCapacity += myEnergyCharged;
-                // No substation is connected to this segment and the charging output is therefore zero.
-                myActOverheadWireSegment->addChargeValueForOutput(0, this, false);
+                /*
+                    Overhead wire without any connected substation and with the solver
+                         hasOvrHdWire = true
+                         charging = false
+                */
+                myPowerManagement->distributePower(0.0, true, false, this);
             }
 #else
             WRITE_ERROR(TL("Overhead wire solver is on, but the Eigen library has not been compiled in!"))
@@ -440,60 +439,28 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
             // (b) 0 if no substation powers the current segment or if someone put its power to zero,
             // (c) >0 if the substation can provide energy to the circuit.
             if (voltage > 0.0) {
-                // There is a power source connected to this segment.
-                // Set the simplified power requirement to the consumption + charging power.
-                // RICE_TODO: The charging power could be different when moving and when not. Add a parameter. See a similar code snippet above.
-                // Note that according to PMDP data, the charging power seems to be the same in both situations,
-                // ignoring the potential benefits of using a higher charging power when the vehicle is moving.
-                double powerWanted = WATTHR2WATT(myConsum);
-                if (myActualBatteryCapacity < mySOCMax * myMaximumBatteryCapacity) {
-                    // Additional `myOverheadWireChargingPower` due to charging of battery pack
-                    powerWanted += myOverheadWireChargingPower;
-                }
-
-                // No recuperation to overhead wire (only to the battery pack)
-                // RICE_TODO: How to recuperate into the circuit without solver? (energy balance?)
-                //            - solution: assume, that any power is possible to recuperate
-                if (!MSGlobals::gOverheadWireRecuperation && powerWanted < 0.0) {
-                    // the value of energyWasted is properly computed and updated below
-                    powerWanted = 0.0;
-                }
+                auto powerDemands = myPowerManagement->computePowerDemand(myConsum, myActualBatteryCapacity, veh.getSpeed(), voltage, true, true);
+                double powerDemandFromOvereadWire = powerDemands.first;
+                veh_elem->setPowerWanted(powerDemandFromOvereadWire);
 
                 // Set the actual current and voltage of the global circuit
                 // RICE_TODO: Process the traction station current limiting here as well.
-                myCircuitCurrent = powerWanted / voltage;
+                myCircuitCurrent = powerDemandFromOvereadWire / voltage;
                 myCircuitVoltage = voltage;
 
-                // Calculate energy charged
-                double energyIn = WATT2WATTHR(powerWanted);
-
-                // Calculate energy flowing to/from the battery in this step [Wh]
-                // RICE_TODO: It should be possible to define different efficiency values for direction overhead wire -> battery; motor -> battery.
-                // We use a simplification here. The biggest contributor to the total losses is the battery pack itself
-                // (the input LC filter is probably more efficient -- eta_LC ~ 0.99 -- compared to the induction motor
-                // with eta_motor ~ 0.95).
-                myEnergyCharged = computeChargedEnergy(energyIn);
-
-                // Update the energy that has been stored in the battery pack and return the real energy charged in this step
-                // considering SOC limits of the battery pack.
-                double realEnergyCharged = storeEnergyToBattery(myEnergyCharged);
-                // Set energy wasted
-                energyWasted = myEnergyCharged - realEnergyCharged;
-
-                // Add the energy provided by the overhead wire segment to the output of the segment
-                myActOverheadWireSegment->addChargeValueForOutput(energyIn, this);
+                /*
+                    Overhead wire with a connected substation and without the solver
+                         hasOvrHdWire = true
+                         charging = true
+                */
+                myPowerManagement->distributePower(powerDemandFromOvereadWire, true, true, this);
             } else {
                 /*
-                    Overhead wire without a connected substation
+                    Overhead wire without a connected substation and without the solver
+                         hasOvrHdWire = true
+                         charging = false   
                 */
-                // RICE_TODO myCharging = false; current 0 or nan, voltage 0 or nan, maybe write warning that the overhead wire is not connected to any substation,
-
-                // Energy for the powertrain is provided by the battery pack
-                myEnergyCharged = -myConsum;
-                // Update battery charge
-                myActualBatteryCapacity += myEnergyCharged;
-                // No energy was provided by the overhead wire segment
-                myActOverheadWireSegment->addChargeValueForOutput(0.0, this);
+                myPowerManagement->distributePower(0.0, true, false, this);
             }
         }
         assert(myActOverheadWireSegment != nullptr);
@@ -538,27 +505,26 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
             myPreviousOverheadWireSegment = nullptr;
         }
 
-        // Energy for the powertrain is provided by the battery pack
-        myEnergyCharged = -myConsum;
-        // Update battery charge
-        myActualBatteryCapacity += myEnergyCharged;
+        /*
+            Battery-powered driving (without overhead wire)
+                hasOvrHdWire = false
+                charging = false
+        */
+        myPowerManagement->distributePower(0.0, false, false, this);
     }
 
     // Update the statistical values
-    // RICE_TODO: update these statistical values also after solving circuit by electric circuit
-    if (std::isnan(myMaxBatteryCharge) || myMaxBatteryCharge < myActualBatteryCapacity) {
-        myMaxBatteryCharge = myActualBatteryCapacity;
-    }
-    if (std::isnan(myMinBatteryCharge) || myMinBatteryCharge > myActualBatteryCapacity) {
-        myMinBatteryCharge = myActualBatteryCapacity;
-    }
+    // MinMaxBatteryCharge should be already updated by MSPowerManagement::distributePower in this simulation time step
+    // updateMinMaxBatteryCharge()
 
     if (myConsum > 0.0) {
         myTotalEnergyConsumed += myConsum;
     } else {
         myTotalEnergyRegenerated -= myConsum;
     }
-    myTotalEnergyWasted += energyWasted;
+
+    // myTotalEnergyWasted should be already updated by MSPowerManagement::distributePower in this simulation time step
+    // myTotalEnergyWasted += energyWasted;
 
     myLastAngle = veh.getAngle();
     return true; // keep the device
@@ -777,31 +743,56 @@ MSDevice_ElecHybrid::getParameterDouble(const std::string& key) const {
     }
     throw InvalidArgument("Parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
 }
-
-
+/* OBSOLETE
 double MSDevice_ElecHybrid::computeChargedEnergy(double energyIn) {
     double energyCharged = energyIn - myConsum;
-    /*
+    
     Apply recuperation or propulsion efficiency if necessary
         1. if (energyIn > 0.0 && energyCharged > 0 && it->getConsum() >= 0) = > recuper eff for energyCharged
         2. if (energyIn > 0.0 && energyCharged > 0 && it->getConsum() < 0)  => recuper eff only for energyIn
         3. if (energyIn < 0.0 && it->getConsum() > 0) => 1/propulsion eff only for energyIn
         4. if (energyIn < 0.0 && energyCharged < 0 && it->getConsum() < 0) => 1/propulsion eff only for energyCharged
-    */
+    
     if (energyIn > 0.0 && energyCharged > 0.0) {
         // the vehicle is charging battery from overhead wire
         if (myConsum >= 0) {
             energyCharged *= myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY);
         } else {
+            // energyCharged = energyIn * eff_from_ovrhd_wire_to_battery - myConsum / eff_from_drive_to_ovrHdWire, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
             energyCharged = myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY) * energyIn - myConsum;
         }
     } else if (energyIn < 0.0 && energyCharged < 0.0) {
         // the vehicle is recuperating energy into the overhead wire and discharging batterypack at the same time
         if (myConsum >= 0) {
-            energyCharged *= energyIn / myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY) - myConsum;
+            // energyCharged = energyIn /  eff_from_battery_to_ovrhdwire - myConsum / eff_from_battery_to_drive, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
+            energyCharged = energyIn / myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY) - myConsum;
         } else {
-            energyCharged /= myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY);
+            // energyCharged = energyIn / eff_from_battery_to_ovrhdwire - myConsum / eff_from_drive_to_ovrHdWire, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
+            energyCharged = energyIn / myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY) - myConsum;
         }
+    }
+    return energyCharged;
+}
+*/
+
+double MSDevice_ElecHybrid::computeChargedEnergy(double energyIn) {
+    //RICE_TODO parametrize SUMO_ATTR_INPUTCHOKEEFFICIENCY and SUMO_ATTR_CHARGINEFFICIENCY
+    double SUMO_ATTR_INPUTCHOKEEFFICIENCY = 0.98;
+    double SUMO_ATTR_CHARGINEFFICIENCY = 0.93;
+
+    if (energyIn >= 0.0) {
+        energyIn *= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    }
+    else {
+        energyIn /= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    }
+    double energyCharged = energyIn - myConsum;
+
+    if (energyCharged >= 0) {
+        energyCharged *= SUMO_ATTR_CHARGINEFFICIENCY;
+    }
+    else {
+        energyCharged /= SUMO_ATTR_CHARGINEFFICIENCY;
     }
     return energyCharged;
 }
@@ -819,6 +810,16 @@ MSDevice_ElecHybrid::setConsum(const double consumption) {
 void
 MSDevice_ElecHybrid::updateTotalEnergyWasted(const double energyWasted) {
     myTotalEnergyWasted += energyWasted;
+}
+
+void
+MSDevice_ElecHybrid::updateMinMaxBatteryCharge() {
+    if (std::isnan(myMaxBatteryCharge) || myMaxBatteryCharge < myActualBatteryCapacity) {
+        myMaxBatteryCharge = myActualBatteryCapacity;
+    }
+    if (std::isnan(myMinBatteryCharge) || myMinBatteryCharge > myActualBatteryCapacity) {
+        myMinBatteryCharge = myActualBatteryCapacity;
+    }
 }
 
 double
@@ -957,5 +958,155 @@ MSDevice_ElecHybrid::consumption(SUMOVehicle& veh, double a, double newSpeed) {
     return PollutantsInterface::getEnergyHelper().compute(0, PollutantsInterface::ELEC, newSpeed, a, veh.getSlope(), myHolder.getEmissionParameters()) * TS;
 }
 
+
+// ===========================================================================
+// POWER MANAGEMENT
+// ===========================================================================
+
+MSPowerManagement::MSPowerManagement()
+    :   reducedSOC_ub(0.9),
+        reducedSOC_lb(0.001),
+        maxLineCurrent_driving(400.0), // 400 A
+        maxLineCurrent_stopped(80.0), // 80 A
+        recupBatteryPLimit(150000.0), // 150 KW
+        maxBatteryChargingPower_stopped(45000.0), // 45 kW
+        eco_maxBatteryChargingPower_stopped(25000.0), // 25 kW
+        eco_socThresholdForPeakShaving(0.4), // 40 %
+        eco_socHysteresisForPeakShaving(0.5), // 50 %
+        eco_minCurrentForPeakShaving(250), // 250 A
+        // old params
+        mySOCMax(reducedSOC_ub),
+        myMaximumBatteryCapacity(46000),
+        myOverheadWireChargingPower(40000) 
+        {}
+
+std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery) {
+    //RICE_TODO parametrize SUMO_ATTR_INPUTCHOKEEFFICIENCY and SUMO_ATTR_CHARGINEFFICIENCY
+    double SUMO_ATTR_INPUTCHOKEEFFICIENCY = 0.98;
+    double SUMO_ATTR_CHARGINEFFICIENCY = 0.93;
+    
+    consum = WATTHR2WATT(consum);
+    double powerDemandOvrHdWire = consum;
+    double powerDemandBattery = 0.0;
+    double powerCharging = 0.0;
+    double current = 0.0;
+        
+    if (!hasOvrHdWire || voltage < 100.0) {
+        powerDemandOvrHdWire = 0.0;
+        powerDemandBattery = consum / SUMO_ATTR_CHARGINEFFICIENCY;
+    }
+    else {
+        //under the overhead wire
+        if (speed >= 1) {
+            // driving
+            powerDemandOvrHdWire = consum;
+            // RICE_TODO chybi limit 250 A
+            if (powerDemandOvrHdWire < 0.0 && soc < myMaximumBatteryCapacity) {
+                // regenerating energy into the battery
+                powerDemandBattery = powerDemandOvrHdWire;
+                if (powerDemandBattery < -150000.0) {
+                    powerDemandBattery = -150000.0;
+                }
+                powerDemandOvrHdWire = powerDemandOvrHdWire - powerDemandBattery;
+            }
+            if (soc < reducedSOC_ub * myMaximumBatteryCapacity && -powerDemandBattery < maxBatteryChargingPower_stopped) {
+                // charging battery from overhead wire
+                current = powerDemandOvrHdWire / voltage;
+                powerCharging = -(current - maxLineCurrent_driving) * voltage * ((current - maxLineCurrent_driving) < 0.0);
+                if (powerCharging > maxBatteryChargingPower_stopped) {
+                    powerCharging = maxBatteryChargingPower_stopped;
+                }
+                powerDemandBattery = powerDemandBattery - powerCharging;
+                if (-powerDemandBattery > recupBatteryPLimit) {
+                    powerCharging = -powerDemandBattery - recupBatteryPLimit;
+                    powerDemandBattery = -recupBatteryPLimit;
+                }
+                powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;
+            }
+        }
+        else {
+            // stopped
+            powerDemandOvrHdWire = consum;
+            if (soc < reducedSOC_ub * myMaximumBatteryCapacity) {
+                //charging
+                current = powerDemandOvrHdWire / voltage;
+                powerCharging = -(current - maxLineCurrent_stopped) * voltage * ((current - maxLineCurrent_stopped) < 0.0);
+                if (powerCharging > maxBatteryChargingPower_stopped) {
+                    powerCharging = maxBatteryChargingPower_stopped;
+                }
+                powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;
+                powerDemandBattery = powerDemandBattery - powerCharging;
+            }
+        }
+
+        if (powerDemandOvrHdWire >= 0.0) {
+            powerDemandOvrHdWire /= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+        }
+        else {
+            powerDemandOvrHdWire *= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+        }
+
+        if (powerDemandBattery >= 0.0) {
+            powerDemandBattery /= SUMO_ATTR_CHARGINEFFICIENCY;
+        }
+        else {
+            powerDemandBattery *= SUMO_ATTR_CHARGINEFFICIENCY;
+        }
+    }
+
+    /*
+    if (soc < mySOCMax * myMaximumBatteryCapacity) {
+        powerDemand += myOverheadWireChargingPower;
+    }
+
+    // No recuperation to overheadwire (only to the batterypack)
+    // RICE_TODO: How to recuperate into the circuit without solver? (energy balance?)
+    //            - solution: assume, that any power is possible to recuperate
+    if (powerDemand < 0.0 && !MSGlobals::gOverheadWireRecuperation) {
+        // RICE_TODO: update the value of energyWasted - it is updated after computation and power distribution
+        powerDemand = 0.0;
+    }
+    */
+
+    return {powerDemandOvrHdWire, powerDemandBattery};
+}
+
+void MSPowerManagement::distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* it) {
+    // Energy drawn from overhead wire
+
+    double energyIn = WATT2WATTHR(powerFromOverheadWire);  // [Wh]
+
+    // Compute energy charged into/from battery considering recuperation and propulsion efficiency (not considering battery capacity)
+    // Calculate energy flowing to/from the battery in this step [Wh]
+    // RICE_TODO: It should be possible to define different efficiency values for direction overhead wire -> battery; motor -> battery.
+    // We use a simplification here. The biggest contributor to the total losses is the battery pack itself
+    // (the input LC filter is probably more efficient -- eta_LC ~ 0.99 -- compared to the induction motor
+    // with eta_motor ~ 0.95).
+    double energyCharged = it->computeChargedEnergy(energyIn);
+
+    // Update energy saved in the battery pack and return trully charged energy considering limits of battery
+    double realEnergyCharged = it->storeEnergyToBattery(energyCharged);
+
+    it->setEnergyCharged(realEnergyCharged);
+
+    // Add the energy provided by the overhead wire segment to the output of the segment
+    if (hasOvrHdWire) {
+        it->getActOverheadWireSegment()->addChargeValueForOutput(energyIn, it, charging);
+    }
+
+    // Update the statistical values
+    it->updateTotalEnergyWasted(energyCharged - realEnergyCharged);
+    it->updateMinMaxBatteryCharge();
+    /*
+    //myTotalEnergyConsumed and myTotalEnergyRegenerated are updated in notify move - inconsistency
+    if (myConsum > 0.0) {
+        myTotalEnergyConsumed += myConsum;
+    }
+    else {
+        myTotalEnergyRegenerated -= myConsum;
+    }
+    */
+    return;
+}
 
 /****************************************************************************/
