@@ -914,10 +914,11 @@ MSDevice_ElecHybrid::storeEnergyToBattery(const double energy) {
 void
 MSDevice_ElecHybrid::setActualBatteryCapacity(const double actualBatteryCapacity) {
     // Use the SOC limits to cap the actual battery capacity
-    if (actualBatteryCapacity < mySOCMin * myMaximumBatteryCapacity) {
+    // RICE_TODO I cannot discharge but it implies stopping the vehicle
+    if (actualBatteryCapacity < mySOCMin * myMaximumBatteryCapacity && actualBatteryCapacity < myActualBatteryCapacity) {
         //WRITE_WARNINGF(TL("The Battery of vehicle '%' has been exhausted."), getID());
         myActualBatteryCapacity = MIN2(mySOCMin * myMaximumBatteryCapacity, myActualBatteryCapacity);
-    } else if (actualBatteryCapacity > mySOCMax * myMaximumBatteryCapacity) {
+    } else if (actualBatteryCapacity > mySOCMax * myMaximumBatteryCapacity && actualBatteryCapacity > myActualBatteryCapacity) {
         myActualBatteryCapacity = MAX2(mySOCMax * myMaximumBatteryCapacity, myActualBatteryCapacity);
     } else {
         myActualBatteryCapacity = actualBatteryCapacity;
