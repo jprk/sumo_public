@@ -35,6 +35,7 @@
             <xsd:element name="tractionSubstation" type="tractionSubstationType" minOccurs="0"/>
             <xsd:element name="overheadWireClamp" type="overheadWireClampType" minOccurs="0"/>
             <xsd:element name="overheadWire" type="overheadWireType" minOccurs="0"/>
+            <xsd:element name="overheadWireType" type="overheadWiretypeType" minOccurs="0"/>
             <xsd:element name="parkingArea" type="parkingAreaType" minOccurs="0"/>
             <xsd:element name="calibrator" type="calibratorType" minOccurs="0"/>
             <xsd:element name="vaporizer" type="vaporizerType" minOccurs="0"/>
@@ -495,6 +496,7 @@
             <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
         <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="wireTypeId" type="idType" use="optional"/>
         <xsd:attribute name="lanes" type="xsd:string" use="required"/>
         <xsd:attribute name="substationId" type="xsd:string" use="required"/>
         <xsd:attribute name="voltageSource" type="xsd:string" use="optional"/>
@@ -503,6 +505,15 @@
         <xsd:attribute name="startPos" type="xsd:float" use="optional"/>
         <xsd:attribute name="endPos" type="xsd:float" use="optional"/>
         <xsd:attribute name="friendlyPos" type="boolType" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="overheadWiretypeType">
+        <xsd:sequence>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="wireResistivity" type="xsd:float" use="required"/>
+        <xsd:attribute name="wireCrossSection" type="xsd:float" use="required"/>
     </xsd:complexType>
 
     <xsd:simpleType name="accessPosType">
