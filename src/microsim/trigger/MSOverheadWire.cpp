@@ -164,12 +164,6 @@ MSOverheadWire::setChargingVehicle(bool value) {
     myChargingVehicle = value;
 }
 
-
-void
-MSTractionSubstation::setChargingVehicle(bool value) {
-    myChargingVehicle = value;
-}
-
 bool
 MSOverheadWire::vehicleIsInside(const double position) const {
     if ((position >= getBeginLanePosition()) && (position <= getEndLanePosition())) {
@@ -330,18 +324,25 @@ MSTractionSubstation::writeOut() {
 
 void
 MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverheadWireSegment) {
+    // RICE_TODO: Why to we skip internal lanes here?
     MSLane& lane = const_cast<MSLane&>(newOverheadWireSegment->getLane());
     if (lane.isInternal()) {
         return;
     }
 
     // RICE_TODO: consider the possibility of having more segments that belong to one lane.
+    // The rationale behind this is the possibility to have a wire section split placed
+    // on certain position over the lane. Currently we have to split the underlying edge to
+    // get an appropriate split placement.
 
+    // Add this segment to the traction substation
     myOverheadWireSegments.push_back(newOverheadWireSegment);
+    // Let the segment reference this substation
     newOverheadWireSegment->setTractionSubstation(this);
 
     if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
+		// RICE_TODO: This shall return this substation's circuit
         Circuit* circuit = newOverheadWireSegment->getCircuit();
         const std::string segmentID = newOverheadWireSegment->getID();
 
@@ -349,7 +350,7 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
             circuit->addNode("negNode_ground");
         }
 
-        // convention: pNode is at the beginning of the wire segment, nNode is at the end of the wire segment
+        // Convention: `pNode` is at the beginning of the wire segment, `nNode` is at the end of the wire segment
         newOverheadWireSegment->setCircuitStartNodePos(circuit->addNode("pNode_pos_" + segmentID));
         newOverheadWireSegment->setCircuitEndNodePos(circuit->addNode("nNode_pos_" + segmentID));
         // RICE_TODO: to use startPos and endPos of ovhdsegment: set the length of wire here properly

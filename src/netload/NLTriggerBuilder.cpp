@@ -548,7 +548,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireType(MSNet& net, const SUMOSAXAttribu
     const double crossSection = attrs.getOpt<double>(SUMO_ATTR_OVERHEAD_WIRE_CROSSSECTION, id.c_str(), ok, WIRE_CROSSSECTION);
     // Add wire type information to map of known wire types
     OverheadWireType owt(id, resistivity, crossSection);
-    // Note: Using [...] would require a default constructor crating a dummy object first
+    // Note: Using [...] would require a default constructor creating a dummy object first
     myOverheadWireTypeMap.insert({ id, owt });
 }
 
