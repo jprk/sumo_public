@@ -32,6 +32,7 @@
 // ===========================================================================
 class SUMOVehicle;
 class MSDevice_Emissions;
+class MSPowerManagement;
 
 
 // ===========================================================================
@@ -190,6 +191,9 @@ public:
     /// @brief Add energyWasted to the total sum myTotalEnergyWasted
     void updateTotalEnergyWasted(const double energyWasted);
 
+    /// @brief Update tripInfo's statistics myMaxBatteryCharge and myMinBatteryCharge according to actual state of the charge: myActualBatteryCapacity
+    void updateMinMaxBatteryCharge();
+
     void setConsum(const double consumption);
 
     double acceleration(SUMOVehicle& veh, double power, double oldSpeed);
@@ -208,6 +212,9 @@ public:
         return veh_elem;
     }
 
+    MSPowerManagement* getPowerManagement() {
+        return myPowerManagement;
+    };
 private:
     /** @brief Constructor
     *
@@ -272,6 +279,8 @@ protected:
     double mySOCMax;
     /// @}
 
+    MSPowerManagement* myPowerManagement;
+
     /// @brief Parameter, Pointer to the actual overhead wire segment in which vehicle is placed (by default is nullptr)
     MSOverheadWire* myActOverheadWireSegment;
 
@@ -303,4 +312,43 @@ private:
     MSDevice_ElecHybrid& operator=(const MSDevice_ElecHybrid&);
 
 
+};
+
+// ===========================================================================
+// class definitions
+// ===========================================================================
+/**
+* @class MSPowerManagemnt
+* @brief A class that define power management for elechybrid device
+*
+* TODO: 
+*    -descripion
+*    -should the powermanagement class inherit some base class as Named for exmaple? 
+*    -what is a proper name of the class, why MS?
+*/
+class MSPowerManagement {
+private:
+    double reducedSOC_ub;
+    double reducedSOC_lb;
+    double maxLineCurrent_driving; // 400 A
+    double maxLineCurrent_stopped; // 80 A
+    double recupBatteryPLimit; // 150 KW
+    double maxBatteryChargingPower_stopped; // 45 kW
+    double eco_maxBatteryChargingPower_stopped; // 25 kW
+    double eco_socThresholdForPeakShaving; // 40 %
+    double eco_socHysteresisForPeakShaving; // 50 %
+    double eco_minCurrentForPeakShaving; // 250 A
+
+// old params
+    double mySOCMax;
+    double myMaximumBatteryCapacity;
+    double myOverheadWireChargingPower;
+
+public:
+    MSPowerManagement();  // Konstruktor
+
+    double calculateBatteryRequest(double requiredPower);
+    double calculateEngineRequest(double requiredPower);
+    std::pair<double, double> computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery);
+    void distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* elecHybrid);
 };

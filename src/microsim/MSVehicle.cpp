@@ -6119,12 +6119,12 @@ MSVehicle::updateBestLanes(bool forceRebuild, const MSLane* startLane) {
                 index++;
             }
 
-            //vehicle with elecHybrid device prefers running under an overhead wire
+            //vehicle with elecHybrid device prefers running under an overhead wire but only if the line allows continuation
             if (getDevice(typeid(MSDevice_ElecHybrid)) != nullptr) {
                 index = 0;
                 for (const LaneQ& j : clanes) {
                     std::string overheadWireSegmentID = MSNet::getInstance()->getStoppingPlaceID(j.lane, j.currentLength / 2., SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-                    if (overheadWireSegmentID != "") {
+                    if (overheadWireSegmentID != "" && j.allowsContinuation) {
                         bestThisIndex = index;
                         bestThisMaxIndex = index;
                     }
@@ -6201,7 +6201,7 @@ MSVehicle::updateBestLanes(bool forceRebuild, const MSLane* startLane) {
         if (static_cast<MSDevice_ElecHybrid*>(getDevice(typeid(MSDevice_ElecHybrid))) != 0) {
             index = 0;
             std::string overheadWireID = MSNet::getInstance()->getStoppingPlaceID(clanes[bestThisIndex].lane, (clanes[bestThisIndex].currentLength) / 2, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-            if (overheadWireID != "") {
+            if (overheadWireID != "" && clanes[index].allowsContinuation) {
                 for (std::vector<LaneQ>::iterator j = clanes.begin(); j != clanes.end(); ++j, ++index) {
                     (*j).bestLaneOffset = bestThisIndex - index;
                 }

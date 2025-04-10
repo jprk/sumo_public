@@ -227,6 +227,19 @@ NLBuilder::build() {
             }
         }
         MSTriggeredRerouter::checkParkingRerouteConsistency();
+        // RICE @todo Check the consistency of the overhead wire circuit.
+        if (MSGlobals::gOverheadWireSolver) {
+            // We allow the circuits for particular substations to be defined 
+            // step-wise. While some intermediate checks may be done immediately
+            // when processing <overheadWire> tags, some parts (e.g. check for connection
+            // to voltage sources) require the whole possibly discontinuous circuit
+            // to be built first.
+            if (!MSNet::getInstance()->checkSubstationCircuits()) {
+                WRITE_ERROR("Substation circuits check failed.");
+                return false;
+            }
+            WRITE_MESSAGE("Substation circuits successfully checked.")
+        }
     }
     // init tls after all detectors have been loaded
     myJunctionBuilder.postLoadInitialization();

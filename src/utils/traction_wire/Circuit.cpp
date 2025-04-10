@@ -904,7 +904,8 @@ bool Circuit::checkCircuit(std::string substationId) {
     for (std::vector<Node*>::iterator it = nodes->begin(); it != nodes->end(); it++) {
         if ((*it)->getNumOfElements() < 2) {
             //cout << "WARNING: Node [" << (*it)->getName() << "] is connected to less than two elements, please enter other elements.\n";
-            if ((*it)->getNumOfElements() < 1) {
+            if ((*it)->getNumOfElements() < 1 && (! (*it)->isGround())) {
+                WRITE_ERRORF(TL("Circuit node '%' for substation '%s' has zero elements."), (*it)->getName(), substationId);
                 return false;
             }
         }
@@ -917,6 +918,14 @@ bool Circuit::checkCircuit(std::string substationId) {
             return false;
         }
     }
+
+    // RICE_TODO: We should never have this case
+    if (voltageSources->size() == 0)
+    {
+        WRITE_ERRORF(TL("Circuit of substation '%' has no voltage sources."), substationId);
+        return false;
+    }
+    
     // check other elements
     for (std::vector<Element*>::iterator it = elements->begin(); it != elements->end(); it++) {
         if ((*it)->getPosNode() == nullptr || (*it)->getNegNode() == nullptr) {

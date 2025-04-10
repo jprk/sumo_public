@@ -166,5 +166,6 @@ __pycache__
 .gdb_history
 .env
 #
-.idea
+*.bak
+.idea/
 setPATH64.bat

@@ -252,7 +252,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
     } else if (substation->isAnySectionPreviouslyDefined()) {
         /// @todo if substation->isAnySectionPreviouslyDefined() && the old syntax of input xml is used, then error
-        WRITE_MESSAGE("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced multiple times. This is allowed to enable constructing an overheadwire segment with not strictly consecutives lanes.");
+        WRITE_MESSAGEF("Traction substation '%' referenced by an <overheadWire> element '%' is probably referenced multiple times. This is allowed to enable constructing an overheadwire segment with not strictly consecutive lanes.", substationId, id);
         /// throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
     }
 
@@ -525,7 +525,8 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         // check that the electric circuit makes sense
         // @todo Circuit should be checked after loading of all additional files. Not at this place.
         // @todo Since we allow not to define a voltageSource in <overheadWire> definition, the circuit checking should also verify that at least one voltage source is in the circuit.
-        segments[0]->getCircuit()->checkCircuit(substationId);
+        // @todo The checking now takes place in NLBuilder.cpp
+        // segments[0]->getCircuit()->checkCircuit(substationId);
 #else
         WRITE_WARNING(TL("Cannot check circuit, overhead circuit solver support (Eigen) not compiled in."));
 #endif
