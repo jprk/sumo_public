@@ -342,11 +342,11 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                    while (resistance < (veh.getLane()->getLength() - veh.getPositionOnLane())*WIRE_RESISTIVITY) {
                    Improvement: take the relative distance of the vehicle to the end of its lane and map it to the segment's lane length. (This works also in case that the segment's lane and the vehicle's lane are identical.)
                 */
-                double relativePosOnSegment =
+                double vehPosMappedOnSegment =
                     myActOverheadWireSegment->getLane().getLength() * (1 -
                             (veh.getPositionOnLane() / veh.getLane()->getLength()));
 
-                while (resistance < relativePosOnSegment * WIRE_RESISTIVITY) {
+                while (resistance < vehPosMappedOnSegment * myActOverheadWireSegment->getResistancePerLength()) {
                     node_pos = element_pos->getPosNode();
                     element_pos = node_pos->getElements()->at(2);
                     resistance += element_pos->getResistance();
@@ -357,7 +357,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
 
                 node_pos = element_pos->getPosNode();
                 //resistance of vehicle tail nodes
-                resistance -= relativePosOnSegment * WIRE_RESISTIVITY;
+                resistance -= vehPosMappedOnSegment * myActOverheadWireSegment->getResistancePerLength();
 
                 /* dividing element_pos
                    before:   |node_pos|---------------------------------------------|element_pos|----
