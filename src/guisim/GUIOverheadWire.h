@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <utils/common/Command.h>
 #include <utils/common/VectorHelper.h>
 #include <utils/geom/PositionVector.h>
@@ -130,6 +131,9 @@ private:
 
     /// @brief The rotation of the sign
     double myFGSignRot;
+
+    /// @brief Auxiliary lane type used for mapping lanes to different drawing styles
+    enum LaneType { ROAD = 1, RAIL = 2 } myLaneType;
 };
 
 class GUIOverheadWireClamp : public GUIGlObject_AbstractAdd {

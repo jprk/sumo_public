@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include <string>
+#include <unordered_map>
 #include <utils/common/MsgHandler.h>
 #include <utils/geom/PositionVector.h>
 #include <utils/geom/Boundary.h>
@@ -84,6 +85,45 @@ GUIOverheadWire::GUIOverheadWire(const std::string& id, MSLane& lane, double fro
         const double rotSign = MSGlobals::gLefthand ? -1 : 1;
         myFGSignRot -= 90 * rotSign;
     }
+
+    // determine the lane type for drawing
+    std::string lane_type_aux = lane.getLaneType();
+    if (lane_type_aux.empty()) {
+        // no type given for the lane, check the edge
+        const MSEdge& edge_aux = lane.getEdge();
+        lane_type_aux = edge_aux.getEdgeType();
+        // but internal edges do not have types (or do not have to have types)
+        if (lane_type_aux.empty()) {
+            if (edge_aux.getFunction() == SumoXMLEdgeFunc::INTERNAL) {
+                // find a predecessor / ancestor that is "normal"
+                const MSEdgeVector& e_pred = edge_aux.getPredecessors();
+                for (auto pe : e_pred) {
+                    if (pe->getFunction() == SumoXMLEdgeFunc::NORMAL) {
+                        lane_type_aux = pe->getEdgeType();
+                        break;
+                    }
+                }
+                if (lane_type_aux.empty()) {
+                    // still empty?
+                    const MSEdgeVector& e_succ = edge_aux.getSuccessors();
+                    for (auto pe : e_succ) {
+                        if (pe->getFunction() == SumoXMLEdgeFunc::NORMAL) {
+                            lane_type_aux = pe->getEdgeType();
+                            break;
+                        }
+                    }
+                }
+                if (lane_type_aux.empty()) {
+                    WRITE_WARNINGF(TL("Neither the internal edge `%` nor its predecessors and successors have the type set, cannot deduce overhead wire drawing style."), edge_aux.getID());
+                }
+            }
+            else {
+                WRITE_WARNINGF(TL("Both lane `%` and its edge `%` have no type set, cannot deduce overhead wire drawing style."), lane.getID(), edge_aux.getID());
+            }
+        }
+    }
+    // @RICETODO: Which lane or edge types are related to tramway?
+    myLaneType = (lane_type_aux == "rail" || lane_type_aux == "railway.tram") ? RAIL : ROAD;
 }
 
 
@@ -181,7 +221,19 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
     std::vector<double> myFGShapeLengths_aux;
     int e_aux = 0;
     Node* node = NULL;
-    double voltage = 0;
+    double voltage = 0.0;
+    double wire_offset;
+
+    // set the offset for drawing wires based on the lane type
+    // ROAD - trolleybus offsets are 0.5 (i.e. 1/4 of the width from the curb)
+    // RAIL - tramway offsets are 0.1 (i.e. almost at the center)
+    if (myLaneType == RAIL) {
+        wire_offset = 0.1;
+    }
+    else {
+        // lane type is ROAD
+        wire_offset = 0.5;
+    }
 
     if (myCircuitStartNodePos != NULL) {
         voltage = myCircuitStartNodePos->getVoltage();
@@ -231,7 +283,9 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
             circuit->unlock();
         }
         GLHelper::setColor(scheme.getColor(MAX2(0.0, voltage - 400)));
-        GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0.5);
+        // tramway: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0);
+        // trolleybus: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0.5);
+        GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, wire_offset);
 
         toPos = fromPos;
     }
@@ -257,9 +311,12 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
         myFGShapeLengths_aux.push_back(f_aux.distanceTo(s_aux));
         myFGShapeRotations_aux.push_back((double)atan2((s_aux.x() - f_aux.x()), (f_aux.y() - s_aux.y())) * (double) 180.0 / (double)M_PI);
     }
-    GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0.5);
+    // tramway: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0);
+    // trolleybus: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0.5);
+    GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, wire_offset);
 
 
+    // jkotschy: ignore the left wire
     //left catenary
     //coloring of left-side overhead wire segment in case of
     // * a vehicle is under the segment
@@ -272,7 +329,9 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
     } else {
         GLHelper::setColor(green);
     }
-    GLHelper::drawBoxLines(myFGShape, myFGShapeRotations, myFGShapeLengths, exaggeration / 8, 0, -0.5);
+    // tramway: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0);
+    // trolleybus: GLHelper::drawBoxLines(myFGShape_aux, myFGShapeRotations_aux, myFGShapeLengths_aux, exaggeration / 8, 0, 0.5);
+    GLHelper::drawBoxLines(myFGShape, myFGShapeRotations, myFGShapeLengths, exaggeration / 8, 0, -wire_offset);
 
 
     // draw details unless zoomed out too far
