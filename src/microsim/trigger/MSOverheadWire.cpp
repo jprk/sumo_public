@@ -492,7 +492,7 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
 
             circuit->addElement(
                 "voltage_source_resistance",
-                0.12,
+                0.001,  // RICE_TODO: Used to have 0.12 Ohm here for trolleybuses
                 circuit->getNode("voltage_source_node"),
                 circuit->getNode("voltage_source_resistor_node"),
                 Element::ElementType::RESISTOR_traction_wire);
