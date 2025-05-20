@@ -697,6 +697,17 @@ MSDevice_ElecHybrid::generateOutput(OutputDevice* tripinfoOut) const {
         tripinfoOut->writeAttr("totalEnergyWasted", myTotalEnergyWasted);
         tripinfoOut->closeTag();
     }
+    // This is called when the vehicle is being removed from the simulation. 
+    // We shall close the vehicle-specific output in case that it has been opened.
+    if (!OptionsCont::getOptions().getBool("elechybrid-output.aggregated"))
+    {
+        // Per-vehicle output, close the current output file
+        std::string output = OptionsCont::getOptions().getString("elechybrid-output");
+        std::string vehID = myHolder.getID();
+        std::string filename2 = output + "_" + vehID + ".xml";
+        OutputDevice& dev = OutputDevice::getDevice(filename2);
+        dev.close();
+    }
 }
 
 
