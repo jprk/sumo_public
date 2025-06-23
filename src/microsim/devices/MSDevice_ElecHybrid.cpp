@@ -165,6 +165,8 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     params->setDouble(SUMO_ATTR_MAXIMUMPOWER, holder.getVehicleType().getParameter().getDouble(toString(SUMO_ATTR_MAXIMUMPOWER), 100000.));
 
     myPowerManagement = new MSPowerManagement();
+    // Add also the current electric current limit to the parameters
+    params->setDouble(SUMO_ATTR_MAXCURRENT_STOPPED, myPowerManagement->getMaxLineCurrentStopped());
 
     if (maximumBatteryCapacity < 0) {
         WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY), toString(maximumBatteryCapacity));
@@ -722,6 +724,11 @@ MSDevice_ElecHybrid::getMaximumBatteryCapacity() const {
     return myMaximumBatteryCapacity;
 }
 
+double
+MSDevice_ElecHybrid::getMaxLineCurrentStopped() const {
+    return myPowerManagement->getMaxLineCurrentStopped();
+}
+
 std::string
 MSDevice_ElecHybrid::getParameter(const std::string& key) const {
     // RICE_TODO: full traci support
@@ -751,8 +758,49 @@ MSDevice_ElecHybrid::getParameterDouble(const std::string& key) const {
         return myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_MAXIMUMPOWER);
     } else if (key == toString(SUMO_ATTR_RECUPERATIONEFFICIENCY)) {
         return myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY);
+    } else if (key == toString(SUMO_ATTR_MAXCURRENT_STOPPED)) {
+        return myPowerManagement->getMaxLineCurrentStopped();
     }
     throw InvalidArgument("Parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
+}
+
+void
+MSDevice_ElecHybrid::setParameter(const std::string& key, const std::string& value) {
+    double doubleValue;
+    try {
+        doubleValue = StringUtils::toDouble(value);
+    }
+    catch (NumberFormatException&) {
+        throw InvalidArgument("Setting parameter '" + key + "' requires a number for device of type '" + deviceName() + "'");
+    }
+    if (key == toString(SUMO_ATTR_ACTUALBATTERYCAPACITY)) {
+        myActualBatteryCapacity = doubleValue;
+    } else if (key == toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY)) {
+        myMaximumBatteryCapacity = doubleValue;
+    } else if (key == toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER)) {
+        myOverheadWireChargingPower = doubleValue;
+    } else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
+        WRITE_WARNING(TL("Setting the vehicle mass via parameters is deprecated, please use setMass for the vehicle or its type."));
+        myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_MASS, doubleValue);
+    } else {
+        throw InvalidArgument("Setting parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
+    }
+}
+
+void
+MSDevice_ElecHybrid::setParameterDouble(const std::string& key, const double val) {
+    if (key == toString(SUMO_ATTR_MAXIMUMPOWER)) {
+        myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_MAXIMUMPOWER, val);
+    }
+    else if (key == toString(SUMO_ATTR_RECUPERATIONEFFICIENCY)) {
+        myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY, val);
+    }
+    else if (key == toString(SUMO_ATTR_MAXCURRENT_STOPPED)) {
+        myPowerManagement->setMaxLineCurrentStopped(val);
+    }
+    else {
+        throw InvalidArgument("Setting parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
+    }
 }
 /* OBSOLETE
 double MSDevice_ElecHybrid::computeChargedEnergy(double energyIn) {
@@ -936,28 +984,6 @@ MSDevice_ElecHybrid::setActualBatteryCapacity(const double actualBatteryCapacity
     }
 }
 
-void
-MSDevice_ElecHybrid::setParameter(const std::string& key, const std::string& value) {
-    double doubleValue;
-    try {
-        doubleValue = StringUtils::toDouble(value);
-    } catch (NumberFormatException&) {
-        throw InvalidArgument("Setting parameter '" + key + "' requires a number for device of type '" + deviceName() + "'");
-    }
-    if (key == toString(SUMO_ATTR_ACTUALBATTERYCAPACITY)) {
-        myActualBatteryCapacity = doubleValue;
-    } else if (key == toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY)) {
-        myMaximumBatteryCapacity = doubleValue;
-    } else if (key == toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER)) {
-        myOverheadWireChargingPower = doubleValue;
-    } else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
-        WRITE_WARNING(TL("Setting the vehicle mass via parameters is deprecated, please use setMass for the vehicle or its type."));
-        myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_MASS, doubleValue);
-    } else {
-        throw InvalidArgument("Setting parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
-    }
-}
-
 double
 MSDevice_ElecHybrid::acceleration(SUMOVehicle& veh, double power, double oldSpeed) {
     myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_ANGLE, std::isnan(myLastAngle) ? 0. : GeomHelper::angleDiff(myLastAngle, veh.getAngle()));
@@ -1016,6 +1042,7 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
             if (powerDemandOvrHdWire < 0.0 && soc < myMaximumBatteryCapacity) {
                 // regenerating energy into the battery
                 powerDemandBattery = powerDemandOvrHdWire;
+				// RICE_TODO: What is the meaning of this limit?
                 if (powerDemandBattery < -150000.0) {
                     powerDemandBattery = -150000.0;
                 }
@@ -1083,7 +1110,7 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
     return {powerDemandOvrHdWire, powerDemandBattery};
 }
 
-void MSPowerManagement::distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* it) {
+void MSPowerManagement::distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* device) {
     // Energy drawn from overhead wire
 
     double energyIn = WATT2WATTHR(powerFromOverheadWire);  // [Wh]
@@ -1094,21 +1121,21 @@ void MSPowerManagement::distributePower(double powerFromOverheadWire, bool hasOv
     // We use a simplification here. The biggest contributor to the total losses is the battery pack itself
     // (the input LC filter is probably more efficient -- eta_LC ~ 0.99 -- compared to the induction motor
     // with eta_motor ~ 0.95).
-    double energyCharged = it->computeChargedEnergy(energyIn);
+    double energyCharged = device->computeChargedEnergy(energyIn);
 
     // Update energy saved in the battery pack and return trully charged energy considering limits of battery
-    double realEnergyCharged = it->storeEnergyToBattery(energyCharged);
+    double realEnergyCharged = device->storeEnergyToBattery(energyCharged);
 
-    it->setEnergyCharged(realEnergyCharged);
+    device->setEnergyCharged(realEnergyCharged);
 
     // Add the energy provided by the overhead wire segment to the output of the segment
     if (hasOvrHdWire) {
-        it->getActOverheadWireSegment()->addChargeValueForOutput(energyIn, it, charging);
+        device->getActOverheadWireSegment()->addChargeValueForOutput(energyIn, device, charging);
     }
 
     // Update the statistical values
-    it->updateTotalEnergyWasted(energyCharged - realEnergyCharged);
-    it->updateMinMaxBatteryCharge();
+    device->updateTotalEnergyWasted(energyCharged - realEnergyCharged);
+    device->updateMinMaxBatteryCharge();
     /*
     //myTotalEnergyConsumed and myTotalEnergyRegenerated are updated in notify move - inconsistency
     if (myConsum > 0.0) {

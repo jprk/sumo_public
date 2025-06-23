@@ -133,6 +133,9 @@ public:
     /// @brief try to set the given parameter for this device. Throw exception for unsupported key
     void setParameter(const std::string& key, const std::string& value);
 
+    /// @brief try to set the given double (floating point) parameter for this device. Throw exception for unsupported key
+    void setParameterDouble(const std::string& key, const double val);
+
     /** @brief Called on writing tripinfo output
      *
      * @param[in] tripinfoOut The output device to write the information into
@@ -164,6 +167,9 @@ public:
 
     /// @brief Get actual current in the overhead wire segment
     double getCurrentFromOverheadWire() const;
+
+    /// @brief Get actual value of electric current limit from the overhead line for vehicle that has stopped
+    double getMaxLineCurrentStopped() const;
 
     void setCurrentFromOverheadWire(double current);
 
@@ -331,6 +337,7 @@ private:
     double reducedSOC_ub;
     double reducedSOC_lb;
     double maxLineCurrent_driving; // 400 A
+    /// @brief Maximum current that can be drawn from the overhead line when stopped
     double maxLineCurrent_stopped; // 80 A
     double recupBatteryPLimit; // 150 KW
     double maxBatteryChargingPower_stopped; // 45 kW
@@ -339,7 +346,7 @@ private:
     double eco_socHysteresisForPeakShaving; // 50 %
     double eco_minCurrentForPeakShaving; // 250 A
 
-// old params
+    // old params
     double mySOCMax;
     double myMaximumBatteryCapacity;
     double myOverheadWireChargingPower;
@@ -347,8 +354,23 @@ private:
 public:
     MSPowerManagement();  // Konstruktor
 
+    /*
+    TODO: These are not defined anywhere, why?
+    
     double calculateBatteryRequest(double requiredPower);
     double calculateEngineRequest(double requiredPower);
+    */
+    
     std::pair<double, double> computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery);
     void distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* elecHybrid);
+
+	//@brief Set the maximum current drawn from the overhead line when the vehicle is stopped
+    void setMaxLineCurrentStopped(double current) {
+        maxLineCurrent_stopped = current;
+	};
+
+    //@brief Get the maximum current drawn from the overhead line when the vehicle is stopped
+    double getMaxLineCurrentStopped() {
+        return maxLineCurrent_stopped;
+    };
 };
