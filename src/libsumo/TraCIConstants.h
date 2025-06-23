@@ -1470,6 +1470,9 @@ TRACI_CONST int VAR_CS_CHARGE_IN_TRANSIT = 0x99;
 // charging station power
 TRACI_CONST int VAR_CS_CHARGE_DELAY = 0x9a;
 
+// maximum charging current when stopped
+TRACI_CONST int VAR_BMS_MAXCURRENT_STOPPED = 0x9b;
+
 } // namespace libsumo
 
 #undef TRACI_CONST
