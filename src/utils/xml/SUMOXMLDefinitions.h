@@ -1088,6 +1088,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_RECUPERATIONEFFICIENCY_BY_DECELERATION,
     /// @brief Stopping threshold
     SUMO_ATTR_STOPPINGTHRESHOLD,
+	/// @brief Maximum current that can be drawn from the overhead line when stopped
+	SUMO_ATTR_MAXCURRENT_STOPPED,
     /// @}
 
     /// @name tripinfo output attributes
