@@ -1402,6 +1402,14 @@ class VehicleDomain(VTypeDomain):
         if isinstance(edgeList, str):
             edgeList = [edgeList]
         self._setCmd(tc.VAR_VIA, vehID, "l", edgeList)
+        
+    def setChargingCurrent(self, vehID, current):
+        """setChargingCurrent(string, double) -> None
+
+        Sets the charging current when ElecHybdir vehicle is stopped..
+        """
+        self._setCmd(tc.VAR_BMS_MAXCURRENT_STOPPED, vehID, "d", current)
+
 
     def highlight(self, vehID, color=(255, 0, 0, 255), size=-1, alphaMax=-1, duration=-1, type=0):
         """ highlight(string, color, float, ubyte, float, ubyte) -> None
