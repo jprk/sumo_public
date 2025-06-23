@@ -1350,6 +1350,13 @@ Vehicle::dispatchTaxi(const std::string& vehID,  const std::vector<std::string>&
     Dom::setStringVector(libsumo::CMD_TAXI_DISPATCH, vehID, reservations);
 }
 
+// RICE_TODO: Only partial implementation of Battery management interface
+void
+Vehicle::setBatteryManagement(const std::string& vehID, double maxChargeCurrentStopped) {
+	Dom::setDouble(libsumo::VAR_BMS_MAXCURRENT_STOPPED, vehID, maxChargeCurrentStopped);
+}
+
+
 
 void
 Vehicle::subscribeLeader(const std::string& vehID, double dist, double begin, double end) {

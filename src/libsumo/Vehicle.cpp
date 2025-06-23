@@ -30,7 +30,6 @@
 #include <utils/vehicle/SUMOVehicleParserHelper.h>
 #include <microsim/traffic_lights/MSTrafficLightLogic.h>
 #include <microsim/lcmodels/MSAbstractLaneChangeModel.h>
-#include <microsim/devices/MSDevice.h>
 #include <microsim/MSEdgeWeightsStorage.h>
 #include <microsim/MSStop.h>
 #include <microsim/MSVehicle.h>
@@ -43,7 +42,9 @@
 #include <microsim/MSLane.h>
 #include <microsim/MSParkingArea.h>
 #include <microsim/MSJunctionLogic.h>
+#include <microsim/devices/MSDevice.h>
 #include <microsim/devices/MSDevice_Taxi.h>
+#include <microsim/devices/MSDevice_ElecHybrid.h>
 #include <microsim/devices/MSDispatch_TraCI.h>
 #include <mesosim/MEVehicle.h>
 #include <libsumo/TraCIDefs.h>
@@ -2645,6 +2646,15 @@ Vehicle::dispatchTaxi(const std::string& vehID,  const std::vector<std::string>&
         throw TraCIException("Could not interpret reservations for vehicle '" + vehID + "' (" + e.what() + ").");
     }
 }
+
+// RICE_TODO: Only partial implementation of Battery management interface
+void
+Vehicle::setBatteryManagement(const std::string& vehID, double maxChargeCurrentStopped) {
+    MSBaseVehicle* veh = Helper::getVehicle(vehID);
+    MSDevice_ElecHybrid* elecHybrid = static_cast<MSDevice_ElecHybrid*>(veh->getDevice(typeid(MSDevice_ElecHybrid)));
+	elecHybrid->setParameterDouble(toString(SUMO_ATTR_MAXCURRENT_STOPPED), maxChargeCurrentStopped);
+}
+
 
 LIBSUMO_SUBSCRIPTION_IMPLEMENTATION(Vehicle, VEHICLE)
 

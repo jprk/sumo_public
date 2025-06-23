@@ -216,6 +216,9 @@ public:
     static void setVia(const std::string& vehID, const std::vector<std::string>& edgeList);
     static void highlight(const std::string& vehID, const libsumo::TraCIColor& col = libsumo::TraCIColor(255, 0, 0, 255), double size = -1, const int alphaMax = -1, const double duration = -1, const int type = 0);
     static void dispatchTaxi(const std::string& vehID,  const std::vector<std::string>& reservations);
+
+	// RICE_TODO: Only partial battery management parametrization
+	static void setBatteryManagement(const std::string& vehID, double maxChargeCurrentStopped);
     /// @}
 
     LIBSUMO_VEHICLE_TYPE_SETTER
