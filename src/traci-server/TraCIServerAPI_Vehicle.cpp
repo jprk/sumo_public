@@ -505,6 +505,7 @@ TraCIServerAPI_Vehicle::processSet(TraCIServer& server, tcpip::Storage& inputSto
             && variable != libsumo::VAR_BOARDING_DURATION
             && variable != libsumo::VAR_HIGHLIGHT
             && variable != libsumo::CMD_TAXI_DISPATCH
+		    && variable != libsumo::VAR_BMS_MAXCURRENT_STOPPED
             && variable != libsumo::MOVE_TO_XY && variable != libsumo::VAR_PARAMETER/* && variable != libsumo::VAR_SPEED_TIME_LINE && variable != libsumo::VAR_LANE_TIME_LINE*/
        ) {
         return server.writeErrorStatusCmd(libsumo::CMD_SET_VEHICLE_VARIABLE, "Change Vehicle State: unsupported variable " + toHex(variable, 2) + " specified", outputStorage);
@@ -964,6 +965,14 @@ TraCIServerAPI_Vehicle::processSet(TraCIServer& server, tcpip::Storage& inputSto
                     return server.writeErrorStatusCmd(libsumo::CMD_SET_VEHICLE_VARIABLE, "Setting speed requires a double.", outputStorage);
                 }
                 libsumo::Vehicle::setSpeed(id, speed);
+            }
+            break;
+            case libsumo::VAR_BMS_MAXCURRENT_STOPPED: {
+                double current = 0;
+                if (!server.readTypeCheckingDouble(inputStorage, current)) {
+                    return server.writeErrorStatusCmd(libsumo::CMD_SET_VEHICLE_VARIABLE, "Setting charging current (stopped) requires a double.", outputStorage);
+                }
+                libsumo::Vehicle::setBatteryManagement(id, current);
             }
             break;
             case libsumo::VAR_ACCELERATION: {
