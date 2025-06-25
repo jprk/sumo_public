@@ -156,6 +156,9 @@ public:
     /// @brief Get actual traction substation ID
     std::string getTractionSubstationID() const;
 
+    // Return pointer to MSPowerManagement
+    MSPowerManagement* getPowerManagement() const { return myPowerManagement; };
+
     /// @brief Get charged energy
     double getEnergyCharged() const;
 
@@ -345,14 +348,17 @@ private:
     double eco_socThresholdForPeakShaving; // 40 %
     double eco_socHysteresisForPeakShaving; // 50 %
     double eco_minCurrentForPeakShaving; // 250 A
+    double SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    double SUMO_ATTR_CHARGINEFFICIENCY;
 
     // old params
+
     double mySOCMax;
     double myMaximumBatteryCapacity;
     double myOverheadWireChargingPower;
 
 public:
-    MSPowerManagement();  // Konstruktor
+    MSPowerManagement(SUMOVehicle& v);  // Constructor
 
     /*
     TODO: These are not defined anywhere, why?

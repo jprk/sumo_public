@@ -848,7 +848,10 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "circuitVoltage",         SUMO_ATTR_VOLTAGEOFOVERHEADWIRE },
     { "alphaCircuitSolver",     SUMO_ATTR_ALPHACIRCUITSOLVER },
     { "recuperationEnabled",    SUMO_ATTR_RECUPERATIONENABLE },
+    // RICE_TODO there are two similar paraemters from merge of wires_update branch with wires_traci branch - resolve it correctly
+    // maybe maxLineCurrent_stopped is used for const value of generall setting of vehicle while maxCurrentStopped ca be used for dynamical modifiing of this limit???
     { "maxCurrentStopped",      SUMO_ATTR_MAXCURRENT_STOPPED },
+    { "maxLineCurrent_stopped", SUMO_ATTR_MAXLINECURRENTSTOPPED },
     // MSBatteryExport
     { "energyConsumed",         SUMO_ATTR_ENERGYCONSUMED },
     { "totalEnergyConsumed",    SUMO_ATTR_TOTALENERGYCONSUMED },

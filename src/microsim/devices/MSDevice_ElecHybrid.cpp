@@ -164,8 +164,7 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     EnergyParams* const params = myHolder.getEmissionParameters();
     params->setDouble(SUMO_ATTR_MAXIMUMPOWER, holder.getVehicleType().getParameter().getDouble(toString(SUMO_ATTR_MAXIMUMPOWER), 100000.));
 
-    myPowerManagement = new MSPowerManagement();
-    // Add also the current electric current limit to the parameters
+    myPowerManagement = new MSPowerManagement(holder);
     params->setDouble(SUMO_ATTR_MAXCURRENT_STOPPED, myPowerManagement->getMaxLineCurrentStopped());
 
     if (maximumBatteryCapacity < 0) {
@@ -1001,8 +1000,8 @@ MSDevice_ElecHybrid::consumption(SUMOVehicle& veh, double a, double newSpeed) {
 // POWER MANAGEMENT
 // ===========================================================================
 
-MSPowerManagement::MSPowerManagement()
-    :   reducedSOC_ub(0.9),
+MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
+    : reducedSOC_ub(0.9),
         reducedSOC_lb(0.001),
         maxLineCurrent_driving(400.0), // 400 A
         maxLineCurrent_stopped(80.0), // 80 A
@@ -1012,17 +1011,36 @@ MSPowerManagement::MSPowerManagement()
         eco_socThresholdForPeakShaving(0.4), // 40 %
         eco_socHysteresisForPeakShaving(0.5), // 50 %
         eco_minCurrentForPeakShaving(250), // 250 A
+
+    SUMO_ATTR_INPUTCHOKEEFFICIENCY(1.0),
+    SUMO_ATTR_CHARGINEFFICIENCY(1.0),
+
         // old params
         mySOCMax(reducedSOC_ub),
         myMaximumBatteryCapacity(46000),
         myOverheadWireChargingPower(40000) 
-        {}
+        {
+    reducedSOC_ub = v.getFloatParam("device.elecHybrid.powerManagement.reducedSOC_ub", false, reducedSOC_ub);
+    reducedSOC_lb = v.getFloatParam("device.elecHybrid.powerManagement.reducedSOC_lb", false, reducedSOC_lb);
+    maxLineCurrent_driving = v.getFloatParam("device.elecHybrid.powerManagement.maxLineCurrent_driving", false, maxLineCurrent_driving);
+    maxLineCurrent_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxLineCurrent_stopped", false, maxLineCurrent_stopped);
+    recupBatteryPLimit = v.getFloatParam("device.elecHybrid.powerManagement.recupBatteryPLimit", false, recupBatteryPLimit);
+    maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxBatteryChargingPower_stopped", false, maxBatteryChargingPower_stopped);
+    eco_maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_stopped", false, eco_maxBatteryChargingPower_stopped);
+    eco_socThresholdForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socThresholdForPeakShaving", false, eco_socThresholdForPeakShaving);
+    eco_socHysteresisForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socHysteresisForPeakShaving", false, eco_socHysteresisForPeakShaving);
+    eco_minCurrentForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_minCurrentForPeakShaving", false, eco_minCurrentForPeakShaving);
+
+    SUMO_ATTR_INPUTCHOKEEFFICIENCY = v.getFloatParam("device.elecHybrid.powerManagement.SUMO_ATTR_INPUTCHOKEEFFICIENCY", false, 1.0);
+    SUMO_ATTR_CHARGINEFFICIENCY    = v.getFloatParam("device.elecHybrid.powerManagement.SUMO_ATTR_CHARGINEFFICIENCY", false, 1.0);
+    mySOCMax = reducedSOC_ub;
+    myMaximumBatteryCapacity = 46000.0;
+    myOverheadWireChargingPower = 46000.0;
+
+
+}
 
 std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery) {
-    //RICE_TODO parametrize SUMO_ATTR_INPUTCHOKEEFFICIENCY and SUMO_ATTR_CHARGINEFFICIENCY
-    double SUMO_ATTR_INPUTCHOKEEFFICIENCY = 0.98;
-    double SUMO_ATTR_CHARGINEFFICIENCY = 0.93;
-    
     consum = WATTHR2WATT(consum);
     double powerDemandOvrHdWire = consum;
     double powerDemandBattery = 0.0;
@@ -1057,7 +1075,7 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
                 }
                 powerDemandBattery = powerDemandBattery - powerCharging;
                 if (-powerDemandBattery > recupBatteryPLimit) {
-                    powerCharging = -powerDemandBattery - recupBatteryPLimit;
+                    powerCharging -= (-powerDemandBattery - recupBatteryPLimit);
                     powerDemandBattery = -recupBatteryPLimit;
                 }
                 powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;

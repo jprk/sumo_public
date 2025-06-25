@@ -1135,6 +1135,7 @@ MSNet::writeOutput() {
                     attrs[SUMO_ATTR_VEHICLE] = vehID;
                     attrs[SUMO_ATTR_MAXIMUMBATTERYCAPACITY] = toString(dynamic_cast<MSDevice_ElecHybrid*>(veh->getDevice(typeid(MSDevice_ElecHybrid)))->getMaximumBatteryCapacity());
                     attrs[SUMO_ATTR_RECUPERATIONENABLE] = toString(MSGlobals::gOverheadWireRecuperation);
+                    attrs[SUMO_ATTR_MAXLINECURRENTSTOPPED] = toString(dynamic_cast<MSDevice_ElecHybrid*>(veh->getDevice(typeid(MSDevice_ElecHybrid)))->getPowerManagement()->getMaxLineCurrentStopped());
                     dev.writeXMLHeader("elecHybrid-export", "", attrs);
                     MSElecHybridExport::write(OutputDevice::getDevice(filename2), veh, myStep, oc.getInt("elechybrid-output.precision"));
                 }

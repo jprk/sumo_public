@@ -1112,6 +1112,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_ALPHACIRCUITSOLVER,
     // @brief Recuperate the excess energy into overhead wires (0/1)
     SUMO_ATTR_RECUPERATIONENABLE,
+    // @brief Limit on electric current from overheadwire while the vehicle is stopped
+    SUMO_ATTR_MAXLINECURRENTSTOPPED,
     /// @}
 
     /// @name battery export parameters
