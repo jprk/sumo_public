@@ -4593,7 +4593,8 @@ MSVehicle::executeMove() {
         double maxPower = elecHybridOfVehicle->getParameterDouble(toString(SUMO_ATTR_MAXIMUMPOWER)) / 3600;
         if (elecHybridOfVehicle->getConsum() / TS > maxPower) {
             // no, we cannot accelerate that fast, recompute the maximum possible acceleration
-            double accel = elecHybridOfVehicle->acceleration(*this, maxPower / getVehicleType().getParameter().getDouble(toString(SUMO_ATTR_PROPULSIONEFFICIENCY), 1.0), this->getSpeed());
+            // double accel = elecHybridOfVehicle->acceleration(*this, maxPower / getVehicleType().getParameter().getDouble(toString(SUMO_ATTR_PROPULSIONEFFICIENCY), 1.0), this->getSpeed());
+            double accel = elecHybridOfVehicle->acceleration(*this, maxPower, this->getSpeed());
             // and update the speed of the vehicle
             vNext = MIN2(vNext, this->getSpeed() + accel * TS);
             vNext = MAX2(vNext, 0.);

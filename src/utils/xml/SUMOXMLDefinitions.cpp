@@ -844,7 +844,8 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "current",                SUMO_ATTR_CURRENTFROMOVERHEADWIRE },
     { "circuitVoltage",         SUMO_ATTR_VOLTAGEOFOVERHEADWIRE },
     { "alphaCircuitSolver",     SUMO_ATTR_ALPHACIRCUITSOLVER },
-    { "recuperationEnabled",     SUMO_ATTR_RECUPERATIONENABLE },
+    { "recuperationEnabled",    SUMO_ATTR_RECUPERATIONENABLE },
+    { "maxLineCurrent_stopped", SUMO_ATTR_MAXLINECURRENTSTOPPED },
     // MSBatteryExport
     { "energyConsumed",         SUMO_ATTR_ENERGYCONSUMED },
     { "totalEnergyConsumed",    SUMO_ATTR_TOTALENERGYCONSUMED },

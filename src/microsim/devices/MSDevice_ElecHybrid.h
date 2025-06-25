@@ -153,6 +153,9 @@ public:
     /// @brief Get actual traction substation ID
     std::string getTractionSubstationID() const;
 
+    // Return pointer to MSPowerManagement
+    MSPowerManagement* getPowerManagement() const { return myPowerManagement; };
+
     /// @brief Get charged energy
     double getEnergyCharged() const;
 
@@ -339,16 +342,21 @@ private:
     double eco_socHysteresisForPeakShaving; // 50 %
     double eco_minCurrentForPeakShaving; // 250 A
 
+    double SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    double SUMO_ATTR_CHARGINEFFICIENCY;
+
 // old params
     double mySOCMax;
     double myMaximumBatteryCapacity;
     double myOverheadWireChargingPower;
 
 public:
-    MSPowerManagement();  // Konstruktor
+    MSPowerManagement(SUMOVehicle& v);  // Constructor
 
     double calculateBatteryRequest(double requiredPower);
     double calculateEngineRequest(double requiredPower);
     std::pair<double, double> computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery);
     void distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* elecHybrid);
+
+    double getMaxLineCurrent_stopped() const { return maxLineCurrent_stopped; };
 };
