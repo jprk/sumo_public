@@ -1526,6 +1526,26 @@ MSNet::existTractionSubstation(const std::string& substationId) {
     return false;
 }
 
+bool
+MSNet::checkSubstationCircuits() {
+    // Everything is okay
+    bool state = true;
+    for (auto &it : myTractionSubstations) {
+        // The circuit checker may write some notes to the terminal but the important thing
+        // is the return value: if the check returns false, the circuit is not correctly set up
+        std::string substationId = it->getID();
+        bool ret = it->getCircuit()->checkCircuit(substationId);
+        if (!ret) {
+            WRITE_ERRORF("Circuit for substation '%' has not been set up correctly.", substationId);
+            state = false;
+        }
+        else {
+            WRITE_MESSAGEF("Circuit for substation '%' checked OK.", substationId);
+        }
+    }
+    return state;
+}
+
 
 MSVehicleRouter&
 MSNet::getRouterTT(const int rngIndex, const MSEdgeVector& prohibited) const {

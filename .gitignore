@@ -56,7 +56,7 @@
 /bin/liblibtracijni.jnilib
 /bin/libsumofmi2.dylib
 #
-/cmake_build
+/cmake_build*
 # data dir
 /data/locale
 /data/templates
@@ -165,3 +165,5 @@ __pycache__
 *.aps
 .gdb_history
 .env
+*.bak
+.idea/

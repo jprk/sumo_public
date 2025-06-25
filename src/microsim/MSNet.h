@@ -828,6 +828,9 @@ public:
     /// @brief return whether given electrical substation exists in the network
     bool existTractionSubstation(const std::string& substationId);
 
+    /// @brief check the electrical circuits of all substations
+    bool checkSubstationCircuits();
+
     /// @brief string constants for simstep stages
     static const std::string STAGE_EVENTS;
     static const std::string STAGE_MOVEMENTS;
