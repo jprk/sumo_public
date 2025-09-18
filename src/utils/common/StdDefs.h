@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -114,6 +114,7 @@ MAX4(T a, T b, T c, T d) {
 
 /// the precision for floating point outputs
 extern int gPrecision;
+extern int gPrecisionEmissions;
 extern int gPrecisionGeo; // for lon,lat
 extern int gPrecisionRandom; // for randomized values (i.e. speedFactor)
 extern bool gHumanReadableTime;

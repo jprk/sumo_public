@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2011-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2011-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -22,13 +22,12 @@ import os
 import sys
 import subprocess
 import warnings
-from optparse import OptionParser
 
 from . import files, net, output, sensors, shapes, statistics, fpdiff  # noqa
 from . import color, geomhelper, miscutils, options, route, vehicletype, version  # noqa
 # the visualization submodule is not imported to avoid an explicit matplotlib dependency
 from .miscutils import openz
-from .options import pullOptions
+from .options import pullOptions, ArgumentParser
 from .xml import writeHeader as writeXMLHeader  # noqa
 
 
@@ -38,15 +37,15 @@ def saveConfiguration(executable, configoptions, filename):
 
 
 def call(executable, args):
-    optParser = OptionParser()
-    pullOptions(executable, optParser)
+    ap = ArgumentParser()
+    pullOptions(executable, ap)
     cmd = [executable]
     for option, value in args.__dict__.items():
         o = "--" + option.replace("_", "-")
-        opt = optParser.get_option(o)
-        if opt is not None and value is not None and opt.default != value:
-            cmd.append(o)
-            if opt.action != "store_true":
+        if value is not None:
+            a = ap.get_option(option)
+            if a is not None and a.default != value:
+                cmd.append(o)
                 cmd.append(str(value))
     return subprocess.call(cmd)
 
@@ -74,9 +73,11 @@ def checkBinary(name, bindir=None):
             return binary
     try:
         import sumo
-        binary = exe(os.path.join(sumo.SUMO_HOME, "bin", name))
-        if os.path.exists(binary):
-            return binary
+        # If there is a directory "sumo" in the current path, the import will succeed, so we need to double check.
+        if hasattr(sumo, "SUMO_HOME"):
+            binary = exe(os.path.join(sumo.SUMO_HOME, "bin", name))
+            if os.path.exists(binary):
+                return binary
     except ImportError:
         pass
     if bindir is None:

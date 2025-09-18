@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -68,6 +68,9 @@ enum class MSStageType {
 */
 class MSStage : public Parameterised {
 public:
+    /// @brief sentinel value
+    static const double ARRIVALPOS_UNSPECIFIED;
+
     /// constructor
     MSStage(const MSStageType type, const MSEdge* destination, MSStoppingPlace* toStop, const double arrivalPos,
             const double arrivalPosLat = 0.0, const std::string& group = "");
@@ -95,6 +98,9 @@ public:
         return myArrivalPos;
     }
 
+    bool unspecifiedArrivalPos() const;
+
+
     virtual double getArrivalPosLat() const {
         return myArrivalPosLat;
     }
@@ -121,6 +127,11 @@ public:
     /// Returns the current lane (if applicable)
     virtual const MSLane* getLane() const {
         return nullptr;
+    }
+
+    /// @brief Return the current jump duration (if applicable)
+    virtual SUMOTime getJumpDuration() const {
+        return -1;
     }
 
     ///
@@ -158,6 +169,7 @@ public:
     virtual SUMOTime getDuration() const;
     virtual SUMOTime getTravelTime() const;
     virtual SUMOTime getWaitingTime() const;
+    virtual SUMOTime getTotalWaitingTime() const;
 
     /// logs end of the step
     void setDeparted(SUMOTime now);
@@ -183,9 +195,6 @@ public:
         return nullptr;
     }
 
-    /// @brief the time this transportable spent waiting
-    virtual SUMOTime getWaitingTime(SUMOTime now) const;
-
     /// @brief the speed of the transportable
     virtual double getSpeed() const;
 
@@ -207,6 +216,12 @@ public:
     double getEdgeAngle(const MSEdge* e, double at) const;
 
     void setDestination(const MSEdge* newDestination, MSStoppingPlace* newDestStop);
+
+    virtual void setOrigin(const MSEdge* origin, MSStoppingPlace* originStop, double departPos) {
+        UNUSED_PARAMETER(origin);
+        UNUSED_PARAMETER(originStop);
+        UNUSED_PARAMETER(departPos);
+    }
 
     /// @brief get travel distance in this stage
     virtual double getDistance() const = 0;

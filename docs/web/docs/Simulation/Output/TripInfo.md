@@ -111,7 +111,7 @@ This adds the following line:
 ```xml
 <tripinfos>
     <tripinfo id="<VEHICLE_ID>" ... vtype="<VEHICLE_TYPE_ID>">
-        <battery depleted="..."/>
+        <battery depleted="..." actualBatteryCapacity="..." totalEnergyConsumed="..." totalEnergyRegenerated="..."/>
     </tripinfo>
     ... information about further vehicles ...
 
@@ -120,9 +120,12 @@ This adds the following line:
 
 with the attributes as following
 
-| Name         | Type | Description                                                                        |
-| ------------ | ---- | ---------------------------------------------------------------------------------- |
-| `depleted`   | -   | The times the vehicle wanted to consume more energy than the battery could provide |
+| Name                      | Type | Description                                                                         |
+| ------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| `depleted`                | -    | The times the vehicle wanted to consume more energy than the battery could provide  |
+| `actualBatteryCapacity`   | Wh   | Battery capacity of the vehicle after completing its route                          |
+| `totalEnergyConsumed`     | Wh   | Cumulative sum of energy consumption after completing the route                     |
+| `totalEnergyRegenerated`  | Wh   | Cumulative sum of regenerated energy after completing the route                     |
 
 
 ## Output for vehicles that have not arrived at simulation end
@@ -176,7 +179,7 @@ The attributes within the stages have the following meaning:
 
 | Name        | Type                 | Description                                                                                                                      |
 | ----------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `depart`      | (simulation) seconds | The departure time for this stage. For `<ride>,<transport>`, this is the time where the vehicle is entered.                    (-1 if the vehicl wasn't entered) |
+| `depart`      | (simulation) seconds | The departure time for this stage. For `<ride>,<transport>`, this is the time where the vehicle is entered.                    (-1 if the vehicle wasn't entered) |
 | `arrival`     | (simulation) seconds | The arrival time for this stage N.B. In stop stages this is the time at which the stage ends i.e. after the duration time period (-1 if the stage did not start) |
 | `arrivalPos`  | m                    | The arrival position on the destination edge for this stage                                                                      |
 | `duration`    | (simulation) seconds | For walking and stopping, this is time spent in that stage. For a riding stage, this **only** is the time spent inside the vehicle.  (-1 if the stage did not start or the person did not enter the vehicle)    |

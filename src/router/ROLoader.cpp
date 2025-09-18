@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -125,12 +125,6 @@ ROLoader::loadNet(RONet& toFill, ROAbstractEdgeBuilder& eb) {
     } else {
         PROGRESS_DONE_MESSAGE();
     }
-    if (myOptions.exists("restriction-params") && myOptions.isSet("restriction-params")) {
-        const std::vector<std::string> paramKeys = myOptions.getStringVector("restriction-params");
-        for (auto& edgeIt : toFill.getEdgeMap()) {
-            edgeIt.second->cacheParamRestrictions(paramKeys);
-        }
-    }
     if (!deprecatedVehicleClassesSeen.empty()) {
         WRITE_WARNINGF(TL("Deprecated vehicle classes '%' in input network."), toString(deprecatedVehicleClassesSeen));
         deprecatedVehicleClassesSeen.clear();
@@ -156,6 +150,17 @@ ROLoader::loadNet(RONet& toFill, ROAbstractEdgeBuilder& eb) {
         toFill.addJunctionTaz(eb);
     }
     toFill.setBidiEdges(handler.getBidiMap());
+    if (myOptions.exists("restriction-params") && myOptions.isSet("restriction-params")) {
+        const std::vector<std::string> paramKeys = myOptions.getStringVector("restriction-params");
+        for (auto& edgeIt : toFill.getEdgeMap()) {
+            edgeIt.second->cacheParamRestrictions(paramKeys);
+        }
+    }
+    if (toFill.hasRestrictions()) {
+        for (auto& edgeIt : toFill.getEdgeMap()) {
+            edgeIt.second->setRestrictions(toFill.getRestrictions(edgeIt.second->getType()));
+        }
+    }
 }
 
 
@@ -304,5 +309,13 @@ ROLoader::writeStats(const SUMOTime time, const SUMOTime start, const SUMOTime a
     }
 }
 
-
+SUMORouteHandler*
+ROLoader::getRouteHandler() {
+    auto loader = myLoaders.getFirstLoader();
+    if (loader != nullptr) {
+        return loader->getRouteHandler();
+    } else {
+        return nullptr;
+    }
+}
 /****************************************************************************/

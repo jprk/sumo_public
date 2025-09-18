@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,8 +17,10 @@
 ///
 //
 /****************************************************************************/
+#include <config.h>
 
 #include <netedit/GNENet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
@@ -30,27 +32,20 @@
 #include "GNEInstantInductionLoopDetector.h"
 #include "GNEAdditionalHandler.h"
 
-
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
 GNEInstantInductionLoopDetector::GNEInstantInductionLoopDetector(GNENet* net) :
-    GNEDetector("", net, GLO_E1DETECTOR_INSTANT, SUMO_TAG_INSTANT_INDUCTION_LOOP, GUIIconSubSys::getIcon(GUIIcon::E1INSTANT),
-                0, 0, {}, "", {}, {}, "", "", false, Parameterised::Map()) {
-    // reset default values
-    resetDefaultValues();
+    GNEDetector(net, SUMO_TAG_INSTANT_INDUCTION_LOOP) {
 }
 
 
-GNEInstantInductionLoopDetector::GNEInstantInductionLoopDetector(const std::string& id, GNELane* lane, GNENet* net,
-        const double pos, const std::string& filename, const std::vector<std::string>& vehicleTypes,
-        const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name,
-        const bool friendlyPos, const Parameterised::Map& parameters) :
-    GNEDetector(id, net, GLO_E1DETECTOR_INSTANT, SUMO_TAG_INSTANT_INDUCTION_LOOP, GUIIconSubSys::getIcon(GUIIcon::E1INSTANT),
-                pos, 0, {
-    lane
-}, filename, vehicleTypes, nextEdges, detectPersons, name, friendlyPos, parameters) {
+GNEInstantInductionLoopDetector::GNEInstantInductionLoopDetector(const std::string& id, GNENet* net, const std::string& filename, GNELane* lane,
+        const double pos, const std::string& outputFilename, const std::vector<std::string>& vehicleTypes, const std::vector<std::string>& nextEdges,
+        const std::string& detectPersons, const std::string& name, const bool friendlyPos, const Parameterised::Map& parameters) :
+    GNEDetector(id, net, filename, SUMO_TAG_INSTANT_INDUCTION_LOOP, pos, 0, lane, outputFilename,
+                vehicleTypes, nextEdges, detectPersons, name, friendlyPos, parameters) {
     // update centering boundary without updating grid
     updateCenteringBoundary(false);
 }
@@ -62,7 +57,7 @@ GNEInstantInductionLoopDetector::~GNEInstantInductionLoopDetector() {
 
 void
 GNEInstantInductionLoopDetector::writeAdditional(OutputDevice& device) const {
-    device.openTag(getTagProperty().getTag());
+    device.openTag(getTagProperty()->getTag());
     device.writeAttr(SUMO_ATTR_ID, getID());
     device.writeAttr(SUMO_ATTR_LANE, getParentLanes().front()->getID());
     device.writeAttr(SUMO_ATTR_POSITION, myPositionOverLane);
@@ -156,7 +151,7 @@ GNEInstantInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const
             // push layer matrix
             GLHelper::pushMatrix();
             // translate to front
-            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_E1DETECTOR_INSTANT);
+            drawInLayer(GLO_E1DETECTOR_INSTANT);
             // draw E1Instant shape
             drawE1Shape(d, E1InstantExaggeration, mainColor, secondColor);
             // draw E1 Logo
@@ -164,7 +159,8 @@ GNEInstantInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const
             // pop layer matrix
             GLHelper::popMatrix();
             // draw lock icon
-            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), myAdditionalGeometry.getShape().getCentroid(), E1InstantExaggeration);
+            GNEViewNetHelper::LockIcon::drawLockIcon(d, this, getType(), myAdditionalGeometry.getShape().getCentroid(),
+                    E1InstantExaggeration);
             // Draw additional ID
             drawAdditionalID(s);
             // draw additional name
@@ -173,8 +169,8 @@ GNEInstantInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const
             myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // draw dotted contour
-        myAdditionalContour.calculateContourRectangleShape(s, d, this, myAdditionalGeometry.getShape().front(), 2, 1, 0, 0,
-                myAdditionalGeometry.getShapeRotations().front(), E1InstantExaggeration);
+        myAdditionalContour.calculateContourRectangleShape(s, d, this, myAdditionalGeometry.getShape().front(), 2, 1, getType(), 0, 0,
+                myAdditionalGeometry.getShapeRotations().front(), E1InstantExaggeration, getParentLanes().front()->getParentEdge());
     }
 }
 

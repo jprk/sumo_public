@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,20 +21,25 @@
 
 #include <algorithm>
 #include <fstream>
-#include <utils/foxtools/MFXGroupBoxModule.h>
-#include <utils/foxtools/MFXButtonTooltip.h>
+#include <netedit/GNEApplicationWindow.h>
+#include <netedit/GNEViewNet.h>
+#include <netedit/GNEViewParent.h>
+#include <netedit/GNEInternalTest.h>
 #include <utils/common/MsgHandler.h>
+#include <utils/foxtools/MFXButtonTooltip.h>
+#include <utils/foxtools/MFXGroupBoxModule.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/images/GUIIconSubSys.h>
 #include <utils/gui/windows/GUIMainWindow.h>
 #include <utils/options/OptionsCont.h>
 #include <utils/options/OptionsLoader.h>
 #include <xercesc/parsers/SAXParser.hpp>
-#include <netedit/GNEApplicationWindow.h>
-#include <netedit/GNEViewNet.h>
-#include <netedit/GNEViewParent.h>
 
 #include "GNEOptionsDialog.h"
+
+// ===========================================================================
+// Defines
+// ===========================================================================
 
 #define TREELISTWIDTH 200
 
@@ -56,7 +61,7 @@ FXDEFMAP(GNEOptionsDialog) GUIDialogOptionsMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEOptionsDialog,   FXDialogBox,    GUIDialogOptionsMap,    ARRAYNUMBER(GUIDialogOptionsMap))
+FXIMPLEMENT(GNEOptionsDialog, MFXDialogBox, GUIDialogOptionsMap, ARRAYNUMBER(GUIDialogOptionsMap))
 
 // ===========================================================================
 // method definitions
@@ -65,7 +70,7 @@ FXIMPLEMENT(GNEOptionsDialog,   FXDialogBox,    GUIDialogOptionsMap,    ARRAYNUM
 std::pair<int, bool>
 GNEOptionsDialog::Options(GNEApplicationWindow* GNEApp, GUIIcon icon, OptionsCont& optionsContainer, const OptionsCont& originalOptionsContainer, const char* titleName) {
     GNEOptionsDialog* optionsDialog = new GNEOptionsDialog(GNEApp, icon, optionsContainer, originalOptionsContainer, titleName, false);
-    auto result = std::make_pair(optionsDialog->execute(), optionsDialog->myOptionsModified);
+    auto result = std::make_pair(optionsDialog->openModalDialog(GNEApp->getInternalTest()), optionsDialog->myOptionsModified);
     delete optionsDialog;
     return result;
 }
@@ -74,13 +79,19 @@ GNEOptionsDialog::Options(GNEApplicationWindow* GNEApp, GUIIcon icon, OptionsCon
 std::pair<int, bool>
 GNEOptionsDialog::Run(GNEApplicationWindow* GNEApp, GUIIcon icon, OptionsCont& optionsContainer, const OptionsCont& originalOptionsContainer, const char* titleName) {
     GNEOptionsDialog* optionsDialog = new GNEOptionsDialog(GNEApp, icon, optionsContainer, originalOptionsContainer, titleName, true);
-    auto result = std::make_pair(optionsDialog->execute(), optionsDialog->myOptionsModified);
+    auto result = std::make_pair(optionsDialog->openModalDialog(GNEApp->getInternalTest()), optionsDialog->myOptionsModified);
     delete optionsDialog;
     return result;
 }
 
 
 GNEOptionsDialog::~GNEOptionsDialog() { }
+
+
+void
+GNEOptionsDialog::runInternalTest(const InternalTestStep::DialogTest* /*dialogTest*/) {
+    // finish
+}
 
 
 long
@@ -90,7 +101,7 @@ GNEOptionsDialog::onCmdCancel(FXObject*, FXSelector, void*) {
         entry->onCmdResetOption(nullptr, 0, nullptr);
     }
     // close dialog canceling changes
-    return handle(this, FXSEL(SEL_COMMAND, ID_CANCEL), nullptr);
+    return handle(this, FXSEL(SEL_COMMAND, FXDialogBox::ID_CANCEL), nullptr);
 }
 
 
@@ -107,7 +118,7 @@ GNEOptionsDialog::onCmdReset(FXObject*, FXSelector, void*) {
 long
 GNEOptionsDialog::onCmdRunNetgenerate(FXObject*, FXSelector, void*) {
     // close dialog accepting changes
-    handle(this, FXSEL(SEL_COMMAND, ID_ACCEPT), nullptr);
+    handle(this, FXSEL(SEL_COMMAND, FXDialogBox::ID_ACCEPT), nullptr);
     // run tool in mainWindow
     return myGNEApp->handle(this, FXSEL(SEL_COMMAND, MID_GNE_RUNNETGENERATE), nullptr);
 }
@@ -278,7 +289,7 @@ GNEOptionsDialog::loadConfiguration(const std::string& file) {
 
 GNEOptionsDialog::GNEOptionsDialog(GNEApplicationWindow* GNEApp, GUIIcon icon, OptionsCont& optionsContainer,
                                    const OptionsCont& originalOptionsContainer, const char* titleName, const bool runDialog) :
-    FXDialogBox(GNEApp, titleName, GUIDesignDialogBoxExplicitStretchable(800, 600)),
+    MFXDialogBox(GNEApp, titleName, GUIDesignDialogBoxExplicitStretchable(800, 600)),
     myGNEApp(GNEApp),
     myOptionsContainer(optionsContainer),
     myOriginalOptionsContainer(originalOptionsContainer) {
@@ -373,7 +384,7 @@ GNEOptionsDialog::GNEOptionsDialog(GNEApplicationWindow* GNEApp, GUIIcon icon, O
     if (runDialog) {
         GUIDesigns::buildFXButton(buttonsFrame, TL("Run"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, MID_GNE_RUNNETGENERATE, GUIDesignButtonOK);
     } else {
-        GUIDesigns::buildFXButton(buttonsFrame, TL("OK"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, ID_ACCEPT, GUIDesignButtonOK);
+        GUIDesigns::buildFXButton(buttonsFrame, TL("OK"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), this, FXDialogBox::ID_ACCEPT, GUIDesignButtonOK);
     }
     GUIDesigns::buildFXButton(buttonsFrame, TL("Cancel"), "", "", GUIIconSubSys::getIcon(GUIIcon::CANCEL), this, MID_CANCEL, GUIDesignButtonOK);
     GUIDesigns::buildFXButton(buttonsFrame, TL("Reset"), "", "", GUIIconSubSys::getIcon(GUIIcon::RESET), this, MID_GNE_RESET, GUIDesignButtonOK);

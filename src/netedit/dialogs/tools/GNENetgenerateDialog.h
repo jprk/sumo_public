@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -22,6 +22,7 @@
 
 #include <utils/options/OptionsCont.h>
 #include <utils/foxtools/MFXCheckableButton.h>
+#include <utils/foxtools/MFXDialogBox.h>
 
 // ===========================================================================
 // class declarations
@@ -33,11 +34,7 @@ class GNEApplicationWindow;
 // class definitions
 // ===========================================================================
 
-/**
- * @class GNENetgenerateDialog
- * @brief Dialog for netgenerate tool dialog
- */
-class GNENetgenerateDialog : protected FXDialogBox {
+class GNENetgenerateDialog : protected MFXDialogBox {
     /// @brief FOX-declaration
     FXDECLARE(GNENetgenerateDialog)
 
@@ -53,6 +50,9 @@ public:
 
     /// @brief open dialog
     void openDialog();
+
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* modalArguments);
 
     /// @name FOX-callbacks
     /// @{

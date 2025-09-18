@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2007-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2007-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -30,17 +30,17 @@
 #include <utils/common/SUMOTime.h>
 #include <utils/common/ToString.h>
 #include <utils/common/UtilExceptions.h>
-#include "SUMOXMLDefinitions.h"
 
+#include "SUMOXMLDefinitions.h"
 
 // ===========================================================================
 // class declarations
 // ===========================================================================
+
 class Position;
 class PositionVector;
 class Boundary;
 class RGBColor;
-
 
 // ===========================================================================
 // class definitions
@@ -162,6 +162,27 @@ public:
     SUMOTime getOptSUMOTimeReporting(int attr, const char* objectid, bool& ok,
                                      SUMOTime defaultValue, bool report = true) const;
 
+    /** @brief Tries to read given attribute assuming it is a tls offset
+     * (SUMOTime or "begin")
+     *
+     * If the attribute is not existing in the current element, the default value is returned.
+     * If an error occurs on parsing (the attribute is empty, it is not numeric), "ok" is
+     *  set to false. If report is true an error message is written to MsgHandler::getErrorInstance.
+     *
+     * Otherwise, "ok" is not changed.
+     *
+     * In dependence to the used time representation, either get<int> or get<double>
+     *  is used.
+     *
+     * @param[in] attr The id of the attribute to read
+     * @param[in] objectid The name of the parsed object; used for error message generation
+     * @param[out] ok Whether the value could be read
+     * @param[in] defaultValue The value to return if the attribute is not within the element
+     * @param[in] report Whether errors shall be written to msg handler's error instance
+     * @return The read value if given and correct; the default value if the attribute does not exist;  -1 if an error occurred
+     */
+    SUMOTime getOptOffsetReporting(int attr, const char* objectid, bool& ok,
+                                   SUMOTime defaultValue, bool report = true) const;
 
     /** @brief Tries to read the SUMOTime 'period' attribute
      *

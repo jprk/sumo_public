@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,7 +17,6 @@
 ///
 // Frame for create paths
 /****************************************************************************/
-#include <config.h>
 
 #include <netedit/GNEApplicationWindow.h>
 #include <netedit/GNENet.h>
@@ -32,7 +31,6 @@
 #include <utils/gui/windows/GUIAppEnum.h>
 
 #include "GNEPlanCreator.h"
-
 
 // ===========================================================================
 // FOX callback mapping
@@ -49,20 +47,18 @@ FXDEFMAP(GNEPlanCreator) PathCreatorMap[] = {
 // Object implementation
 FXIMPLEMENT(GNEPlanCreator,                MFXGroupBoxModule,     PathCreatorMap,                 ARRAYNUMBER(PathCreatorMap))
 
-
 // ===========================================================================
 // method definitions
 // ===========================================================================
 
-
-GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass vClass, GNEEdge* fromEdge, GNEEdge* toEdge) :
+GNEPlanCreator::PlanPath::PlanPath(GNEPathManager* pathManager, const SUMOVehicleClass vClass, GNEEdge* fromEdge, GNEEdge* toEdge) :
     myConflictVClass(false),
     myConflictDisconnected(false) {
     // calculate subpath using given vClass
-    mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(vClass, fromEdge, toEdge);
+    mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(vClass, fromEdge, toEdge);
     // if subPath is empty, try it with pedestrian (i.e. ignoring vCass)
     if (mySubPath.empty()) {
-        mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromEdge, toEdge);
+        mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromEdge, toEdge);
         if (mySubPath.empty()) {
             mySubPath = {fromEdge, toEdge};
             myConflictDisconnected = true;
@@ -73,14 +69,14 @@ GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass v
 }
 
 
-GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass vClass, GNEEdge* fromEdge, GNEJunction* toJunction) :
+GNEPlanCreator::PlanPath::PlanPath(GNEPathManager* pathManager, const SUMOVehicleClass vClass, GNEEdge* fromEdge, GNEJunction* toJunction) :
     myConflictVClass(false),
     myConflictDisconnected(false) {
     // calculate subpath using given vClass
-    mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(vClass, fromEdge, toJunction);
+    mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(vClass, fromEdge, toJunction);
     // if subPath is empty, try it with pedestrian (i.e. ignoring vCass)
     if (mySubPath.empty()) {
-        mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromEdge, toJunction);
+        mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromEdge, toJunction);
         if (mySubPath.empty()) {
             mySubPath = {fromEdge};
             myConflictDisconnected = true;
@@ -92,14 +88,14 @@ GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass v
 }
 
 
-GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass vClass, GNEJunction* fromJunction, GNEEdge* toEdge) :
+GNEPlanCreator::PlanPath::PlanPath(GNEPathManager* pathManager, const SUMOVehicleClass vClass, GNEJunction* fromJunction, GNEEdge* toEdge) :
     myConflictVClass(false),
     myConflictDisconnected(false) {
     // calculate subpath using given vClass
-    mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(vClass, fromJunction, toEdge);
+    mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(vClass, fromJunction, toEdge);
     // if subPath is empty, try it with pedestrian (i.e. ignoring vCass)
     if (mySubPath.empty()) {
-        mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromJunction, toEdge);
+        mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(SVC_PEDESTRIAN, fromJunction, toEdge);
         if (mySubPath.empty()) {
             mySubPath = {toEdge};
             myConflictDisconnected = true;
@@ -111,11 +107,11 @@ GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass v
 }
 
 
-GNEPlanCreator::PlanPath::PlanPath(GNEViewNet* viewNet, const SUMOVehicleClass vClass, GNEJunction* fromJunction, GNEJunction* toJunction) :
+GNEPlanCreator::PlanPath::PlanPath(GNEPathManager* pathManager, const SUMOVehicleClass vClass, GNEJunction* fromJunction, GNEJunction* toJunction) :
     myConflictVClass(false),
     myConflictDisconnected(false) {
     // calculate subpath using the given vClass
-    mySubPath = viewNet->getNet()->getPathManager()->getPathCalculator()->calculateDijkstraPath(vClass, fromJunction, toJunction);
+    mySubPath = pathManager->getPathCalculator()->calculateDijkstraPath(vClass, fromJunction, toJunction);
     // if subPath is empty, try it with pedestrian (i.e. ignoring vCass)
     if (mySubPath.empty()) {
         if (mySubPath.empty()) {
@@ -152,9 +148,10 @@ GNEPlanCreator::PlanPath::PlanPath() :
 }
 
 
-GNEPlanCreator::GNEPlanCreator(GNEFrame* frameParent) :
+GNEPlanCreator::GNEPlanCreator(GNEFrame* frameParent, GNEPathManager* pathManager) :
     MFXGroupBoxModule(frameParent, TL("Route creator")),
     myFrameParent(frameParent),
+    myPathManager(pathManager),
     myVClass(SVC_PASSENGER),
     myPlanParents(0) {
     // create button for use last route
@@ -181,20 +178,20 @@ bool
 GNEPlanCreator::planCanBeCreated(const GNEDemandElement* planTemplate) const {
     if (planTemplate == nullptr) {
         return false;
-    } else if (planTemplate->getTagProperty().isPlanPersonTrip()) {
-        return GNEDemandElementPlan::getPersonTripTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanWalk()) {
-        return GNEDemandElementPlan::getWalkTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanRide()) {
-        return GNEDemandElementPlan::getRideTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanTransport()) {
-        return GNEDemandElementPlan::getTransportTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanTranship()) {
-        return GNEDemandElementPlan::getTranshipTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanStopPerson()) {
-        return GNEDemandElementPlan::getPersonStopTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
-    } else if (planTemplate->getTagProperty().isPlanStopContainer()) {
-        return GNEDemandElementPlan::getContainerStopTagIcon(myPlanParameteres).first != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanPersonTrip()) {
+        return myPlanParameteres.getPersonTripTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanWalk()) {
+        return myPlanParameteres.getWalkTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanRide()) {
+        return myPlanParameteres.getRideTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanTransport()) {
+        return myPlanParameteres.getTransportTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanTranship()) {
+        return myPlanParameteres.getTranshipTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanStopPerson()) {
+        return myPlanParameteres.getPersonStopTag() != SUMO_TAG_NOTHING;
+    } else if (planTemplate->getTagProperty()->isPlanStopContainer()) {
+        return myPlanParameteres.getContainerStopTag() != SUMO_TAG_NOTHING;
     } else {
         return false;
     }
@@ -212,9 +209,9 @@ GNEPlanCreator::showPlanCreatorModule(const GNEPlanSelector* planSelector, const
     // set previous plan element
     myPreviousPlanElement = previousPlan;
     // get current plan template
-    const auto& planTagProperties = planSelector->getCurrentPlanTagProperties();
+    const auto& planTagProperty = planSelector->getCurrentPlanTagProperties();
     // continue depending of plan selector template
-    if (planTagProperties.planRoute()) {
+    if (planTagProperty->planRoute()) {
         myPlanParents |= ROUTE;
         // show use last inserted route
         myUseLastRoute->show();
@@ -222,36 +219,36 @@ GNEPlanCreator::showPlanCreatorModule(const GNEPlanSelector* planSelector, const
         // hide use last inserted route
         myUseLastRoute->hide();
     }
-    if (planTagProperties.planEdge()) {
+    if (planTagProperty->planEdge()) {
         myPlanParents |= EDGE;
     }
-    if (planTagProperties.planStoppingPlace()) {
+    if (planTagProperty->planStoppingPlace()) {
         myPlanParents |= STOPPINGPLACE;
     }
-    if (planTagProperties.planConsecutiveEdges()) {
+    if (planTagProperty->planConsecutiveEdges()) {
         myPlanParents |= CONSECUTIVE_EDGES;
         // show creation buttons
         showCreationButtons();
     }
-    if (planTagProperties.planFromEdge() || planTagProperties.planToEdge()) {
+    if (planTagProperty->planFromEdge() || planTagProperty->planToEdge()) {
         myPlanParents |= START_EDGE;
         myPlanParents |= END_EDGE;
         // show creation buttons
         showCreationButtons();
     }
-    if (planTagProperties.planFromJunction() || planTagProperties.planToJunction()) {
+    if (planTagProperty->planFromJunction() || planTagProperty->planToJunction()) {
         myPlanParents |= START_JUNCTION;
         myPlanParents |= END_JUNCTION;
         // show creation buttons
         showCreationButtons();
     }
-    if (planTagProperties.planFromTAZ() || planTagProperties.planToTAZ()) {
+    if (planTagProperty->planFromTAZ() || planTagProperty->planToTAZ()) {
         myPlanParents |= START_TAZ;
         myPlanParents |= END_TAZ;
         // show creation buttons
         showCreationButtons();
     }
-    if (planTagProperties.planFromStoppingPlace() || planTagProperties.planToStoppingPlace()) {
+    if (planTagProperty->planFromStoppingPlace() || planTagProperty->planToStoppingPlace()) {
         myPlanParents |= START_STOPPINGPLACE;
         myPlanParents |= END_STOPPINGPLACE;
         // show creation buttons
@@ -260,21 +257,21 @@ GNEPlanCreator::showPlanCreatorModule(const GNEPlanSelector* planSelector, const
     // update info label (after setting myPlanParents)
     updateInfoLabel();
     // check if add first element
-    if (myPreviousPlanElement && planTagProperties.planFromTo()) {
+    if (myPreviousPlanElement && planTagProperty->planFromTo()) {
         const auto previousTagProperty = myPreviousPlanElement->getTagProperty();
         // add last element of previous plan
-        if (previousTagProperty.planToEdge() || previousTagProperty.planEdge()) {
+        if (previousTagProperty->planToEdge() || previousTagProperty->planEdge()) {
             addFromToEdge(myPreviousPlanElement->getParentEdges().back());
-        } else if (previousTagProperty.planToJunction()) {
+        } else if (previousTagProperty->planToJunction()) {
             addFromToJunction(myPreviousPlanElement->getParentJunctions().back());
-        } else if (previousTagProperty.planToTAZ()) {
+        } else if (previousTagProperty->planToTAZ()) {
             addFromToTAZ(myPreviousPlanElement->getParentTAZs().back());
-        } else if (previousTagProperty.planToStoppingPlace() || previousTagProperty.planStoppingPlace()) {
+        } else if (previousTagProperty->planToStoppingPlace() || previousTagProperty->planStoppingPlace()) {
             addFromToStoppingPlace(myPreviousPlanElement->getParentStoppingPlaces().back());
         }
     }
     // set vClass
-    if (planTagProperties.isPlanRide() || planTagProperties.isPlanContainer()) {
+    if (planTagProperty->isPlanRide() || planTagProperty->isPlanContainer()) {
         myVClass = SVC_PASSENGER;
     } else {
         myVClass = SVC_PEDESTRIAN;
@@ -392,13 +389,13 @@ GNEPlanCreator::drawTemporalRoute(const GUIVisualizationSettings& s) const {
             const GNEPlanCreator::PlanPath& path = myPath.at(i);
             // draw line over
             for (int j = 0; j < (int)path.getSubPath().size(); j++) {
-                const GNELane* lane = path.getSubPath().at(j)->getLanes().back();
+                const GNELane* lane = path.getSubPath().at(j)->getChildLanes().back();
                 if (((i == 0) && (j == 0)) || (j > 0)) {
                     GLHelper::drawBoxLines(lane->getLaneShape(), lineWidth);
                 }
                 // draw connection between lanes
                 if ((j + 1) < (int)path.getSubPath().size()) {
-                    const GNELane* nextLane = path.getSubPath().at(j + 1)->getLanes().back();
+                    const GNELane* nextLane = path.getSubPath().at(j + 1)->getChildLanes().back();
                     if (lane->getLane2laneConnections().exist(nextLane)) {
                         GLHelper::drawBoxLines(lane->getLane2laneConnections().getLane2laneGeometry(nextLane).getShape(), lineWidth);
                     } else {
@@ -422,13 +419,13 @@ GNEPlanCreator::drawTemporalRoute(const GUIVisualizationSettings& s) const {
             }
             // draw line over
             for (int j = 0; j < (int)path.getSubPath().size(); j++) {
-                const GNELane* lane = path.getSubPath().at(j)->getLanes().back();
+                const GNELane* lane = path.getSubPath().at(j)->getChildLanes().back();
                 if (((i == 0) && (j == 0)) || (j > 0)) {
                     GLHelper::drawBoxLines(lane->getLaneShape(), lineWidthin);
                 }
                 // draw connection between lanes
                 if ((j + 1) < (int)path.getSubPath().size()) {
-                    const GNELane* nextLane = path.getSubPath().at(j + 1)->getLanes().back();
+                    const GNELane* nextLane = path.getSubPath().at(j + 1)->getChildLanes().back();
                     if (lane->getLane2laneConnections().exist(nextLane)) {
                         GLHelper::drawBoxLines(lane->getLane2laneConnections().getLane2laneGeometry(nextLane).getShape(), lineWidthin);
                     } else {
@@ -468,7 +465,7 @@ GNEPlanCreator::abortPathCreation() {
     // first check that there is elements
     if (getNumberOfSelectedElements() > 0) {
         // unblock undo/redo
-        myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->enableUndoRedo();
+        myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->enableUndoRedoTemporally();
         // clear edges
         clearPath();
         // disable buttons
@@ -585,7 +582,7 @@ GNEPlanCreator::recalculatePath() {
     if (myPlanParameteres.consecutiveEdges.size() > 0) {
         // add every segment
         for (int i = 1; i < (int)myPlanParameteres.consecutiveEdges.size(); i++) {
-            myPath.push_back(PlanPath(myFrameParent->getViewNet(), myVClass,
+            myPath.push_back(PlanPath(myPathManager, myVClass,
                                       ACs->retrieveEdge(myPlanParameteres.consecutiveEdges.at(i - 1)),
                                       ACs->retrieveEdge(myPlanParameteres.consecutiveEdges.at(i))));
         }
@@ -622,13 +619,13 @@ GNEPlanCreator::recalculatePath() {
         }
         // continue depending of edges and junctions
         if (fromEdge && toEdge) {
-            myPath.push_back(PlanPath(myFrameParent->getViewNet(), myVClass, fromEdge, toEdge));
+            myPath.push_back(PlanPath(myPathManager, myVClass, fromEdge, toEdge));
         } else if (fromEdge && !myPlanParameteres.toJunction.empty()) {
-            myPath.push_back(PlanPath(myFrameParent->getViewNet(), myVClass, fromEdge, ACs->getJunctions().at(myPlanParameteres.toJunction)));
+            myPath.push_back(PlanPath(myPathManager, myVClass, fromEdge, ACs->getJunctions().at(myPlanParameteres.toJunction)));
         } else if (!myPlanParameteres.fromJunction.empty() && toEdge) {
-            myPath.push_back(PlanPath(myFrameParent->getViewNet(), myVClass, ACs->getJunctions().at(myPlanParameteres.fromJunction), toEdge));
+            myPath.push_back(PlanPath(myPathManager, myVClass, ACs->getJunctions().at(myPlanParameteres.fromJunction), toEdge));
         } else if (!myPlanParameteres.fromJunction.empty() && !myPlanParameteres.toJunction.empty()) {
-            myPath.push_back(PlanPath(myFrameParent->getViewNet(), myVClass,
+            myPath.push_back(PlanPath(myPathManager, myVClass,
                                       ACs->getJunctions().at(myPlanParameteres.fromJunction),
                                       ACs->getJunctions().at(myPlanParameteres.toJunction)));
         }
@@ -725,7 +722,7 @@ GNEPlanCreator::addSingleEdge(GNELane* lane) {
 bool
 GNEPlanCreator::addSingleStoppingPlace(GNEAdditional* stoppingPlace) {
     // continue depending of stoppingPlace tag
-    switch (stoppingPlace->getTagProperty().getTag()) {
+    switch (stoppingPlace->getTagProperty()->getTag()) {
         case SUMO_TAG_BUS_STOP:
             myPlanParameteres.toBusStop = stoppingPlace->getID();
             break;
@@ -901,7 +898,7 @@ GNEPlanCreator::addFromToStoppingPlace(GNEAdditional* stoppingPlace) {
     // add stoppingPlace
     if (getNumberOfSelectedElements() == 0) {
         // continue depending of stoppingPlace tag
-        switch (stoppingPlace->getTagProperty().getTag()) {
+        switch (stoppingPlace->getTagProperty()->getTag()) {
             case SUMO_TAG_BUS_STOP:
                 myPlanParameteres.fromBusStop = stoppingPlaceID;
                 break;
@@ -922,7 +919,7 @@ GNEPlanCreator::addFromToStoppingPlace(GNEAdditional* stoppingPlace) {
         }
     } else {
         // continue depending of stoppingPlace tag
-        switch (stoppingPlace->getTagProperty().getTag()) {
+        switch (stoppingPlace->getTagProperty()->getTag()) {
             case SUMO_TAG_BUS_STOP:
                 myPlanParameteres.toBusStop = stoppingPlaceID;
                 break;
@@ -947,7 +944,7 @@ GNEPlanCreator::addFromToStoppingPlace(GNEAdditional* stoppingPlace) {
     // enable finish button
     myFinishCreationButton->enable();
     // disable undo/redo
-    myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->disableUndoRedo("route creation");
+    myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->disableUndoRedoTemporally("creation of stoppingPlace path");
     // enable or disable remove last item button
     updateRemoveLastItemButton();
     // recalculate path

@@ -18,6 +18,9 @@ aggregation interval of the output.
 Generally, this can be computed for any kind of scenario as long as this
 scenario covers the desired range of traffic densities.
 
+!!! note
+    How to achieve high densities at vehicle insertion is explained at [Road Capacity](../Simulation/RoadCapacity.md)
+
 Plots may be created with [plotXMLAttributes](../Tools/Visualization.md#fundamental_diagram_from_edgedata).
 <img src="../images/plotAttrs_fundamental.png" width="800px"/>
 
@@ -124,4 +127,4 @@ Some tests cases can be obtained at
 - [2lane_IDM](https://sumo.dlr.de/extractTest.php?path=sumo/cf_model/fundamental/2lane_IDM)
 
 !!! note
-    Theses tests set a low value of **--end** to save time. To get a fuller fundamental diagram, increase the end time.
+    These tests set a low value of **--end** to save time. To get a fuller fundamental diagram, increase the end time.

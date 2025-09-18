@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,22 +24,10 @@
 
 #include "GNEViewNetHelper.h"
 
-
-// ===========================================================================
-// class declaration
-// ===========================================================================
-class GNEFrame;
-class GNENet;
-class GNEUndoList;
-class GNEViewParent;
-
 // ===========================================================================
 // class definitions
 // ===========================================================================
-/**
- * @class GNEViewNet
- * Microscopic view at the simulation
- */
+
 class GNEViewNet : public GUISUMOAbstractView {
     /// @brief FOX-declaration
     FXDECLARE(GNEViewNet)
@@ -72,7 +60,7 @@ public:
     void buildViewToolBars(GUIGlChildWindow* v);
 
     /// @brief Mark the entire GNEViewNet to be repainted later
-    void updateViewNet() const;
+    void updateViewNet(const bool ignoreViewUpdater = true) const;
 
     /// @brief force supermode network(used after load/create new network)
     void forceSupemodeNetwork();
@@ -89,17 +77,14 @@ public:
     /// @brief get move multiple element values
     const GNEViewNetHelper::MoveMultipleElementModul& getMoveMultipleElementValues() const;
 
-    /// @brief get objects in the given boundary
-    void updateObjectsInBoundary(const Boundary& boundary);
-
-    /// @brief get objects in the given position
+    /// @brief update objects and boundaries in position
     void updateObjectsInPosition(const Position& pos);
 
-    /** @brief Builds an entry which allows to (de)select the object
-     * @param ret The popup menu to add the entry to
-     * @param AC AttributeCarrier that will be select/unselected
-     */
-    void buildSelectionACPopupEntry(GUIGLObjectPopupMenu* ret, GNEAttributeCarrier* AC);
+    /// @brief get objects in the given shape (using triangulation)
+    void updateObjectsInShape(const PositionVector& shape);
+
+    /// @brief redraw elements only for calculating boundary
+    void redrawPathElementContours();
 
     /// @brief set color scheme
     bool setColorScheme(const std::string& name);
@@ -155,6 +140,18 @@ public:
 
     /// @brief get Edit Shape module
     const GNEViewNetHelper::EditNetworkElementShapes& getEditNetworkElementShapes() const;
+
+    /// @brief get allow vClasses dialog
+    GNEAllowVClassesDialog* getAllowVClassesDialog() const;
+
+    /// @brief get fix network elements dialog
+    GNEFixNetworkElements* getFixNetworkElementsDialog() const;
+
+    /// @brief get fix additional elements dialog
+    GNEFixAdditionalElements* getFixAdditionalElementsDialog() const;
+
+    /// @brief get fix additional elements dialog
+    GNEFixDemandElements* getFixDemandElementsDialog() const;
 
     /// @name overloaded handlers
     /// @{
@@ -255,6 +252,9 @@ public:
 
     /// @brief select elements within polygon boundary
     long onCmdSelectPolygonElements(FXObject*, FXSelector, void*);
+
+    /// @brief triangulate polygon
+    long onCmdTriangulatePolygon(FXObject*, FXSelector, void*);
 
     /// @brief set as first geometry point the closes geometry point
     long onCmdSetFirstGeometryPoint(FXObject*, FXSelector, void*);
@@ -413,7 +413,7 @@ public:
     long onCmdToggleDrawSpreadVehicles(FXObject*, FXSelector, void*);
 
     /// @brief toggle warn for merge
-    long onCmdToggleWarnAboutMerge(FXObject*, FXSelector, void*);
+    long onCmdToggleMergeAutomatically(FXObject*, FXSelector, void*);
 
     /// @brief toggle show junction bubbles
     long onCmdToggleShowJunctionBubbles(FXObject*, FXSelector, void*);
@@ -542,32 +542,14 @@ public:
     /// @brief get interval bar
     GNEViewNetHelper::IntervalBar& getIntervalBar();
 
-    /// @brief get inspected attribute carriers
-    const std::vector<GNEAttributeCarrier*>& getInspectedAttributeCarriers() const;
-
     /// @brief get lock manager
     GNEViewNetHelper::LockManager& getLockManager();
 
-    /// @brief set inspected attributeCarrier
-    void setInspectedAttributeCarriers(const std::vector<GNEAttributeCarrier*> ACs);
+    /// @brief get inspected elements
+    GNEViewNetHelper::InspectedElements& getInspectedElements();
 
-    /// @brief check if attribute carrier is being inspected
-    bool isAttributeCarrierInspected(const GNEAttributeCarrier* AC) const;
-
-    /// @brief remove given AC of list of inspected Attribute Carriers
-    void removeFromAttributeCarrierInspected(const GNEAttributeCarrier* AC);
-
-    /// @brief get front attributeCarrier
-    const GNEAttributeCarrier* getFrontAttributeCarrier() const;
-
-    /// @brief get front glObject
-    const GUIGlObject* getFrontGLObject() const;
-
-    /// @brief set front attributeCarrier
-    void setFrontAttributeCarrier(GNEAttributeCarrier* AC);
-
-    /// @brief draw front attributeCarrier
-    void drawTranslateFrontAttributeCarrier(const GNEAttributeCarrier* AC, double typeOrLayer, const double extraOffset = 0);
+    /// @brief get marked for drawing front elements
+    GNEViewNetHelper::MarkFrontElements& getMarkFrontElements();
 
     /// @brief check if an element is being moved
     bool isCurrentlyMovingElements() const;
@@ -584,9 +566,6 @@ public:
     /// @brief set statusBar text
     void setStatusBarText(const std::string& text);
 
-    /// @brief reset last clicked position
-    void resetLastClickedPosition();
-
     /// @brief whether to autoselect nodes or to lanes
     bool autoSelectNodes();
 
@@ -602,11 +581,8 @@ public:
     /// @brief return true if junction must be showed as bubbles
     bool showJunctionAsBubbles() const;
 
-    /// @brief try to merge moved junction with another junction in that spot return true if merging did take place
-    bool checkMergeJunctions();
-
     /// @brief ask merge junctions
-    bool askMergeJunctions(const GNEJunction* movedJunction, const GNEJunction* targetJunction);
+    bool askMergeJunctions(const GNEJunction* movedJunction, const GNEJunction* targetJunction, bool& alreadyAsked);
 
     /// @brief ask about change supermode
     bool aksChangeSupermode(const std::string& operation, Supermode expectedSupermode);
@@ -637,7 +613,7 @@ protected:
     GNEViewNet();
 
     /// @brief do paintGL
-    int doPaintGL(int mode, const Boundary& bound);
+    int doPaintGL(int mode, const Boundary& drawingBoundary);
 
     /// @brief called after some features are already initialized
     void doInit();
@@ -724,6 +700,23 @@ private:
 
     // @}
 
+    /// @name dialogs
+    /// @{
+
+    /// @brief allowVClasses dialog
+    GNEAllowVClassesDialog* myAllowVClassesDialog = nullptr;
+
+    /// @brief fix network elements dialog
+    GNEFixNetworkElements* myFixNetworkElementsDialog = nullptr;
+
+    /// @brief fix additional elements dialog
+    GNEFixAdditionalElements* myFixAdditionalElementsDialog = nullptr;
+
+    /// @brief fix additional elements dialog
+    GNEFixDemandElements* myFixDemandElementsDialog = nullptr;
+
+    /// @}
+
     /// @brief variable used for grouping all variables related with salve elements
     GNEViewNetHelper::SaveElements mySaveElements;
 
@@ -739,6 +732,12 @@ private:
     /// @brief lock manager
     GNEViewNetHelper::LockManager myLockManager;
 
+    /// @brief inspected element
+    GNEViewNetHelper::InspectedElements myInspectedElements;
+
+    /// @brief front element
+    GNEViewNetHelper::MarkFrontElements myMarkFrontElements;
+
     /// @brief view parent
     GNEViewParent* myViewParent = nullptr;
 
@@ -751,20 +750,11 @@ private:
     /// @brief a reference to the undolist maintained in the application
     GNEUndoList* myUndoList = nullptr;
 
-    /// @brief current inspected attribute carrier
-    std::vector<GNEAttributeCarrier*> myInspectedAttributeCarriers;
-
-    /// @brief front attribute carrier
-    GNEAttributeCarrier* myFrontAttributeCarrier = nullptr;
-
     /// @brief last created route
     GNEDemandElement* myLastCreatedRoute = nullptr;
 
     /// @brief draw preview roundabout
     bool myDrawPreviewRoundabout = false;
-
-    /// @brief last clicked position
-    Position myLastClickedPosition = Position::INVALID;
 
     /// @brief flag for mark if during this frame a popup was created (needed to avoid problems in linux with CursorDialogs)
     bool myCreatedPopup = false;
@@ -785,13 +775,13 @@ private:
     void updateDataModeSpecificControls();
 
     /// @brief delete given network attribute carriers
-    void deleteNetworkAttributeCarriers(const std::vector<GNEAttributeCarrier*> ACs);
+    void deleteNetworkAttributeCarrier(const GNEAttributeCarrier* AC);
 
     /// @brief delete given demand attribute carriers
-    void deleteDemandAttributeCarriers(const std::vector<GNEAttributeCarrier*> ACs);
+    void deleteDemandAttributeCarrier(const GNEAttributeCarrier* AC);
 
     /// @brief delete data attribute carriers
-    void deleteDataAttributeCarriers(const std::vector<GNEAttributeCarrier*> ACs);
+    void deleteDataAttributeCarrier(const GNEAttributeCarrier* AC);
 
     /// @brief try to retrieve an edge at popup position
     GNEEdge* getEdgeAtPopupPosition();

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -306,7 +306,15 @@ public:
      *
      * @param[in] rem The move reminder to add
      */
-    virtual void addMoveReminder(MSMoveReminder* rem);
+    virtual void addMoveReminder(MSMoveReminder* rem, bool addToVehicles = true);
+
+
+    /** @brief Remove a move-reminder from move-reminder container
+     *
+     * The move reminder will not be deleted by the lane.
+     * @param[in] rem The move reminder to remvoe
+     */
+    virtual void removeMoveReminder(MSMoveReminder* rem);
 
 
     /** @brief Return the list of this lane's move reminders
@@ -564,17 +572,22 @@ public:
      * @return This lane's resulting max. speed
      */
     inline double getVehicleMaxSpeed(const SUMOTrafficObject* const veh) const {
+        return getVehicleMaxSpeed(veh, veh->getMaxSpeed());
+    }
+
+
+    inline double getVehicleMaxSpeed(const SUMOTrafficObject* const veh, double vehMaxSpeed) const {
         if (myRestrictions != nullptr) {
             std::map<SUMOVehicleClass, double>::const_iterator r = myRestrictions->find(veh->getVClass());
             if (r != myRestrictions->end()) {
                 if (mySpeedByVSS || mySpeedByTraCI) {
-                    return MIN2(myMaxSpeed, MIN2(veh->getMaxSpeed(), r->second * veh->getChosenSpeedFactor()));
+                    return MIN2(myMaxSpeed, MIN2(vehMaxSpeed, r->second * veh->getChosenSpeedFactor()));
                 } else {
-                    return MIN2(veh->getMaxSpeed(), r->second * veh->getChosenSpeedFactor());
+                    return MIN2(vehMaxSpeed, r->second * veh->getChosenSpeedFactor());
                 }
             }
         }
-        return MIN2(veh->getMaxSpeed(), myMaxSpeed * veh->getChosenSpeedFactor());
+        return MIN2(vehMaxSpeed, myMaxSpeed * veh->getChosenSpeedFactor());
     }
 
 
@@ -657,7 +670,7 @@ public:
      *
      * This method goes through all vehicles calling their * "setApproachingForAllLinks" method.
      */
-    virtual void setJunctionApproaches(const SUMOTime t) const;
+    virtual void setJunctionApproaches() const;
 
     /** @brief This updates the MSLeaderInfo argument with respect to the given MSVehicle.
      *         All leader-vehicles on the same edge, which are relevant for the vehicle
@@ -1009,10 +1022,11 @@ public:
      * @param[in] speed The speed of the vehicle used for determining whether a subsequent link will be opened at arrival time
      * @param[in] veh The vehicle for which the information shall be computed
      * @param[in] bestLaneConts The lanes the vehicle will use in future
+     * @param[in] considerCrossingFoes Whether vehicles on crossing foe links should be considered
      * @return
      */
     std::pair<MSVehicle* const, double> getLeaderOnConsecutive(double dist, double seen,
-            double speed, const MSVehicle& veh, const std::vector<MSLane*>& bestLaneConts) const;
+            double speed, const MSVehicle& veh, const std::vector<MSLane*>& bestLaneConts, bool considerCrossingFoes = true) const;
 
     /// @brief Returns the immediate leaders and the distance to them (as getLeaderOnConsecutive but for the sublane case)
     void getLeadersOnConsecutive(double dist, double seen, double speed, const MSVehicle* ego,
@@ -1301,12 +1315,11 @@ public:
      *  Every vehicle is retrieved from the given MSVehicleControl and added to this
      *  lane.
      *
-     * @param[in] vehIDs The vehicle ids for the current que
-     * @param[in] vc The vehicle control to retrieve references vehicles from
+     * @param[in] vehs The vehicles for the current lane
      * @todo What about throwing an IOError?
      * @todo What about throwing an error if something else fails (a vehicle can not be referenced)?
      */
-    void loadState(const std::vector<std::string>& vehIDs, MSVehicleControl& vc);
+    void loadState(const std::vector<SUMOVehicle*>& vehs);
 
 
     /* @brief helper function for state saving: checks whether any outgoing
@@ -1353,6 +1366,15 @@ public:
     static CollisionAction getIntermodalCollisionAction() {
         return myIntermodalCollisionAction;
     }
+
+    static DepartSpeedDefinition& getDefaultDepartSpeedDefinition() {
+        return myDefaultDepartSpeedDefinition;
+    }
+
+    static double& getDefaultDepartSpeed() {
+        return myDefaultDepartSpeed;
+    }
+
 
     static const long CHANGE_PERMISSIONS_PERMANENT = 0;
     static const long CHANGE_PERMISSIONS_GUI = 1;
@@ -1423,6 +1445,9 @@ protected:
 
     /// @brief return length of fractional vehicles on this lane
     double getFractionalVehicleLength(bool brutto) const;
+
+    /// @brief detect frontal collisions
+    static bool isFrontalCollision(const MSVehicle* collider, const MSVehicle* victim);
 
     /// Unique numerical ID (set on reading by netload)
     int myNumericalID;
@@ -1614,7 +1639,8 @@ private:
     static SUMOTime myIntermodalCollisionStopTime;
     static double myCollisionMinGapFactor;
     static bool myExtrapolateSubstepDepart;
-
+    static DepartSpeedDefinition myDefaultDepartSpeedDefinition;
+    static double myDefaultDepartSpeed;
     /**
      * @class vehicle_position_sorter
      * @brief Sorts vehicles by their position (descending)

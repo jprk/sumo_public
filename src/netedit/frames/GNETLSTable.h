@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -22,9 +22,8 @@
 #include <config.h>
 
 #include <vector>
-
-#include <utils/common/UtilExceptions.h>
 #include <netedit/frames/network/GNETLSEditorFrame.h>
+#include <utils/tests/InternalTestStep.h>
 
 // ===========================================================================
 // class declaration
@@ -37,9 +36,7 @@ class MFXMenuButtonTooltip;
 // ===========================================================================
 // class definitions
 // ===========================================================================
-/**
- * @class GNETLSTable
- */
+
 class GNETLSTable : public FXHorizontalFrame {
     /// @brief fox declaration
     FXDECLARE(GNETLSTable)
@@ -101,8 +98,12 @@ public:
      */
     void setTableSize(const std::string& columnsType, const int numberRow);
 
+    /// @brief test table (using internal tests)
+    long testTable(const InternalTestStep::TLSTableTest* tableTest);
+
     /// @name FOX callbacks
     /// @{
+
     /// @brief called when a row is focused
     long onFocusRow(FXObject*, FXSelector, void*);
 

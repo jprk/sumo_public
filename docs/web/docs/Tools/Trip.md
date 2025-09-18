@@ -52,6 +52,7 @@ The probabilities for selecting an edge may also be weighted by
 - [generic edge parameter](../Simulation/GenericParameters.md) (option **--edge-param**)
 - direction of travel (option **--angle-factor** and **--angle**)
 - randomly (option **--random-factor**)
+- by edge type (option **--edge-type-file**)
 
 For additional ways to influence edge probabilities call
 
@@ -103,9 +104,6 @@ generated. This works by automatically calling
 trips into routes and automatically discard disconnected trips. It may
 be necessary to increase the number of generated random trips to account
 for a fraction disconnected, discarded trips.
-
-!!! caution
-    When using the option **--vehicle-class** the same value should be set for option **--edge-permission**
 
 Sometimes it is desirable to obtain validated trips rather than routes
 (i.e. to make use of [one-shot route
@@ -162,6 +160,11 @@ Note that the option **--vehicle-class** should only be used as a quick shorthan
 generate trips for the standard type of the given vehicle class since it
 places a standard vType definition in the generated trips file.
 
+!!! note
+    Since SUMO 1.23.0 when using the option **--vehicle-class** the same value is used as a default for the option **--edge-permission**.
+    Furthermore using **--pedestrians** or **--persontrips** imply **--edge-permission pedestrian**.
+    Different permissions can still be requested by using **--edge-permission** explicitly.
+
 ### Automatically generating a vehicle type
 
 By setting the option **--vehicle-class** a vehicle type definition that specifies vehicle
@@ -207,6 +210,8 @@ they use public transport, a personal car or walking.
 - using option **--from-stops busStop** will make persons start with an initial `<stop duration="0">` at a random busStop
 - using option **--to-stops busStop** will make persons end their journey at a random busStop
 
+!!! note
+    To combine trips from multiple calls to **randomTrips.py** in a single simulation, use option **--prefix** and set it to a different value for each call (to ensure distinct vehicle ids).
 
 !!! caution
     Quoting of trip attributes on Linux must use the style **--trip-attributes 'modes="public"'**

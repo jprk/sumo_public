@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -194,10 +194,20 @@ NLEdgeControlBuilder::build(const MMVersion& networkVersion) {
         }
     }
     // consistency check
+    std::set<const MSLane*> checked;
     for (auto item : myOppositeLanes) {
-        if (item.first->getOpposite() != nullptr && item.first->getOpposite()->getOpposite() != item.first) {
-            WRITE_WARNINGF(TL("Asymmetrical neigh lane '%' for lane '%'"), item.second, item.first->getID());
-            item.first->getOpposite()->setOpposite(item.first);
+        if (item.first->getOpposite() != nullptr) {
+            if (item.first->getOpposite()->getOpposite() != item.first) {
+                if (checked.count(item.first->getOpposite()) == 0) {
+                    WRITE_WARNINGF(TL("Asymmetrical neigh lane '%' for lane '%'"), item.second, item.first->getID());
+                    item.first->getOpposite()->setOpposite(item.first);
+                } else {
+                    throw ProcessError(TLF("Mutually inconsistent neigh lane definitions for lanes '%', '%' and '%'",
+                                item.first->getID(), item.first->getOpposite()->getID(), Named::getIDSecure(item.first->getOpposite()->getOpposite())));
+                }
+            }
+            checked.insert(item.first);
+            checked.insert(item.first->getOpposite());
         }
     }
     for (MSEdge* const edge : myEdges) {

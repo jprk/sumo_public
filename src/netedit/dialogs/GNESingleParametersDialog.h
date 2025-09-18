@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -20,18 +20,19 @@
 #pragma once
 #include <config.h>
 
-#include <utils/common/SUMOVehicleClass.h>
-#include <utils/xml/SUMOSAXHandler.h>
-#include <netedit/frames/GNEFrameAttributeModules.h>
 #include <netedit/dialogs/GNEVehicleTypeDialog.h>
+#include <utils/common/SUMOVehicleClass.h>
+#include <utils/foxtools/MFXDialogBox.h>
+#include <utils/xml/SUMOSAXHandler.h>
 
 // ===========================================================================
 // class definitions
 // ===========================================================================
 
 class GNEAttributeCarrier;
-class NBLoadedSUMOTLDef;
+class GNEAttributesEditorType;
 class GNEViewNet;
+class NBLoadedSUMOTLDef;
 
 // ===========================================================================
 // class definitions
@@ -41,7 +42,7 @@ class GNEViewNet;
  * @class GNESingleParametersDialog
  * @brief Dialog for edit  parameters
  */
-class GNESingleParametersDialog : public FXDialogBox {
+class GNESingleParametersDialog : public MFXDialogBox {
     /// @brief FOX-declaration
     FXDECLARE(GNESingleParametersDialog)
 
@@ -229,11 +230,8 @@ public:
         FXButton* myHelpButton;
     };
 
-    /// @brief Constructor for generic data attributes
-    GNESingleParametersDialog(GNEFrameAttributeModules::GenericDataAttributes* genericDataAttributes);
-
-    /// @brief Constructor for parameter editor
-    GNESingleParametersDialog(GNEFrameAttributeModules::ParametersEditor* parametersEditor);
+    /// @brief Constructor for attributes editor
+    GNESingleParametersDialog(GNEAttributesEditorType* attributesEditor);
 
     /// @brief Constructor for Vehicle Type Row (Vehicle Type Dialog)
     GNESingleParametersDialog(GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow* VTypeAttributeRow, GNEViewNet* viewNet);
@@ -247,8 +245,12 @@ public:
     /// @brief destructor
     ~GNESingleParametersDialog();
 
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* modalArguments);
+
     /// @name FOX-callbacks
     /// @{
+
     /// @brief event after press accept button
     long onCmdAccept(FXObject*, FXSelector, void*);
 
@@ -257,41 +259,39 @@ public:
 
     /// @brief event after press reset button
     long onCmdReset(FXObject*, FXSelector, void*);
+
     /// @}
 
 protected:
     /// @brief FOX need this
     FOX_CONSTRUCTOR(GNESingleParametersDialog)
 
-    /// @brief pointer to GenericDataAttributes
-    GNEFrameAttributeModules::GenericDataAttributes* myGenericDataAttributes;
-
-    /// @brief pointer to ParametersEditor
-    GNEFrameAttributeModules::ParametersEditor* myParametersEditor;
+    /// @brief pointer to attributes editor
+    GNEAttributesEditorType* myAttributesEditor = nullptr;
 
     /// @brief pointer to VTypeAttributeRow
-    GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow* VTypeAttributeRow;
+    GNEVehicleTypeDialog::VTypeAttributes::VTypeAttributeRow* VTypeAttributeRow = nullptr;
 
     /// @brief pointer to GNEAttributeCarrier
-    GNEAttributeCarrier* myAttributeCarrier;
+    GNEAttributeCarrier* myAttributeCarrier = nullptr;
 
     /// @brief pointer to TLDef
-    NBLoadedSUMOTLDef* myTLDef;
+    NBLoadedSUMOTLDef* myTLDef = nullptr;
 
     /// @brief pointer to parameters values
-    ParametersValues* myParametersValues;
+    ParametersValues* myParametersValues = nullptr;
 
     /// @brief pointer to parameters operations
-    ParametersOperations* myParametersOperations;
+    ParametersOperations* myParametersOperations = nullptr;
 
     /// @brief accept button
-    FXButton* myAcceptButton;
+    FXButton* myKeepOldButton = nullptr;
 
     /// @brief cancel button
-    FXButton* myCancelButton;
+    FXButton* myCancelButton = nullptr;
 
     /// @brief cancel button
-    FXButton* myResetButton;
+    FXButton* myResetButton = nullptr;
 
 private:
     /// @brief auxiliar constructor

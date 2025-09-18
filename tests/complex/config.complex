@@ -1,4 +1,5 @@
 import_config_file:../config_all
+interpreter:python
 kill_timeout:900
 binary:$TEXTTEST_HOME/toolrunner.py
 use_case_record_mode:GUI
@@ -42,8 +43,7 @@ copy_test_path:cadc_full.csv
 copy_test_path:runner.py
 copy_test_path:runnerlib.py
 copy_test_path:validate.py
-copy_test_path:classes.txt
-copy_test_path:nefz.csv
+copy_test_path:slope.csv
 copy_test_path:input_additional_template.add.xml
 copy_test_path:test.py
 copy_test_path:simpla.cfg.xml
@@ -76,6 +76,7 @@ log:log.txt
 log2:log2.txt
 cadytslog:cadySumo-log.txt
 detector:detector.xml
+detector2:detector2.xml
 tocs:tocs.xml
 stops:stops.xml
 stopinfos:stopinfos.xml
@@ -90,6 +91,10 @@ gtfs_additional:gtfs_pt_stops.add.xml
 vtypes:vtypes.xml
 cfg:config.sumocfg
 aggregated:aggregated.xml
+railsignalblocks:railsignal_blocks.xml
+railsignalvehs:railsignal_vehicles.xml
+railsignalblocks2:railsignal_blocks2.xml
+railsignalvehs2:railsignal_vehicles2.xml
 
 [run_dependent_text]
 output:<!--{[->]}-->
@@ -119,6 +124,7 @@ output:function .* finished after .*
 output:Cannot read local schema .*,{REPLACE Cannot read local schema <schema>,}
 output:version .* started via libsumo {REPLACE started }
 output:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
+output:Building scenario in .*{REPLACE Building scenario in <DIR>}
 log:Simulation.*started with{REPLACE Simulation started with}
 log:Starting server on port [0-9]*{REPLACE Starting server on port <PORT>}
 log:^Performance:{->}^Vehicles:
@@ -143,8 +149,8 @@ ssm:<!--{[->]}-->
 summary:<!--{[->]}-->
 statistics:<!--{[->]}-->
 statistics2:<!--{[->]}-->
-statistics:<performance 
-statistics2:<performance 
+statistics:<performance
+statistics2:<performance
 lanechanges:<!--{[->]}-->
 state:<!--{[->]}-->
 state2:<!--{[->]}-->
@@ -153,11 +159,16 @@ tls_state2:<!--{[->]}-->
 state:<snapshot (.*) version="[^"]*"{REPLACE <snapshot \1 version="<version>"}
 state2:<snapshot (.*) version="[^"]*"{REPLACE <snapshot \1 version="<version>"}
 detector:<!--{[->]}-->
+detector2:<!--{[->]}-->
 toc:<!--{[->]}-->
 toc2:<!--{[->]}-->
 tocs:<!--{[->]}-->
+railsignalblocks:<!--{[->]}-->
+railsignalvehs:<!--{[->]}-->
+railsignalblocks2:<!--{[->]}-->
+railsignalvehs2:<!--{[->]}-->
 errors:Die Adresse wird bereits verwendet{REPLACE Address already in use}
-errors:Leaked object at 
+errors:Leaked object at
 errors:*** 9 leaks found
 errors:delete: freed
 errors:send failed: Connection reset by peer{REPLACE send failed: Software caused tcpip::Socket abort}
@@ -176,7 +187,12 @@ errors:Matplotlib is building the font cache; this may take a moment.
 errors:matplotlib/projections/__init__.py:.*: UserWarning: Unable to import Axes3D.{LINES 2}
 errors:.*UserWarning: {REPLACE UserWarning: }
 errors:apport/report.py:13: DeprecationWarning: the imp{LINES 2}
+errors:error: XDG_RUNTIME_DIR is invalid or not set in the environment.
+errors:MESA: error: ZINK: {LINES 2}
 errors:\\{REPLACE /}
+errors:Fontconfig warning:
+errors:Unable to revert mtime:
+errors:DeprecationWarning: builtin type .*wig.* has no __module__ attribute
 ps:%%CreationDate
 gtfs_additional:<!-- generated on{[->]}-->
 gtfs_routes:<!-- generated on{[->]}-->
@@ -189,7 +205,7 @@ output:[0-9] vehicle subscription results:
 output:[0-9] simulation subscription results:
 output:Process [0-9]
 output:Starting process
-output:[0-9] stepping \(step 
+output:[0-9] stepping \(step
 output:^Loading configuration ... done.
 output:^Starting process [0-9] with steplength
 output:does not supply vehicle parameter
@@ -197,6 +213,7 @@ errors:^This will probably
 errors:^[0-9]*\.*[0-9]*: WARNING:
 errors:^WARNING:
 errors:^UserWarning:
+errors:traci.simulation.getBusStop
 errors:getNextStops
 
 

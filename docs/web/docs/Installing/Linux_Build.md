@@ -16,10 +16,11 @@ To be able to run SUMO on Linux, just follow these steps:
 For ubuntu this boils down to
 
 ```
-sudo apt-get install git cmake python3 g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev python3-dev swig default-jdk maven libeigen3-dev
+sudo apt-get install git
 git clone --recursive https://github.com/eclipse-sumo/sumo
 cd sumo
 export SUMO_HOME="$PWD"
+sudo apt-get install $(cat build_config/build_req_deb.txt build_config/tools_req_deb.txt)
 cmake -B build .
 cmake --build build -j$(nproc)
 ```
@@ -33,7 +34,9 @@ alternatives below.
 ## Installing required tools and libraries
 
 - For the build infrastructure you will need cmake together with a moderately
-  recent g++ (4.8 will do) or clang++ (or any other C++11 enabled compiler).
+  recent g++ (7 will do) or clang++ (or any other C++17 enabled compiler).
+- It is possible to build SUMO with older compilers too (at least gcc 4.8) but
+  it is not recommended since some features will be disabled.
 - The library Xerces-C is always needed. To use
   [sumo-gui](../sumo-gui.md) you also need Fox Toolkit in version
   1.6.x. It is highly recommended to also install Proj to have support
@@ -68,6 +71,16 @@ python3 -m pip install texttest
 
 For the Python tools there are some more requirements depending on which tools you want to use. If you want to install
 everything using pip do `python3 -m pip install -r tools/requirements.txt -r tools/req_dev.txt`.
+
+### Parquet support
+
+see https://arrow.apache.org/install/
+```
+wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+sudo apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+sudo apt update
+sudo apt install -y -V libarrow-dev libparquet-dev
+```
 
 ## Getting the source code
 

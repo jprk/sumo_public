@@ -2,7 +2,7 @@
 # spec file for package sumo
 #
 # Copyright (c) 2022 SUSE LLC
-# Copyright (c) 2001-2023 DLR (http://www.dlr.de/) and contributors
+# Copyright (c) 2001-2025 DLR (http://www.dlr.de/) and contributors
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -33,6 +33,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  cmake3
 %else
 BuildRequires:  cmake
+BuildRequires:  java-devel
 %endif
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-devel
@@ -132,8 +133,12 @@ install -d -m 755 %{buildroot}%{_sysconfdir}/profile.d
 install -p -m 644 build_config/package/*sh %{buildroot}%{_sysconfdir}/profile.d
 install -d -m 755 %{buildroot}%{_datadir}/applications
 install -p -m 644 build_config/package/%{name}.desktop %{buildroot}%{_datadir}/applications
+install -p -m 644 build_config/package/netedit.desktop %{buildroot}%{_datadir}/applications
+install -p -m 644 build_config/package/osmWebWizard.desktop %{buildroot}%{_datadir}/applications
 install -d -m 755 %{buildroot}%{_datadir}/pixmaps
 install -p -m 644 build_config/package/%{name}.png %{buildroot}%{_datadir}/pixmaps
+install -p -m 644 build_config/package/netedit.png %{buildroot}%{_datadir}/pixmaps
+install -p -m 644 build_config/package/osmWebWizard.png %{buildroot}%{_datadir}/pixmaps
 %if 0%{?suse_version}
 install -d -m 755 %{buildroot}%{_datadir}/mime/application
 install -p -m 644 build_config/package/%{name}.xml %{buildroot}%{_datadir}/mime/application/%{name}.xml
@@ -150,44 +155,34 @@ cd cmake-build
 %files
 %defattr(-,root,root)
 %{_bindir}/*
+%{_libdir}/libsumocs.so
+%{_libdir}/libtracics.so
+%if 0%{?centos_version} == 0
+%{_libdir}/liblibsumojni.so
+%{_libdir}/liblibtracijni.so
+%endif
 %{_datadir}/sumo
 %doc AUTHORS README.md ChangeLog CONTRIBUTING.md NOTICE.md docs/pydoc docs/userdoc docs/examples docs/tutorial
-%if 0%{?suse_version} < 1500
-%doc LICENSE
-%else
 %license LICENSE
-%endif
 %{_mandir}/man1/*
 %config %{_sysconfdir}/profile.d/%{name}.*sh
-%{_datadir}/applications/%{name}.desktop
-%{_datadir}/pixmaps/%{name}.png
+%{_datadir}/applications/*.desktop
+%{_datadir}/pixmaps/*.png
 %if 0%{?suse_version}
 %{_datadir}/mime/application
 %endif
 
 %files -n libsumocpp
-%if 0%{?suse_version} < 1500
-%doc LICENSE
-%else
 %license LICENSE
-%endif
 %{_libdir}/libsumocpp.so
 %{_libdir}/libtracicpp.so
 
 %files -n libsumocpp-devel
-%if 0%{?suse_version} < 1500
-%doc LICENSE
-%else
 %license LICENSE
-%endif
 %{_includedir}/libsumo
 
 %files -n python3-libsumo
-%if 0%{?suse_version} < 1500
-%doc LICENSE
-%else
 %license LICENSE
-%endif
 %{python3_sitelib}/sumolib*/
 %{python3_sitelib}/traci*/
 %{python3_sitelib}/simpla*/

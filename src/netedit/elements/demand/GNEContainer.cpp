@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,8 +17,10 @@
 ///
 // Representation of containers in netedit
 /****************************************************************************/
+
 #include <microsim/devices/MSDevice_BTreceiver.h>
 #include <netedit/GNENet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/changes/GNEChange_Attribute.h>
@@ -51,22 +53,12 @@ FXIMPLEMENT(GNEContainer::GNESelectedContainersPopupMenu, GUIGLObjectPopupMenu, 
 // ===========================================================================
 
 GNEContainer::GNEContainerPopupMenu::GNEContainerPopupMenu(GNEContainer* container, GUIMainWindow& app, GUISUMOAbstractView& parent) :
-    GUIGLObjectPopupMenu(app, parent, *container),
+    GUIGLObjectPopupMenu(app, parent, container),
     myContainer(container),
     myTransformToContainer(nullptr),
     myTransformToContainerFlow(nullptr) {
-    // build header
-    myContainer->buildPopupHeader(this, app);
-    // build menu command for center button and copy cursor position to clipboard
-    myContainer->buildCenterPopupEntry(this);
-    myContainer->buildPositionCopyEntry(this, app);
-    // build menu commands for names
-    GUIDesigns::buildFXMenuCommand(this, ("Copy " + myContainer->getTagStr() + " name to clipboard").c_str(), nullptr, this, MID_COPY_NAME);
-    GUIDesigns::buildFXMenuCommand(this, ("Copy " + myContainer->getTagStr() + " typed name to clipboard").c_str(), nullptr, this, MID_COPY_TYPED_NAME);
-    new FXMenuSeparator(this);
-    // build selection and show parameters menu
-    myContainer->getNet()->getViewNet()->buildSelectionACPopupEntry(this, myContainer);
-    myContainer->buildShowParamsPopupEntry(this);
+    // build common options
+    container->buildPopUpMenuCommonOptions(this, app, container->myNet->getViewNet(), container->getTagProperty()->getTag(), container->isAttributeCarrierSelected());
     // add transform functions only in demand mode
     if (myContainer->getNet()->getViewNet()->getEditModes().isCurrentSupermodeDemand()) {
         // create menu pane for transform operations
@@ -77,9 +69,9 @@ GNEContainer::GNEContainerPopupMenu::GNEContainerPopupMenu(GNEContainer* contain
         myTransformToContainer = GUIDesigns::buildFXMenuCommand(transformOperation, "Container", GUIIconSubSys::getIcon(GUIIcon::CONTAINER), this, MID_GNE_CONTAINER_TRANSFORM);
         myTransformToContainerFlow = GUIDesigns::buildFXMenuCommand(transformOperation, "ContainerFlow", GUIIconSubSys::getIcon(GUIIcon::CONTAINERFLOW), this, MID_GNE_CONTAINER_TRANSFORM);
         // check what menu command has to be disabled
-        if (myContainer->getTagProperty().getTag() == SUMO_TAG_CONTAINER) {
+        if (myContainer->getTagProperty()->getTag() == SUMO_TAG_CONTAINER) {
             myTransformToContainer->disable();
-        } else if (myContainer->getTagProperty().getTag() == SUMO_TAG_CONTAINERFLOW) {
+        } else if (myContainer->getTagProperty()->getTag() == SUMO_TAG_CONTAINERFLOW) {
             myTransformToContainerFlow->disable();
         }
     }
@@ -105,23 +97,13 @@ GNEContainer::GNEContainerPopupMenu::onCmdTransform(FXObject* obj, FXSelector, v
 // ===========================================================================
 
 GNEContainer::GNESelectedContainersPopupMenu::GNESelectedContainersPopupMenu(GNEContainer* container, const std::vector<GNEContainer*>& selectedContainer, GUIMainWindow& app, GUISUMOAbstractView& parent) :
-    GUIGLObjectPopupMenu(app, parent, *container),
-    myContainerTag(container->getTagProperty().getTag()),
+    GUIGLObjectPopupMenu(app, parent, container),
+    myContainerTag(container->getTagProperty()->getTag()),
     mySelectedContainers(selectedContainer),
     myTransformToContainer(nullptr),
     myTransformToContainerFlow(nullptr) {
-    // build header
-    container->buildPopupHeader(this, app);
-    // build menu command for center button and copy cursor position to clipboard
-    container->buildCenterPopupEntry(this);
-    container->buildPositionCopyEntry(this, app);
-    // build menu commands for names
-    GUIDesigns::buildFXMenuCommand(this, ("Copy " + container->getTagStr() + " name to clipboard").c_str(), nullptr, this, MID_COPY_NAME);
-    GUIDesigns::buildFXMenuCommand(this, ("Copy " + container->getTagStr() + " typed name to clipboard").c_str(), nullptr, this, MID_COPY_TYPED_NAME);
-    new FXMenuSeparator(this);
-    // build selection and show parameters menu
-    container->getNet()->getViewNet()->buildSelectionACPopupEntry(this, container);
-    container->buildShowParamsPopupEntry(this);
+    // build common options
+    container->buildPopUpMenuCommonOptions(this, app, container->myNet->getViewNet(), container->getTagProperty()->getTag(), container->isAttributeCarrierSelected());
     // add transform functions only in demand mode
     if (container->getNet()->getViewNet()->getEditModes().isCurrentSupermodeDemand()) {
         // create menu pane for transform operations
@@ -143,41 +125,44 @@ GNEContainer::GNESelectedContainersPopupMenu::onCmdTransform(FXObject* obj, FXSe
     // iterate over all selected containers
     for (const auto& container : mySelectedContainers) {
         if ((obj == myTransformToContainer) &&
-                (container->getTagProperty().getTag() == myContainerTag)) {
+                (container->getTagProperty()->getTag() == myContainerTag)) {
             GNERouteHandler::transformToContainer(container);
         } else if ((obj == myTransformToContainerFlow) &&
-                   (container->getTagProperty().getTag() == myContainerTag)) {
+                   (container->getTagProperty()->getTag() == myContainerTag)) {
             GNERouteHandler::transformToContainer(container);
         }
     }
     return 1;
 }
 
+
 // ===========================================================================
 // member method definitions
 // ===========================================================================
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4355) // mask warning about "this" in initializers
+#endif
 GNEContainer::GNEContainer(SumoXMLTag tag, GNENet* net) :
-    GNEDemandElement("", net, GLO_CONTAINER, tag, GUIIconSubSys::getIcon(GUIIcon::CONTAINER),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-GNEDemandElementFlow(this) {
-    // reset default values
-    resetDefaultValues();
+    GNEDemandElement("", net, "", tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementFlow(this) {
     // set end and container per hours as default flow values
     toggleAttribute(SUMO_ATTR_END, 1);
     toggleAttribute(SUMO_ATTR_CONTAINERSPERHOUR, 1);
 }
 
 
-GNEContainer::GNEContainer(SumoXMLTag tag, GNENet* net, GNEDemandElement* pType, const SUMOVehicleParameter& containerparameters) :
-    GNEDemandElement(containerparameters.id, net, (tag == SUMO_TAG_CONTAINERFLOW) ? GLO_CONTAINERFLOW : GLO_CONTAINER, tag,
-                     (tag == SUMO_TAG_CONTAINERFLOW) ? GUIIconSubSys::getIcon(GUIIcon::CONTAINERFLOW) : GUIIconSubSys::getIcon(GUIIcon::CONTAINER),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {pType}, {}),
-GNEDemandElementFlow(this, containerparameters) {
+GNEContainer::GNEContainer(SumoXMLTag tag, GNENet* net, const std::string& filename, GNEDemandElement* pType, const SUMOVehicleParameter& containerparameters) :
+    GNEDemandElement(containerparameters.id, net, filename, tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementFlow(this, containerparameters) {
+    // set parents
+    setParent<GNEDemandElement*>(pType);
     // set manually vtypeID (needed for saving)
     vtypeid = pType->getID();
 }
-
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 GNEContainer::~GNEContainer() {}
 
@@ -186,7 +171,7 @@ GNEMoveOperation*
 GNEContainer::getMoveOperation() {
     const auto firstContainerPlan = getChildDemandElements().front();
     // check first container plan
-    if (firstContainerPlan->getTagProperty().isPlanStopContainer()) {
+    if (firstContainerPlan->getTagProperty()->isPlanStopContainer()) {
         return nullptr;
     } else if (firstContainerPlan->getParentEdges().size() > 0) {
         // get lane
@@ -211,12 +196,12 @@ GNEContainer::writeDemandElement(OutputDevice& device) const {
         // unset VType parameter
         parametersSet &= ~VEHPARS_VTYPE_SET;
         // write container attributes (VType will not be written)
-        write(device, OptionsCont::getOptions(), myTagProperty.getXMLTag());
+        write(device, OptionsCont::getOptions(), myTagProperty->getXMLTag());
         // set VType parameter again
         parametersSet |= VEHPARS_VTYPE_SET;
     } else {
         // write container attributes, including VType
-        write(device, OptionsCont::getOptions(), myTagProperty.getXMLTag(), getTypeParent()->getID());
+        write(device, OptionsCont::getOptions(), myTagProperty->getXMLTag(), getTypeParent()->getID());
     }
     // write flow attributes
     writeFlowAttributes(this, device);
@@ -307,7 +292,7 @@ Boundary
 GNEContainer::getCenteringBoundary() const {
     Boundary containerBoundary;
     if (getChildDemandElements().size() > 0) {
-        if (getChildDemandElements().front()->getTagProperty().isPlanStopContainer()) {
+        if (getChildDemandElements().front()->getTagProperty()->isPlanStopContainer()) {
             // use boundary of stop center
             return getChildDemandElements().front()->getCenteringBoundary();
         } else {
@@ -322,7 +307,8 @@ GNEContainer::getCenteringBoundary() const {
 
 
 void
-GNEContainer::splitEdgeGeometry(const double /*splitPosition*/, const GNENetworkElement* /*originalElement*/, const GNENetworkElement* /*newElement*/, GNEUndoList* /*undoList*/) {
+GNEContainer::splitEdgeGeometry(const double /*splitPosition*/, const GNENetworkElement* /*originalElement*/,
+                                const GNENetworkElement* /*newElement*/, GNEUndoList* /*undoList*/) {
     // geometry of this element cannot be splitted
 }
 
@@ -358,7 +344,7 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
             // push draw matrix
             GLHelper::pushMatrix();
             // Start with the drawing of the area traslating matrix to origin
-            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getType());
+            drawInLayer(getType());
             // translate and rotate
             glTranslated(containerPosition.x(), containerPosition.y(), 0);
             glRotated(90, 0, 0, 1);
@@ -382,21 +368,22 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
             GLHelper::popMatrix();
             // draw line between junctions if container plan isn't valid
             for (const auto& containerPlan : getChildDemandElements()) {
-                if (containerPlan->getTagProperty().isPlanContainer() && (containerPlan->getParentJunctions().size() > 0) && !myNet->getPathManager()->isPathValid(containerPlan)) {
+                if (containerPlan->getTagProperty()->isPlanContainer() && (containerPlan->getParentJunctions().size() > 0) &&
+                        !myNet->getDemandPathManager()->isPathValid(containerPlan)) {
                     drawJunctionLine(containerPlan);
                 }
             }
             // draw stack label
             if (myStackedLabelNumber > 0) {
                 drawStackLabel(myStackedLabelNumber, "container", Position(containerPosition.x() - 2.5, containerPosition.y() - 0.8), -90, 1.3, 5, getExaggeration(s));
-            } else if (getChildDemandElements().front()->getTagProperty().getTag() == GNE_TAG_STOPCONTAINER_CONTAINERSTOP) {
+            } else if (getChildDemandElements().front()->getTagProperty()->getTag() == GNE_TAG_STOPCONTAINER_CONTAINERSTOP) {
                 // declare counter for stacked containers over stops
                 int stackedCounter = 0;
                 // get stoppingPlace
                 const auto stoppingPlace = getChildDemandElements().front()->getParentAdditionals().front();
                 // get stacked containers
                 for (const auto& stopContainer : stoppingPlace->getChildDemandElements()) {
-                    if (stopContainer->getTagProperty().getTag() == GNE_TAG_STOPCONTAINER_CONTAINERSTOP) {
+                    if (stopContainer->getTagProperty()->getTag() == GNE_TAG_STOPCONTAINER_CONTAINERSTOP) {
                         // get container parent
                         const auto containerParent = stopContainer->getParentDemandElements().front();
                         // check if the stop if the first container plan parent
@@ -411,7 +398,7 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
                 }
             }
             // draw flow label
-            if (myTagProperty.isFlow()) {
+            if (myTagProperty->isFlow()) {
                 drawFlowLabel(Position(containerPosition.x() - 1, containerPosition.y() - 4.25), -90, 1.8, 2, getExaggeration(s));
             }
             // draw name
@@ -422,7 +409,7 @@ GNEContainer::drawGL(const GUIVisualizationSettings& s) const {
             myContainerContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // calculate contour
-        myContainerContour.calculateContourRectangleShape(s, d, this, containerPosition, 0.5, 0.18, -5.5, 0, 0, exaggeration);
+        myContainerContour.calculateContourRectangleShape(s, d, this, containerPosition, 0.5, 0.18, getType(), -5.5, 0, 0, exaggeration, nullptr);
     }
 }
 
@@ -437,13 +424,13 @@ GNEContainer::computePathElement() {
 
 
 void
-GNEContainer::drawLanePartialGL(const GUIVisualizationSettings& /*s*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
+GNEContainer::drawLanePartialGL(const GUIVisualizationSettings& /*s*/, const GNESegment* /*segment*/, const double /*offsetFront*/) const {
     // Stops don't use drawJunctionPartialGL
 }
 
 
 void
-GNEContainer::drawJunctionPartialGL(const GUIVisualizationSettings& /*s*/, const GNEPathManager::Segment* /*segment*/, const double /*offsetFront*/) const {
+GNEContainer::drawJunctionPartialGL(const GUIVisualizationSettings& /*s*/, const GNESegment* /*segment*/, const double /*offsetFront*/) const {
     // Stops don't use drawJunctionPartialGL
 }
 
@@ -475,21 +462,16 @@ GNEContainer::getAttribute(SumoXMLAttr key) const {
             if (wasSet(VEHPARS_COLOR_SET)) {
                 return toString(color);
             } else {
-                return myTagProperty.getDefaultValue(SUMO_ATTR_COLOR);
+                return myTagProperty->getDefaultStringValue(SUMO_ATTR_COLOR);
             }
         case SUMO_ATTR_DEPARTPOS:
             if (wasSet(VEHPARS_DEPARTPOS_SET)) {
                 return getDepartPos();
             } else {
-                return myTagProperty.getDefaultValue(SUMO_ATTR_DEPARTPOS);
+                return myTagProperty->getDefaultStringValue(SUMO_ATTR_DEPARTPOS);
             }
-        // Other
-        case GNE_ATTR_SELECTED:
-            return toString(isAttributeCarrierSelected());
-        case GNE_ATTR_PARAMETERS:
-            return getParametersStr();
         default:
-            return getFlowAttribute(key);
+            return getFlowAttribute(this, key);
     }
 }
 
@@ -520,17 +502,17 @@ GNEContainer::getAttributePosition(SumoXMLAttr key) const {
             // get container plan
             const GNEDemandElement* containerPlan = getChildDemandElements().front();
             // first check if first container plan is a stop
-            if (containerPlan->getTagProperty().isPlanStopContainer()) {
+            if (containerPlan->getTagProperty()->isPlanStopContainer()) {
                 // stop center
                 return containerPlan->getPositionInView();
-            } else if (containerPlan->getTagProperty().planFromTAZ()) {
+            } else if (containerPlan->getTagProperty()->planFromTAZ()) {
                 // TAZ
                 if (containerPlan->getParentAdditionals().front()->getAttribute(SUMO_ATTR_CENTER).empty()) {
                     return containerPlan->getParentAdditionals().front()->getAttributePosition(GNE_ATTR_TAZ_CENTROID);
                 } else {
                     return containerPlan->getParentAdditionals().front()->getAttributePosition(SUMO_ATTR_CENTER);
                 }
-            } else if (containerPlan->getTagProperty().planFromJunction()) {
+            } else if (containerPlan->getTagProperty()->planFromJunction()) {
                 // juncrtion
                 return containerPlan->getParentJunctions().front()->getPositionInView();
             } else {
@@ -550,9 +532,6 @@ GNEContainer::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoLis
         case SUMO_ATTR_TYPE:
         case SUMO_ATTR_COLOR:
         case SUMO_ATTR_DEPARTPOS:
-        // Other
-        case GNE_ATTR_PARAMETERS:
-        case GNE_ATTR_SELECTED:
             GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
@@ -576,15 +555,10 @@ GNEContainer::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_DEPARTPOS: {
             double dummyDepartPos;
             DepartPosDefinition dummyDepartPosProcedure;
-            parseDepartPos(value, myTagProperty.getTagStr(), id, dummyDepartPos, dummyDepartPosProcedure, error);
+            parseDepartPos(value, myTagProperty->getTagStr(), id, dummyDepartPos, dummyDepartPosProcedure, error);
             // if error is empty, given value is valid
             return error.empty();
         }
-        // Other
-        case GNE_ATTR_SELECTED:
-            return canParse<bool>(value);
-        case GNE_ATTR_PARAMETERS:
-            return Parameterised::areParametersValid(value);
         default:
             return isValidFlowAttribute(this, key, value);
     }
@@ -617,20 +591,20 @@ GNEContainer::getPopUpID() const {
 
 std::string
 GNEContainer::getHierarchyName() const {
+    const auto& inspectedElements = myNet->getViewNet()->getInspectedElements();
     // special case for Trips and flow
-    if ((myTagProperty.getTag() == SUMO_TAG_TRIP) || (myTagProperty.getTag() == SUMO_TAG_FLOW)) {
-        // check if we're inspecting a Edge
-        if (myNet->getViewNet()->getInspectedAttributeCarriers().front() &&
-                myNet->getViewNet()->getInspectedAttributeCarriers().front()->getTagProperty().getTag() == SUMO_TAG_EDGE) {
+    if ((myTagProperty->getTag() == SUMO_TAG_TRIP) || (myTagProperty->getTag() == SUMO_TAG_FLOW)) {
+        // check if we're inspecting an Edge
+        if (inspectedElements.getFirstAC() && (inspectedElements.getFirstAC()->getTagProperty()->getTag() == SUMO_TAG_EDGE)) {
             // check if edge correspond to a "from", "to" or "via" edge
-            if (myNet->getViewNet()->isAttributeCarrierInspected(getParentEdges().front())) {
+            if (inspectedElements.isACInspected(getParentEdges().front())) {
                 return getTagStr() + ": " + getAttribute(SUMO_ATTR_ID) + " (from)";
-            } else if (myNet->getViewNet()->isAttributeCarrierInspected(getParentEdges().front())) {
+            } else if (inspectedElements.isACInspected(getParentEdges().front())) {
                 return getTagStr() + ": " + getAttribute(SUMO_ATTR_ID) + " (to)";
             } else {
                 // iterate over via
-                for (const auto& i : via) {
-                    if (i == myNet->getViewNet()->getInspectedAttributeCarriers().front()->getID()) {
+                for (const auto& viaEdgeID : via) {
+                    if (viaEdgeID == inspectedElements.getFirstAC()->getID()) {
                         return getTagStr() + ": " + getAttribute(SUMO_ATTR_ID) + " (via)";
                     }
                 }
@@ -746,41 +720,30 @@ GNEContainer::setAttribute(SumoXMLAttr key, const std::string& value) {
             }
             break;
         case SUMO_ATTR_COLOR:
-            if (!value.empty() && (value != myTagProperty.getDefaultValue(key))) {
+            if (!value.empty() && (value != myTagProperty->getDefaultStringValue(key))) {
                 color = parse<RGBColor>(value);
                 // mark parameter as set
                 parametersSet |= VEHPARS_COLOR_SET;
             } else {
                 // set default value
-                color = parse<RGBColor>(myTagProperty.getDefaultValue(key));
+                color = parse<RGBColor>(myTagProperty->getDefaultStringValue(key));
                 // unset parameter
                 parametersSet &= ~VEHPARS_COLOR_SET;
             }
             break;
         case SUMO_ATTR_DEPARTPOS:
-            if (!value.empty() && (value != myTagProperty.getDefaultValue(key))) {
-                parseDepartPos(value, myTagProperty.getTagStr(), id, departPos, departPosProcedure, error);
+            if (!value.empty() && (value != myTagProperty->getDefaultStringValue(key))) {
+                parseDepartPos(value, myTagProperty->getTagStr(), id, departPos, departPosProcedure, error);
                 // mark parameter as set
                 parametersSet |= VEHPARS_DEPARTPOS_SET;
             } else {
                 // set default value
-                parseDepartPos(myTagProperty.getDefaultValue(key), myTagProperty.getTagStr(), id, departPos, departPosProcedure, error);
+                parseDepartPos(myTagProperty->getDefaultStringValue(key), myTagProperty->getTagStr(), id, departPos, departPosProcedure, error);
                 // unset parameter
                 parametersSet &= ~VEHPARS_DEPARTPOS_SET;
             }
             // compute container
             updateGeometry();
-            break;
-        // Others
-        case GNE_ATTR_SELECTED:
-            if (parse<bool>(value)) {
-                selectAttributeCarrier();
-            } else {
-                unselectAttributeCarrier();
-            }
-            break;
-        case GNE_ATTR_PARAMETERS:
-            setParametersStr(value);
             break;
         default:
             setFlowAttribute(this, key, value);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-10-08 09:27:53 by Eclipse SUMO netedit Version v1_20_0+2246-02b4422aa12
+<!-- generated on 2025-07-10 10:19:53 by Eclipse SUMO netedit Version v1_23_1+0980-40b66a29dd5
 This data file and the accompanying materials
 are made available under the terms of the Eclipse Public License v2.0
 which accompanies this distribution, and is available at
@@ -14,19 +14,21 @@ SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 <neteditConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
     <input>
-        <additional-files value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\additionals.add.xml"/>
-        <route-files value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\routes.rou.xml"/>
-        <data-files value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\datas.dat.xml"/>
-        <sumo-net-file value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\net.net.xml"/>
+        <additional-files value="additionals.add.xml"/>
+        <route-files value="routes.rou.xml"/>
+        <data-files value="datas.dat.xml"/>
+        <meandata-files value="datas.med.add.xml"/>
+        <sumo-net-file value="net.net.xml"/>
     </input>
 
     <output>
         <write-license value="true"/>
-        <output-file value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\net.net.xml"/>
+        <output-file value="net.net.xml"/>
     </output>
 
     <processing>
         <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
         <geometry.max-grade.fix value="false"/>
         <offset.disable-normalization value="true"/>
         <lefthand value="0"/>
@@ -45,25 +47,28 @@ SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
     <netedit>
         <ignore-supermode-question value="true"/>
+        <ignore.additionalelements value="0"/>
+        <ignore.routeelements value="0"/>
+        <force-saving value="true"/>
     </netedit>
 
     <visualisation>
-        <gui-settings-file value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\gui-settings.xml"/>
+        <gui-settings-file value="gui-settings.xml"/>
         <window-size value="1280, 720"/>
         <window-pos value="50,50"/>
         <gui-testing value="true"/>
-        <gui-testing.setting-output value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\guisettingsoutput.xml"/>
+        <gui-testing.setting-output value="guisettingsoutput.xml"/>
     </visualisation>
 
     <report>
         <no-warnings value="true"/>
-        <error-log value="C:\Users\alva_pa\.texttest\tmp\netedit.gui.08Oct092643.22068\netedit.gui\network\trafficlights\joined\phases\NEMA\dur\log.txt"/>
+        <error-log value="log.txt"/>
     </report>
 
 </neteditConfiguration>
 -->
 
-<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" avoidOverlap="0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
     <location netOffset="30.00,-20.00" convBoundary="-60.00,-30.00,60.00,30.00" origBoundary="-10000000000.000000,-10000000000.000000,10000000000.000000,10000000000.000000" projParameter="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"/>
 
@@ -228,8 +233,10 @@ SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
     </edge>
 
     <tlLogic id="J0" type="NEMA" programID="0" offset="0">
-        <phase duration="13.15" state="rgrgrgrgrgrgrgrgrgrgrgrgrgrg" name="2"/>
-        <phase duration="90" state="grgrgrgrgrgrgrgrgrgrgrgrgrgr" minDur="6" maxDur="55" vehext="3" yellow="4" red="5" name="1"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrrGrrrrrrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="2"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrGrrrrrrrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="6"/>
+        <phase duration="13.15" state="rrrrrrrrrrrrrrrrrrrrrrrrrrrG" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="4"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrrrrrrrGrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="8"/>
         <param key="barrier2Phases" value="2,6"/>
         <param key="barrierPhases" value="4,8"/>
         <param key="ring1" value="0,2,0,4"/>

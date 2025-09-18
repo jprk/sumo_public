@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -19,35 +19,36 @@
 import os
 import sys
 
-testRoot = os.path.join(os.environ.get('SUMO_HOME', '.'), 'tests')
-neteditTestRoot = os.path.join(
-    os.environ.get('TEXTTEST_HOME', testRoot), 'netedit')
-sys.path.append(neteditTestRoot)
+sys.path.append(os.path.join(os.environ.get("SUMO_HOME", "."), "tools"))
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
+neteditProcess, referencePosition = netedit.setupAndStart()
 
-# go to Shape mode
-netedit.shapeMode()
+# go to shape mode
+netedit.changeMode("shape")
 
-# go to additional mode
-netedit.changeElement("jupedsim.obstacle")
+# go to shape mode
+netedit.changeElement("shapeFrame", "jupedsim.obstacle")
 
-# create Shape
-netedit.createSquaredShape(referencePosition, 500, 331, 600, True)
+# create polygon with default values
+netedit.createSquaredShape(referencePosition, netedit.positions.elements.additionals.shapeB,
+                           netedit.attrs.shape.size, True)
 
 # go to move mode
-netedit.moveMode()
+netedit.changeMode("move")
 
-# move
-netedit.moveElement(referencePosition, netedit.positions.tmp, netedit.positions.elements.movementRadius)
+# move vertex new
+netedit.moveGeometryPoint(referencePosition,
+                          netedit.positions.elements.additionals.geometryPointExistent,
+                          netedit.positions.elements.additionals.geometryPointDestinyA,
+                          netedit.positions.elements.additionals.geometryPointDestinyB)
 
 # Check undo redo
 netedit.checkUndoRedo(referencePosition)
 
 # save Netedit config
-netedit.saveNeteditConfig(referencePosition)
+netedit.saveExistentShortcut("neteditConfig")
 
 # quit netedit
 netedit.quit(neteditProcess)

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -29,18 +29,7 @@
 // member method definitions
 // ===========================================================================
 PlainXMLFormatter::PlainXMLFormatter(const int defaultIndentation)
-    : myDefaultIndentation(defaultIndentation), myHavePendingOpener(false) {
-}
-
-
-bool
-PlainXMLFormatter::writeHeader(std::ostream& into, const SumoXMLTag& rootElement) {
-    if (myXMLStack.empty()) {
-        OptionsCont::getOptions().writeXMLHeader(into);
-        openTag(into, rootElement);
-        return true;
-    }
-    return false;
+    : OutputFormatter(OutputFormatterType::XML), myDefaultIndentation(defaultIndentation), myHavePendingOpener(false) {
 }
 
 
@@ -103,6 +92,7 @@ PlainXMLFormatter::writePreformattedTag(std::ostream& into, const std::string& v
     }
     into << val;
 }
+
 
 void
 PlainXMLFormatter::writePadding(std::ostream& into, const std::string& val) {

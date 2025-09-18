@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -106,7 +106,6 @@ MSCalibrator::MSCalibrator(const std::string& id,
     myInvalidJamThreshold(invalidJamThreshold),
     myAmLocal(local),
     myHaveInvalidJam(false) {
-    myInstances[id] = this;
     if (outputFilename != "") {
         myOutput = &OutputDevice::getDevice(outputFilename);
         writeXMLDetectorProlog(*myOutput);
@@ -117,6 +116,7 @@ MSCalibrator::MSCalibrator(const std::string& id,
             init();
         }
     }
+    myInstances[id] = this;
     if (addLaneMeanData && myEdge != nullptr) {
         // disabled for METriggeredCalibrator
         for (MSLane* const eLane : myEdge->getLanes()) {
@@ -377,7 +377,7 @@ MSCalibrator::execute(SUMOTime currentTime) {
         }
         if (myCurrentStateInterval == myIntervals.end()) {
             // keep calibrator alive for gui but do not call again
-            return TIME2STEPS(86400);
+            return SUMOTime_MAX - currentTime;
         }
         return myFrequency;
     }
@@ -468,7 +468,7 @@ MSCalibrator::execute(SUMOTime currentTime) {
                     vehicle = nullptr;
                     break;
                 } else {
-                    throw e;
+                    throw;
                 }
             }
 #ifdef MSCalibrator_DEBUG
@@ -480,9 +480,9 @@ MSCalibrator::execute(SUMOTime currentTime) {
             bool success = false;
             try {
                 success = myEdge->insertVehicle(*vehicle, currentTime);
-            } catch (const ProcessError& e) {
+            } catch (const ProcessError&) {
                 MSNet::getInstance()->getVehicleControl().deleteVehicle(vehicle, true);
-                throw e;
+                throw;
             }
             if (success) {
                 if (!MSNet::getInstance()->getVehicleControl().addVehicle(vehicle->getID(), vehicle)) {

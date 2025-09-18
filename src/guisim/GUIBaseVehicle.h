@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -110,7 +110,7 @@ public:
     virtual double getColorValue(const GUIVisualizationSettings& s, int activeScheme) const = 0;
 
     /// @brief draws the given guiShape with distinct carriages/modules
-    virtual void drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool asImage) const = 0;
+    virtual void drawAction_drawCarriageClass(const GUIVisualizationSettings& s, double scaledLength, bool asImage) const = 0;
 
     /** @brief Returns the time since the last lane change in seconds
      * @see MSVehicle::myLastLaneChangeOffset
@@ -257,13 +257,14 @@ public:
      */
     class GUIBaseVehiclePopupMenu : public GUIGLObjectPopupMenu {
         FXDECLARE(GUIBaseVehiclePopupMenu)
+
     public:
         /** @brief Constructor
          * @param[in] app The main window for instantiation of other windows
          * @param[in] parent The parent view for changing it
          * @param[in] o The object of interest
          */
-        GUIBaseVehiclePopupMenu(GUIMainWindow& app, GUISUMOAbstractView& parent, GUIGlObject& o);
+        GUIBaseVehiclePopupMenu(GUIMainWindow& app, GUISUMOAbstractView& parent, GUIGlObject* o);
 
         /// @brief Destructor
         ~GUIBaseVehiclePopupMenu();
@@ -307,7 +308,6 @@ public:
 
     protected:
         FOX_CONSTRUCTOR(GUIBaseVehiclePopupMenu)
-
     };
 
 
@@ -359,6 +359,10 @@ public:
 
     /// @brief gets the size multiplier value according to the current scheme index
     double getScaleValue(const GUIVisualizationSettings& s, int activeScheme) const;
+
+    double getScaleVisual() const {
+        return myVehicle.getVehicleType().getParameter().scaleVisual;
+    }
 
     /// @brief sets the color according to the current scheme index and some vehicle function
     static bool setFunctionalColor(int activeScheme, const MSBaseVehicle* veh, RGBColor& col);

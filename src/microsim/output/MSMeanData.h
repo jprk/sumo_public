@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -141,7 +141,7 @@ public:
          * @param[in] numLanes The total number of lanes for which the data was collected
          * @exception IOError If an error on writing occurs (!!! not yet implemented)
          */
-        virtual void write(OutputDevice& dev, long long int attributeMask, const SUMOTime period,
+        virtual void write(OutputDevice& dev, const SumoXMLAttrMask& attributeMask, const SUMOTime period,
                            const int numLanes, const double speedLimit, const double defaultTravelTime,
                            const int numVehicles = -1) const = 0;
 
@@ -262,7 +262,7 @@ public:
          * @param[in] numLanes The total number of lanes for which the data was collected
          * @exception IOError If an error on writing occurs (!!! not yet implemented)
          */
-        void write(OutputDevice& dev, long long int attributeMask, const SUMOTime period,
+        void write(OutputDevice& dev, const SumoXMLAttrMask& attributeMask, const SUMOTime period,
                    const int numLanes, const double speedLimit, const double defaultTravelTime,
                    const int numVehicles = -1) const;
 
@@ -395,6 +395,9 @@ public:
         return defaultValue;
     }
 
+    /// @brief retrieve all MeanDataValues
+    const std::vector<MSMoveReminder*> getReminders() const;
+
 protected:
     /** @brief Create an instance of MeanDataValues
      *
@@ -488,8 +491,6 @@ protected:
     const bool myAmEdgeBased;
 
 private:
-    static long long int initWrittenAttributes(const std::string writeAttributes, const std::string& id);
-
     /// @brief The first and the last time step to write information (-1 indicates always)
     const SUMOTime myDumpBegin, myDumpEnd;
 
@@ -512,7 +513,7 @@ private:
     const bool myTrackVehicles;
 
     /// @brief bit mask for checking attributes to be written
-    const long long int myWrittenAttributes;
+    const SumoXMLAttrMask myWrittenAttributes;
 
     /// @brief whether the data for all edges shall be aggregated
     const bool myAggregate;

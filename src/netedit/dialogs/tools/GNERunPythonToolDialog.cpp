@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,6 +26,10 @@
 
 #include "GNERunPythonToolDialog.h"
 
+// ===========================================================================
+// Defines
+// ===========================================================================
+
 #define MARGIN 4
 
 // ===========================================================================
@@ -45,14 +49,14 @@ FXDEFMAP(GNERunPythonToolDialog) GNERunPythonToolDialogMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNERunPythonToolDialog, FXDialogBox, GNERunPythonToolDialogMap, ARRAYNUMBER(GNERunPythonToolDialogMap))
+FXIMPLEMENT(GNERunPythonToolDialog, MFXDialogBox, GNERunPythonToolDialogMap, ARRAYNUMBER(GNERunPythonToolDialogMap))
 
 // ============================================-===============================
 // member method definitions
 // ===========================================================================
 
 GNERunPythonToolDialog::GNERunPythonToolDialog(GNEApplicationWindow* GNEApp) :
-    FXDialogBox(GNEApp->getApp(), "Tool", GUIDesignAuxiliarDialogBoxResizable),
+    MFXDialogBox(GNEApp->getApp(), "Tool", GUIDesignAuxiliarDialogBoxResizable),
     myGNEApp(GNEApp) {
     // build the thread - io
     myThreadEvent.setTarget(this);
@@ -103,6 +107,12 @@ GNERunPythonToolDialog::GNERunPythonToolDialog(GNEApplicationWindow* GNEApp) :
 GNERunPythonToolDialog::~GNERunPythonToolDialog() {}
 
 
+void
+GNERunPythonToolDialog::runInternalTest(const InternalTestStep::DialogTest* /*dialogTest*/) {
+    // finish
+}
+
+
 GNEApplicationWindow*
 GNERunPythonToolDialog::getGNEApp() const {
     return myGNEApp;
@@ -118,7 +128,7 @@ GNERunPythonToolDialog::runTool(GNEPythonTool* tool) {
     // clear text
     myText->setText("");
     // show dialog
-    FXDialogBox::show(PLACEMENT_SCREEN);
+    MFXDialogBox::show(PLACEMENT_SCREEN);
     // set tool
     myPythonTool = tool;
     // run tool
@@ -141,7 +151,7 @@ GNERunPythonToolDialog::updateDialog() {
         myCloseButton->enable();
     }
     // update dialog
-    FXDialogBox::update();
+    MFXDialogBox::update();
 }
 
 

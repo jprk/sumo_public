@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-09-12 14:47:37 by Eclipse SUMO netgenerate Version v1_20_0+1963-cf76c26275c
+<!-- generated on 2025-07-16 12:01:43 by Eclipse SUMO netgenerate Version v1_23_1+1107-78f51b0269e
 -->
 
 <netgenerateConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netgenerateConfiguration.xsd">
@@ -102,22 +102,22 @@
         <!-- Probability for roads to continue at each node -->
         <rand.connectivity value="0.95" synonymes="connectivity rand-connectivity" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 1 neighbor -->
+        <!-- Probability for a node having at most 1 neighbor -->
         <rand.neighbor-dist1 value="0" synonymes="dist1 rand-neighbor-dist1" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 2 neighbors -->
+        <!-- Probability for a node having at most 2 neighbors -->
         <rand.neighbor-dist2 value="0" synonymes="dist2 rand-neighbor-dist2" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 3 neighbors -->
+        <!-- Probability for a node having at most 3 neighbors -->
         <rand.neighbor-dist3 value="10" synonymes="dist3 rand-neighbor-dist3" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 4 neighbors -->
+        <!-- Probability for a node having at most 4 neighbors -->
         <rand.neighbor-dist4 value="10" synonymes="dist4 rand-neighbor-dist4" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 5 neighbors -->
+        <!-- Probability for a node having at most 5 neighbors -->
         <rand.neighbor-dist5 value="2" synonymes="dist5 rand-neighbor-dist5" type="FLOAT"/>
 
-        <!-- Probability for a node having exactly 6 neighbors -->
+        <!-- Probability for a node having at most 6 neighbors -->
         <rand.neighbor-dist6 value="1" synonymes="dist6 rand-neighbor-dist6" type="FLOAT"/>
 
         <!-- Place nodes on a regular grid with spacing rand.min-distance -->
@@ -144,6 +144,18 @@
         <!-- Defines the number of digits after the comma for lon,lat output -->
         <precision.geo value="6" type="INT"/>
 
+        <!-- Defines the standard compression algorithm (currently only for parquet output) -->
+        <output.compression value="" type="STR"/>
+
+        <!-- Defines the standard output format if not derivable from the file name (&apos;xml&apos;, &apos;csv&apos;, &apos;parquet&apos;) -->
+        <output.format value="xml" type="STR"/>
+
+        <!-- How to derive column headers from attribute names (&apos;none&apos;, &apos;tag&apos;, &apos;auto&apos;, &apos;plain&apos;) -->
+        <output.column-header value="tag" type="STR"/>
+
+        <!-- Separator in CSV output -->
+        <output.column-separator value=";" type="STR"/>
+
         <!-- Write time values as hour:minute:second or day:hour:minute:second rather than seconds -->
         <human-readable-time value="false" synonymes="H" type="BOOL"/>
 
@@ -162,13 +174,19 @@
         <!-- Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins -->
         <junctions.join-output value="" type="FILE"/>
 
-        <!-- Defines a prefix for edge and junction names -->
+        <!-- Defines a prefix for edge and junction IDs -->
         <prefix value="" type="STR"/>
+
+        <!-- Defines a prefix for unction IDs -->
+        <prefix.junction value="" type="STR"/>
+
+        <!-- Defines a prefix for edge IDs -->
+        <prefix.edge value="" type="STR"/>
 
         <!-- The generated net will be written to FILE using Amitran format -->
         <amitran-output value="" type="FILE"/>
 
-        <!-- The generated net will be written to FILE using MATsim format -->
+        <!-- The generated net will be written to FILE using MATSim format -->
         <matsim-output value="" type="FILE"/>
 
         <!-- The generated net will be written to FILE using OpenDRIVE format -->
@@ -236,6 +254,9 @@
 
         <!-- Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format) -->
         <reserved-ids value="" type="FILE"/>
+
+        <!-- Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed -->
+        <kept-ids value="" type="FILE"/>
 
         <!-- Splits edges across geometry nodes -->
         <geometry.split value="false" synonymes="split-geometry" type="BOOL"/>
@@ -483,6 +504,9 @@
         <!-- Does not instantiate traffic lights at geometry-like nodes -->
         <tls.discard-simple value="false" type="BOOL"/>
 
+        <!-- List rail classes that may run without rail signals -->
+        <railway.signal.permit-unsignalized value="tram,cable_car" type="STR[]"/>
+
     </tls_building>
 
     <edge_removal>
@@ -560,6 +584,9 @@
 
         <!-- Determines the maximal distance for joining junctions (defaults to 10) -->
         <junctions.join-dist value="10" type="FLOAT"/>
+
+        <!-- The angular threshold in degress for rejection of parallel edges when joining junctions -->
+        <junctions.join.parallel-threshold value="30" type="FLOAT"/>
 
         <!-- Joins junctions that have the same coordinates even if not connected -->
         <junctions.join-same value="false" type="BOOL"/>
@@ -641,6 +668,9 @@
 
         <!-- At uncontrolled nodes, do not build crossings across edges with a speed above the threshold -->
         <crossings.guess.speed-threshold value="13.89" type="FLOAT"/>
+
+        <!-- Give priority to guessed crossings at roundabouts -->
+        <crossings.guess.roundabout-priority value="true" type="BOOL"/>
 
         <!-- Always build walking areas even if there are no crossings -->
         <walkingareas value="false" type="BOOL"/>

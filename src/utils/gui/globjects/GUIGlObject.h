@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -32,6 +32,7 @@
 #include <utils/common/StringBijection.h>
 #include <utils/common/RGBColor.h>
 #include <utils/foxtools/fxheader.h>
+#include <utils/xml/SUMOXMLDefinitions.h>
 
 #include "GUIGlObjectTypes.h"
 
@@ -181,6 +182,15 @@ public:
     //// @brief Returns the boundary to which the view shall be centered in order to show the object
     virtual Boundary getCenteringBoundary() const = 0;
 
+    virtual Position getCenter() const {
+        return getCenteringBoundary().getCenter();
+    }
+
+    /// @brief return individual scaling factor for this object
+    virtual double getScaleVisual() const {
+        return 1;
+    }
+
     /// @brief Draws the object
     /// @param[in] s The settings for the current view (may influence drawing)
     virtual void drawGL(const GUIVisualizationSettings& s) const = 0;
@@ -242,6 +252,10 @@ public:
 protected:
     /// @name helper methods for building popup-menus
     /// @{
+    /// @brief build common popup options
+    void buildPopUpMenuCommonOptions(GUIGLObjectPopupMenu* ret, GUIMainWindow& app, GUISUMOAbstractView* parent, const SumoXMLTag tag,
+                                     const bool selected, bool addSeparator = true);
+
     /** @brief Builds the header
      * @param[in, filled] ret The popup menu to add the entry to
      * @param[in] addSeparator Whether a separator shall be added, too
@@ -283,13 +297,14 @@ protected:
      * @param[in, filled] ret The popup menu to add the entry to
      * @param[in] addSeparator Whether a separator shall be added, too
      */
-    void buildPositionCopyEntry(GUIGLObjectPopupMenu* ret, const GUIMainWindow& app) const;
+    void buildPositionCopyEntry(GUIGLObjectPopupMenu* ret, const GUIMainWindow& app, bool addSeparator = true) const;
 
     /** @brief Builds an entry which allows to open the manipulator window
      * @param[in, filled] ret The popup menu to add the entry to
      * @param[in] addSeparator Whether a separator shall be added, too
      */
     void buildShowManipulatorPopupEntry(GUIGLObjectPopupMenu* ret, bool addSeparator = true);
+
     /// @}
 
     /// @brief build basic shape popup options. Used to unify pop-ups menu in netedit and SUMO-GUI

@@ -77,6 +77,16 @@ The following attribute values have a special meaning. Instead of using an attri
 - `@BOX`: one or more [box plots](https://en.wikipedia.org/wiki/Box_plot) of the *other* value are drawn. The **--idattr** is used for grouping and there will be one box plot per id
 - `@NONE`: can be used with option **--idattr** to explicitly avoid grouping
 
+### Interactive Plot
+
+When clicking on a line or plot point, the data point ids near the click position are printed in the console.
+
+### Filtering
+
+Option **--filter-ids ID1,ID2,...** allows restricting the plot to the given data ids.
+
+It is permitted to use the wildcars *\**, *?*, *[* and *]* when specifying filters. This workings according to [file name globbing rules](https://en.wikipedia.org/wiki/Glob_(programming)).
+
 ### Multi-line plots
 
 - By default, every distinct ID (as defined by **--idattr**) will generated a new line for all the data points associated with that ID.
@@ -240,6 +250,9 @@ where -x is the attribute for the x axis; -y is the attribute for the y axis; -o
 
 ### Public transport schedule
 
+!!! note
+    The tool [plotStops.py](Railways.md#plotstopspy) simplifies plotting such schedules
+
 In this type of plot time is on the y-axis running from top to bottom. Input is route file of a [public transport schedule](../Simulation/Public_Transport.md#public_transport_schedules) where each vehicle is modelled individually.
 A similar plot could also be generated from [stop-output](../Simulation/Output/StopOutput.md) by using attribute `started` or `ended` (or `started,ended`) instead of `until`.
 
@@ -261,6 +274,9 @@ In order to group busStops that belong to different tracks of the same train sta
 *KX
 *LHG
 ```
+
+!!! note
+    The main advantage of [plotStops.py](Railways.md#plotstopspy) is creating a stoplist.txt file automatically.
 
 !!! note
     When plotting stops from a route file that also defines `<vType>` elements, then the option **--idelem** must be used to declare where the id attribute must be loaded from (i.e. **--idelem trip**).
@@ -303,7 +319,7 @@ plotXMLAttributes.py tripinfos.xml tripinfos2.xml -x timeLoss -y @COUNT -i @NONE
 <img src="../images/hist_timeLoss_clamped.png" width="500px"/>
 
 !!! caution
-    It is importent to set **-i @NONE** to ensure that the timeLoss values are aggregated by file rather than by vehicle id.
+    It is important to set **-i @NONE** to ensure that the timeLoss values are aggregated by file rather than by vehicle id.
 
 ## plot_trajectories.py
 
@@ -473,7 +489,7 @@ Here the most important options are listed. Use **--help** to see all options.
 | **--min-width-value** {{DT_FLOAT}}                            | If set, defines the minimum edge width value        |
 | **--max-width-value** {{DT_FLOAT}}                            | If set, defines the maximum edge width value        |
 | **-v**<br>**--verbose**                                     | If set, the progress is printed on the screen       |
-| **--internal**                                     | If set, internal edges (of junctions) are included to the genrated shapes.       |
+| **--internal**                                     | If set, internal edges (of junctions) are included to the generated shapes.       |
 
 ## plot_net_selection.py
 
@@ -655,7 +671,7 @@ the measure (vehicles) that fall into a bin.
 | **-i** {{DT_FILE}}[,{{DT_FILE}}]\*<br>**--tripinfos-inputs** {{DT_FILE}}[,{{DT_FILE}}]* | Defines the [summary-file](../Simulation/Output/Summary.md)(s) to read         |
 | **-m** {{DT_STR}}<br>**--measure** {{DT_STR}}                          | Defines the measure to read from the summary file                                            |
 | **-v**<br>**--verbose**                                            | If set, the progress is printed on the screen                                                |
-| **--bins** {{DT_INT}}                                               | The number of bins to devide the values into                                                 |
+| **--bins** {{DT_INT}}                                               | The number of bins to divide the values into                                                 |
 | **--norm** {{DT_FLOAT}}                                             | Defines a number by which read values are divided; default: 1.0                              |
 | **--minV** {{DT_FLOAT}}                                             | The minimum value; if set, read values that are lower than this value are set to this value  |
 | **--maxV** {{DT_FLOAT}}                                             | The maximum value; if set, read values that are higher than this value are set to this value |

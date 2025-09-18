@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -159,11 +159,17 @@ ROFrame::fillOptions(OptionsCont& oc, const bool isDUA, const bool isMA) {
         oc.doRegister("repair.to", new Option_Bool(false));
         oc.addDescription("repair.to", "Processing", TL("Tries to correct an invalid destination edge by using the last usable edge instead"));
 
+        oc.doRegister("repair.max-detour-factor", new Option_Float(10));
+        oc.addDescription("repair.max-detour-factor", "Processing", TL("Backtrack on route if the detour is longer than the gap by FACTOR"));
+
         oc.doRegister("mapmatch.distance", new Option_Float(100));
         oc.addDescription("mapmatch.distance", "Processing", TL("Maximum distance when mapping input coordinates (fromXY etc.) to the road network"));
 
         oc.doRegister("mapmatch.junctions", new Option_Bool(false));
         oc.addDescription("mapmatch.junctions", "Processing", TL("Match positions to junctions instead of edges"));
+
+        oc.doRegister("mapmatch.taz", new Option_Bool(false));
+        oc.addDescription("mapmatch.taz", "Processing", TL("Match positions to taz instead of edges"));
 
         oc.doRegister("bulk-routing", new Option_Bool(false));
         oc.addDescription("bulk-routing", "Processing", TL("Aggregate routing queries with the same origin"));

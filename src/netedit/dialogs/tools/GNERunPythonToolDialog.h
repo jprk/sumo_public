@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,6 +21,7 @@
 #include <config.h>
 
 #include <utils/foxtools/fxheader.h>
+#include <utils/foxtools/MFXDialogBox.h>
 #include <utils/foxtools/MFXSynchQue.h>
 #include <utils/foxtools/MFXThreadEvent.h>
 
@@ -37,11 +38,7 @@ class GUIEvent;
 // class definitions
 // ===========================================================================
 
-/**
- * @class GNERunPythonToolDialog
- * @brief Abstract dialog for tools
- */
-class GNERunPythonToolDialog : protected FXDialogBox {
+class GNERunPythonToolDialog : protected MFXDialogBox {
     /// @brief FOX-declaration
     FXDECLARE(GNERunPythonToolDialog)
 
@@ -51,6 +48,9 @@ public:
 
     /// @brief destructor
     ~GNERunPythonToolDialog();
+
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* modalArguments);
 
     /// @brief get to GNEApplicationWindow
     GNEApplicationWindow* getGNEApp() const;
@@ -78,6 +78,7 @@ public:
 
     /// @brief called when the thread signals an event
     long onThreadEvent(FXObject*, FXSelector, void*);
+
     /// @}
 
 protected:

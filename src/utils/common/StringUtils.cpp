@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -247,6 +247,13 @@ StringUtils::escapeXML(const std::string& orig, const bool maskDoubleHyphen) {
 
 
 std::string
+StringUtils::escapeShell(const std::string& orig) {
+    std::string result = replace(orig, "\"", "\\\"");
+    return result;
+}
+
+
+std::string
 StringUtils::urlEncode(const std::string& toEncode, const std::string encodeWhich) {
     std::ostringstream out;
 
@@ -324,6 +331,18 @@ StringUtils::toInt(const std::string& sData) {
 }
 
 
+bool
+StringUtils::isInt(const std::string& sData) {
+    // first check if can be converted to long int
+    if (isLong(sData)) {
+        const long long int result = toLong(sData);
+        // now check if the result is in the range of an int
+        return ((result <= std::numeric_limits<int>::max()) && (result >= std::numeric_limits<int>::min()));
+    }
+    return false;
+}
+
+
 int
 StringUtils::toIntSecure(const std::string& sData, int def) {
     if (sData.length() == 0) {
@@ -341,7 +360,7 @@ StringUtils::toLong(const std::string& sData) {
     }
     char* end;
     errno = 0;
-#ifdef WIN32
+#ifdef _MSC_VER
     long long int ret = _strtoi64(data, &end, 10);
 #else
     long long int ret = strtoll(data, &end, 10);
@@ -354,6 +373,33 @@ StringUtils::toLong(const std::string& sData) {
         throw NumberFormatException("(long long integer format) " + sData);
     }
     return ret;
+}
+
+
+bool
+StringUtils::isLong(const std::string& sData) {
+    const char* const data = sData.c_str();
+    if (data == 0 || data[0] == 0) {
+        return false;
+    }
+    char* end;
+    // reset errno before parsing, to keep errors
+    errno = 0;
+    // continue depending of current plattform
+#ifdef _MSC_VER
+    _strtoi64(data, &end, 10);
+#else
+    strtoll(data, &end, 10);
+#endif
+    // check out of range
+    if (errno == ERANGE) {
+        return false;
+    }
+    // check lenght of converted data
+    if ((int)(end - data) != (int)strlen(data)) {
+        return false;
+    }
+    return true;
 }
 
 
@@ -381,6 +427,37 @@ StringUtils::hexToInt(const std::string& sData) {
 }
 
 
+bool
+StringUtils::isHex(std::string sData) {
+    if (sData.length() == 0) {
+        return false;
+    }
+    // remove the first character (for HTML color codes)
+    if (sData[0] == '#') {
+        sData = sData.substr(1);
+    }
+    const char* sDataPtr = sData.c_str();
+    char* returnPtr;
+    // reset errno
+    errno = 0;
+    // call string to long (size 16) from standard library
+    strtol(sDataPtr, &returnPtr, 16);
+    // check out of range
+    if (errno == ERANGE) {
+        return false;
+    }
+    // check if there was an error converting sDataPtr to double,
+    if (sDataPtr == returnPtr) {
+        return false;
+    }
+    // compare size of start and end points
+    if (static_cast<size_t>(returnPtr - sDataPtr) != sData.size()) {
+        return false;
+    }
+    return true;
+}
+
+
 double
 StringUtils::toDouble(const std::string& sData) {
     if (sData.size() == 0) {
@@ -398,6 +475,33 @@ StringUtils::toDouble(const std::string& sData) {
         // invalid_argument or out_of_range
         throw NumberFormatException("(double) " + sData);
     }
+}
+
+
+bool
+StringUtils::isDouble(const std::string& sData) {
+    if (sData.size() == 0) {
+        return false;
+    }
+    const char* sDataPtr = sData.c_str();
+    char* returnPtr;
+    // reset errno
+    errno = 0;
+    // call string to double from standard library
+    strtod(sDataPtr, &returnPtr);
+    // check out of range
+    if (errno == ERANGE) {
+        return false;
+    }
+    // check if there was an error converting sDataPtr to double,
+    if (sDataPtr == returnPtr) {
+        return false;
+    }
+    // compare size of start and end points
+    if (static_cast<size_t>(returnPtr - sDataPtr) != sData.size()) {
+        return false;
+    }
+    return true;
 }
 
 
@@ -424,6 +528,26 @@ StringUtils::toBool(const std::string& sData) {
     }
     throw BoolFormatException(s);
 }
+
+
+bool
+StringUtils::isBool(const std::string& sData) {
+    if (sData.length() == 0) {
+        return false;
+    }
+    const std::string s = to_lower_case(sData);
+    // check true values
+    if (s == "1" || s == "yes" || s == "true" || s == "on" || s == "x" || s == "t") {
+        return true;
+    }
+    // check false values
+    if (s == "0" || s == "no" || s == "false" || s == "off" || s == "-" || s == "f") {
+        return true;
+    }
+    // no valid true or false values
+    return false;
+}
+
 
 MMVersion
 StringUtils::toVersion(const std::string& sData) {

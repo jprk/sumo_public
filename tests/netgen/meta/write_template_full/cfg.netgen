@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-09-12 14:47:37 by Eclipse SUMO netgenerate Version v1_20_0+1963-cf76c26275c
+<!-- generated on 2025-07-16 12:01:43 by Eclipse SUMO netgenerate Version v1_23_1+1107-78f51b0269e
 -->
 
 <netgenerateConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netgenerateConfiguration.xsd">
@@ -44,12 +44,12 @@
         <rand.min-angle value="45" synonymes="min-angle rand-min-anglee" type="FLOAT" help="The minimum angle for each pair of (bidirectional) roads in DEGREES"/>
         <rand.num-tries value="50" synonymes="num-tries rand-num-tries" type="INT" help="The number of tries for creating each node"/>
         <rand.connectivity value="0.95" synonymes="connectivity rand-connectivity" type="FLOAT" help="Probability for roads to continue at each node"/>
-        <rand.neighbor-dist1 value="0" synonymes="dist1 rand-neighbor-dist1" type="FLOAT" help="Probability for a node having exactly 1 neighbor"/>
-        <rand.neighbor-dist2 value="0" synonymes="dist2 rand-neighbor-dist2" type="FLOAT" help="Probability for a node having exactly 2 neighbors"/>
-        <rand.neighbor-dist3 value="10" synonymes="dist3 rand-neighbor-dist3" type="FLOAT" help="Probability for a node having exactly 3 neighbors"/>
-        <rand.neighbor-dist4 value="10" synonymes="dist4 rand-neighbor-dist4" type="FLOAT" help="Probability for a node having exactly 4 neighbors"/>
-        <rand.neighbor-dist5 value="2" synonymes="dist5 rand-neighbor-dist5" type="FLOAT" help="Probability for a node having exactly 5 neighbors"/>
-        <rand.neighbor-dist6 value="1" synonymes="dist6 rand-neighbor-dist6" type="FLOAT" help="Probability for a node having exactly 6 neighbors"/>
+        <rand.neighbor-dist1 value="0" synonymes="dist1 rand-neighbor-dist1" type="FLOAT" help="Probability for a node having at most 1 neighbor"/>
+        <rand.neighbor-dist2 value="0" synonymes="dist2 rand-neighbor-dist2" type="FLOAT" help="Probability for a node having at most 2 neighbors"/>
+        <rand.neighbor-dist3 value="10" synonymes="dist3 rand-neighbor-dist3" type="FLOAT" help="Probability for a node having at most 3 neighbors"/>
+        <rand.neighbor-dist4 value="10" synonymes="dist4 rand-neighbor-dist4" type="FLOAT" help="Probability for a node having at most 4 neighbors"/>
+        <rand.neighbor-dist5 value="2" synonymes="dist5 rand-neighbor-dist5" type="FLOAT" help="Probability for a node having at most 5 neighbors"/>
+        <rand.neighbor-dist6 value="1" synonymes="dist6 rand-neighbor-dist6" type="FLOAT" help="Probability for a node having at most 6 neighbors"/>
         <rand.grid value="false" type="BOOL" help="Place nodes on a regular grid with spacing rand.min-distance"/>
     </random_network>
 
@@ -62,15 +62,21 @@
         <output-prefix value="" type="STR" help="Prefix which is applied to all output files. The special string &apos;TIME&apos; is replaced by the current time."/>
         <precision value="2" type="INT" help="Defines the number of digits after the comma for floating point output"/>
         <precision.geo value="6" type="INT" help="Defines the number of digits after the comma for lon,lat output"/>
+        <output.compression value="" type="STR" help="Defines the standard compression algorithm (currently only for parquet output)"/>
+        <output.format value="xml" type="STR" help="Defines the standard output format if not derivable from the file name (&apos;xml&apos;, &apos;csv&apos;, &apos;parquet&apos;)"/>
+        <output.column-header value="tag" type="STR" help="How to derive column headers from attribute names (&apos;none&apos;, &apos;tag&apos;, &apos;auto&apos;, &apos;plain&apos;)"/>
+        <output.column-separator value=";" type="STR" help="Separator in CSV output"/>
         <human-readable-time value="false" synonymes="H" type="BOOL" help="Write time values as hour:minute:second or day:hour:minute:second rather than seconds"/>
         <alphanumerical-ids value="true" type="BOOL" help="The Ids of generated nodes use an alphanumerical code for easier readability when possible"/>
         <output-file value="" synonymes="o output sumo-output" type="FILE" help="The generated net will be written to FILE"/>
         <plain-output-prefix value="" synonymes="p plain plain-output" type="FILE" help="Prefix of files to write plain xml nodes, edges and connections to"/>
         <plain-output.lanes value="false" type="BOOL" help="Write all lanes and their attributes even when they are not customized"/>
         <junctions.join-output value="" type="FILE" help="Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins"/>
-        <prefix value="" type="STR" help="Defines a prefix for edge and junction names"/>
+        <prefix value="" type="STR" help="Defines a prefix for edge and junction IDs"/>
+        <prefix.junction value="" type="STR" help="Defines a prefix for unction IDs"/>
+        <prefix.edge value="" type="STR" help="Defines a prefix for edge IDs"/>
         <amitran-output value="" type="FILE" help="The generated net will be written to FILE using Amitran format"/>
-        <matsim-output value="" type="FILE" help="The generated net will be written to FILE using MATsim format"/>
+        <matsim-output value="" type="FILE" help="The generated net will be written to FILE using MATSim format"/>
         <opendrive-output value="" type="FILE" help="The generated net will be written to FILE using OpenDRIVE format"/>
         <dlr-navteq-output value="" type="FILE" help="The generated net will be written to dlr-navteq files with the given PREFIX"/>
         <dlr-navteq.version value="6.5" type="STR" help="The dlr-navteq output format version to write"/>
@@ -95,6 +101,7 @@
         <numerical-ids.node-start value="2147483647" type="INT" help="Remaps IDs of nodes to integers starting at INT"/>
         <numerical-ids.edge-start value="2147483647" type="INT" help="Remaps IDs of edges to integers starting at INT"/>
         <reserved-ids value="" type="FILE" help="Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format)"/>
+        <kept-ids value="" type="FILE" help="Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed"/>
         <geometry.split value="false" synonymes="split-geometry" type="BOOL" help="Splits edges across geometry nodes"/>
         <geometry.remove value="false" synonymes="R remove-geometry" type="BOOL" help="Replace nodes which only define edge geometry by geometry points (joins edges)"/>
         <geometry.remove.keep-edges.explicit value="" type="STR[]" help="Ensure that the given list of edges is not modified"/>
@@ -181,6 +188,7 @@
         <tls.ungroup-signals value="false" type="BOOL" help="Assign a distinct tls link index to every connection"/>
         <tls.rebuild value="false" type="BOOL" help="rebuild all traffic light plans in the network"/>
         <tls.discard-simple value="false" type="BOOL" help="Does not instantiate traffic lights at geometry-like nodes"/>
+        <railway.signal.permit-unsignalized value="tram,cable_car" type="STR[]" help="List rail classes that may run without rail signals"/>
     </tls_building>
 
     <edge_removal>
@@ -213,6 +221,7 @@
         <no-left-connections value="false" type="BOOL" help="Disables building connections to left"/>
         <junctions.join value="false" type="BOOL" help="Joins junctions that are close to each other (recommended for OSM import)"/>
         <junctions.join-dist value="10" type="FLOAT" help="Determines the maximal distance for joining junctions (defaults to 10)"/>
+        <junctions.join.parallel-threshold value="30" type="FLOAT" help="The angular threshold in degress for rejection of parallel edges when joining junctions"/>
         <junctions.join-same value="false" type="BOOL" help="Joins junctions that have the same coordinates even if not connected"/>
         <max-join-ids value="4" type="INT" help="Abbreviate junction or TLS id if it joins more than INT junctions"/>
         <junctions.corner-detail value="5" type="INT" help="Generate INT intermediate points to smooth out intersection corners"/>
@@ -242,6 +251,7 @@
         <sidewalks.guess.exclude value="" type="STR[]" help="Do not guess sidewalks for the given list of edges"/>
         <crossings.guess value="false" type="BOOL" help="Guess pedestrian crossings based on the presence of sidewalks"/>
         <crossings.guess.speed-threshold value="13.89" type="FLOAT" help="At uncontrolled nodes, do not build crossings across edges with a speed above the threshold"/>
+        <crossings.guess.roundabout-priority value="true" type="BOOL" help="Give priority to guessed crossings at roundabouts"/>
         <walkingareas value="false" type="BOOL" help="Always build walking areas even if there are no crossings"/>
         <walkingareas.join-dist value="15" type="FLOAT" help="Do not create a walkingarea between sidewalks that are connected by a pedestrian junction within FLOAT"/>
     </pedestrian>

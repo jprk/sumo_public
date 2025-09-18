@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,8 +17,11 @@
 ///
 //
 /****************************************************************************/
+#include <config.h>
 
 #include <netedit/GNENet.h>
+#include <netedit/GNESegment.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
@@ -27,49 +30,43 @@
 #include <netedit/elements/network/GNEConnection.h>
 #include <netedit/frames/network/GNETLSEditorFrame.h>
 #include <utils/gui/div/GLHelper.h>
-#include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
+#include <utils/gui/globjects/GLIncludes.h>
 #include <utils/xml/NamespaceIDs.h>
 
 #include "GNELaneAreaDetector.h"
 #include "GNEAdditionalHandler.h"
-
 
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
 GNELaneAreaDetector::GNELaneAreaDetector(SumoXMLTag tag, GNENet* net) :
-    GNEDetector("", net, GLO_E2DETECTOR, tag, GUIIconSubSys::getIcon(GUIIcon::E2),
-                0, 0, {}, "", {}, {}, "", "", false, Parameterised::Map()) {
-    // reset default values
-    resetDefaultValues();
+    GNEDetector(net, tag) {
 }
 
 
-GNELaneAreaDetector::GNELaneAreaDetector(const std::string& id, GNELane* lane, GNENet* net, double pos, double length, const SUMOTime freq,
-        const std::string& trafficLight, const std::string& filename, const std::vector<std::string>& vehicleTypes,
-        const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name, const SUMOTime timeThreshold,
-        double speedThreshold, const double jamThreshold, const bool friendlyPos, const bool show, const Parameterised::Map& parameters) :
-    GNEDetector(id, net, GLO_E2DETECTOR, SUMO_TAG_LANE_AREA_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E2),
-                pos, freq, {
-    lane
-}, filename, vehicleTypes, nextEdges, detectPersons, name, friendlyPos, parameters),
-myEndPositionOverLane(pos + length),
-myTimeThreshold(timeThreshold),
-mySpeedThreshold(speedThreshold),
-myJamThreshold(jamThreshold),
-myTrafficLight(trafficLight),
-myShow(show) {
+GNELaneAreaDetector::GNELaneAreaDetector(const std::string& id, GNENet* net, const std::string& filename, GNELane* lane, double pos, double length, const SUMOTime freq,
+        const std::string& trafficLight, const std::string& outputFilename, const std::vector<std::string>& vehicleTypes, const std::vector<std::string>& nextEdges,
+        const std::string& detectPersons, const std::string& name, const SUMOTime timeThreshold, double speedThreshold, const double jamThreshold, const bool friendlyPos,
+        const bool show, const Parameterised::Map& parameters) :
+    GNEDetector(id, net, filename, SUMO_TAG_LANE_AREA_DETECTOR, pos, freq, lane, outputFilename, vehicleTypes, nextEdges,
+                detectPersons, name, friendlyPos, parameters),
+    myEndPositionOverLane(pos + length),
+    myTimeThreshold(timeThreshold),
+    mySpeedThreshold(speedThreshold),
+    myJamThreshold(jamThreshold),
+    myTrafficLight(trafficLight),
+    myShow(show) {
 }
 
 
-GNELaneAreaDetector::GNELaneAreaDetector(const std::string& id, std::vector<GNELane*> lanes, GNENet* net, double pos, double endPos, const SUMOTime freq,
-        const std::string& trafficLight, const std::string& filename, const std::vector<std::string>& vehicleTypes,
-        const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name, const SUMOTime timeThreshold,
-        double speedThreshold, const double jamThreshold, const bool friendlyPos, const bool show, const Parameterised::Map& parameters) :
-    GNEDetector(id, net, GLO_E2DETECTOR, GNE_TAG_MULTI_LANE_AREA_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E2),
-                pos, freq, lanes, filename, vehicleTypes, nextEdges, detectPersons, name, friendlyPos, parameters),
+GNELaneAreaDetector::GNELaneAreaDetector(const std::string& id, GNENet* net, const std::string& filename, std::vector<GNELane*> lanes, double pos, double endPos, const SUMOTime freq,
+        const std::string& trafficLight, const std::string& outputFilename, const std::vector<std::string>& vehicleTypes, const std::vector<std::string>& nextEdges,
+        const std::string& detectPersons, const std::string& name, const SUMOTime timeThreshold, double speedThreshold, const double jamThreshold, const bool friendlyPos, const bool show,
+        const Parameterised::Map& parameters) :
+    GNEDetector(id, net, filename, GNE_TAG_MULTI_LANE_AREA_DETECTOR, pos, freq, lanes, outputFilename, vehicleTypes, nextEdges,
+                detectPersons, name, friendlyPos, parameters),
     myEndPositionOverLane(endPos),
     myTimeThreshold(timeThreshold),
     mySpeedThreshold(speedThreshold),
@@ -88,7 +85,7 @@ GNELaneAreaDetector::writeAdditional(OutputDevice& device) const {
     device.openTag(SUMO_TAG_LANE_AREA_DETECTOR);
     device.writeAttr(SUMO_ATTR_ID, getID());
     // continue depending of E2 type
-    if (myTagProperty.getTag() == SUMO_TAG_LANE_AREA_DETECTOR) {
+    if (myTagProperty->getTag() == SUMO_TAG_LANE_AREA_DETECTOR) {
         device.writeAttr(SUMO_ATTR_LANE, getParentLanes().front()->getID());
         device.writeAttr(SUMO_ATTR_POSITION, myPositionOverLane);
         device.writeAttr(SUMO_ATTR_LENGTH, toString(myEndPositionOverLane - myPositionOverLane));
@@ -103,16 +100,16 @@ GNELaneAreaDetector::writeAdditional(OutputDevice& device) const {
     if (myTrafficLight.size() > 0) {
         device.writeAttr(SUMO_ATTR_TLID, myTrafficLight);
     }
-    if (getAttribute(SUMO_ATTR_HALTING_TIME_THRESHOLD) != myTagProperty.getDefaultValue(SUMO_ATTR_HALTING_TIME_THRESHOLD)) {
-        device.writeAttr(SUMO_ATTR_HALTING_TIME_THRESHOLD, mySpeedThreshold);
+    if (myTimeThreshold != myTagProperty->getDefaultTimeValue(SUMO_ATTR_HALTING_TIME_THRESHOLD)) {
+        device.writeAttr(SUMO_ATTR_HALTING_TIME_THRESHOLD, time2string(myTimeThreshold));
     }
-    if (getAttribute(SUMO_ATTR_HALTING_SPEED_THRESHOLD) != myTagProperty.getDefaultValue(SUMO_ATTR_HALTING_SPEED_THRESHOLD)) {
+    if (mySpeedThreshold != myTagProperty->getDefaultDoubleValue(SUMO_ATTR_HALTING_SPEED_THRESHOLD)) {
         device.writeAttr(SUMO_ATTR_HALTING_SPEED_THRESHOLD, mySpeedThreshold);
     }
-    if (getAttribute(SUMO_ATTR_JAM_DIST_THRESHOLD) != myTagProperty.getDefaultValue(SUMO_ATTR_JAM_DIST_THRESHOLD)) {
-        device.writeAttr(SUMO_ATTR_JAM_DIST_THRESHOLD, mySpeedThreshold);
+    if (myJamThreshold != myTagProperty->getDefaultDoubleValue(SUMO_ATTR_JAM_DIST_THRESHOLD)) {
+        device.writeAttr(SUMO_ATTR_JAM_DIST_THRESHOLD, myJamThreshold);
     }
-    if (getAttribute(SUMO_ATTR_SHOW_DETECTOR) != myTagProperty.getDefaultValue(SUMO_ATTR_SHOW_DETECTOR)) {
+    if (myShow != myTagProperty->getDefaultBoolValue(SUMO_ATTR_SHOW_DETECTOR)) {
         device.writeAttr(SUMO_ATTR_SHOW_DETECTOR, myShow);
     }
     // write parameters (Always after children to avoid problems with additionals.xsd)
@@ -249,7 +246,7 @@ GNELaneAreaDetector::fixAdditionalProblem() {
 void
 GNELaneAreaDetector::updateGeometry() {
     // check E2 detector
-    if (myTagProperty.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) {
+    if (myTagProperty->getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) {
         // compute path
         computePathElement();
     } else {
@@ -262,7 +259,7 @@ GNELaneAreaDetector::updateGeometry() {
 void
 GNELaneAreaDetector::drawGL(const GUIVisualizationSettings& s) const {
     // check drawing conditions
-    if ((myTagProperty.getTag() == SUMO_TAG_LANE_AREA_DETECTOR) &&
+    if ((myTagProperty->getTag() == SUMO_TAG_LANE_AREA_DETECTOR) &&
             myNet->getViewNet()->getDataViewOptions().showAdditionals() &&
             !myNet->getViewNet()->selectingDetectorsTLSMode()) {
         // Obtain exaggeration of the draw
@@ -283,7 +280,8 @@ GNELaneAreaDetector::drawGL(const GUIVisualizationSettings& s) const {
             myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // calculate contour and draw dotted geometry
-        myAdditionalContour.calculateContourExtrudedShape(s, d, this, myAdditionalGeometry.getShape(), s.detectorSettings.E2Width, E2Exaggeration, true, true, 0);
+        myAdditionalContour.calculateContourExtrudedShape(s, d, this, myAdditionalGeometry.getShape(), getType(), s.detectorSettings.E2Width,
+                E2Exaggeration, true, true, 0, nullptr, getParentLanes().front()->getParentEdge());
     }
 }
 
@@ -291,15 +289,16 @@ GNELaneAreaDetector::drawGL(const GUIVisualizationSettings& s) const {
 void
 GNELaneAreaDetector::computePathElement() {
     // calculate path
-    myNet->getPathManager()->calculateConsecutivePathLanes(this, getParentLanes());
+    myNet->getNetworkPathManager()->calculateConsecutivePathLanes(this, getParentLanes());
 }
 
 
 void
-GNELaneAreaDetector::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNELaneAreaDetector::drawLanePartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     // check if E2 can be drawn
-    if (segment->getLane() && (myTagProperty.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) &&
+    if (segment->getLane() && (myTagProperty->getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) &&
             myNet->getViewNet()->getDataViewOptions().showAdditionals() && !myNet->getViewNet()->selectingDetectorsTLSMode()) {
+        const bool movingGeometryPoints = drawMovingGeometryPoints(false);
         // Obtain exaggeration of the draw
         const double E2Exaggeration = getExaggeration(s);
         // get detail level
@@ -335,23 +334,47 @@ GNELaneAreaDetector::drawLanePartialGL(const GUIVisualizationSettings& s, const 
         // draw geometry only if we'rent in drawForObjectUnderCursor mode
         if (s.checkDrawAdditional(d, isAttributeCarrierSelected())) {
             // draw E2 partial
-            drawE2PartialLane(s, d, segment, offsetFront, E2Geometry, E2Exaggeration);
+            drawE2PartialLane(s, d, segment, offsetFront, E2Geometry, E2Exaggeration, movingGeometryPoints);
             // draw additional ID
             drawName(getCenteringBoundary().getCenter(), s.scale, s.addName);
             // draw dotted contour
-            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
+            if (movingGeometryPoints) {
+                // get mouse position
+                const Position mousePosition = myNet->getViewNet()->getPositionInformation();
+                // get snap radius
+                const double snap_radius = myNet->getViewNet()->getVisualisationSettings().neteditSizeSettings.additionalGeometryPointRadius;
+                if (segment->getFromContour() && E2Geometry.getShape().front().distanceSquaredTo2D(mousePosition) <= (snap_radius * snap_radius)) {
+                    segment->getFromContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidthSmall, true);
+                } else if (segment->getToContour() && E2Geometry.getShape().back().distanceSquaredTo2D(mousePosition) <= (snap_radius * snap_radius)) {
+                    segment->getToContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidthSmall, true);
+                }
+            } else {
+                segment->getContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
+            }
         }
         // calculate contour and draw dotted geometry
-        myAdditionalContour.calculateContourExtrudedShape(s, d, this, E2Geometry.getShape(), s.detectorSettings.E2Width, E2Exaggeration,
-                segment->isFirstSegment(), segment->isLastSegment(), 0);
+        segment->getContour()->calculateContourExtrudedShape(s, d, this, E2Geometry.getShape(), getType(), s.detectorSettings.E2Width,
+                E2Exaggeration, segment->isFirstSegment(), segment->isLastSegment(), 0, segment, segment->getLane()->getParentEdge());
+        // check if create from-to contours
+        if (segment->getFromContour()) {
+            segment->getFromContour()->calculateContourCircleShape(s, d, this, E2Geometry.getShape().front(),
+                    s.neteditSizeSettings.additionalGeometryPointRadius, getType(), E2Exaggeration, segment->getLane()->getParentEdge());
+        } else if (segment->getToContour()) {
+            segment->getToContour()->calculateContourCircleShape(s, d, this, E2Geometry.getShape().back(),
+                    s.neteditSizeSettings.additionalGeometryPointRadius, getType(), E2Exaggeration, segment->getLane()->getParentEdge());
+        }
+        // check if add this path element to redraw buffer
+        if (!gViewObjectsHandler.isPathElementMarkForRedraw(this) && segment->getContour()->checkDrawPathContour(s, d, this)) {
+            gViewObjectsHandler.addToRedrawPathElements(this);
+        }
     }
 }
 
 
 void
-GNELaneAreaDetector::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNELaneAreaDetector::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     // check if E2 can be drawn
-    if ((myTagProperty.getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) && segment->getPreviousLane() && segment->getNextLane() &&
+    if ((myTagProperty->getTag() == GNE_TAG_MULTI_LANE_AREA_DETECTOR) && segment->getPreviousLane() && segment->getNextLane() &&
             myNet->getViewNet()->getDataViewOptions().showAdditionals() && !myNet->getViewNet()->selectingDetectorsTLSMode()) {
         // Obtain exaggeration of the draw
         const double E2Exaggeration = getExaggeration(s);
@@ -369,10 +392,17 @@ GNELaneAreaDetector::drawJunctionPartialGL(const GUIVisualizationSettings& s, co
             // draw E2 partial
             drawE2PartialJunction(s, d, onlyContour, offsetFront, E2Geometry, E2Exaggeration);
             // draw dotted contour
-            myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
+            if (!drawMovingGeometryPoints(false)) {
+                segment->getContour()->drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
+            }
         }
         // calculate contour
-        myAdditionalContour.calculateContourExtrudedShape(s, d, this, E2Geometry.getShape(), s.detectorSettings.E2Width, E2Exaggeration, false, false, 0);
+        segment->getContour()->calculateContourExtrudedShape(s, d, this, E2Geometry.getShape(), getType(), s.detectorSettings.E2Width, E2Exaggeration,
+                false, false, 0, segment, segment->getJunction());
+        // check if add this path element to redraw buffer
+        if (!gViewObjectsHandler.isPathElementMarkForRedraw(this) && segment->getContour()->checkDrawPathContour(s, d, this)) {
+            gViewObjectsHandler.addToRedrawPathElements(this);
+        }
     }
 }
 
@@ -443,11 +473,8 @@ GNELaneAreaDetector::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_LANES:
             if (value.empty()) {
                 return false;
-            } else if (canParse<std::vector<GNELane*> >(myNet, value, false)) {
-                // check if lanes are consecutives
-                return lanesConsecutives(parse<std::vector<GNELane*> >(myNet, value));
             } else {
-                return false;
+                return canParse<std::vector<GNELane*> >(myNet, value, true);
             }
         case SUMO_ATTR_ENDPOS:
             return canParse<double>(value);
@@ -457,7 +484,7 @@ GNELaneAreaDetector::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_LENGTH:
             return (canParse<double>(value) && (parse<double>(value) >= 0));
         case SUMO_ATTR_HALTING_TIME_THRESHOLD:
-            return canParse<SUMOTime>(value);
+            return canParse<SUMOTime>(value) && (parse<SUMOTime>(value) >= 0);
         case SUMO_ATTR_HALTING_SPEED_THRESHOLD:
             return (canParse<double>(value) && (parse<double>(value) >= 0));
         case SUMO_ATTR_JAM_DIST_THRESHOLD:
@@ -491,7 +518,7 @@ GNELaneAreaDetector::drawE2(const GUIVisualizationSettings& s, const GUIVisualiz
     // push layer matrix
     GLHelper::pushMatrix();
     // translate to front
-    myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_E2DETECTOR);
+    drawInLayer(GLO_E2DETECTOR);
     // set color
     GLHelper::setColor(E2Color);
     // draw geometry
@@ -513,8 +540,8 @@ GNELaneAreaDetector::drawE2(const GUIVisualizationSettings& s, const GUIVisualiz
 
 void
 GNELaneAreaDetector::drawE2PartialLane(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d,
-                                       const GNEPathManager::Segment* segment, const double offsetFront,
-                                       const GUIGeometry& geometry, const double exaggeration) const {
+                                       const GNESegment* segment, const double offsetFront,
+                                       const GUIGeometry& geometry, const double exaggeration, const bool movingGeometryPoints) const {
     // obtain color
     const RGBColor E2Color = drawUsingSelectColor() ? s.colorSettings.selectedAdditionalColor : s.detectorSettings.E2Color;
     // push layer matrix
@@ -525,24 +552,26 @@ GNELaneAreaDetector::drawE2PartialLane(const GUIVisualizationSettings& s, const 
     GLHelper::setColor(E2Color);
     // draw geometry
     GUIGeometry::drawGeometry(d, geometry, s.detectorSettings.E2Width * exaggeration);
-    // draw geometry points
-    if (segment->isFirstSegment() && segment->isLastSegment()) {
-        drawLeftGeometryPoint(s, d, geometry.getShape().front(),  geometry.getShapeRotations().front(), E2Color, true);
-        drawRightGeometryPoint(s, d, geometry.getShape().back(), geometry.getShapeRotations().back(), E2Color, true);
-    } else if (segment->isFirstSegment()) {
-        drawLeftGeometryPoint(s, d, geometry.getShape().front(), geometry.getShapeRotations().front(), E2Color, true);
-    } else if (segment->isLastSegment()) {
-        drawRightGeometryPoint(s, d, geometry.getShape().back(), geometry.getShapeRotations().back(), E2Color, true);
-        // draw arrow
-        if (geometry.getShape().size() > 1) {
-            glTranslated(0, 0, 0.1);
-            GLHelper::drawTriangleAtEnd(geometry.getShape()[-2], geometry.getShape()[-1], (double) 0.5, (double) 1, 0.5);
+    // check if draw moving geometry points
+    if (movingGeometryPoints) {
+        if (segment->isFirstSegment() && segment->isLastSegment()) {
+            drawLeftGeometryPoint(s, d, geometry.getShape().front(),  geometry.getShapeRotations().front(), E2Color, true);
+            drawRightGeometryPoint(s, d, geometry.getShape().back(), geometry.getShapeRotations().back(), E2Color, true);
+        } else if (segment->isFirstSegment()) {
+            drawLeftGeometryPoint(s, d, geometry.getShape().front(), geometry.getShapeRotations().front(), E2Color, true);
+        } else if (segment->isLastSegment()) {
+            drawRightGeometryPoint(s, d, geometry.getShape().back(), geometry.getShapeRotations().back(), E2Color, true);
+            // draw arrow
+            if (geometry.getShape().size() > 1) {
+                glTranslated(0, 0, 0.1);
+                GLHelper::drawTriangleAtEnd(geometry.getShape()[-2], geometry.getShape()[-1], (double) 0.5, (double) 1, 0.5);
+            }
         }
     }
     // Pop layer matrix
     GLHelper::popMatrix();
     // check if this is the label segment
-    if (segment->isLabelSegment() && !s.drawForRectangleSelection) {
+    if (segment->isLabelSegment()) {
         // calculate middle point
         const double middlePoint = (geometry.getShape().length2D() * 0.5);
         // calculate position
@@ -641,18 +670,38 @@ GNELaneAreaDetector::setAttribute(SumoXMLAttr key, const std::string& value) {
 
 void
 GNELaneAreaDetector::setMoveShape(const GNEMoveResult& moveResult) {
-    if ((moveResult.operationType == GNEMoveOperation::OperationType::ONE_LANE_MOVEFIRST) ||
-            (moveResult.operationType == GNEMoveOperation::OperationType::TWO_LANES_MOVEFIRST)) {
+    if ((moveResult.operationType == GNEMoveOperation::OperationType::SINGLE_LANE_MOVE_FIRST) ||
+            (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_FIRST)) {
         // change only start position
         myPositionOverLane = moveResult.newFirstPos;
-    } else if ((moveResult.operationType == GNEMoveOperation::OperationType::ONE_LANE_MOVESECOND) ||
-               (moveResult.operationType == GNEMoveOperation::OperationType::TWO_LANES_MOVESECOND)) {
+    } else if ((moveResult.operationType == GNEMoveOperation::OperationType::SINGLE_LANE_MOVE_LAST) ||
+               (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_LAST)) {
         // change only end position
         myEndPositionOverLane = moveResult.newFirstPos;
     } else {
-        // change both position
-        myPositionOverLane = moveResult.newFirstPos;
-        myEndPositionOverLane = moveResult.newSecondPos;
+        if (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_BOTH_FIRST) {
+            const auto difference = moveResult.newFirstPos - myPositionOverLane;
+            // change start position
+            myPositionOverLane = moveResult.newFirstPos;
+            myEndPositionOverLane += difference;
+        } else if (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_BOTH_LAST) {
+            const auto difference = moveResult.newFirstPos - myEndPositionOverLane;
+            // change end position
+            myPositionOverLane += difference;
+            myEndPositionOverLane = moveResult.newFirstPos;
+        }
+        // end position over lane
+        if (myPositionOverLane < 0) {
+            myPositionOverLane = 0;
+        } else if (myPositionOverLane > getParentLanes().front()->getLaneShapeLength()) {
+            myPositionOverLane = getParentLanes().front()->getLaneShapeLength();
+        }
+        // adjust position over lane
+        if (myEndPositionOverLane < 0) {
+            myEndPositionOverLane = 0;
+        } else if (myEndPositionOverLane > getParentLanes().back()->getLaneShapeLength()) {
+            myEndPositionOverLane = getParentLanes().back()->getLaneShapeLength();
+        }
     }
     // update geometry
     updateGeometry();
@@ -664,18 +713,44 @@ GNELaneAreaDetector::commitMoveShape(const GNEMoveResult& moveResult, GNEUndoLis
     // begin change attribute
     undoList->begin(this, "position of " + getTagStr());
     // set attributes depending of operation type
-    if ((moveResult.operationType == GNEMoveOperation::OperationType::ONE_LANE_MOVEFIRST) ||
-            (moveResult.operationType == GNEMoveOperation::OperationType::TWO_LANES_MOVEFIRST)) {
+    if ((moveResult.operationType == GNEMoveOperation::OperationType::SINGLE_LANE_MOVE_FIRST) ||
+            (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_FIRST)) {
         // set only start position
         setAttribute(SUMO_ATTR_POSITION, toString(moveResult.newFirstPos), undoList);
-    } else if ((moveResult.operationType == GNEMoveOperation::OperationType::ONE_LANE_MOVESECOND) ||
-               (moveResult.operationType == GNEMoveOperation::OperationType::TWO_LANES_MOVESECOND)) {
+    } else if ((moveResult.operationType == GNEMoveOperation::OperationType::SINGLE_LANE_MOVE_LAST) ||
+               (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_LAST)) {
         // set only end position
         setAttribute(SUMO_ATTR_ENDPOS, toString(moveResult.newFirstPos), undoList);
     } else {
-        // set both positions
-        setAttribute(SUMO_ATTR_POSITION, toString(moveResult.newFirstPos), undoList);
-        setAttribute(SUMO_ATTR_ENDPOS, toString(moveResult.newSecondPos), undoList);
+        double startPos = myPositionOverLane;
+        double endPos = myEndPositionOverLane;
+        // set positions
+        if (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_BOTH_FIRST) {
+            const auto difference = moveResult.newFirstPos - myPositionOverLane;
+            // change start position
+            startPos = moveResult.newFirstPos;
+            endPos += difference;
+        } else if (moveResult.operationType == GNEMoveOperation::OperationType::MULTIPLE_LANES_MOVE_BOTH_LAST) {
+            const auto difference = moveResult.newFirstPos - myEndPositionOverLane;
+            // change end position
+            startPos += difference;
+            endPos = moveResult.newFirstPos;
+        }
+        // end position over lane
+        if (startPos < 0) {
+            startPos = 0;
+        } else if (startPos > getParentLanes().front()->getLaneShapeLength()) {
+            startPos = getParentLanes().front()->getLaneShapeLength();
+        }
+        // adjust position over lane
+        if (endPos < 0) {
+            endPos = 0;
+        } else if (endPos > getParentLanes().back()->getLaneShapeLength()) {
+            endPos = getParentLanes().back()->getLaneShapeLength();
+        }
+        // set only end position
+        setAttribute(SUMO_ATTR_POSITION, toString(startPos), undoList);
+        setAttribute(SUMO_ATTR_ENDPOS, toString(endPos), undoList);
     }
     // end change attribute
     undoList->end();

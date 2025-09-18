@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -463,7 +463,7 @@ MEVehicle::updateDetectors(SUMOTime currentTime, const bool isLeave, const MSMov
     // segments of the same edge have the same reminder so no cleaning up must take place
     const bool cleanUp = isLeave && (reason != MSMoveReminder::NOTIFICATION_SEGMENT);
     for (MoveReminderCont::iterator rem = myMoveReminders.begin(); rem != myMoveReminders.end();) {
-        if (currentTime != getLastEntryTime()) {
+        if (currentTime != getLastEntryTime() && reason < MSMoveReminder::NOTIFICATION_VAPORIZED_CALIBRATOR) {
             rem->first->updateDetector(*this, mySegment->getIndex() * mySegment->getLength(),
                                        (mySegment->getIndex() + 1) * mySegment->getLength(),
                                        getLastEntryTime(), currentTime, getEventTime(), cleanUp);
@@ -479,6 +479,15 @@ MEVehicle::updateDetectors(SUMOTime currentTime, const bool isLeave, const MSMov
                 traceMoveReminder("notifyLeave", rem->first, rem->second, true);
             }
 #endif
+
+            if (isLeave) {
+                rem->second += getEdge()->getLength();
+#ifdef _DEBUG
+                if (myTraceMoveReminders) {
+                    traceMoveReminder("adaptedPos", rem->first, rem->second, true);
+                }
+#endif
+            }
             ++rem;
         } else {
 #ifdef _DEBUG
@@ -515,6 +524,13 @@ MEVehicle::onRemovalFromNet(const MSMoveReminder::Notification reason) {
     MSGlobals::gMesoNet->removeLeaderCar(this);
     MSGlobals::gMesoNet->changeSegment(this, MSNet::getInstance()->getCurrentTimeStep(), nullptr, reason);
 }
+
+
+int
+MEVehicle::getSegmentIndex() const {
+    return getSegment() != nullptr ? getSegment()->getIndex() : -1;
+}
+
 
 double
 MEVehicle::getRightSideOnEdge(const MSLane* /*lane*/) const {
@@ -567,6 +583,9 @@ MEVehicle::saveState(OutputDevice& out) {
     for (MSDevice* dev : myDevices) {
         dev->saveState(out);
     }
+    for (const auto& item : myMoveReminders) {
+        item.first->saveReminderState(out, *this);
+    }
     out.closeTag();
 }
 
@@ -591,6 +610,11 @@ MEVehicle::loadState(const SUMOSAXAttributes& attrs, const SUMOTime offset) {
     bis >> myBlockTime;
     myDepartPos /= 1000.; // was stored as mm
 
+    if (attrs.hasAttribute(SUMO_ATTR_ARRIVALPOS_RANDOMIZED)) {
+        bool ok;
+        myArrivalPos = attrs.get<double>(SUMO_ATTR_ARRIVALPOS_RANDOMIZED, getID().c_str(), ok);
+    }
+
     // load stops
     myStops.clear();
     addStops(!MSGlobals::gCheckRoutes, &myCurrEdge, false);
@@ -604,7 +628,9 @@ MEVehicle::loadState(const SUMOSAXAttributes& attrs, const SUMOTime offset) {
             MESegment* seg = MSGlobals::gMesoNet->getSegmentForEdge(**myCurrEdge);
             while (seg->getIndex() != (int)segIndex) {
                 seg = seg->getNextSegment();
-                assert(seg != 0);
+                if (seg == nullptr) {
+                    throw ProcessError(TLF("Unknown segment '%:%' for vehicle '%' in loaded state.", (*myCurrEdge)->getID(), segIndex, getID()));
+                }
             }
             setSegment(seg, queIndex);
             if (queIndex == MESegment::PARKING_QUEUE) {

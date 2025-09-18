@@ -1,11 +1,3 @@
-if (${CMAKE_VERSION} VERSION_GREATER 3.13.0)
-    # UseSWIG generates standard target names
-    cmake_policy(SET CMP0078 NEW)
-endif()
-if (${CMAKE_VERSION} VERSION_GREATER 3.14.0)
-    # pass module name to swig compiler
-    cmake_policy(SET CMP0086 NEW)
-endif()
 set(libsumostatic_STAT_SRCS
     Edge.cpp
     Edge.h
@@ -106,11 +98,11 @@ else ()
 endif()
 target_link_libraries(libsumocpp PRIVATE ${sumo_link_libraries})
 
-if(SWIG_FOUND)
+if (SWIG_FOUND)
     include(${SWIG_USE_FILE})
     set_source_files_properties(libsumo.i PROPERTIES CPLUSPLUS ON)
     file(GLOB LIBSUMO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-    if(ENABLE_JAVA_BINDINGS)
+    if (ENABLE_JAVA_BINDINGS)
         find_package(Java)
         find_package(JNI)
         if(JAVA_FOUND AND JNI_FOUND)
@@ -136,28 +128,29 @@ if(SWIG_FOUND)
             swig_link_libraries(libsumojni ${sumo_link_libraries})
             if (MVN_EXECUTABLE)
                 ADD_CUSTOM_COMMAND(TARGET libsumojni POST_BUILD
-                    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/traci/rebuildConstants.py -o java/Constants.java -j org.eclipse.sumo.libsumo.Constants
+                    COMMAND ${PYTHON_EXECUTABLE} ${SUMO_TOOLS_DIR}/traci/rebuildConstants.py -o java/Constants.java -j org.eclipse.sumo.libsumo.Constants
                     COMMAND ${CMAKE_COMMAND} -E make_directory src/main/java/org/eclipse/sumo/libsumo
                     COMMAND ${CMAKE_COMMAND} -E copy_directory java src/main/java/org/eclipse/sumo/libsumo
-                    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/build_config/pom.py libsumo
+                    COMMAND ${PYTHON_EXECUTABLE} ${SUMO_TOOLS_DIR}/build_config/pom.py libsumo
                     COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} ${MVN_REPO} ${MVN_OPTS} --batch-mode package source:jar
                 )
             else()
                 message(WARNING "Could not build libsumo jar, maven was not found.")
             endif()
-            set_property(TARGET libsumojni PROPERTY FOLDER "libsumo")
+            set_target_properties(libsumojni PROPERTIES FOLDER "libsumo")
             install(TARGETS libsumojni DESTINATION bin LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
         else()
             message(WARNING "ENABLE_JAVA_BINDINGS is set but Java or JNI was not found.")
         endif()
     endif()
 
-    if(ENABLE_CS_BINDINGS)
-        set(CMAKE_SWIG_FLAGS "") # reset from Java
+    if (ENABLE_CS_BINDINGS)
+        set(CS_NAMESPACE Eclipse.Sumo.Libsumo)
+        set(CMAKE_SWIG_FLAGS -namespace ${CS_NAMESPACE})
         if (FOX_FOUND)
             set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} -DHAVE_LIBSUMOGUI)
         endif()
-        set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/cs)
+        set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${CS_NAMESPACE})
         set(SWIG_MODULE_libsumocs_EXTRA_DEPS ${LIBSUMO_HEADERS} libsumo_typemap.i)
         if (${CMAKE_VERSION} VERSION_GREATER 3.8.0)
             SWIG_ADD_LIBRARY(libsumocs LANGUAGE CSharp SOURCES libsumo.i)
@@ -171,17 +164,20 @@ if(SWIG_FOUND)
             swig_link_libraries(libsumocs ${libsumo_link_library} ${sumolibs})
         endif()
         swig_link_libraries(libsumocs ${sumo_link_libraries})
-        set_property(TARGET libsumocs PROPERTY FOLDER "libsumo")
+        ADD_CUSTOM_COMMAND(TARGET libsumocs POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_SOURCE_DIR}/bin/libsumocs-sources.zip" --format=zip "${CS_NAMESPACE}"
+        )
+        set_target_properties(libsumocs PROPERTIES FOLDER "libsumo" PREFIX "")
         install(TARGETS libsumocs DESTINATION bin LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
     if (ENABLE_PYTHON_BINDINGS AND PYTHON_INCLUDE_DIRS)
         include_directories(${PYTHON_INCLUDE_DIRS})
         set(CMAKE_SWIG_FLAGS -keyword) # is necessary for using keyword args
+        # other options which should be evaluated: -builtin, -modern, -extranative
         if (FOX_FOUND)
             set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} -DHAVE_LIBSUMOGUI)
         endif()
-        # other options which should be evaluated: -builtin, -modern, -extranative
         set(SWIG_OUTFILE_DIR ${CMAKE_CURRENT_BINARY_DIR})
         set(CMAKE_SWIG_OUTDIR ${CMAKE_SOURCE_DIR}/tools/libsumo)
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/tools/libsumo)
@@ -214,10 +210,10 @@ if(SWIG_FOUND)
         swig_link_libraries(libsumo ${sumo_link_libraries})
         if (NOT ${PYTHON_SETUPTOOLS_MISSING})
             if (${PYTHON_BUILD_MISSING})
-                install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${TOOLS_DIR}/build_config/setup-libsumo.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
+                install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SUMO_TOOLS_DIR}/build_config/setup-libsumo.py clean --all install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} --optimize=1)"
                         COMPONENT pylibsumo)
             else ()
-                install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ./build_config/version.py ./build_config/setup-libsumo.py ./setup.py COMMAND ${PYTHON_EXECUTABLE} -m pip install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} -f ${CMAKE_BINARY_DIR} . WORKING_DIRECTORY ${TOOLS_DIR})"
+                install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ./build_config/version.py ./build_config/setup-libsumo.py ./setup.py COMMAND ${PYTHON_EXECUTABLE} -m pip install --root=\$ENV{DESTDIR}/ --prefix=${CMAKE_INSTALL_PREFIX} -f ${CMAKE_BINARY_DIR} . WORKING_DIRECTORY ${SUMO_TOOLS_DIR})"
                         COMPONENT pylibsumo)
             endif()
         endif()

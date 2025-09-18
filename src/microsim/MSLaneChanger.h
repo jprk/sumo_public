@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -98,6 +98,15 @@ public:
 
         /// vehicles that cannot be stored in ahead because they are outside the lane bounds
         std::vector<MSVehicle*>  outsideBounds;
+
+        /// visibility distance to the closest zipper link that may be encountered when driving on this lane
+        double zipperDist;
+
+        /// the back position of the last blocked vehicle that wants to change to this lane
+        double lastBlockedBackPos;
+
+        /// the waiting time of the last blocked vehicle that wants to change to this lane
+        SUMOTime lastBlockedWaitingTime;
         ///@}
 
     };
@@ -118,6 +127,8 @@ public:
         return myChanger;
     }
 
+    /// @brief retrieve properties of a blocked vehicle that wants to chane to the lane with the given index
+    std::pair<double, SUMOTime> getLastBlocked(int index) const;
 
 protected:
     /// Initialize the changer before looping over all vehicles.

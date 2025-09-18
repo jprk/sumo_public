@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -15,6 +15,7 @@
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
+/// @author  Mirko Barthauer
 /// @date    Sept 2002
 ///
 // A list of object types which may be displayed within the gui
@@ -80,10 +81,10 @@ enum GUIGlObjectType {
     GLO_TRAIN_STOP = 103,
     /// @brief a containerStop
     GLO_CONTAINER_STOP = 104,
-    /// @brief a chargingStation
-    GLO_CHARGING_STATION = 105,
     /// @brief a ParkingArea
-    GLO_PARKING_AREA = 106,
+    GLO_PARKING_AREA = 105,
+    /// @brief a chargingStation
+    GLO_CHARGING_STATION = 106,
     /// @brief reserved GLO type for packing all StoppingPlace elements
     GLO_STOPPING_PLACE_LAST = 107,
     /// @brief a ParkingSpace
@@ -102,34 +103,38 @@ enum GUIGlObjectType {
     GLO_DET_ENTRY = 114,
     /// @brief a DetExit detector
     GLO_DET_EXIT = 115,
+    /// @brief a DetExit detector
+    GLO_DET_ENTRYEXIT = 116,
     /// @brief a Rerouter
-    GLO_REROUTER = 116,
+    GLO_REROUTER = 117,
     /// @brief a rerouter interval
-    GLO_REROUTER_INTERVAL = 117,
+    GLO_REROUTER_INTERVAL = 118,
     /// @brief a closing reroute
-    GLO_REROUTER_CLOSINGREROUTE = 118,
+    GLO_REROUTER_CLOSINGREROUTE = 119,
     /// @brief a closing lane reroute
-    GLO_REROUTER_CLOSINGLANEREROUTE = 119,
+    GLO_REROUTER_CLOSINGLANEREROUTE = 120,
     /// @brief a parking area reroute
-    GLO_REROUTER_PARKINGAREAREROUTE = 120,
+    GLO_REROUTER_PARKINGAREAREROUTE = 121,
     /// @brief a destination probability reroute
-    GLO_REROUTER_DESTPROBREROUTE = 121,
+    GLO_REROUTER_DESTPROBREROUTE = 122,
     /// @brief a route probability reroute
-    GLO_REROUTER_ROUTEPROBREROUTE = 122,
+    GLO_REROUTER_ROUTEPROBREROUTE = 123,
     /// @brief a Rerouter over edge
-    GLO_REROUTER_EDGE = 123,
+    GLO_REROUTER_EDGE = 124,
     /// @brief a Variable Speed Sign
-    GLO_VSS = 124,
+    GLO_VSS = 125,
     /// @brief a Variable Speed Sign step
-    GLO_VSS_STEP = 125,
-    /// @brief a Calibrator
-    GLO_CALIBRATOR = 126,
+    GLO_VSS_STEP = 126,
+    /// @brief a calibrator
+    GLO_CALIBRATOR = 127,
+    /// @brief a calibrator flow
+    GLO_CALIBRATOR_FLOW = 128,
     /// @brief a RouteProbe
-    GLO_ROUTEPROBE = 127,
+    GLO_ROUTEPROBE = 129,
     /// @brief a Vaporizer
-    GLO_VAPORIZER = 128,
+    GLO_VAPORIZER = 130,
     /// @brief a Acces
-    GLO_ACCESS = 129,
+    GLO_ACCESS = 131,
     /// @brief reserved GLO type for packing all wire elements
     GLO_WIRE = 140,
     /// @brief a segment of an overhead line
@@ -169,6 +174,10 @@ enum GUIGlObjectType {
     GLO_ROUTEELEMENT = 300,
     /// @bief vTypes
     GLO_VTYPE = 301,
+    /// @brief vtype ref
+    GLO_VTYPE_REF = 302,
+    /// @brief vtype distribution
+    GLO_VTYPE_DISTRIBUTION = 303,
 
     /// @}
 
@@ -177,6 +186,12 @@ enum GUIGlObjectType {
 
     /// @brief a route
     GLO_ROUTE = 310,
+    /// @brief a route
+    GLO_ROUTE_EMBEDDED = 311,
+    /// @brief route ref
+    GLO_ROUTE_REF = 312,
+    /// @brief route distribution
+    GLO_ROUTE_DISTRIBUTION = 313,
 
     /// @}
 
@@ -252,6 +267,14 @@ enum GUIGlObjectType {
     GLO_EDGERELDATA = 501,
     /// @brief TAZ relation data
     GLO_TAZRELDATA = 502,
+    /// @brief meanData
+    GLO_MEANDATA = 503,
+
+    /// @brief data set
+    GLO_DATASET = 504,
+
+    /// @brief data interval
+    GLO_DATAINTERVAL = 505,
 
     /// @}
 
@@ -269,6 +292,9 @@ enum GUIGlObjectType {
 
     /// @brief dotted contour (used in netedit)
     GLO_DOTTEDCONTOUR = 1040,
+
+    /// @brief stack and flow labels (used in netedit)
+    GLO_VEHICLELABELS = 1045,
 
     /// @brief temporal shape (used in netedit)
     GLO_TEMPORALSHAPE = 1050,

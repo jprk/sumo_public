@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -58,8 +58,9 @@ private:
     typedef IntermodalEdge<E, L, N, V> _IntermodalEdge;
     typedef IntermodalTrip<E, N, V> _IntermodalTrip;
     typedef SUMOAbstractRouter<_IntermodalEdge, _IntermodalTrip> _InternalRouter;
+    typedef MapMatcher<E, L, N> _MapMatcher;
     typedef DijkstraRouter<_IntermodalEdge, _IntermodalTrip> _InternalDijkstra;
-    typedef AStarRouter<_IntermodalEdge, _IntermodalTrip> _InternalAStar;
+    typedef AStarRouter<_IntermodalEdge, _IntermodalTrip, _MapMatcher> _InternalAStar;
 
 public:
     struct TripItem {
@@ -233,13 +234,13 @@ public:
         }
     }
 
-    void prohibit(const std::vector<E*>& toProhibit) {
+    void prohibit(const std::map<const E*, double>& toProhibit) {
         createNet();
-        std::vector<_IntermodalEdge*> toProhibitPE;
-        for (typename std::vector<E*>::const_iterator it = toProhibit.begin(); it != toProhibit.end(); ++it) {
-            toProhibitPE.push_back(myIntermodalNet->getBothDirections(*it).first);
-            toProhibitPE.push_back(myIntermodalNet->getBothDirections(*it).second);
-            toProhibitPE.push_back(myIntermodalNet->getCarEdge(*it));
+        std::map<const _IntermodalEdge*, double> toProhibitPE;
+        for (auto item : toProhibit) {
+            toProhibitPE[myIntermodalNet->getBothDirections(item.first).first] = item.second;
+            toProhibitPE[myIntermodalNet->getBothDirections(item.first).second] = item.second;
+            toProhibitPE[myIntermodalNet->getCarEdge(item.first)] = item.second;
         }
         myInternalRouter->prohibit(toProhibitPE);
     }

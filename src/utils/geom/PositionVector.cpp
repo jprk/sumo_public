@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -293,7 +293,7 @@ PositionVector::sidePositionAtAngle(double pos, double lateralOffset, double ang
 
 
 Position
-PositionVector::positionAtOffset2D(double pos, double lateralOffset) const {
+PositionVector::positionAtOffset2D(double pos, double lateralOffset, bool extrapolateBeyond) const {
     if (size() == 0) {
         return Position::INVALID;
     }
@@ -305,10 +305,13 @@ PositionVector::positionAtOffset2D(double pos, double lateralOffset) const {
     do {
         const double nextLength = (*i).distanceTo2D(*(i + 1));
         if (seenLength + nextLength > pos) {
-            return positionAtOffset2D(*i, *(i + 1), pos - seenLength, lateralOffset);
+            return positionAtOffset2D(*i, *(i + 1), pos - seenLength, lateralOffset, extrapolateBeyond);
         }
         seenLength += nextLength;
     } while (++i != end() - 1);
+    if (extrapolateBeyond) {
+        return positionAtOffset2D(*(i - 1), *i, pos - seenLength + (*i).distanceTo2D(*(i - 1)), lateralOffset, extrapolateBeyond);
+    }
     return back();
 }
 
@@ -402,10 +405,13 @@ PositionVector::sidePositionAtAngle(const Position& p1, const Position& p2, doub
 
 
 Position
-PositionVector::positionAtOffset2D(const Position& p1, const Position& p2, double pos, double lateralOffset) {
+PositionVector::positionAtOffset2D(const Position& p1, const Position& p2, double pos, double lateralOffset, bool extrapolateBeyond) {
     const double dist = p1.distanceTo2D(p2);
-    if (pos < 0 || dist < pos) {
+    if ((pos < 0 || dist < pos) && !extrapolateBeyond) {
         return Position::INVALID;
+    }
+    if (dist == 0) {
+        return p1;
     }
     if (lateralOffset != 0) {
         const Position offset = sideOffset(p1, p2, -lateralOffset); // move in the same direction as Position::move2side
@@ -1355,6 +1361,14 @@ PositionVector::angleAt2D(int pos) const {
 
 
 void
+PositionVector::openPolygon() {
+    if ((size() > 1) && (front() == back())) {
+        pop_back();
+    }
+}
+
+
+void
 PositionVector::closePolygon() {
     if ((size() != 0) && ((*this)[0] != back())) {
         push_back((*this)[0]);
@@ -1675,6 +1689,16 @@ PositionVector::rotate2D(double angle) {
         const double ynew = x * s + y * c;
         (*this)[i].set(xnew, ynew, z);
     }
+}
+
+
+void
+PositionVector::rotate2D(const Position& pos, double angle) {
+    PositionVector aux = *this;
+    aux.sub(pos);
+    aux.rotate2D(angle);
+    aux.add(pos);
+    *this = aux;
 }
 
 

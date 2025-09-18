@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,8 +17,10 @@
 ///
 //
 /****************************************************************************/
+#include <config.h>
 
 #include <netedit/GNENet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
@@ -26,30 +28,26 @@
 #include <netedit/frames/network/GNETLSEditorFrame.h>
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
+#include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
 
 #include "GNEInductionLoopDetector.h"
 #include "GNEAdditionalHandler.h"
-
 
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
 GNEInductionLoopDetector::GNEInductionLoopDetector(GNENet* net) :
-    GNEDetector("", net, GLO_E1DETECTOR, SUMO_TAG_INDUCTION_LOOP, GUIIconSubSys::getIcon(GUIIcon::E1), 0,
-                0, {}, "", {}, {}, "",  "", false, Parameterised::Map()) {
-    // reset default values
-    resetDefaultValues();
+    GNEDetector(net, SUMO_TAG_INDUCTION_LOOP) {
 }
 
 
-GNEInductionLoopDetector::GNEInductionLoopDetector(const std::string& id, GNELane* lane, GNENet* net, const double pos,
-        const SUMOTime freq, const std::string& filename, const std::vector<std::string>& vehicleTypes,
-        const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name,
-        const bool friendlyPos, const Parameterised::Map& parameters) :
-    GNEDetector(id, net, GLO_E1DETECTOR, SUMO_TAG_INDUCTION_LOOP, GUIIconSubSys::getIcon(GUIIcon::E1), pos, freq, {
-    lane
-}, filename, vehicleTypes, nextEdges, detectPersons, name, friendlyPos, parameters) {
+GNEInductionLoopDetector::GNEInductionLoopDetector(const std::string& id, GNENet* net, const std::string& filename, GNELane* lane,
+        const double pos, const SUMOTime freq, const std::string& outputFilename, const std::vector<std::string>& vehicleTypes,
+        const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name, const bool friendlyPos,
+        const Parameterised::Map& parameters) :
+    GNEDetector(id, net, filename, SUMO_TAG_INDUCTION_LOOP, pos, freq, lane, outputFilename, vehicleTypes, nextEdges,
+                detectPersons, name, friendlyPos, parameters) {
     // update centering boundary without updating grid
     updateCenteringBoundary(false);
 }
@@ -61,7 +59,7 @@ GNEInductionLoopDetector::~GNEInductionLoopDetector() {
 
 void
 GNEInductionLoopDetector::writeAdditional(OutputDevice& device) const {
-    device.openTag(getTagProperty().getTag());
+    device.openTag(getTagProperty()->getTag());
     device.writeAttr(SUMO_ATTR_ID, getID());
     device.writeAttr(SUMO_ATTR_LANE, getParentLanes().front()->getID());
     device.writeAttr(SUMO_ATTR_POSITION, myPositionOverLane);
@@ -136,9 +134,12 @@ GNEInductionLoopDetector::checkDrawRelatedContour() const {
             (TLSAttributes->getE1Detectors().count(getParentLanes().front()->getID()) > 0) &&
             (TLSAttributes->getE1Detectors().at(getParentLanes().front()->getID()) == getID())) {
         return true;
-    } else {
-        return false;
     }
+    // check opened popup
+    if (myNet->getViewNet()->getPopup()) {
+        return myNet->getViewNet()->getPopup()->getGLObject() == this;
+    }
+    return false;
 }
 
 
@@ -169,7 +170,7 @@ GNEInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const {
             // push layer matrix
             GLHelper::pushMatrix();
             // translate to front
-            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, GLO_E1DETECTOR);
+            drawInLayer(GLO_E1DETECTOR);
             // draw E1 shape
             drawE1Shape(d, E1Exaggeration, mainColor, secondColor);
             // draw E1 Logo
@@ -186,8 +187,8 @@ GNEInductionLoopDetector::drawGL(const GUIVisualizationSettings& s) const {
             myAdditionalContour.drawDottedContours(s, d, this, s.dottedContourSettings.segmentWidth, true);
         }
         // calculate contour rectangle
-        myAdditionalContour.calculateContourRectangleShape(s, d, this, myAdditionalGeometry.getShape().front(), 2, 1, 0, 0,
-                myAdditionalGeometry.getShapeRotations().front(), E1Exaggeration);
+        myAdditionalContour.calculateContourRectangleShape(s, d, this, myAdditionalGeometry.getShape().front(), 2, 1, getType(), 0, 0,
+                myAdditionalGeometry.getShapeRotations().front(), E1Exaggeration, getParentLanes().front()->getParentEdge());
     }
 }
 

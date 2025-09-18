@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -85,7 +85,7 @@ NIImporter_SUMO::NIImporter_SUMO(NBNetBuilder& nb)
       myCheckLaneFoesRoundabout(true),
       myTlsIgnoreInternalJunctionJam(false),
       myDefaultSpreadType(toString(LaneSpreadFunction::RIGHT)),
-      myGeomAvoidOverlap(true),
+      myGeomAvoidOverlap(false),
       myJunctionsHigherSpeed(false),
       myInternalJunctionsVehicleWidth(OptionsCont::getOptions().getFloat("internal-junctions.vehicle-width")),
       myJunctionsMinimalShape(OptionsCont::getOptions().getBool("junctions.minimal-shape")),
@@ -949,7 +949,7 @@ NIImporter_SUMO::initTrafficLightLogic(const SUMOSAXAttributes& attrs, NBLoadedS
     }
     bool ok = true;
     std::string id = attrs.get<std::string>(SUMO_ATTR_ID, nullptr, ok);
-    SUMOTime offset = TIME2STEPS(attrs.get<double>(SUMO_ATTR_OFFSET, id.c_str(), ok));
+    SUMOTime offset = attrs.getOptOffsetReporting(SUMO_ATTR_OFFSET, id.c_str(), ok, 0);
     std::string programID = attrs.getOpt<std::string>(SUMO_ATTR_PROGRAMID, id.c_str(), ok, "<unknown>");
     std::string typeS = attrs.get<std::string>(SUMO_ATTR_TYPE, nullptr, ok);
     TrafficLightType type;
@@ -1004,13 +1004,12 @@ NIImporter_SUMO::loadLocation(const SUMOSAXAttributes& attrs, bool setLoaded) {
     // @todo refactor parsing of location since its duplicated in NLHandler and PCNetProjectionLoader
     bool ok = true;
     GeoConvHelper* result = nullptr;
-    PositionVector s = attrs.get<PositionVector>(SUMO_ATTR_NET_OFFSET, nullptr, ok);
-    Boundary convBoundary = attrs.get<Boundary>(SUMO_ATTR_CONV_BOUNDARY, nullptr, ok);
-    Boundary origBoundary = attrs.get<Boundary>(SUMO_ATTR_ORIG_BOUNDARY, nullptr, ok);
-    std::string proj = attrs.get<std::string>(SUMO_ATTR_ORIG_PROJ, nullptr, ok);
+    const Position offset = attrs.get<Position>(SUMO_ATTR_NET_OFFSET, nullptr, ok);
+    const Boundary convBoundary = attrs.get<Boundary>(SUMO_ATTR_CONV_BOUNDARY, nullptr, ok);
+    const Boundary origBoundary = attrs.get<Boundary>(SUMO_ATTR_ORIG_BOUNDARY, nullptr, ok);
+    const std::string proj = attrs.get<std::string>(SUMO_ATTR_ORIG_PROJ, nullptr, ok);
     if (ok) {
-        Position networkOffset = s[0];
-        result = new GeoConvHelper(proj, networkOffset, origBoundary, convBoundary);
+        result = new GeoConvHelper(proj, offset, origBoundary, convBoundary);
         result->resolveAbstractProjection();
         if (setLoaded) {
             GeoConvHelper::setLoaded(*result);

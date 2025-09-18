@@ -120,7 +120,9 @@ the [stationfinder device](../Simulation/Stationfinder.md) can be configured to 
 
 A charging station is a surface defined on a lane in which the vehicles
 equipped with a battery are charged. The basic structure and parameters
-of bus stops were used for the implementation of charging stations.
+of bus stops were used for the implementation of charging stations. 
+A charging station can be converted to a gas station by setting the **chargeType** attribute to `fuel`. Then electric vehicles cannot charge there anymore.
+
 
 | key                 | Value Type | Value range                                                                                | Default   | Description         |
 | ------------------- | ---------- | -------------------------------- | --------- | ----------------------------------------------------------------------------- |
@@ -134,7 +136,7 @@ of bus stops were used for the implementation of charging stations.
 | **efficiency**      | float      | 0 <= efficiency <= 1                                                                       | 0.95   | Charging efficiency *η<sub>chrg</sub>*                                                                                          |
 | **chargeInTransit** | bool       | true or false                                                                              | false  | Enable or disable charge in transit, i.e. vehicle is forced/not forced to stop for charging                                     |
 | **chargeDelay**     | float      | chargeDelay \> 0                                                                           | 0         | Time delay after the vehicles have reached / stopped on the charging station, before the energy transfer (charging) is starting |
-| chargeType | string | | normal | Charging type (normal, electric, fuel) |
+| chargeType | string | {normal, battery-exchange, fuel} | normal | Charging type  |
 | parkingArea         | string     | valid parkingArea id                                                                       |        | id of the parking the charging station should be positioned on (optional) - vehicles will only charge after reaching the parking
 
 Charging stations are defined in additional using the following format:
@@ -152,6 +154,10 @@ Representation of chargingStation in GUI
 
 ![](../images/ChargingStationCharging.png "Color of chargingStation during charge")
 Color of chargingStation during charge
+
+!!! note
+    If the charging station shall be positioned on a parking (using the attribute **parkingArea**), the referenced parkingArea has to defined beforehand/loaded before the charging station.
+
 
 ## Stopping at a Charging Station
 
@@ -253,6 +259,8 @@ the following structure:
 </chargingstations-export>
 ```
 
+If the option **--chargingstations-output.aggregated.write-unfinished true** is set as well, vehicles still charging at the
+end of the simulation are included as well (but do not contain the chargingEnd attribute).
 Attributes with the same name can be looked up in the [table above](#full_report). The remaining attributes are:
 
 | Name               | Type   | Description                                                      |

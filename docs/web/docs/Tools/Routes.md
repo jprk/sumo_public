@@ -41,6 +41,9 @@ The tool determines all possible routes between the given source and target edge
 python tools/findAllRoutes.py -n <net-file> -o <output-file> -s <source-edges> -t <target-edges>
 ```
 
+!!! caution
+    Routes may contain any number of loops and detours. In a highly meshed network (i.e. a grid), the number of possible routes grows very large and most of them will not be plausible.
+
 # analyzePersonPlans.py
 Count the different types of person plans according to the sequence of used modes. Private rides are distinguished from public transport rides using the assumption that the name of the private vehicle will start with the name of the person (as happens for [duarouter](../duarouter.md)-generated person plans).
 ```
@@ -157,6 +160,8 @@ python tools/route/routeStats.py <net-file> <route-file>
 When setting option **--attribute depart** a histogram on departure times (or departure time
 differences) is generated instead.
 
+When setting option **edges-file**, all `<edge>` elements in the file will be read and the set of their ids stored. For every route, the number of edges within the set is counted.
+
 # routecompare.py
 
 This script compares two route sets by calculating
@@ -220,6 +225,24 @@ Uses "route_departOffset.py" for building 24 route files which describe a whole 
 python tools/route/route_1htoDay.py <route-file>
 ```
 
+# scaleTimeline.py
+
+increase or reduces traffic in a given route file by applying a timeline definition. The time extend of the output file is the same as the input. 
+
+```
+sumo/tools/route/scaleTimeLine.py -r 1d_flat.rou.xml -o 1d_timeline.rou.xml --timeline-list 3600,8,5,4,3,4,12,45,74,66,52,50,50,52,53,56,67,84,86,74,50,39,30,21,16
+```
+
+The first value in the **timeline-list** defines the duration of one time interval and the following values define a percentage of the input traffic to be used for each time interval.
+
+
+Usage example for transforming a 1-hour peak-traffic scenario into a whole-day scenario:
+
+```
+sumo/tools/route/route_1htoDay.py 1h_peak.rou.xml -o 1d_peak.rou.xml
+sumo/tools/route/scaleTimeLine.py -r 1d_peak.rou.xml -o 1d_timeline.rou.xml
+```
+
 # route2alts.py
 
 Counts possible routes for all depart/arrival edges.
@@ -255,6 +278,7 @@ python tools/countEdgeUsage.py <route-file> --output-file <output-file> --subpar
 
 This will only generate results for routes that contain the edge
 sequence *edge3 edge4 edge5*.
+By default, subpart must be a sequence of consecutive edges. By adding option **--subpart.via**, non-consecutive sequences are permitted.
 
 # addParkingAreaStops2Routes.py
 
@@ -294,7 +318,7 @@ python tools/route/addParkingAreaStops2Routes.py -r <route-file> -p ParkingAreaA
 ```
 
 This only adds a stop at **parkingAreaA** to the vehicle with id **0_parkingAreaA**.
-Note, that the lane of that parking area must belong to one of the edges
+, that the lane of that parking area must belong to one of the edges
 "e1, e2, e3" of the vehicles route.
 
 # addParkingAreaStops2Trips.py
@@ -326,7 +350,7 @@ python tools/route/addParkingAreaStops2Routes.py -r <route-file> -p <parkings-fi
 ```
 
 This only adds a stop at **parkingAreaA** to the vehicle with id **0_parkingAreaA**.
-Note, that the lane of that parking area must belong to one of the edges
+, that the lane of that parking area must belong to one of the edges
 "e1, e2, e3" of the vehicles route.
 
 # addStops2Routes.py
@@ -435,26 +459,8 @@ may be beneficial to increase the accepted **--delta** distance between trace po
 the edge reference line. The mapping algorithm is also available in the
 python library function sumolib.route.mapTrace.
 
-# tlsCycleAdaptation.py
-
-This script is to adapt the cycle lengths of the signalized
-intersections according to a given network and route file. The Webster's
-equation is used to optimize the cycle length and the green times of the
-traffic lights. Only one hour traffic volume is considered and PCE is
-used instead of the number of vehicles when calculating traffic volumes.
-The output will be saved in a xml-file and can be directly used as
-additional file in SUMO. The call is
-
-```
-python tools/tlsCycleAdaptation.py -n <net-file> -r <route-file> -b <begin>
-```
-
-The signalization parameters, such as minimal green time, lost time,
-yellow time, maximal and minimal cycles, can be adjusted with the use of
-options. Option R is to restrict the maximal cycle length as the given
-one, while Option u is to use the calculated max cycle length as the
-cycle length for all intersections. With Option e only the green time
-splits will be adapted.
+!!! caution
+    Geographic coordinates have to be provided in the lon/lat form (first coordinate is the longitude, second the latitude)!
 
 # implausibleRoutes.py
 
@@ -548,3 +554,13 @@ python tools/route/route2OD.py -r <route-file> -a <taz-file> -o <output-file>
 Not only route file but also trip file can be used as input. The tool will firstly try to find the start edge and the end edge of each trip or flows and match them to the respective origin and destination TAZ according to the input taz-file. The counts of the TAZ-relations will be calculated and saved. If only TAZ-information in the given trip or route file is available, this tool will directly calculate TAZ-based OD relation counts without using the information in the given taz-file, which connection edges locate in each TAZ. If the option **--edge-relations** is set, edge-based relation counts will be calculated and saved, only when start/end edge information is available.
 
 When option **--interval TIME** (short **-i**) is set, the OD-Matrix will be split into time slices of the given duration.
+
+# geoTrip2POI.py
+
+Load a file with trips define with fromLonLat / toLonLat and convert it to a poi file
+Departure pois will be red and arrival pois will be blue and their visual size reflects the number of departs/arrivals at that location.
+
+```
+python tools/route/geoTrip2POI.py <trip-files> -o <output-poi-file>
+```
+

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -59,8 +59,8 @@ GUITriggerBuilder::buildLaneSpeedTrigger(MSNet& net,
 MSTriggeredRerouter*
 GUITriggerBuilder::buildRerouter(MSNet& net, const std::string& id,
                                  MSEdgeVector& edges, double prob, bool off, bool optional,
-                                 SUMOTime timeThreshold, const std::string& vTypes, const Position& pos) {
-    GUITriggeredRerouter* rr = new GUITriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos,
+                                 SUMOTime timeThreshold, const std::string& vTypes, const Position& pos, const double radius) {
+    GUITriggeredRerouter* rr = new GUITriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos, radius,
             dynamic_cast<GUINet&>(net).getVisualisationSpeedUp());
     return rr;
 }
@@ -69,8 +69,8 @@ GUITriggerBuilder::buildRerouter(MSNet& net, const std::string& id,
 void
 GUITriggerBuilder::buildStoppingPlace(MSNet& net, std::string id, std::vector<std::string> lines, MSLane* lane,
                                       double frompos, double topos, const SumoXMLTag element, std::string name,
-                                      int personCapacity, double parkingLength, RGBColor& color) {
-    myCurrentStop = new GUIBusStop(id, element, lines, *lane, frompos, topos, name, personCapacity, parkingLength, color);
+                                      int personCapacity, double parkingLength, RGBColor& color, double angle) {
+    myCurrentStop = new GUIBusStop(id, element, lines, *lane, frompos, topos, name, personCapacity, parkingLength, color, angle);
     if (!net.addStoppingPlace(element, myCurrentStop)) {
         delete myCurrentStop;
         myCurrentStop = nullptr;
@@ -150,6 +150,7 @@ void
 GUITriggerBuilder::endStoppingPlace() {
     if (myCurrentStop != nullptr) {
         static_cast<GUINet*>(MSNet::getInstance())->registerRenderedObject(dynamic_cast<GUIGlObject*>(myCurrentStop));
+        myCurrentStop->finishedLoading();
         myCurrentStop = nullptr;
     } else {
         throw InvalidArgument("Could not end a stopping place that is not opened.");

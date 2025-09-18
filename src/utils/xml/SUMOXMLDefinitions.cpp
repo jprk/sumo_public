@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -81,6 +81,8 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "routeProbReroute",                       SUMO_TAG_ROUTE_PROB_REROUTE },
     { "parkingAreaReroute",                     SUMO_TAG_PARKING_AREA_REROUTE },
     { "viaProbReroute",                         SUMO_TAG_VIA_PROB_REROUTE },
+    { "overtakingReroute",                      SUMO_TAG_OVERTAKING_REROUTE },
+    { "stationReroute",                         SUMO_TAG_STATION_REROUTE },
     { "step",                                   SUMO_TAG_STEP },
     { "variableSpeedSign",                      SUMO_TAG_VSS },
     { "variableSpeedSignSymbol",                GNE_TAG_VSS_SYMBOL },
@@ -102,7 +104,9 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "flowTAZs",                               GNE_TAG_FLOW_TAZS },
     { "flowState",                              SUMO_TAG_FLOWSTATE },
     { "vType",                                  SUMO_TAG_VTYPE },
+    { "vTypeRef",                               GNE_TAG_VTYPEREF },
     { "route",                                  SUMO_TAG_ROUTE },
+    { "routeRef",                               GNE_TAG_ROUTEREF },
     { "routeEmbedded",                          GNE_TAG_ROUTE_EMBEDDED },
     { "request",                                SUMO_TAG_REQUEST },
     { "source",                                 SUMO_TAG_SOURCE },
@@ -116,6 +120,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "assignment",                             SUMO_TAG_ASSIGNMENT },
     { "function",                               SUMO_TAG_FUNCTION },
     { "edgeControl",                            SUMO_TAG_EDGECONTROL },
+    { "routingEngine",                          SUMO_TAG_ROUTINGENGINE },
 
     { "edgeRelation",                           SUMO_TAG_EDGEREL },
     { "tazRelation",                            SUMO_TAG_TAZREL },
@@ -161,6 +166,9 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "insertionOrder",                         SUMO_TAG_INSERTION_ORDER },
     { "bidiPredecessor",                        SUMO_TAG_BIDI_PREDECESSOR },
     { "railSignalConstraintTracker",            SUMO_TAG_RAILSIGNAL_CONSTRAINT_TRACKER },
+    { "deadlock",                               SUMO_TAG_DEADLOCK },
+    { "driveWay",                               SUMO_TAG_DRIVEWAY },
+    { "subDriveWay",                            SUMO_TAG_SUBDRIVEWAY },
     { "link",                                   SUMO_TAG_LINK },
     { "approaching",                            SUMO_TAG_APPROACHING },
     // OSM
@@ -201,6 +209,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "rngLane",                                SUMO_TAG_RNGLANE },
     { "vehicleTransfer",                        SUMO_TAG_VEHICLETRANSFER },
     { "device",                                 SUMO_TAG_DEVICE },
+    { "rem",                                    SUMO_TAG_REMINDER },
     // Cars
     { "carFollowing-IDM",                       SUMO_TAG_CF_IDM },
     { "carFollowing-IDMM",                      SUMO_TAG_CF_IDMM },
@@ -614,17 +623,43 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::tags[] = {
     { "tranship: parkingarea->parkingarea",         GNE_TAG_TRANSHIP_PARKINGAREA_PARKINGAREA },
     { "tranship: edges",                            GNE_TAG_TRANSHIP_EDGES },
     // GNE Container Stops
-    { "stopContainer",                          GNE_TAG_STOPCONTAINER },
-    { "stopContainer: edge",                    GNE_TAG_STOPCONTAINER_EDGE },
-    { "stopContainer: busStop",                 GNE_TAG_STOPCONTAINER_BUSSTOP },
-    { "stopContainer: trainStop",               GNE_TAG_STOPCONTAINER_TRAINSTOP },
-    { "stopContainer: containerStop",           GNE_TAG_STOPCONTAINER_CONTAINERSTOP },
-    { "stopContainer: chargingStation",         GNE_TAG_STOPCONTAINER_CHARGINGSTATION },
-    { "stopContainer: parkingArea",             GNE_TAG_STOPCONTAINER_PARKINGAREA },
+    { "stopContainer",                  GNE_TAG_STOPCONTAINER },
+    { "stopContainer: edge",            GNE_TAG_STOPCONTAINER_EDGE },
+    { "stopContainer: busStop",         GNE_TAG_STOPCONTAINER_BUSSTOP },
+    { "stopContainer: trainStop",       GNE_TAG_STOPCONTAINER_TRAINSTOP },
+    { "stopContainer: containerStop",   GNE_TAG_STOPCONTAINER_CONTAINERSTOP },
+    { "stopContainer: chargingStation", GNE_TAG_STOPCONTAINER_CHARGINGSTATION },
+    { "stopContainer: parkingArea",     GNE_TAG_STOPCONTAINER_PARKINGAREA },
     // root file
-    { "rootFile",                               SUMO_TAG_ROOTFILE },
+    { "rootFile",   SUMO_TAG_ROOTFILE },
+    // netedit sets
+    { "network",        GNE_TAG_SUPERMODE_NETWORK },
+    { "demand",         GNE_TAG_SUPERMODE_DEMAND },
+    { "data",           GNE_TAG_SUPERMODE_DATA },
+    { "stoppingPlaces", GNE_TAG_STOPPINGPLACES },
+    { "detectors",      GNE_TAG_DETECTORS },
+    { "shapes",         GNE_TAG_SHAPES },
+    { "TAZs",           GNE_TAG_TAZS },
+    { "wires",          GNE_TAG_WIRES },
+    { "jupedsim",       GNE_TAG_JUPEDSIM },
+    { "flows",          GNE_TAG_FLOWS },
+    { "stops",          GNE_TAG_STOPS },
+    { "personPlans",    GNE_TAG_PERSONPLANS },
+    { "personTrips",    GNE_TAG_PERSONTRIPS },
+    { "rides",          GNE_TAG_RIDES },
+    { "walks",          GNE_TAG_WALKS },
+    { "personStops",    GNE_TAG_PERSONSTOPS },
+    { "containerPlans", GNE_TAG_CONTAINERPLANS },
+    { "transports",     GNE_TAG_TRANSPORTS },
+    { "tranships",      GNE_TAG_TRANSHIPS },
+    { "containerStops", GNE_TAG_CONTAINERSTOPS },
+    { "datas",          GNE_TAG_DATAS },
+    // attributes
+    { "allAttributes",  GNE_TAG_ATTRIBUTES_ALL },
+    // other
+    { "error",          SUMO_TAG_ERROR },
     // Last element
-    { "",                                       SUMO_TAG_NOTHING }  // -> must be the last one
+    { "",   SUMO_TAG_NOTHING }  // -> must be the last one
 };
 
 
@@ -708,6 +743,13 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "route",                  SUMO_ATTR_ROUTE },
     { "eclass",                 SUMO_ATTR_ECLASS },
     { "waiting",                SUMO_ATTR_WAITING },
+    // meso-attributes
+    { "segment",                SUMO_ATTR_SEGMENT },
+    { "queue",                  SUMO_ATTR_QUEUE },
+    { "entryTime",              SUMO_ATTR_ENTRYTIME },
+    { "eventTime",              SUMO_ATTR_EVENTTIME },
+    { "blockTime",              SUMO_ATTR_BLOCKTIME },
+    { "tag",                    SUMO_ATTR_TAG },
     // Edge
     { "id",                     SUMO_ATTR_ID },
     { "refId",                  SUMO_ATTR_REFID },
@@ -758,6 +800,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "departEdge",             SUMO_ATTR_DEPARTEDGE },
     { "arrivalLane",            SUMO_ATTR_ARRIVALLANE },
     { "arrivalPos",             SUMO_ATTR_ARRIVALPOS },
+    { "arrivalPosRandomized",   SUMO_ATTR_ARRIVALPOS_RANDOMIZED },
     { "arrivalPosLat",          SUMO_ATTR_ARRIVALPOS_LAT },
     { "arrivalSpeed",           SUMO_ATTR_ARRIVALSPEED },
     { "arrivalEdge",            SUMO_ATTR_ARRIVALEDGE },
@@ -770,6 +813,8 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "decel",                  SUMO_ATTR_DECEL },
     { "emergencyDecel",         SUMO_ATTR_EMERGENCYDECEL },
     { "apparentDecel",          SUMO_ATTR_APPARENTDECEL },
+    { "maxAccelProfile",        SUMO_ATTR_MAXACCEL_PROFILE },
+    { "desAccelProfile",        SUMO_ATTR_DESACCEL_PROFILE },
     { "actionStepLength",       SUMO_ATTR_ACTIONSTEPLENGTH },
     { "vClass",                 SUMO_ATTR_VCLASS },
     { "vClasses",               SUMO_ATTR_VCLASSES },
@@ -961,6 +1006,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "lcOpposite",                 SUMO_ATTR_LCA_OPPOSITE_PARAM },
     { "lcPushy",                    SUMO_ATTR_LCA_PUSHY },
     { "lcPushyGap",                 SUMO_ATTR_LCA_PUSHYGAP },
+    { "lcStrategicLookahead",       SUMO_ATTR_LCA_STRATEGIC_LOOKAHEAD },
     { "lcAssertive",                SUMO_ATTR_LCA_ASSERTIVE },
     { "lcImpatience",               SUMO_ATTR_LCA_IMPATIENCE },
     { "lcTimeToImpatience",         SUMO_ATTR_LCA_TIME_TO_IMPATIENCE },
@@ -970,8 +1016,11 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "lcLookaheadLeft",            SUMO_ATTR_LCA_LOOKAHEADLEFT },
     { "lcSpeedGainRight",           SUMO_ATTR_LCA_SPEEDGAINRIGHT },
     { "lcSpeedGainLookahead",       SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD },
+    { "lcSpeedGainRemainTime",      SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME },
+    { "lcSpeedGainUrgency",         SUMO_ATTR_LCA_SPEEDGAIN_URGENCY },
     { "lcCooperativeRoundabout",    SUMO_ATTR_LCA_COOPERATIVE_ROUNDABOUT },
     { "lcCooperativeSpeed",         SUMO_ATTR_LCA_COOPERATIVE_SPEED },
+    { "lcCooperativeHelpTime",      SUMO_ATTR_LCA_COOPERATIVE_HELPTIME },
     { "lcMaxSpeedLatStanding",      SUMO_ATTR_LCA_MAXSPEEDLATSTANDING },
     { "lcMaxSpeedLatFactor",        SUMO_ATTR_LCA_MAXSPEEDLATFACTOR },
     { "lcMaxDistLatStanding",       SUMO_ATTR_LCA_MAXDISTLATSTANDING },
@@ -979,6 +1028,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "lcSigma",                    SUMO_ATTR_LCA_SIGMA },
     { "lcKeepRightAcceptanceTime",  SUMO_ATTR_LCA_KEEPRIGHT_ACCEPTANCE_TIME },
     { "lcOvertakeDeltaSpeedFactor", SUMO_ATTR_LCA_OVERTAKE_DELTASPEED_FACTOR },
+    { "lcContRight",                SUMO_ATTR_LCA_CONTRIGHT },
     { "lcExperimental1",            SUMO_ATTR_LCA_EXPERIMENTAL1 },
     /// @}
 
@@ -994,8 +1044,11 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "jmIgnoreJunctionFoeProb", SUMO_ATTR_JM_IGNORE_JUNCTION_FOE_PROB },
     { "jmSigmaMinor",           SUMO_ATTR_JM_SIGMA_MINOR },
     { "jmStoplineGap",          SUMO_ATTR_JM_STOPLINE_GAP },
+    { "jmStoplineGapMinor",     SUMO_ATTR_JM_STOPLINE_GAP_MINOR },
     { "jmStoplineCrossingGap",  SUMO_ATTR_JM_STOPLINE_CROSSING_GAP },
     { "jmTimegapMinor",         SUMO_ATTR_JM_TIMEGAP_MINOR },
+    { "jmExtraGap",             SUMO_ATTR_JM_EXTRA_GAP },
+    { "jmAdvance",              SUMO_ATTR_JM_ADVANCE },
     { "jmStopSignWait",         SUMO_ATTR_JM_STOPSIGN_WAIT },
     { "jmAllwayStopWait",       SUMO_ATTR_JM_ALLWAYSTOP_WAIT },
     { "junctionModel.ignoreIDs",    SUMO_ATTR_JM_IGNORE_IDS },
@@ -1111,6 +1164,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "next",                   SUMO_ATTR_NEXT },
     { "foes",                   SUMO_ATTR_FOES },
     { "constraints",            SUMO_ATTR_CONSTRAINTS },
+    { "rail",                   SUMO_ATTR_RAIL },
     { "detectors",              SUMO_ATTR_DETECTORS },
     { "conditions",             SUMO_ATTR_CONDITIONS },
     { "saveDetectors",          SUMO_ATTR_SAVE_DETECTORS },
@@ -1155,6 +1209,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "intended",               SUMO_ATTR_INTENDED },
     { "onDemand",               SUMO_ATTR_ONDEMAND },
     { "jump",                   SUMO_ATTR_JUMP },
+    { "jumpUntil",              SUMO_ATTR_JUMP_UNTIL },
     { "usedEnded",              SUMO_ATTR_USED_ENDED },
     { "collision",              SUMO_ATTR_COLLISION },
     { "value",                  SUMO_ATTR_VALUE },
@@ -1176,7 +1231,6 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "guiShape",               SUMO_ATTR_GUISHAPE },
     { "osgFile",                SUMO_ATTR_OSGFILE },
     { "imgFile",                SUMO_ATTR_IMGFILE },
-    { "relativePath",           SUMO_ATTR_RELATIVEPATH },
     { "emissionClass",          SUMO_ATTR_EMISSIONCLASS },
     { "mass",                   SUMO_ATTR_MASS },
     { "impatience",             SUMO_ATTR_IMPATIENCE },
@@ -1282,12 +1336,16 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "origin",                 SUMO_ATTR_ORIGIN },
     { "destination",            SUMO_ATTR_DESTINATION },
     { "visible",                SUMO_ATTR_VISIBLE },
+    { "main",                   SUMO_ATTR_MAIN },
+    { "siding",                 SUMO_ATTR_SIDING },
+    { "minSaving",              SUMO_ATTR_MINSAVING },
     { "limit",                  SUMO_ATTR_LIMIT },
     { "active",                 SUMO_ATTR_ACTIVE },
     { "arrivalTime",            SUMO_ATTR_ARRIVALTIME },
     { "arrivalTimeBraking",     SUMO_ATTR_ARRIVALTIMEBRAKING },
     { "arrivalSpeedBraking",    SUMO_ATTR_ARRIVALSPEEDBRAKING },
     { "optional",               SUMO_ATTR_OPTIONAL },
+    { "vehicles",               SUMO_ATTR_VEHICLES },
 
 #ifndef WIN32
     { "commandPosix",   SUMO_ATTR_COMMAND },
@@ -1340,13 +1398,13 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "shapeStart",                         GNE_ATTR_SHAPE_START },
     { "shapeEnd",                           GNE_ATTR_SHAPE_END },
     { "isBidi",                             GNE_ATTR_BIDIR },
-    { "closedShape",                        GNE_ATTR_CLOSE_SHAPE },
-    { "parentItem",                         GNE_ATTR_PARENT },
+    { "close shape",                        GNE_ATTR_CLOSE_SHAPE },
+    { "parent",                             GNE_ATTR_PARENT },
     { "dataSet",                            GNE_ATTR_DATASET },
-    { "genericParameter",                   GNE_ATTR_PARAMETERS },
+    { "parameters",                         GNE_ATTR_PARAMETERS },
     { "flowParameter",                      GNE_ATTR_FLOWPARAMETERS },
     { "defaultVTypeModified",               GNE_ATTR_DEFAULT_VTYPE_MODIFIED },
-    { "centerAfterCreation",                GNE_ATTR_CENTER_AFTER_CREATION },
+    { "centerView",                         GNE_ATTR_CENTER_AFTER_CREATION },
     { "opposite",                           GNE_ATTR_OPPOSITE },
     { "shiftLaneIndex",                     GNE_ATTR_SHIFTLANEINDEX },
     { "stopOffset",                         GNE_ATTR_STOPOFFSET },
@@ -1356,12 +1414,21 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "poisson",                            GNE_ATTR_POISSON },
     { "stopIndex",                          GNE_ATTR_STOPINDEX },
     { "pathStopIndex",                      GNE_ATTR_PATHSTOPINDEX },
-    { "additionalChildren",                 GNE_ATTR_ADDITIONALCHILDREN },
     { "planGeometryStartPos",               GNE_ATTR_PLAN_GEOMETRY_STARTPOS },
     { "planGeometryEndPos",                 GNE_ATTR_PLAN_GEOMETRY_ENDPOS },
     { "fromLaneID",                         GNE_ATTR_FROM_LANEID },
     { "toLaneID",                           GNE_ATTR_TO_LANEID },
     { "tazCentroid",                        GNE_ATTR_TAZ_CENTROID },
+    { "terminate",                          GNE_ATTR_FLOW_TERMINATE },
+    { "spacing",                            GNE_ATTR_FLOW_SPACING },
+    { "reference",                          GNE_ATTR_REFERENCE },
+    { "size",                               GNE_ATTR_SIZE },
+    { "forceSize",                          GNE_ATTR_FORCESIZE },
+    { "laneLength",                         GNE_ATTR_LANELENGTH },
+    { "additionalFile",                     GNE_ATTR_ADDITIONAL_FILE },
+    { "routeFile",                          GNE_ATTR_DEMAND_FILE },
+    { "dataFile",                           GNE_ATTR_DATA_FILE },
+    { "meanDataFile",                       GNE_ATTR_MEANDATA_FILE },
     // mapped to additional elements on writing
     { "fromBusStop",                        GNE_ATTR_FROM_BUSSTOP },
     { "fromTrainStop",                      GNE_ATTR_FROM_TRAINSTOP },
@@ -1370,6 +1437,10 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "fromParkingArea",                    GNE_ATTR_FROM_PARKINGAREA },
     { "fromRoute",                          GNE_ATTR_FROM_ROUTE },
     { "isRoundabout",                       GNE_ATTR_IS_ROUNDABOUT },
+    { "frontElement",                       GNE_ATTR_FRONTELEMENT },
+    { "edgesWithin",                        GNE_ATTR_EDGES_WITHIN },
+    // 'all' is a reserved keyword when configuring attribute filters and must not occur as an attribute name
+    { "noCommonAttributes",                GNE_ATTR_NOCOMMON },
 
     { "carriageLength",     SUMO_ATTR_CARRIAGE_LENGTH },
     { "locomotiveLength",   SUMO_ATTR_LOCOMOTIVE_LENGTH },
@@ -1382,7 +1453,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "xmlns:xsi",                      SUMO_ATTR_XMLNS },
     { "xsi:noNamespaceSchemaLocation",  SUMO_ATTR_SCHEMA_LOCATION },
 
-    //@name RNG state saving attributes
+    // @name RNG state saving attributes
     // @{
     { "routeHandler",      SUMO_ATTR_RNG_ROUTEHANDLER },
     { "insertionControl",  SUMO_ATTR_RNG_INSERTIONCONTROL },
@@ -1390,6 +1461,13 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     { "device.btreceiver", SUMO_ATTR_RNG_DEVICE_BT },
     { "device.toc",        SUMO_ATTR_RNG_DEVICE_TOC },
     { "driverState",       SUMO_ATTR_RNG_DRIVERSTATE },
+    // @}
+
+    // @name further state saving attributes
+    // @{
+    { "bikeSpeed",         SUMO_ATTR_BIKESPEED },
+    { "pastSpeed",         SUMO_ATTR_PASTSPEED },
+    { "pastBikeSpeed",     SUMO_ATTR_PASTBIKESPEED },
     // @}
 
     //@name meso edge type attributes
@@ -1454,6 +1532,12 @@ StringBijection<ParkingType>::Entry SUMOXMLDefinitions::parkingTypeValues[] = {
     {"0",              ParkingType::ONROAD },   // default: park on the street
     {"1",              ParkingType::OFFROAD },    // parking off the street
     {"opportunistic",  ParkingType::OPPORTUNISTIC } // park of the street if there is an opportunity for it
+};
+
+StringBijection<ChargeType>::Entry SUMOXMLDefinitions::chargeTypeValues[] = {
+    {"normal",              ChargeType::NORMAL },           // default: either connected with a wire or charged by induction
+    {"battery-exchange",    ChargeType::BATTERY_ECHANGE},    // battery echange
+    {"fuel",                ChargeType::FUEL }              // use fuel for charging
 };
 
 StringBijection<RightOfWay>::Entry SUMOXMLDefinitions::rightOfWayValuesInitializer[] = {
@@ -1612,7 +1696,6 @@ StringBijection<LaneChangeAction>::Entry SUMOXMLDefinitions::laneChangeActionVal
     { "amBBS",       LCA_AMBACKBLOCKER_STANDING },
     { "MR",          LCA_MRIGHT },
     { "ML",          LCA_MLEFT },
-
     { "unknown",     LCA_UNKNOWN } //< must be the last one
 };
 
@@ -1639,6 +1722,179 @@ StringBijection<POIIcon>::Entry SUMOXMLDefinitions::POIIconValues[] = {
     {"",                 POIIcon::NONE} //< must be the last one
 };
 
+StringBijection<ExcludeEmpty>::Entry SUMOXMLDefinitions::excludeEmptyValues[] = {
+    {"true",        ExcludeEmpty::TRUES},
+    {"false",       ExcludeEmpty::FALSES},
+    {"defaults",    ExcludeEmpty::DEFAULTS} //< must be the last one
+};
+
+StringBijection<ReferencePosition>::Entry SUMOXMLDefinitions::referencePositionValues[] = {
+    {"left",    ReferencePosition::LEFT},
+    {"right",   ReferencePosition::RIGHT},
+    {"center",  ReferencePosition::CENTER} //< must be the last one
+};
+
+StringBijection<XMLFileExtension>::Entry SUMOXMLDefinitions::XMLFileExtensionValues[] = {
+    {TL("XML files (*.xml,*.xml.gz)"), XMLFileExtension::XML},
+    {TL("All files (*)"),               XMLFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<TXTFileExtension>::Entry SUMOXMLDefinitions::TXTFileExtensionValues[] = {
+    {TL("Plain text files (*.txt)"),    TXTFileExtension::TXT},
+    {TL("All files (*)"),               TXTFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<CSVFileExtension>::Entry SUMOXMLDefinitions::CSVFileExtensionValues[] = {
+    {TL("CSV files (*.txt)"),   CSVFileExtension::CSV},
+    {TL("All files (*)"),       CSVFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<OSGFileExtension>::Entry SUMOXMLDefinitions::OSGFileExtensionValues[] = {
+    {TL("Open scene graph  files (*.osg)"), OSGFileExtension::OSG},
+    {TL("All files (*)"),                   OSGFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<ImageFileExtension>::Entry SUMOXMLDefinitions::imageFileExtensionValues[] = {
+    {TL("All Image Files (*.gif,*.bmp,*.xpm,*.pcx,*.ico,*.rgb,*.xbm,*.tga,*.png,*.jpg,*.jpeg,*.tif,*.tiff,*.ps,*.eps,*.pdf,*.svg,*.tex,*.pgf)"),    ImageFileExtension::IMG},
+    {TL("GIF Image (*.gif)"),                                                                                                                       ImageFileExtension::GIF},
+    {TL("BMP Image (*.bmp)"),                                                                                                                       ImageFileExtension::BMP},
+    {TL("XPM Image (*.xpm)"),                                                                                                                       ImageFileExtension::XPM},
+    {TL("PCX Image (*.pcx)"),                                                                                                                       ImageFileExtension::PCX},
+    {TL("ICO Image (*.ico)"),                                                                                                                       ImageFileExtension::ICO},
+    {TL("RGB Image (*.rgb)"),                                                                                                                       ImageFileExtension::RGB},
+    {TL("XBM Image (*.xbm)"),                                                                                                                       ImageFileExtension::XBM},
+    {TL("TARGA Image (*.tga)"),                                                                                                                     ImageFileExtension::TGA},
+    {TL("PNG Image (*.png)"),                                                                                                                       ImageFileExtension::PNG},
+    {TL("JPEG Image (*.jpg,*.jpeg)"),                                                                                                               ImageFileExtension::JPG},
+    {TL("TIFF Image (*.tif,*.tiff)"),                                                                                                               ImageFileExtension::TIF},
+    {TL("Postscript (*.ps)"),                                                                                                                       ImageFileExtension::PS},
+    {TL("Encapsulated Postscript (*.eps)"),                                                                                                         ImageFileExtension::EPS},
+    {TL("Portable Document Format (*.pdf)"),                                                                                                        ImageFileExtension::PDF},
+    {TL("Scalable Vector Graphics (*.svg)"),                                                                                                        ImageFileExtension::SVG},
+    {TL("LATEX text strings (*.tex)"),                                                                                                              ImageFileExtension::TEX},
+    {TL("Portable LaTeX Graphics (*.pgf)"),                                                                                                         ImageFileExtension::PGF},
+    {TL("All Files (*)"),                                                                                                                           ImageFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<ImageVideoFileExtension>::Entry SUMOXMLDefinitions::imageVideoFileExtensionValues[] = {
+    {TL("All Image and Video Files (*.gif,*.bmp,*.xpm,*.pcx,*.ico,*.rgb,*.xbm,*.tga,*.png,*.jpg,*.jpeg,*.tif,*.tiff,*.ps,*.eps,*.pdf,*.svg,*.tex,*.pgf,*.h264,*.hevc,*.mp4)"),  ImageVideoFileExtension::IMG},
+    {TL("All Video Files (*.h264,*.hevc,*.mp4)"),                                                                                                                               ImageVideoFileExtension::VIDEO},
+    {TL("G264 Video (*.h264)"),                                                                                                                                                 ImageVideoFileExtension::H264},
+    {TL("HEVC Video (*.hevc)"),                                                                                                                                                 ImageVideoFileExtension::HEVC},
+    {TL("MP4 Video (*.mp4)"),                                                                                                                                                   ImageVideoFileExtension::MP4},
+    {TL("GIF Image (*.gif)"),                                                                                                                                                   ImageVideoFileExtension::GIF},
+    {TL("BMP Image (*.bmp)"),                                                                                                                                                   ImageVideoFileExtension::BMP},
+    {TL("XPM Image (*.xpm)"),                                                                                                                                                   ImageVideoFileExtension::XPM},
+    {TL("PCX Image (*.pcx)"),                                                                                                                                                   ImageVideoFileExtension::PCX},
+    {TL("ICO Image (*.ico)"),                                                                                                                                                   ImageVideoFileExtension::ICO},
+    {TL("RGB Image (*.rgb)"),                                                                                                                                                   ImageVideoFileExtension::RGB},
+    {TL("XBM Image (*.xbm)"),                                                                                                                                                   ImageVideoFileExtension::XBM},
+    {TL("TARGA Image (*.tga)"),                                                                                                                                                 ImageVideoFileExtension::TGA},
+    {TL("PNG Image (*.png)"),                                                                                                                                                   ImageVideoFileExtension::PNG},
+    {TL("JPEG Image (*.jpg,*.jpeg)"),                                                                                                                                           ImageVideoFileExtension::JPG},
+    {TL("TIFF Image (*.tif,*.tiff)"),                                                                                                                                           ImageVideoFileExtension::TIF},
+    {TL("Postscript (*.ps)"),                                                                                                                                                   ImageVideoFileExtension::PS},
+    {TL("Encapsulated Postscript (*.eps)"),                                                                                                                                     ImageVideoFileExtension::EPS},
+    {TL("Portable Document Format (*.pdf)"),                                                                                                                                    ImageVideoFileExtension::PDF},
+    {TL("Scalable Vector Graphics (*.svg)"),                                                                                                                                    ImageVideoFileExtension::SVG},
+    {TL("LATEX text strings (*.tex)"),                                                                                                                                          ImageVideoFileExtension::TEX},
+    {TL("Portable LaTeX Graphics (*.pgf)"),                                                                                                                                     ImageVideoFileExtension::PGF},
+    {TL("All Files (*)"),                                                                                                                                                       ImageVideoFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<OutputFileExtension>::Entry SUMOXMLDefinitions::outputFileExtensionValues[] = {
+    {TL("XML files (*.xml)"),           OutputFileExtension::XML},
+    {TL("Plain text files (*.txt)"),    OutputFileExtension::TXT},
+    {TL("All files (*)"),               OutputFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<ViewSettingsFileExtension>::Entry SUMOXMLDefinitions::viewSettingsFileExtensionValues[] = {
+    {TL("View settings files (*.xml,*.xml.gz)"),   ViewSettingsFileExtension::XML},
+    {TL("All files (*)"),                           ViewSettingsFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<StateFileExtension>::Entry SUMOXMLDefinitions::stateFileExtensionValues[] = {
+    {TL("State GZipped XML files (*.xml.gz)"),  StateFileExtension::XML_GZ},
+    {TL("XML files (*.xml)"),                   StateFileExtension::XML},
+    {TL("All files (*)"),                       StateFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<SumoConfigFileExtension>::Entry SUMOXMLDefinitions::sumoConfigFileExtensionValues[] = {
+    {TL("Sumo config files (*.sumocfg)"),   SumoConfigFileExtension::SUMOCONF},
+    {TL("XML files (*.xml)"),               SumoConfigFileExtension::XML},
+    {TL("All files (*)"),                   SumoConfigFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<NeteditConfigFileExtension>::Entry SUMOXMLDefinitions::neteditConfigFileExtensionValues[] = {
+    {TL("Netedit config files (*.netecfg)"),    NeteditConfigFileExtension::NETECFG},
+    {TL("XML files (*.xml)"),                   NeteditConfigFileExtension::XML},
+    {TL("All files (*)"),                       NeteditConfigFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<NetconvertConfigFileExtension>::Entry SUMOXMLDefinitions::netconvertConfigFileExtensionValues[] = {
+    {TL("Netconvert config files (*.netccfg)"), NetconvertConfigFileExtension::NETCCFG},
+    {TL("XML files (*.xml)"),                   NetconvertConfigFileExtension::XML},
+    {TL("All files (*)"),                       NetconvertConfigFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<OSMFileExtension>::Entry SUMOXMLDefinitions::osmFileExtensionValues[] = {
+    {TL("OSM network files (*.osm,*.osm.gz)"), OSMFileExtension::OSM},
+    {TL("XML files (*.xml,*.xml.gz)"),         OSMFileExtension::XML},
+    {TL("All files (*)"),                       OSMFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<NetFileExtension>::Entry SUMOXMLDefinitions::netFileExtensionValues[] = {
+    {TL("SUMO network files (*.net.xml,*.net.xml.gz)"),    NetFileExtension::NET_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),                     NetFileExtension::XML},
+    {TL("All files (*)"),                                   NetFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<TLSFileExtension>::Entry SUMOXMLDefinitions::TLSFileExtensionValues[] = {
+    {TL("TLS files (*.ttl.xml,*.ttl.xml.gz)"), TLSFileExtension::TTL_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),         TLSFileExtension::XML},
+    {TL("All files (*)"),                       TLSFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<JunctionFileExtension>::Entry SUMOXMLDefinitions::junctionFileExtensionValues[] = {
+    {TL("Junction files (*.nod.xml,*.nod.xml.gz)"),    JunctionFileExtension::NOD_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),                 JunctionFileExtension::XML},
+    {TL("All files (*)"),                               JunctionFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<EdgeTypeFileExtension>::Entry SUMOXMLDefinitions::edgeTypeFileExtensionValues[] = {
+    {TL("Edge type files (*.ttl.xml,*.ttl.xml.gz)"),   EdgeTypeFileExtension::TYP_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),                 EdgeTypeFileExtension::XML},
+    {TL("All files (*)"),                               EdgeTypeFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<AdditionalFileExtension>::Entry SUMOXMLDefinitions::additionalFileExtensionValues[] = {
+    {TL("Additional files (*.add.xml,*.add.xml.gz)"),  AdditionalFileExtension::ADD_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),                 AdditionalFileExtension::XML},
+    {TL("All files (*)"),                               AdditionalFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<ShapesFileExtension>::Entry SUMOXMLDefinitions::shapesFileExtensionValues[] = {
+    {TL("XML files (*.xml,*.xml.gz)"),                 ShapesFileExtension::XML},
+    {TL("All files (*)"),                               ShapesFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<RouteFileExtension>::Entry SUMOXMLDefinitions::routeFileExtensionsValues[] = {
+    {TL("Route files (*.rou.xml,*.rou.xml.gz)"),   RouteFileExtension::ROU_XML},
+    {TL("XML files (*.xml,*.xml.gz)"),             RouteFileExtension::XML},
+    {TL("All files (*)"),                           RouteFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<EdgeDataFileExtension>::Entry SUMOXMLDefinitions::edgeDataFileExtensionsValues[] = {
+    {TL("Edge data files (*.xml,*.xml.gz)"),   EdgeDataFileExtension::XML},
+    {TL("All files (*)"),                       EdgeDataFileExtension::ALL} //< must be the last one
+};
+
+StringBijection<MeanDataFileExtension>::Entry SUMOXMLDefinitions::meanDataFileExtensionsValues[] = {
+    {TL("Mean data files (*.add.xml,*.add.xml.gz)"),   MeanDataFileExtension::ADD},
+    {TL("XML files (*.xml,*.xml.gz)"),                 MeanDataFileExtension::XML},
+    {TL("All files (*)"),                               MeanDataFileExtension::ALL} //< must be the last one
+};
+
 SequentialStringBijection SUMOXMLDefinitions::Tags(
     SUMOXMLDefinitions::tags, SUMO_TAG_NOTHING);
 
@@ -1656,6 +1912,9 @@ StringBijection<LaneSpreadFunction> SUMOXMLDefinitions::LaneSpreadFunctions(
 
 StringBijection<ParkingType> SUMOXMLDefinitions::ParkingTypes(
     SUMOXMLDefinitions::parkingTypeValues, ParkingType::OPPORTUNISTIC);
+
+StringBijection<ChargeType> SUMOXMLDefinitions::ChargeTypes(
+    SUMOXMLDefinitions::chargeTypeValues, ChargeType::FUEL);
 
 StringBijection<RightOfWay> SUMOXMLDefinitions::RightOfWayValues(
     SUMOXMLDefinitions::rightOfWayValuesInitializer, RightOfWay::DEFAULT);
@@ -1696,6 +1955,77 @@ StringBijection<TrainType> SUMOXMLDefinitions::TrainTypes(
 StringBijection<POIIcon> SUMOXMLDefinitions::POIIcons(
     SUMOXMLDefinitions::POIIconValues, POIIcon::NONE, false);
 
+StringBijection<ExcludeEmpty> SUMOXMLDefinitions::ExcludeEmptys(
+    SUMOXMLDefinitions::excludeEmptyValues, ExcludeEmpty::DEFAULTS, false);
+
+StringBijection<ReferencePosition> SUMOXMLDefinitions::ReferencePositions(
+    SUMOXMLDefinitions::referencePositionValues, ReferencePosition::CENTER, false);
+
+StringBijection<XMLFileExtension> SUMOXMLDefinitions::XMLFileExtensions(
+    SUMOXMLDefinitions::XMLFileExtensionValues, XMLFileExtension::ALL, false);
+
+StringBijection<TXTFileExtension> SUMOXMLDefinitions::TXTFileExtensions(
+    SUMOXMLDefinitions::TXTFileExtensionValues, TXTFileExtension::ALL, false);
+
+StringBijection<CSVFileExtension> SUMOXMLDefinitions::CSVFileExtensions(
+    SUMOXMLDefinitions::CSVFileExtensionValues, CSVFileExtension::ALL, false);
+
+StringBijection<OSGFileExtension> SUMOXMLDefinitions::OSGFileExtensions(
+    SUMOXMLDefinitions::OSGFileExtensionValues, OSGFileExtension::ALL, false);
+
+StringBijection<ImageFileExtension> SUMOXMLDefinitions::ImageFileExtensions(
+    SUMOXMLDefinitions::imageFileExtensionValues, ImageFileExtension::ALL, false);
+
+StringBijection<ImageVideoFileExtension> SUMOXMLDefinitions::ImageVideoFileExtensions(
+    SUMOXMLDefinitions::imageVideoFileExtensionValues, ImageVideoFileExtension::ALL, false);
+
+StringBijection<OutputFileExtension> SUMOXMLDefinitions::OutputFileExtensions(
+    SUMOXMLDefinitions::outputFileExtensionValues, OutputFileExtension::ALL, false);
+
+StringBijection<ViewSettingsFileExtension> SUMOXMLDefinitions::ViewSettingsFileExtensions(
+    SUMOXMLDefinitions::viewSettingsFileExtensionValues, ViewSettingsFileExtension::ALL, false);
+
+StringBijection<StateFileExtension> SUMOXMLDefinitions::StateFileExtensions(
+    SUMOXMLDefinitions::stateFileExtensionValues, StateFileExtension::ALL, false);
+
+StringBijection<SumoConfigFileExtension> SUMOXMLDefinitions::SumoConfigFileExtensions(
+    SUMOXMLDefinitions::sumoConfigFileExtensionValues, SumoConfigFileExtension::ALL, false);
+
+StringBijection<NeteditConfigFileExtension> SUMOXMLDefinitions::NeteditConfigFileExtensions(
+    SUMOXMLDefinitions::neteditConfigFileExtensionValues, NeteditConfigFileExtension::ALL, false);
+
+StringBijection<NetconvertConfigFileExtension> SUMOXMLDefinitions::NetconvertConfigFileExtensions(
+    SUMOXMLDefinitions::netconvertConfigFileExtensionValues, NetconvertConfigFileExtension::ALL, false);
+
+StringBijection<OSMFileExtension> SUMOXMLDefinitions::OSMFileExtensions(
+    SUMOXMLDefinitions::osmFileExtensionValues, OSMFileExtension::ALL, false);
+
+StringBijection<NetFileExtension> SUMOXMLDefinitions::NetFileExtensions(
+    SUMOXMLDefinitions::netFileExtensionValues, NetFileExtension::ALL, false);
+
+StringBijection<TLSFileExtension> SUMOXMLDefinitions::TLSFileExtensions(
+    SUMOXMLDefinitions::TLSFileExtensionValues, TLSFileExtension::ALL, false);
+
+StringBijection<JunctionFileExtension> SUMOXMLDefinitions::JunctionFileExtensions(
+    SUMOXMLDefinitions::junctionFileExtensionValues, JunctionFileExtension::ALL, false);
+
+StringBijection<EdgeTypeFileExtension> SUMOXMLDefinitions::EdgeTypeFileExtensions(
+    SUMOXMLDefinitions::edgeTypeFileExtensionValues, EdgeTypeFileExtension::ALL, false);
+
+StringBijection<AdditionalFileExtension> SUMOXMLDefinitions::AdditionalFileExtensions(
+    SUMOXMLDefinitions::additionalFileExtensionValues, AdditionalFileExtension::ALL, false);
+
+StringBijection<ShapesFileExtension> SUMOXMLDefinitions::ShapesFileExtensions(
+    SUMOXMLDefinitions::shapesFileExtensionValues, ShapesFileExtension::ALL, false);
+
+StringBijection<RouteFileExtension> SUMOXMLDefinitions::RouteFileExtensions(
+    SUMOXMLDefinitions::routeFileExtensionsValues, RouteFileExtension::ALL, false);
+
+StringBijection<EdgeDataFileExtension> SUMOXMLDefinitions::EdgeDataFileExtensions(
+    SUMOXMLDefinitions::edgeDataFileExtensionsValues, EdgeDataFileExtension::ALL, false);
+
+StringBijection<MeanDataFileExtension> SUMOXMLDefinitions::MeanDataFileExtensions(
+    SUMOXMLDefinitions::meanDataFileExtensionsValues, MeanDataFileExtension::ALL, false);
 
 std::string
 SUMOXMLDefinitions::getJunctionIDFromInternalEdge(const std::string internalEdge) {

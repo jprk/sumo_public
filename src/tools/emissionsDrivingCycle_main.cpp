@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -84,7 +84,7 @@ main(int argc, char** argv) {
     oc.doRegister("additional-files", new Option_FileName());
     oc.addDescription("additional-files", "Input", TL("Load emission parameters (vTypes) from FILE(s)"));
 
-    oc.doRegister("emission-class", 'e', new Option_String("unknown"));
+    oc.doRegister("emission-class", 'e', new Option_String("HBEFA4/default"));
     oc.addDescription("emission-class", "Input", TL("Defines for which emission class the emissions shall be generated. "));
 
     oc.doRegister("vtype", new Option_String());
@@ -233,7 +233,7 @@ main(int argc, char** argv) {
             }
             energyParams = std::unique_ptr<EnergyParams>(new EnergyParams(vTypeIt->second));
         } else {
-            energyParams = std::unique_ptr<EnergyParams>(new EnergyParams(emissionClass));
+            energyParams = std::unique_ptr<EnergyParams>(new EnergyParams());
         }
 
         const bool computeA = oc.getBool("compute-a") || oc.getBool("compute-a.forward");

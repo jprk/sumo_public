@@ -68,7 +68,9 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 attributes to the imported shapes in dependence of their "type". Not all
 imported formats have a type information. When using shape files, for
 example, all instances of an artifact type are normally stored in a
-distinct shape file.
+distinct shape file. **polyconvert** supports [virtual file systems](https://gdal.org/en/latest/user/virtual_file_systems.html) when
+importing shape files. So if you have your shapes in myshapes.zip and the main file has the name arcview.shp
+you can import them via `polyconvert --shapefile /vsizip/myshapes.zip/arcview` (**--shapefile** is an alias to **--shapefile-prefixes**).
 
 | Option | Description |
 |--------|-------------|
@@ -82,6 +84,7 @@ distinct shape file.
 | **--osm.keep-full-type** {{DT_BOOL}} | The type will be made of the key-value - pair; *default:* **false** |
 | **--osm.use-name** {{DT_BOOL}} | The id will be set from the given 'name' attribute; *default:* **false** |
 | **--osm.merge-relations** {{DT_FLOAT}} | If FLOAT >= 0, assemble one polygon from all ways of a relation if they all connect with gaps below FLOAT; *default:* **-1** |
+| **--geojson-files** {{DT_FILE}} | Reads shapes from geojson FILE |
 | **--shapefile-prefixes** {{DT_FILE}} | Reads shapes from shapefiles FILE |
 | **--shapefile.guess-projection** {{DT_BOOL}} | Guesses the shapefile's projection; *default:* **false** |
 | **--shapefile.traditional-axis-mapping** {{DT_BOOL}} | Use traditional axis order (lon, lat); *default:* **false** |
@@ -103,6 +106,10 @@ which has to be defined using **--output** {{DT_FILE}}.
 | **--output-prefix** {{DT_STR}} | Prefix which is applied to all output files. The special string 'TIME' is replaced by the current time. |
 | **--precision** {{DT_INT}} | Defines the number of digits after the comma for floating point output; *default:* **2** |
 | **--precision.geo** {{DT_INT}} | Defines the number of digits after the comma for lon,lat output; *default:* **6** |
+| **--output.compression** {{DT_STR}} | Defines the standard compression algorithm (currently only for parquet output) |
+| **--output.format** {{DT_STR}} | Defines the standard output format if not derivable from the file name ('xml', 'csv', 'parquet'); *default:* **xml** |
+| **--output.column-header** {{DT_STR}} | How to derive column headers from attribute names ('none', 'tag', 'auto', 'plain'); *default:* **tag** |
+| **--output.column-separator** {{DT_STR}} | Separator in CSV output; *default:* **;** |
 | **-H** {{DT_BOOL}}<br> **--human-readable-time** {{DT_BOOL}} | Write time values as hour:minute:second or day:hour:minute:second rather than seconds; *default:* **false** |
 | **-o** {{DT_FILE}}<br> **--output-file** {{DT_FILE}} | Write generated polygons/pois to FILE |
 | **--dlr-tdp-output** {{DT_FILE}} | Write generated polygons/pois to a dlr-tdp file with the given prefix |
@@ -153,6 +160,7 @@ this boundary are discarded in these cases.
 | **--all-attributes** {{DT_BOOL}} | Imports all attributes as key/value pairs; *default:* **false** |
 | **--ignore-errors** {{DT_BOOL}} | Continue on broken input; *default:* **false** |
 | **--poi-layer-offset** {{DT_FLOAT}} | Adds FLOAT to the layer value for each poi (i.e. to raise it above polygons); *default:* **0** |
+| **--flatten** {{DT_BOOL}} | Remove all z-data; *default:* **false** |
 
 ### Building Defaults
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -54,7 +54,7 @@ def runTests(options, env, gitrev, debugSuffix=""):
             env[name.upper() + "_BINARY"] = binary
     ttBin = "texttest"
     today = datetime.date.today()
-    tasks = sorted(glob.glob(os.path.join(env["TEXTTEST_HOME"], "netedit", "testsuite.netedit.daily.*")))
+    tasks = sorted(glob.glob(os.path.join(env["TEXTTEST_HOME"], "netedit", "testsuite.netedit.external.daily.*")))
     taskID = os.path.basename(tasks[today.toordinal() % len(tasks)])[10:]
     cmd = [ttBin, "-b", prefix, "-a", taskID, "-name", "%sr%s" % (today.strftime("%d%b%y"), gitrev)]
     for call in (cmd, [ttBin, "-b", env["FILEPREFIX"], "-coll"]):

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -226,8 +226,8 @@ RONet::addJunctionTaz(ROAbstractEdgeBuilder& eb) {
         const std::string sourceID = tazID + "-source";
         const std::string sinkID = tazID + "-sink";
         // sink must be added before source
-        ROEdge* sink = eb.buildEdge(sinkID, nullptr, nullptr, 0);
-        ROEdge* source = eb.buildEdge(sourceID, nullptr, nullptr, 0);
+        ROEdge* sink = eb.buildEdge(sinkID, nullptr, nullptr, 0, "");
+        ROEdge* source = eb.buildEdge(sourceID, nullptr, nullptr, 0, "");
         sink->setOtherTazConnector(source);
         source->setOtherTazConnector(sink);
         if (!addDistrict(tazID, source, sink)) {
@@ -295,8 +295,7 @@ RONet::openOutput(const OptionsCont& options) {
         if (myRoutesOutput->isNull()) {
             myRoutesOutput = nullptr;
         } else {
-            myRoutesOutput->writeHeader<ROEdge>(SUMO_TAG_ROUTES);
-            myRoutesOutput->writeAttr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance").writeAttr("xsi:noNamespaceSchemaLocation", "http://sumo.dlr.de/xsd/routes_file.xsd");
+            myRoutesOutput->writeXMLHeader("routes", "routes_file.xsd");
         }
     }
     if (options.exists("alternatives-output") && options.isSet("alternatives-output")
@@ -305,14 +304,12 @@ RONet::openOutput(const OptionsCont& options) {
         if (myRouteAlternativesOutput->isNull()) {
             myRouteAlternativesOutput = nullptr;
         } else {
-            myRouteAlternativesOutput->writeHeader<ROEdge>(SUMO_TAG_ROUTES);
-            myRouteAlternativesOutput->writeAttr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance").writeAttr("xsi:noNamespaceSchemaLocation", "http://sumo.dlr.de/xsd/routes_file.xsd");
+            myRouteAlternativesOutput->writeXMLHeader("routes", "routes_file.xsd");
         }
     }
     if (options.isSet("vtype-output")) {
         myTypesOutput = &OutputDevice::getDevice(options.getString("vtype-output"));
-        myTypesOutput->writeHeader<ROEdge>(SUMO_TAG_ROUTES);
-        myTypesOutput->writeAttr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance").writeAttr("xsi:noNamespaceSchemaLocation", "http://sumo.dlr.de/xsd/routes_file.xsd");
+        myTypesOutput->writeXMLHeader("routes", "routes_file.xsd");
     }
 }
 
@@ -558,7 +555,7 @@ RONet::checkFlows(SUMOTime time, MsgHandler* errorHandler) {
                     SUMOVehicleParameter* newPars = new SUMOVehicleParameter(*pars);
                     newPars->id = pars->id + "." + toString(pars->repetitionsDone);
                     newPars->depart = pars->depart;
-                    for (std::vector<SUMOVehicleParameter::Stop>::iterator stop = newPars->stops.begin(); stop != newPars->stops.end(); ++stop) {
+                    for (StopParVector::iterator stop = newPars->stops.begin(); stop != newPars->stops.end(); ++stop) {
                         if (stop->until >= 0) {
                             stop->until += pars->depart - origDepart;
                         }
@@ -597,7 +594,7 @@ RONet::checkFlows(SUMOTime time, MsgHandler* errorHandler) {
                 SUMOVehicleParameter* newPars = new SUMOVehicleParameter(*pars);
                 newPars->id = pars->id + "." + toString(pars->repetitionsDone);
                 newPars->depart = depart;
-                for (std::vector<SUMOVehicleParameter::Stop>::iterator stop = newPars->stops.begin(); stop != newPars->stops.end(); ++stop) {
+                for (StopParVector::iterator stop = newPars->stops.begin(); stop != newPars->stops.end(); ++stop) {
                     if (stop->until >= 0) {
                         stop->until += depart - pars->depart;
                     }
@@ -726,6 +723,7 @@ RONet::saveAndRemoveRoutesUntil(OptionsCont& options, const RORouterProvider& pr
         myThreadPool.waitAll();
 #endif
     }
+    const double scale = options.exists("scale-suffix") ? options.getFloat("scale") : 1;
     // write all vehicles (and additional structures)
     while (myRoutables.size() != 0 || myContainers.size() != 0) {
         // get the next vehicle, person or container
@@ -752,7 +750,8 @@ RONet::saveAndRemoveRoutesUntil(OptionsCont& options, const RORouterProvider& pr
                 // ok, check whether it has been routed
                 if (r->getRoutingSuccess()) {
                     // write the route
-                    r->write(myRoutesOutput, myRouteAlternativesOutput, myTypesOutput, options);
+                    int quota = getScalingQuota(scale, myWrittenRouteNo);
+                    r->write(myRoutesOutput, myRouteAlternativesOutput, myTypesOutput, options, quota);
                     myWrittenRouteNo++;
                 } else {
                     myDiscardedRouteNo++;
@@ -762,7 +761,7 @@ RONet::saveAndRemoveRoutesUntil(OptionsCont& options, const RORouterProvider& pr
                     // delete routes and the vehicle
                     const ROVehicle* const veh = dynamic_cast<const ROVehicle*>(r);
                     if (veh != nullptr && veh->getRouteDefinition()->getID()[0] == '!') {
-                        if (!myRoutes.remove(veh->getRouteDefinition()->getID())) {
+                        if (r->isPartOfFlow() || !myRoutes.remove(veh->getRouteDefinition()->getID())) {
                             delete veh->getRouteDefinition();
                         }
                     }
@@ -836,7 +835,7 @@ RONet::adaptIntermodalRouter(ROIntermodalRouter& router) {
     for (const auto& i : myInstance->myFlows) {
         if (i.second->line != "") {
             const RORouteDef* const route = myInstance->getRouteDef(i.second->routeid);
-            const std::vector<SUMOVehicleParameter::Stop>* addStops = nullptr;
+            const StopParVector* addStops = nullptr;
             if (route != nullptr && route->getFirstRoute() != nullptr) {
                 addStops = &route->getFirstRoute()->getStops();
             }

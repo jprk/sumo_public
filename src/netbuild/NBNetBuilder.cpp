@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -162,17 +162,6 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         PROGRESS_TIME_MESSAGE(before);
     }
 
-    if (oc.exists("ptline-clean-up") && oc.getBool("ptline-clean-up")) {
-        before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Cleaning up public transport stops that are not served by any line"));
-        myPTStopCont.postprocess(myPTLineCont.getServedPTStops());
-        PROGRESS_TIME_MESSAGE(before);
-    } else {
-        int numDeletedStops = myPTStopCont.cleanupDeleted(myEdgeCont);
-        if (numDeletedStops > 0) {
-            WRITE_WARNINGF(TL("Removed % pt stops because they could not be assigned to the network"), toString(numDeletedStops));
-        }
-    }
-
     if (!myPTStopCont.getStops().empty() && !oc.getBool("ptstop-output.no-bidi")) {
         before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Align pt stop id signs with corresponding edge id signs"));
         myPTStopCont.alignIdSigns();
@@ -248,8 +237,9 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
             myNodeCont.addJoinExclusion(nodeIDs);
         }
         NBNodeTypeComputer::validateRailCrossings(myNodeCont, myTLLCont);
-    } else if (myEdgeCont.hasGuessedRoundabouts() && oc.getBool("roundabouts.guess")) {
+    } else if ((myEdgeCont.hasGuessedRoundabouts() || oc.getBool("crossings.guess")) && oc.getBool("roundabouts.guess")) {
         myEdgeCont.guessRoundabouts();
+        myEdgeCont.markRoundabouts();
     }
     // join junctions (may create new "geometry"-nodes so it needs to come before removing these
     if (mayAddOrRemove && oc.exists("junctions.join-exclude") && oc.isSet("junctions.join-exclude")) {
@@ -410,8 +400,11 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
 
     // remap ids if wished
     if (mayAddOrRemove) {
-        int numChangedEdges = myEdgeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myPTStopCont);
-        int numChangedNodes = myNodeCont.remapIDs(oc.getBool("numerical-ids"), oc.isSet("reserved-ids"), oc.getString("prefix"), myTLLCont);
+        const bool numericalIDs = oc.getBool("numerical-ids");
+        const bool reservedIDs = oc.isSet("reserved-ids");
+        const bool keptIDs = oc.isSet("kept-ids");
+        int numChangedEdges = myEdgeCont.remapIDs(numericalIDs, reservedIDs, keptIDs, oc.getString("prefix.edge"), myPTStopCont);
+        int numChangedNodes = myNodeCont.remapIDs(numericalIDs, reservedIDs, keptIDs, oc.getString("prefix.junction"), myTLLCont);
         if (numChangedEdges + numChangedNodes > 0) {
             WRITE_MESSAGEF(TL("Remapped % edge IDs and % node IDs."), toString(numChangedEdges), toString(numChangedNodes));
         }
@@ -469,6 +462,7 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
     // CONNECTIONS COMPUTATION
     //
     before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Computing node types"));
+    NBNode::initRailSignalClasses(myNodeCont);
     NBNodeTypeComputer::computeNodeTypes(myNodeCont, myTLLCont);
     PROGRESS_TIME_MESSAGE(before);
     //
@@ -692,6 +686,8 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
         int numBidiStops = 0;
         if (!oc.getBool("ptstop-output.no-bidi")) {
             numBidiStops = myPTStopCont.generateBidiStops(myEdgeCont);
+        } else {
+            numBidiStops = myPTStopCont.countBidiStops(myEdgeCont);
         }
         PROGRESS_BEGIN_MESSAGE(TL("Find accesses for pt rail stops"));
         double maxRadius = oc.getFloat("railway.access-distance");
@@ -706,6 +702,17 @@ NBNetBuilder::compute(OptionsCont& oc, const std::set<std::string>& explicitTurn
     myPTLineCont.removeInvalidEdges(myEdgeCont);
     // ensure that all turning lanes have sufficient permissions
     myPTLineCont.fixPermissions();
+    if (oc.exists("ptline-clean-up") && oc.getBool("ptline-clean-up")) {
+        before = PROGRESS_BEGIN_TIME_MESSAGE(TL("Cleaning up public transport stops that are not served by any line"));
+        std::set<std::string> usedStops = myPTLineCont.getServedPTStops();
+        myPTStopCont.postprocess(usedStops);
+        PROGRESS_TIME_MESSAGE(before);
+    } else {
+        int numDeletedStops = myPTStopCont.cleanupDeleted(myEdgeCont);
+        if (numDeletedStops > 0) {
+            WRITE_WARNINGF(TL("Removed % pt stops because they could not be assigned to the network"), toString(numDeletedStops));
+        }
+    }
 
     if (oc.exists("ignore-change-restrictions") && !oc.isDefault("ignore-change-restrictions")) {
         SVCPermissions ignoring = parseVehicleClasses(oc.getStringVector("ignore-change-restrictions"));

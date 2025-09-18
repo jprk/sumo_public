@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2011-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2011-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -109,9 +109,9 @@ NWWriter_OpenDrive::writeNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
         device.closeTag();
         if (gch.getOffsetBase() != Position(0, 0)) {
             device.openTag("offset");
-            device.writeAttr("x", gch.getOffsetBase().x());
-            device.writeAttr("y", gch.getOffsetBase().y());
-            device.writeAttr("z", gch.getOffsetBase().z());
+            device.writeAttr("x", -gch.getOffsetBase().x());
+            device.writeAttr("y", -gch.getOffsetBase().y());
+            device.writeAttr("z", -gch.getOffsetBase().z());
             device.writeAttr("hdg", 0);
             device.closeTag();
         }
@@ -139,7 +139,7 @@ NWWriter_OpenDrive::writeNetwork(const OptionsCont& oc, NBNetBuilder& nb) {
             crosswalk_shape.append(rightside);
             auto crosswalkId = cw->id;
             nb.getShapeCont().addPolygon(crosswalkId, "crosswalk", RGBColor::DEFAULT_COLOR, 0,
-                                         Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE, Shape::DEFAULT_RELATIVEPATH,
+                                         Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE,
                                          crosswalk_shape, false, true, 1, false, crosswalkId);
             SUMOPolygon* cwp = nb.getShapeCont().getPolygons().get(crosswalkId);
             cwp->setParameter("length", toString(cw->width));

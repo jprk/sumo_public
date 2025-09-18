@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2015-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2015-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -60,6 +60,47 @@ class Command;
 class MSParkingArea : public MSStoppingPlace {
 public:
 
+    /** @struct LotSpaceDefinition
+      * @brief Representation of a single lot space
+      */
+    struct LotSpaceDefinition {
+        /// @brief default constructor
+        LotSpaceDefinition();
+
+        /// @brief parameter constructor
+        LotSpaceDefinition(int index, SUMOVehicle* vehicle, double x, double y, double z, double rotation, double slope, double width, double length);
+
+        /// @brief the running index
+        const int index;
+
+        /// @brief The last parked vehicle or 0
+        const SUMOVehicle* vehicle;
+
+        /// @brief The position of the vehicle when parking in this space
+        const Position position;
+
+        /// @brief The rotation
+        const double rotation;
+
+        /// @brief The slope
+        const double slope;
+
+        /// @brief The width
+        const double width;
+
+        /// @brief The length
+        const double length;
+
+        /// @brief The position along the lane that the vehicle needs to reach for entering this lot
+        double endPos;
+
+        ///@brief The angle between lane and lot through which a vehicle must manoeuver to enter the lot
+        double manoeuverAngle;
+
+        ///@brief Whether the lot is on the LHS of the lane relative to the lane direction
+        bool sideIsLHS;
+    };
+
     /** @brief Constructor
      *
      * @param[in] id The id of the stop
@@ -108,6 +149,8 @@ public:
 
     /// @brief Returns the area occupancy
     int getOccupancyIncludingBlocked() const;
+
+    int getOccupancyIncludingReservations(const SUMOVehicle* forVehicle) const;
 
     /// @brief Returns the area occupancy at the end of the last simulation step
     int getLastStepOccupancy() const;
@@ -230,51 +273,25 @@ public:
     /// @brief set number alternatives
     void setNumAlternatives(int alternatives);
 
+    /// @brief get the accepted badges
+    std::vector<std::string> getAcceptedBadges() const;
+
+    /// @brief set the accepted badges
+    void setAcceptedBadges(const std::vector<std::string>& badges);
+
+    /// @brief get the parking lots (with occupancy)
+    const std::vector<LotSpaceDefinition>& getSpaceOccupancies() const;
+
+    /// @brief get the parking shape
+    const PositionVector& getShape() const;
+
+
 protected:
     /// @brief overwrite the capacity (caution: will delete ANY previous parking space definitions)
     void setRoadsideCapacity(int capactity);
 
 protected:
-    /** @struct LotSpaceDefinition
-     * @brief Representation of a single lot space
-     */
-    struct LotSpaceDefinition {
-        /// @brief default constructor
-        LotSpaceDefinition();
 
-        /// @brief parameter constructor
-        LotSpaceDefinition(int index, SUMOVehicle* vehicle, double x, double y, double z, double rotation, double slope, double width, double length);
-
-        /// @brief the running index
-        const int index;
-
-        /// @brief The last parked vehicle or 0
-        const SUMOVehicle* vehicle;
-
-        /// @brief The position of the vehicle when parking in this space
-        const Position position;
-
-        /// @brief The rotation
-        const double rotation;
-
-        /// @brief The slope
-        const double slope;
-
-        /// @brief The width
-        const double width;
-
-        /// @brief The length
-        const double length;
-
-        /// @brief The position along the lane that the vehicle needs to reach for entering this lot
-        double endPos;
-
-        ///@brief The angle between lane and lot through which a vehicle must manoeuver to enter the lot
-        double manoeuverAngle;
-
-        ///@brief Whether the lot is on the LHS of the lane relative to the lane direction
-        bool sideIsLHS;
-    };
 
     /** @brief Computes the last free position on this stop
      *
@@ -319,12 +336,21 @@ protected:
 
     /// @brief track parking reservations from the lane for the current time step
     SUMOTime myReservationTime;
+    SUMOTime myLastReservationTime;
 
     /// @brief number of reservations
     int myReservations;
+    int myLastReservations;
 
     /// @brief reservation max length
     double myReservationMaxLength;
+    double myLastReservationMaxLength;
+
+    /// @brief the set of vehicles that performed a reservation in this step
+    std::set<const SUMOVehicle*> myReservedVehicles;
+
+    /// @brief maximum length of all parked vehicles
+    double myMaxVehLength;
 
     /// @brief the number of alternative parkingAreas that are assigned to parkingAreaRerouter
     int myNumAlternatives;

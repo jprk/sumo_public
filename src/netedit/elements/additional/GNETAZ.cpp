@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,6 +21,7 @@
 
 #include <netedit/GNENet.h>
 #include <netedit/GNEUndoList.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
 #include <netedit/changes/GNEChange_Attribute.h>
@@ -34,43 +35,28 @@
 
 #include "GNETAZ.h"
 
-
 // ===========================================================================
 // static members
 // ===========================================================================
+
 const double GNETAZ::myHintSize = 0.8;
 const double GNETAZ::myHintSizeSquared = 0.64;
-
 
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
 GNETAZ::GNETAZ(GNENet* net) :
-    GNEAdditional("", net, GLO_TAZ, SUMO_TAG_TAZ, GUIIconSubSys::getIcon(GUIIcon::TAZ), "", {}, {}, {}, {}, {}, {}),
-              TesselatedPolygon("", "", RGBColor::BLACK, {}, false, false, 1, Shape::DEFAULT_LAYER, Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE, Shape::DEFAULT_RELATIVEPATH, ""),
-              myMaxWeightSource(0),
-              myMinWeightSource(0),
-              myAverageWeightSource(0),
-              myMaxWeightSink(0),
-              myMinWeightSink(0),
-myAverageWeightSink(0) {
-    // reset default values
-    resetDefaultValues();
+    GNEAdditional("", net, "", SUMO_TAG_TAZ, ""),
+    TesselatedPolygon("", "", RGBColor::BLACK, {}, false, false, 1, Shape::DEFAULT_LAYER, Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE, "") {
 }
 
 
-GNETAZ::GNETAZ(const std::string& id, GNENet* net, const PositionVector& shape, const Position& center, const bool fill,
+GNETAZ::GNETAZ(const std::string& id, GNENet* net, const std::string& filename, const PositionVector& shape, const Position& center, const bool fill,
                const RGBColor& color, const std::string& name, const Parameterised::Map& parameters) :
-    GNEAdditional(id, net, GLO_TAZ, SUMO_TAG_TAZ, GUIIconSubSys::getIcon(GUIIcon::TAZ), "", {}, {}, {}, {}, {}, {}),
-TesselatedPolygon(id, "", color, shape, false, fill, 1, Shape::DEFAULT_LAYER, Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE, Shape::DEFAULT_RELATIVEPATH, name, parameters),
-myTAZCenter(center),
-myMaxWeightSource(0),
-myMinWeightSource(0),
-myAverageWeightSource(0),
-myMaxWeightSink(0),
-myMinWeightSink(0),
-myAverageWeightSink(0) {
+    GNEAdditional(id, net, filename, SUMO_TAG_TAZ, ""),
+    TesselatedPolygon(id, "", color, shape, false, fill, 1, Shape::DEFAULT_LAYER, Shape::DEFAULT_ANGLE, Shape::DEFAULT_IMG_FILE, name, parameters),
+    myTAZCenter(center) {
     // update centering boundary without updating grid
     updateCenteringBoundary(false);
     // update geometry
@@ -89,7 +75,7 @@ GNETAZ::getMoveOperation() {
     if (myTAZCenter.distanceSquaredTo2D(myNet->getViewNet()->getPositionInformation()) < (snap_radius * snap_radius)) {
         // move entire shape
         return new GNEMoveOperation(this, myTAZCenter);
-    } else if (myNet->getViewNet()->getViewParent()->getMoveFrame()->getNetworkModeOptions()->getMoveWholePolygons()) {
+    } else if (myNet->getViewNet()->getViewParent()->getMoveFrame()->getNetworkMoveOptions()->getMoveWholePolygons()) {
         // move entire shape
         return new GNEMoveOperation(this, myShape);
     } else {
@@ -167,13 +153,13 @@ GNETAZ::writeAdditional(OutputDevice& device) const {
     }
     device.writeAttr(SUMO_ATTR_COLOR, getShapeColor());
     // sort all Source/Sinks by ID
-    std::map<std::pair<std::string, SumoXMLTag>, GNEAdditional*> sortedSourceSinks;
-    for (const auto& sourceSink : getChildAdditionals()) {
-        sortedSourceSinks[std::make_pair(sourceSink->getAttribute(SUMO_ATTR_EDGE), sourceSink->getTagProperty().getTag())] = sourceSink;
+    std::map<std::pair<std::string, SumoXMLTag>, GNETAZSourceSink*> sortedSourceSinks;
+    for (const auto& sourceSink : getChildTAZSourceSinks()) {
+        sortedSourceSinks[std::make_pair(sourceSink->getAttribute(SUMO_ATTR_EDGE), sourceSink->getTagProperty()->getTag())] = sourceSink;
     }
     // write all TAZ Source/sinks
     for (const auto& sortedSourceSink : sortedSourceSinks) {
-        sortedSourceSink.second->writeAdditional(device);
+        sortedSourceSink.second->writeTAZSourceSink(device);
     }
     // write params
     writeParams(device);
@@ -286,16 +272,15 @@ GNETAZ::getParentName() const {
 
 GUIGLObjectPopupMenu*
 GNETAZ::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
-    GUIGLObjectPopupMenu* ret = new GUIGLObjectPopupMenu(app, parent, *this);
-    buildPopupHeader(ret, app);
-    buildCenterPopupEntry(ret);
-    buildNameCopyPopupEntry(ret);
-    // build selection and show parameters menu
-    myNet->getViewNet()->buildSelectionACPopupEntry(ret, this);
-    buildShowParamsPopupEntry(ret);
+    // create popup
+    GUIGLObjectPopupMenu* ret = new GUIGLObjectPopupMenu(app, parent, this);
+    // build common options
+    buildPopUpMenuCommonOptions(ret, app, myNet->getViewNet(), myTagProperty->getTag(), mySelected, false);
     // create a extra FXMenuCommand if mouse is over a vertex
     const int index = getVertexIndex(myNet->getViewNet()->getPositionInformation(), false);
     if (index != -1) {
+        // add separator
+        new FXMenuSeparator(ret);
         // check if we're in network mode
         if (myNet->getViewNet()->getEditModes().networkEditMode == NetworkEditMode::NETWORK_MOVE) {
             GUIDesigns::buildFXMenuCommand(ret, TL("Set custom Geometry Point"), nullptr, &parent, MID_GNE_CUSTOM_GEOMETRYPOINT);
@@ -320,7 +305,6 @@ GNETAZ::drawGL(const GUIVisualizationSettings& s) const {
         // draw geometry only if we'rent in drawForObjectUnderCursor mode
         if (s.checkDrawPoly(boundary, isAttributeCarrierSelected())) {
             // Obtain constants
-            const Position mousePosition = myNet->getViewNet()->getPositionInformation();
             const bool drawFill = (myNet->getViewNet()->getEditModes().isCurrentSupermodeData() && myNet->getViewNet()->getDataViewOptions().TAZDrawFill()) ? true : getFill();
             // get colors
             const RGBColor color = GUIPolygon::setColor(s, this, this, drawUsingSelectColor(), -1);
@@ -328,7 +312,7 @@ GNETAZ::drawGL(const GUIVisualizationSettings& s) const {
             // push layer matrix
             GLHelper::pushMatrix();
             // translate to front
-            myNet->getViewNet()->drawTranslateFrontAttributeCarrier(this, getShapeLayer());
+            drawInLayer(getShapeLayer());
             // check if we're drawing a polygon or a polyline
             if (getFill() || myNet->getViewNet()->getDataViewOptions().TAZDrawFill()) {
                 // draw inner polygon
@@ -345,7 +329,7 @@ GNETAZ::drawGL(const GUIVisualizationSettings& s) const {
                 GLHelper::popMatrix();
             }
             // draw contour if shape isn't blocked
-            if (!myNet->getViewNet()->getViewParent()->getMoveFrame()->getNetworkModeOptions()->getMoveWholePolygons()) {
+            if (!myNet->getViewNet()->getViewParent()->getMoveFrame()->getNetworkMoveOptions()->getMoveWholePolygons()) {
                 // push contour matrix
                 GLHelper::pushMatrix();
                 // translate to front
@@ -411,9 +395,13 @@ GNETAZ::drawGL(const GUIVisualizationSettings& s) const {
         // draw demand element children
         drawDemandElementChildren(s);
         // calculate contour
-        calculateContourPolygons(s, d, TAZExaggeration, getFill());
+        if (myNet->getViewNet()->getEditModes().isCurrentSupermodeData()) {
+            calculateContourPolygons(s, d, getShapeLayer(), TAZExaggeration, true);
+        } else {
+            calculateContourPolygons(s, d, getShapeLayer(), TAZExaggeration, getFill());
+        }
         // calculate contour for TAZ Center
-        myTAZCenterContour.calculateContourCircleShape(s, d, this, myTAZCenter, s.neteditSizeSettings.polygonGeometryPointRadius, TAZExaggeration);
+        myTAZCenterContour.calculateContourCircleShape(s, d, this, myTAZCenter, s.neteditSizeSettings.polygonGeometryPointRadius, getShapeLayer(), TAZExaggeration, nullptr);
     }
 }
 
@@ -439,15 +427,13 @@ GNETAZ::getAttribute(SumoXMLAttr key) const {
             return toString(myFill);
         case SUMO_ATTR_EDGES: {
             std::vector<std::string> edgeIDs;
-            for (const auto& TAZChild : getChildAdditionals()) {
-                edgeIDs.push_back(TAZChild->getAttribute(SUMO_ATTR_EDGE));
+            for (const auto& TAZSourceSink : getChildTAZSourceSinks()) {
+                edgeIDs.push_back(TAZSourceSink->getAttribute(SUMO_ATTR_EDGE));
             }
             return toString(edgeIDs);
         }
-        case GNE_ATTR_SELECTED:
-            return toString(isAttributeCarrierSelected());
-        case GNE_ATTR_PARAMETERS:
-            return getParametersStr();
+        case GNE_ATTR_EDGES_WITHIN:
+            return toString(myEdgesWithin);
         case GNE_ATTR_MIN_SOURCE:
             if (myMinWeightSource == INVALID_DOUBLE) {
                 return "undefined";
@@ -485,7 +471,7 @@ GNETAZ::getAttribute(SumoXMLAttr key) const {
                 return toString(myAverageWeightSink);
             }
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            return getCommonAttribute(this, key);
     }
 }
 
@@ -543,12 +529,12 @@ GNETAZ::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList* und
         case SUMO_ATTR_NAME:
         case SUMO_ATTR_FILL:
         case SUMO_ATTR_EDGES:
-        case GNE_ATTR_SELECTED:
-        case GNE_ATTR_PARAMETERS:
+        case GNE_ATTR_EDGES_WITHIN:
             GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            setCommonAttribute(key, value, undoList);
+            break;
     }
 }
 
@@ -582,12 +568,10 @@ GNETAZ::isValid(SumoXMLAttr key, const std::string& value) {
             } else {
                 return SUMOXMLDefinitions::isValidListOfTypeID(value);
             }
-        case GNE_ATTR_SELECTED:
+        case GNE_ATTR_EDGES_WITHIN:
             return canParse<bool>(value);
-        case GNE_ATTR_PARAMETERS:
-            return areParametersValid(value);
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            return isCommonValid(key, value);
     }
 }
 
@@ -617,9 +601,9 @@ GNETAZ::updateTAZStatistic() {
     int numberOfSources = 0;
     int numberOfSinks = 0;
     // iterate over child additional
-    for (const auto& TAZChild : getChildAdditionals()) {
-        if (TAZChild->getTagProperty().getTag() == SUMO_TAG_TAZSOURCE) {
-            const double weight = TAZChild->getAttributeDouble(SUMO_ATTR_WEIGHT);
+    for (const auto& TAZSourceSink : getChildTAZSourceSinks()) {
+        if (TAZSourceSink->getTagProperty()->getTag() == SUMO_TAG_TAZSOURCE) {
+            const double weight = TAZSourceSink->getAttributeDouble(SUMO_ATTR_WEIGHT);
             // check max Weight
             if ((myMaxWeightSource == INVALID_DOUBLE) || (myMaxWeightSource < weight)) {
                 myMaxWeightSource = weight;
@@ -632,8 +616,8 @@ GNETAZ::updateTAZStatistic() {
             myAverageWeightSource += weight;
             // update number of sources
             numberOfSources++;
-        } else if (TAZChild->getTagProperty().getTag() == SUMO_TAG_TAZSINK) {
-            const double weight = TAZChild->getAttributeDouble(SUMO_ATTR_WEIGHT);
+        } else if (TAZSourceSink->getTagProperty()->getTag() == SUMO_TAG_TAZSINK) {
+            const double weight = TAZSourceSink->getAttributeDouble(SUMO_ATTR_WEIGHT);
             // check max Weight
             if ((myMaxWeightSink == INVALID_DOUBLE) || myMaxWeightSink < weight) {
                 myMaxWeightSink = weight;
@@ -711,22 +695,16 @@ GNETAZ::setAttribute(SumoXMLAttr key, const std::string& value) {
             break;
         case SUMO_ATTR_FILL:
             myFill = parse<bool>(value);
-            myAdditionalContour.clearContour();
+            resetAdditionalContour();
             break;
         case SUMO_ATTR_EDGES:
             break;
-        case GNE_ATTR_SELECTED:
-            if (parse<bool>(value)) {
-                selectAttributeCarrier();
-            } else {
-                unselectAttributeCarrier();
-            }
-            break;
-        case GNE_ATTR_PARAMETERS:
-            setParametersStr(value);
+        case GNE_ATTR_EDGES_WITHIN:
+            myEdgesWithin = parse<bool>(value);
             break;
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            setCommonAttribute(this, key, value);
+            break;
     }
 }
 

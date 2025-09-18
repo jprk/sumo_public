@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -18,14 +18,15 @@
 // Dialog used to fix demand elements during saving
 /****************************************************************************/
 
-#include <utils/gui/windows/GUIAppEnum.h>
-#include <utils/gui/div/GUIDesigns.h>
+#include <netedit/GNEApplicationWindow.h>
+#include <netedit/GNEInternalTest.h>
 #include <netedit/GNENet.h>
-#include <netedit/GNEViewNet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
+#include <netedit/GNEViewNet.h>
+#include <utils/gui/div/GUIDesigns.h>
 
 #include "GNEFixDemandElements.h"
-
 
 // ===========================================================================
 // FOX callback mapping
@@ -38,7 +39,7 @@ FXDEFMAP(GNEFixDemandElements) GNEFixDemandElementsMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEFixDemandElements, FXDialogBox, GNEFixDemandElementsMap, ARRAYNUMBER(GNEFixDemandElementsMap))
+FXIMPLEMENT(GNEFixDemandElements, GNEFixElementsDialog, GNEFixDemandElementsMap, ARRAYNUMBER(GNEFixDemandElementsMap))
 
 // ===========================================================================
 // member method definitions
@@ -48,13 +49,8 @@ FXIMPLEMENT(GNEFixDemandElements, FXDialogBox, GNEFixDemandElementsMap, ARRAYNUM
 // GNEFixDemandElements - methods
 // ---------------------------------------------------------------------------
 
-GNEFixDemandElements::GNEFixDemandElements(GNEViewNet* viewNet, const std::vector<GNEDemandElement*>& invalidDemandElements) :
-    FXDialogBox(viewNet->getApp(), "Fix demand elements problems", GUIDesignDialogBoxExplicitStretchable(800, 620)),
-    myViewNet(viewNet) {
-    // set busStop icon for this dialog
-    setIcon(GUIIconSubSys::getIcon(GUIIcon::SUPERMODEDEMAND));
-    // create main frame
-    myMainFrame = new FXVerticalFrame(this, GUIDesignAuxiliarFrame);
+GNEFixDemandElements::GNEFixDemandElements(GNEViewNet* viewNet) :
+    GNEFixElementsDialog(viewNet, TL("Fix demand elements problems"), GUIIcon::SUPERMODEDEMAND, 800, 620) {
     // create frames for options
     FXHorizontalFrame* optionsFrame = new FXHorizontalFrame(myMainFrame, GUIDesignAuxiliarFrame);
     myLeftFrame = new FXVerticalFrame(optionsFrame, GUIDesignAuxiliarFrame);
@@ -69,15 +65,24 @@ GNEFixDemandElements::GNEFixDemandElements(GNEViewNet* viewNet, const std::vecto
     myFixPersonPlanOptions = new FixPersonPlanOptions(this, viewNet);
     // create buttons
     myButtons = new Buttons(this);
+}
+
+
+GNEFixDemandElements::~GNEFixDemandElements() {
+}
+
+
+FXuint
+GNEFixDemandElements::openDialog(const std::vector<GNEDemandElement*>& invalidDemandElements) {
     // split invalidDemandElements in four groups
     std::vector<GNEDemandElement*> invalidRoutes, invalidVehicles, invalidStops, invalidPlans;
     // fill groups
     for (const auto& invalidDemandElement : invalidDemandElements) {
-        if (invalidDemandElement->getTagProperty().isRoute()) {
+        if (invalidDemandElement->getTagProperty()->isRoute()) {
             invalidRoutes.push_back(invalidDemandElement);
-        } else if (invalidDemandElement->getTagProperty().isVehicle()) {
+        } else if (invalidDemandElement->getTagProperty()->isVehicle()) {
             invalidVehicles.push_back(invalidDemandElement);
-        } else if (invalidDemandElement->getTagProperty().isVehicleStop()) {
+        } else if (invalidDemandElement->getTagProperty()->isVehicleStop()) {
             invalidStops.push_back(invalidDemandElement);
         } else {
             invalidPlans.push_back(invalidDemandElement);
@@ -88,10 +93,25 @@ GNEFixDemandElements::GNEFixDemandElements(GNEViewNet* viewNet, const std::vecto
     myFixVehicleOptions->setInvalidElements(invalidVehicles);
     myFixStopPositionOptions->setInvalidElements(invalidStops);
     myFixPersonPlanOptions->setInvalidElements(invalidPlans);
+    // set focus in accept button
+    myButtons->myAcceptButton->setFocus();
+    // open modal dialog
+    return openFixDialog();
 }
 
 
-GNEFixDemandElements::~GNEFixDemandElements() {
+void
+GNEFixDemandElements::runInternalTest(const InternalTestStep::DialogTest* dialogTest) {
+    // chooose solution
+    if (dialogTest->fixSolution == "saveRouteInvalids") {
+        myFixRouteOptions->saveInvalidRoutes->setCheck(TRUE, TRUE);
+    } else if (dialogTest->fixSolution == "removeRouteInvalids") {
+        myFixRouteOptions->removeInvalidRoutes->setCheck(TRUE, TRUE);
+    } else if (dialogTest->fixSolution == "selectRouteInvalids") {
+        myFixRouteOptions->selectRouteInvalids->setCheck(TRUE, TRUE);
+    }
+    // accept changes
+    onCmdAccept(nullptr, 0, nullptr);
 }
 
 
@@ -114,23 +134,15 @@ GNEFixDemandElements::onCmdAccept(FXObject*, FXSelector, void*) {
     myFixVehicleOptions->fixElements(abortSaving);
     myFixStopPositionOptions->fixElements(abortSaving);
     myFixPersonPlanOptions->fixElements(abortSaving);
-    // check if abort saving
-    if (abortSaving) {
-        // stop modal with TRUE (abort saving)
-        getApp()->stopModal(this, FALSE);
-    } else {
-        // stop modal with TRUE (continue saving)
-        getApp()->stopModal(this, TRUE);
-    }
-    return 1;
+    // stop dialog
+    return closeFixDialog(abortSaving);
 }
 
 
 long
 GNEFixDemandElements::onCmdCancel(FXObject*, FXSelector, void*) {
-    // Stop Modal (abort saving)
-    getApp()->stopModal(this, FALSE);
-    return 1;
+    // stop dialog
+    return closeFixDialog(false);
 }
 
 // ---------------------------------------------------------------------------
@@ -198,8 +210,8 @@ GNEFixDemandElements::FixOptions::setInvalidElements(const std::vector<GNEDemand
 
 bool
 GNEFixDemandElements::FixOptions::saveContents() const {
-    const FXString file = MFXUtils::getFilename2Write(myTable,
-                          TL("Save list of conflicted items"), ".txt",
+    const FXString file = MFXUtils::getFilename2Write(myTable, TL("Save list of conflicted items"),
+                          SUMOXMLDefinitions::TXTFileExtensions.getMultilineString().c_str(),
                           GUIIconSubSys::getIcon(GUIIcon::SAVE), gCurrentFolder);
     if (file == "") {
         return false;
@@ -213,19 +225,11 @@ GNEFixDemandElements::FixOptions::saveContents() const {
         }
         // close output device
         dev.close();
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Opening FXMessageBox 'Saving list of conflicted items successfully'");
         // open message box error
         FXMessageBox::information(myTable, MBOX_OK, "Saving successfully", "%s", "List of conflicted items was successfully saved");
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Closed FXMessageBox 'Saving list of conflicted items successfully' with 'OK'");
     } catch (IOError& e) {
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Opening FXMessageBox 'error saving list of conflicted items'");
         // open message box error
         FXMessageBox::error(myTable, MBOX_OK, "Saving list of conflicted items failed", "%s", e.what());
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Closed FXMessageBox 'error saving list of conflicted items' with 'OK'");
     }
     return true;
 }
@@ -243,8 +247,8 @@ GNEFixDemandElements::FixRouteOptions::FixRouteOptions(GNEFixDemandElements* fix
     saveInvalidRoutes = new FXRadioButton(myLeftFrame, TL("Save invalid routes"),
                                           fixDemandElementsParent, MID_CHOOSEN_OPERATION, GUIDesignRadioButtonFix);
     // Select invalid routes
-    selectInvalidRoutesAndCancel = new FXRadioButton(myRightFrame, TL("Select conflicted routes"),
-            fixDemandElementsParent, MID_CHOOSEN_OPERATION, GUIDesignRadioButtonFix);
+    selectRouteInvalids = new FXRadioButton(myRightFrame, TL("Select conflicted routes"),
+                                            fixDemandElementsParent, MID_CHOOSEN_OPERATION, GUIDesignRadioButtonFix);
     // Remove stops out of route
     removeStopsOutOfRoute = new FXCheckButton(myRightFrame, TL("Remove stops out of route"),
             fixDemandElementsParent, MID_CHOOSEN_OPERATION, GUIDesignCheckButtonFix);
@@ -260,15 +264,15 @@ GNEFixDemandElements::FixRouteOptions::selectOption(FXObject* option) {
     if (option == removeInvalidRoutes) {
         removeInvalidRoutes->setCheck(true);
         saveInvalidRoutes->setCheck(false);
-        selectInvalidRoutesAndCancel->setCheck(false);
+        selectRouteInvalids->setCheck(false);
     } else if (option == saveInvalidRoutes) {
         removeInvalidRoutes->setCheck(false);
         saveInvalidRoutes->setCheck(true);
-        selectInvalidRoutesAndCancel->setCheck(false);
-    } else if (option == selectInvalidRoutesAndCancel) {
+        selectRouteInvalids->setCheck(false);
+    } else if (option == selectRouteInvalids) {
         removeInvalidRoutes->setCheck(false);
         saveInvalidRoutes->setCheck(false);
-        selectInvalidRoutesAndCancel->setCheck(true);
+        selectRouteInvalids->setCheck(true);
     }
 }
 
@@ -282,7 +286,7 @@ GNEFixDemandElements::FixRouteOptions::fixElements(bool& abortSaving) {
             // iterate over invalid routes to delete it
             for (const auto& invalidRoute : myInvalidElements) {
                 // special case for embedded routes
-                if (invalidRoute->getTagProperty().getTag() == GNE_TAG_ROUTE_EMBEDDED) {
+                if (invalidRoute->getTagProperty()->getTag() == GNE_TAG_ROUTE_EMBEDDED) {
                     myViewNet->getNet()->deleteDemandElement(invalidRoute->getParentDemandElements().front(), myViewNet->getUndoList());
                 } else {
                     myViewNet->getNet()->deleteDemandElement(invalidRoute, myViewNet->getUndoList());
@@ -290,7 +294,7 @@ GNEFixDemandElements::FixRouteOptions::fixElements(bool& abortSaving) {
             }
             // end undo list
             myViewNet->getUndoList()->end();
-        } else if (selectInvalidRoutesAndCancel->getCheck() == TRUE) {
+        } else if (selectRouteInvalids->getCheck() == TRUE) {
             // begin undo list
             myViewNet->getUndoList()->begin(GUIIcon::ROUTE, "select invalid routes");
             // iterate over invalid single lane elements to select all elements
@@ -328,7 +332,7 @@ void
 GNEFixDemandElements::FixRouteOptions::enableOptions() {
     removeInvalidRoutes->enable();
     saveInvalidRoutes->enable();
-    selectInvalidRoutesAndCancel->enable();
+    selectRouteInvalids->enable();
     removeStopsOutOfRoute->enable();
 }
 
@@ -337,7 +341,7 @@ void
 GNEFixDemandElements::FixRouteOptions::disableOptions() {
     removeInvalidRoutes->disable();
     saveInvalidRoutes->disable();
-    selectInvalidRoutesAndCancel->disable();
+    selectRouteInvalids->disable();
     removeStopsOutOfRoute->disable();
 }
 
@@ -392,7 +396,10 @@ GNEFixDemandElements::FixVehicleOptions::fixElements(bool& abortSaving) {
             myViewNet->getUndoList()->begin(GUIIcon::VEHICLE, "delete invalid vehicles");
             // iterate over invalid vehicles to delete it
             for (const auto& invalidVehicle : myInvalidElements) {
-                myViewNet->getNet()->deleteDemandElement(invalidVehicle, myViewNet->getUndoList());
+                // check that vehicle was not removed previously in cascade
+                if (myViewNet->getNet()->getAttributeCarriers()->retrieveDemandElement(invalidVehicle->getTagProperty()->getTag(), invalidVehicle->getID(), false) != nullptr) {
+                    myViewNet->getNet()->deleteDemandElement(invalidVehicle, myViewNet->getUndoList());
+                }
             }
             // end undo list
             myViewNet->getUndoList()->end();
@@ -626,20 +633,6 @@ GNEFixDemandElements::FixPersonPlanOptions::disableOptions() {
     deletePersonPlan->disable();
     saveInvalid->disable();
     selectInvalidPersonPlansAndCancel->disable();
-}
-
-// ---------------------------------------------------------------------------
-// GNEFixDemandElements::Buttons - methods
-// ---------------------------------------------------------------------------
-
-GNEFixDemandElements::Buttons::Buttons(GNEFixDemandElements* fixDemandElementsParent) :
-    FXHorizontalFrame(fixDemandElementsParent->myMainFrame, GUIDesignHorizontalFrame) {
-    new FXHorizontalFrame(this, GUIDesignAuxiliarHorizontalFrame);
-    myAcceptButton = GUIDesigns::buildFXButton(this, TL("&Accept"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), fixDemandElementsParent, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
-    myCancelButton = GUIDesigns::buildFXButton(this, TL("&Cancel"), "", "", GUIIconSubSys::getIcon(GUIIcon::CANCEL), fixDemandElementsParent, MID_GNE_BUTTON_CANCEL, GUIDesignButtonCancel);
-    new FXHorizontalFrame(this, GUIDesignAuxiliarHorizontalFrame);
-    // set focus in accept button
-    myAcceptButton->setFocus();
 }
 
 /****************************************************************************/

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -30,12 +30,14 @@
 #include <microsim/trigger/MSChargingStation.h>
 #include "MSStoppingPlaceRerouter.h"
 
+//#define DEBUG_STOPPINGPLACE
 #define DEBUGCOND (veh.isSelected())
+//#define DEBUGCOND (true)
 
 
 ///@brief Constructor
-MSStoppingPlaceRerouter::MSStoppingPlaceRerouter(SumoXMLTag stoppingType, std::string paramPrefix, bool checkValidity, bool checkVisibility, StoppingPlaceParamMap_t addEvalParams, StoppingPlaceParamSwitchMap_t addInvertParams) :
-    myStoppingType(stoppingType), myParamPrefix(paramPrefix), myCheckValidity(checkValidity), myConsiderDestVisibility(checkVisibility) {
+MSStoppingPlaceRerouter::MSStoppingPlaceRerouter(std::string paramPrefix, bool checkValidity, StoppingPlaceParamMap_t addEvalParams, StoppingPlaceParamSwitchMap_t addInvertParams) :
+    myParamPrefix(paramPrefix), myCheckValidity(checkValidity) {
     myEvalParams = { {"probability", 0.}, {"capacity", 0.}, {"timefrom", 0.}, {"timeto", 0.}, {"distancefrom", 0.}, {"distanceto", 1.}, {"absfreespace", 0.}, {"relfreespace", 0.}, };
     myInvertParams = { {"probability", false}, { "capacity", true }, { "timefrom", false }, { "timeto", false }, { "distancefrom", false }, { "distanceto", false }, { "absfreespace", true }, { "relfreespace", true } };
     for (auto param : addEvalParams) {
@@ -48,7 +50,8 @@ MSStoppingPlaceRerouter::MSStoppingPlaceRerouter(SumoXMLTag stoppingType, std::s
 }
 
 MSStoppingPlace*
-MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlaceCandidates, const std::vector<double>& probs, SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute, StoppingPlaceParamMap_t& scores, const MSEdgeVector& closedEdges) {
+MSStoppingPlaceRerouter::rerouteStoppingPlace(MSStoppingPlace* destStoppingPlace, const std::vector<StoppingPlaceVisible>& stoppingPlaceCandidates, const std::vector<double>& probs, SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute, StoppingPlaceParamMap_t& scores,
+        const Prohibitions& closedEdges, const int insertStopIndex, const bool keepCurrentStop) {
     // Reroute destination from initial stopping place to an alternative stopping place
     // if the following conditions are met:
     // - next stop target is a stopping place of the right type
@@ -60,14 +63,8 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
     MSStoppingPlace* nearStoppingPlace = nullptr;
 
     // get vehicle params
-    MSStoppingPlace* destStoppingPlace = nullptr;
     bool destVisible = false;
-    if (myStoppingType == SUMO_TAG_PARKING_AREA) {
-        destStoppingPlace = veh.getNextParkingArea();
-        if (destStoppingPlace == nullptr) {
-            // not driving towards the right type of stop
-            return nullptr;
-        }
+    if (destStoppingPlace != nullptr) {
         destVisible = (&destStoppingPlace->getLane().getEdge() == veh.getEdge());
         // if the vehicle is on the destination stop edge it is always visible
         for (auto stoppingPlace : stoppingPlaceCandidates) {
@@ -81,6 +78,7 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
 
     MSStoppingPlace* onTheWay = nullptr;
     const int stopAnywhere = (int)getWeight(veh, "anywhere", -1);
+    const bool ignoreDest = getWeight(veh, "ignoreDest", destStoppingPlace != nullptr ? 0 : 1) != 0;
     // check whether we are ready to accept any free stopping place along the
     // way to our destination
     if (stopAnywhere < 0 || stopAnywhere > getNumberStoppingPlaceReroutes(veh)) {
@@ -94,15 +92,14 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
             }
 #ifdef DEBUG_STOPPINGPLACE
             if (DEBUGCOND) {
-                //std::cout << SIMTIME << " << " veh=" << veh.getID()
-                //    << " dest=" << ((destStoppingPlace == nullptr)? "null" : destStoppingPlace->getID()) << " stopAnywhere=" << stopAnywhere << "reroutes=" << getNumberStoppingPlaceReroutes(veh) << " stay on original route\n";
+                //std::cout << SIMTIME << " veh=" << veh.getID() << " dest=" << ((destStoppingPlace == nullptr)? "null" : destStoppingPlace->getID()) << " stopAnywhere=" << stopAnywhere << " reroutes=" << getNumberStoppingPlaceReroutes(veh) << " stay on original route\n";
             }
 #endif
         }
     } else {
         double bestDist = std::numeric_limits<double>::max();
         const double brakeGap = veh.getBrakeGap(true);
-        for (StoppingPlaceVisible& item : stoppingPlaceCandidates) {
+        for (const StoppingPlaceVisible& item : stoppingPlaceCandidates) {
             if (item.second) {
                 if (&item.first->getLane().getEdge() == veh.getEdge()
                         && getLastStepStoppingPlaceOccupancy(item.first) < getStoppingPlaceCapacity(item.first)) {
@@ -127,11 +124,11 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
         }
 #endif
     }
-    if (myConsiderDestVisibility && !destVisible && onTheWay == nullptr) {
+    if (!ignoreDest && !destVisible && onTheWay == nullptr) {
         return nullptr;
     }
 
-    if (!myConsiderDestVisibility || getLastStepStoppingPlaceOccupancy(destStoppingPlace) >= getStoppingPlaceCapacity(destStoppingPlace) || onTheWay != nullptr) {
+    if (ignoreDest || getLastStepStoppingPlaceOccupancy(destStoppingPlace) >= getStoppingPlaceCapacity(destStoppingPlace) || onTheWay != nullptr) {
         // if the current route ends at the stopping place, the new route will
         // also end at the new stopping place
         newDestination = (destStoppingPlace != nullptr && &destStoppingPlace->getLane().getEdge() == route.getLastEdge()
@@ -165,7 +162,7 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
             if (newDestination) {
                 newRoute.push_back(veh.getEdge());
             } else {
-                bool valid = evaluateDestination(veh, brakeGap, newDestination, onTheWay, getLastStepStoppingPlaceOccupancy(onTheWay), 1, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores);
+                bool valid = evaluateDestination(veh, brakeGap, newDestination, onTheWay, getLastStepStoppingPlaceOccupancy(onTheWay), 1, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores, insertStopIndex, keepCurrentStop);
                 if (!valid) {
                     WRITE_WARNINGF(TL("Stopping place '%' along the way cannot be used by vehicle '%' for unknown reason"), onTheWay->getID(), veh.getID());
                     return nullptr;
@@ -212,7 +209,7 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
                 }
             }
             if (occupancy < getStoppingPlaceCapacity(stoppingPlaceCandidates[i].first)) {
-                if (evaluateDestination(veh, brakeGap, newDestination, stoppingPlaceCandidates[i].first, occupancy, probs[i], router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores)) {
+                if (evaluateDestination(veh, brakeGap, newDestination, stoppingPlaceCandidates[i].first, occupancy, probs[i], router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores, insertStopIndex, keepCurrentStop)) {
                     numAlternatives++;
                 }
             } else if (visible) {
@@ -247,7 +244,7 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
                 // all stopping places are occupied. We have no good basis for
                 // prefering one or the other based on estimated occupancy
                 double occupancy = RandHelper::rand(getStoppingPlaceCapacity(sp));
-                if (evaluateDestination(veh, brakeGap, newDestination, sp, occupancy, prob, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores)) {
+                if (evaluateDestination(veh, brakeGap, newDestination, sp, occupancy, prob, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores, insertStopIndex, keepCurrentStop)) {
 #ifdef DEBUG_STOPPINGPLACE
                     if (DEBUGCOND) {
                         std::cout << "    altStoppingPlace=" << sp->getID() << " targeting occupied stopping place based on blockTime " << STEPS2TIME(std::get<0>(item)) << " among " << blockedTimes.size() << " alternatives\n";
@@ -278,7 +275,7 @@ MSStoppingPlaceRerouter::reroute(std::vector<StoppingPlaceVisible>& stoppingPlac
                 }
                          );
                 for (auto item : candidates) {
-                    if (evaluateDestination(veh, brakeGap, newDestination, item.second, 0, 1, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores)) {
+                    if (evaluateDestination(veh, brakeGap, newDestination, item.second, 0, 1, router, stoppingPlaces, newRoutes, stopApproaches, maxValues, scores, insertStopIndex, keepCurrentStop)) {
 #ifdef DEBUG_STOPPINGPLACE
                         if (DEBUGCOND) {
                             std::cout << "    altStoppingPlace=" << item.second->getID() << " targeting occupied stopping place (based on pure randomness) among " << candidates.size() << " alternatives\n";
@@ -388,7 +385,7 @@ bool
 MSStoppingPlaceRerouter::evaluateDestination(SUMOVehicle& veh, double brakeGap, bool newDestination, MSStoppingPlace* alternative,
         double occupancy, double prob, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router, StoppingPlaceMap_t& stoppingPlaces,
         std::map<MSStoppingPlace*, ConstMSEdgeVector>& newRoutes, std::map<MSStoppingPlace*, ConstMSEdgeVector>& stoppingPlaceApproaches,
-        StoppingPlaceParamMap_t& maxValues, StoppingPlaceParamMap_t& addInput) {
+        StoppingPlaceParamMap_t& maxValues, StoppingPlaceParamMap_t& addInput, const int insertStopIndex, const bool keepCurrentStop) {
 
     // a map stores the stopping place values
     StoppingPlaceParamMap_t stoppingPlaceValues;
@@ -402,14 +399,30 @@ MSStoppingPlaceRerouter::evaluateDestination(SUMOVehicle& veh, double brakeGap, 
 
     // Compute the route from the current edge to the stopping place edge
     ConstMSEdgeVector edgesToStop;
+    ConstMSEdgeVector edgesUpstream;
     const double targetPos = alternative->getLastFreePos(veh);
-    const MSEdge* rerouteOrigin = *veh.getRerouteOrigin();
-    router.compute(rerouteOrigin, veh.getPositionOnLane(), stoppingPlaceEdge, targetPos, &veh, now, edgesToStop, true);
-
+    MSRouteIterator rerouteOriginIt = determineRerouteOrigin(veh, insertStopIndex);
+    double posOnLane = veh.getPositionOnLane();
+    if (insertStopIndex > 0) {
+        posOnLane = 0.;
+        // determine preceding edges
+        for (MSRouteIterator it = veh.getCurrentRouteEdge(); it != rerouteOriginIt; ++it) {
+            if (it != rerouteOriginIt) {
+                edgesUpstream.push_back(*it);
+            }
+        }
+    }
+    const MSEdge* rerouteOrigin = *rerouteOriginIt;
+    router.compute(rerouteOrigin, posOnLane, stoppingPlaceEdge, targetPos, &veh, now, edgesToStop, true);
     if (edgesToStop.size() > 0) {
         // Compute the route from the stopping place edge to the end of the route
-        if (rerouteOrigin != veh.getEdge()) {
+        if (insertStopIndex == 0 && rerouteOrigin != veh.getEdge()) {
             edgesToStop.insert(edgesToStop.begin(), veh.getEdge());
+        }
+        // prepend preceding edges
+        std::reverse(edgesUpstream.begin(), edgesUpstream.end());
+        for (auto edge : edgesUpstream) {
+            edgesToStop.insert(edgesToStop.begin(), edge);
         }
         ConstMSEdgeVector edgesFromStop;
         stoppingPlaceApproaches[alternative] = edgesToStop;
@@ -419,11 +432,14 @@ MSStoppingPlaceRerouter::evaluateDestination(SUMOVehicle& veh, double brakeGap, 
         int nextDestinationIndex = route.size() - 1;
         if (!newDestination) {
             std::vector<std::pair<int, double> > stopIndices = veh.getStopIndices();
-            if (stopIndices.size() > 1) {
-                nextDestinationIndex = stopIndices[1].first;
+            int nextDestStopIndex = 1 + insertStopIndex;
+            if (!keepCurrentStop) {
+                nextDestStopIndex++;
+            }
+            if ((int)stopIndices.size() > nextDestStopIndex) {
+                nextDestinationIndex = stopIndices[nextDestStopIndex].first;
                 nextDestination = route.getEdges()[nextDestinationIndex];
-                nextPos = stopIndices[1].second;
-
+                nextPos = stopIndices[nextDestStopIndex].second;
             }
             router.compute(stoppingPlaceEdge, targetPos, nextDestination, nextPos, &veh, now, edgesFromStop, true);
         }
@@ -462,7 +478,10 @@ MSStoppingPlaceRerouter::evaluateDestination(SUMOVehicle& veh, double brakeGap, 
             }
 
             // The time to reach the new stopping place
-            stoppingPlaceValues["timeto"] = router.recomputeCosts(edgesToStop, &veh, SIMSTEP) - ((alternative->getLane().getLength() - alternative->getEndLanePosition()) / alternative->getLane().getSpeedLimit());
+            const double correctionLastEdge = ((alternative->getLane().getLength() - alternative->getEndLanePosition()) / alternative->getLane().getVehicleMaxSpeed(&veh));
+            const double correctionFirstEdge = veh.getPositionOnLane() / edgesToStop.front()->getVehicleMaxSpeed(&veh);
+
+            stoppingPlaceValues["timeto"] = router.recomputeCosts(edgesToStop, &veh, SIMSTEP) - correctionLastEdge - correctionFirstEdge;
             ConstMSEdgeVector newEdges = edgesToStop;
             if (newDestination) {
                 stoppingPlaceValues["distancefrom"] = 0;
@@ -528,7 +547,7 @@ MSStoppingPlaceRerouter::useStoppingPlace(MSStoppingPlace* /* stoppingPlace */) 
 
 
 SUMOAbstractRouter<MSEdge, SUMOVehicle>&
-MSStoppingPlaceRerouter::getRouter(SUMOVehicle& veh, const MSEdgeVector& prohibited) {
+MSStoppingPlaceRerouter::getRouter(SUMOVehicle& veh, const Prohibitions& prohibited) {
     return MSNet::getInstance()->getRouterTT(veh.getRNGIndex(), prohibited);
 }
 

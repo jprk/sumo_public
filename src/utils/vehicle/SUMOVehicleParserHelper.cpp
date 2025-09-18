@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -683,17 +683,16 @@ SUMOVehicleParserHelper::parseCommonAttributes(const SUMOSAXAttributes& attrs, S
     }
     // parse insertion checks
     if (attrs.hasAttribute(SUMO_ATTR_INSERTIONCHECKS)) {
-        ret->insertionChecks = 0;
+        ret->parametersSet |= VEHPARS_INSERTION_CHECKS_SET;
         bool ok = true;
-        std::vector<std::string> checks = attrs.get<std::vector<std::string> >(SUMO_ATTR_INSERTIONCHECKS, ret->id.c_str(), ok);
+        std::string checks = attrs.get<std::string>(SUMO_ATTR_INSERTIONCHECKS, ret->id.c_str(), ok);
         if (!ok) {
             handleVehicleError(true, ret);
         } else {
-            for (std::string check : checks) {
-                if (!SUMOXMLDefinitions::InsertionChecks.hasString(check)) {
-                    handleVehicleError(true, ret, "Unknown value '" + check + "' in " + toString(SUMO_ATTR_INSERTIONCHECKS));
-                }
-                ret->insertionChecks |= (int)SUMOXMLDefinitions::InsertionChecks.get(check);
+            try {
+                ret->insertionChecks = SUMOVehicleParameter::parseInsertionChecks(checks);
+            } catch (InvalidArgument& e) {
+                handleVehicleError(true, ret, e.what());
             }
         }
     }
@@ -844,7 +843,7 @@ SUMOVehicleParserHelper::beginVTypeParsing(const SUMOSAXAttributes& attrs, const
             } else if (speedDev < 0) {
                 return handleVehicleTypeError(hardFail, vType, toString(SUMO_ATTR_SPEEDDEV) + " must be equal or greater than 0");
             } else {
-                vType->speedFactor.getParameter()[1] = speedDev;
+                vType->speedFactor.setParameter(1, speedDev);
                 vType->parametersSet |= VTYPEPARS_SPEEDFACTOR_SET;
             }
         }
@@ -1289,6 +1288,13 @@ SUMOVehicleParserHelper::parseCFMParams(SUMOVTypeParameter* into, const SumoXMLT
                 }
                 // add parsedCFMAttribute to cfParameter
                 into->cfParameter[it] = parsedCFMAttribute;
+            } else if (it == SUMO_ATTR_MAXACCEL_PROFILE || it == SUMO_ATTR_DESACCEL_PROFILE) {
+                if (validProfile(into, parsedCFMAttribute, it)) {
+                    into->cfParameter[it] = parsedCFMAttribute;
+                } else {
+                    WRITE_ERRORF(TL("Invalid Car-Following-Model Attribute %. Cannot be parsed as a vector of <speed accel> pairs"), toString(it));
+                    return false;
+                }
             } else {
                 // declare a double in wich save CFM float attribute
                 double CFMDoubleAttribute = -1;
@@ -1345,6 +1351,9 @@ SUMOVehicleParserHelper::getAllowedCFModelAttrs() {
         genericParams.insert(SUMO_ATTR_DECEL);
         genericParams.insert(SUMO_ATTR_APPARENTDECEL);
         genericParams.insert(SUMO_ATTR_EMERGENCYDECEL);
+        genericParams.insert(SUMO_ATTR_SPEED_TABLE);
+        genericParams.insert(SUMO_ATTR_MAXACCEL_PROFILE);
+        genericParams.insert(SUMO_ATTR_DESACCEL_PROFILE);
         genericParams.insert(SUMO_ATTR_COLLISION_MINGAP_FACTOR);
         genericParams.insert(SUMO_ATTR_STARTUP_DELAY);
         // Krauss
@@ -1453,7 +1462,6 @@ SUMOVehicleParserHelper::getAllowedCFModelAttrs() {
         // Rail
         std::set<SumoXMLAttr> railParams(genericParams);
         railParams.insert(SUMO_ATTR_TRAIN_TYPE);
-        railParams.insert(SUMO_ATTR_SPEED_TABLE);
         railParams.insert(SUMO_ATTR_TRACTION_TABLE);
         railParams.insert(SUMO_ATTR_RESISTANCE_TABLE);
         railParams.insert(SUMO_ATTR_MASSFACTOR);
@@ -1543,13 +1551,17 @@ SUMOVehicleParserHelper::parseLCParams(SUMOVTypeParameter* into, LaneChangeModel
         lc2013Params.insert(SUMO_ATTR_LCA_MAXSPEEDLATFACTOR);
         lc2013Params.insert(SUMO_ATTR_LCA_MAXDISTLATSTANDING);
         lc2013Params.insert(SUMO_ATTR_LCA_ASSERTIVE);
+        lc2013Params.insert(SUMO_ATTR_LCA_STRATEGIC_LOOKAHEAD);
         lc2013Params.insert(SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD);
+        lc2013Params.insert(SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME);
+        lc2013Params.insert(SUMO_ATTR_LCA_SPEEDGAIN_URGENCY);
         lc2013Params.insert(SUMO_ATTR_LCA_COOPERATIVE_ROUNDABOUT);
         lc2013Params.insert(SUMO_ATTR_LCA_COOPERATIVE_SPEED);
         lc2013Params.insert(SUMO_ATTR_LCA_OVERTAKE_RIGHT);
         lc2013Params.insert(SUMO_ATTR_LCA_SIGMA);
         lc2013Params.insert(SUMO_ATTR_LCA_KEEPRIGHT_ACCEPTANCE_TIME);
         lc2013Params.insert(SUMO_ATTR_LCA_OVERTAKE_DELTASPEED_FACTOR);
+        lc2013Params.insert(SUMO_ATTR_LCA_CONTRIGHT);
         lc2013Params.insert(SUMO_ATTR_LCA_EXPERIMENTAL1);
         allowedLCModelAttrs[LaneChangeModel::LC2013] = lc2013Params;
         // sl2015 (extension of lc2013)
@@ -1652,7 +1664,7 @@ SUMOVehicleParserHelper::parseJMParams(SUMOVTypeParameter* into, const SUMOSAXAt
                 return false;
             }
             // declare a double in wich save CFM attribute
-            double JMAttribute = -1;
+            double JMAttribute = INVALID_DOUBLE;
             try {
                 // obtain CFM attribute in double format
                 JMAttribute = StringUtils::toDouble(parsedJMAttribute);
@@ -1661,7 +1673,7 @@ SUMOVehicleParserHelper::parseJMParams(SUMOVTypeParameter* into, const SUMOSAXAt
                 return false;
             }
             // now continue checking other properties (-1 is the default value)
-            if (JMAttribute != -1) {
+            if (JMAttribute != INVALID_DOUBLE) {
                 // special case for sigma minor
                 if (it == SUMO_ATTR_JM_SIGMA_MINOR) {
                     // check attributes sigma minor
@@ -1669,9 +1681,14 @@ SUMOVehicleParserHelper::parseJMParams(SUMOVTypeParameter* into, const SUMOSAXAt
                         WRITE_ERRORF(TL("Invalid Junction-Model Attribute %. Only values between [0-1] are allowed"), toString(it));
                         return false;
                     }
-                } else {
-                    // check attributes of type "nonNegativeFloatType" (>= 0)
-                    if (JMAttribute < 0) {
+                } else if (JMAttribute < 0
+                           && it != SUMO_ATTR_JM_TIMEGAP_MINOR
+                           && it != SUMO_ATTR_JM_EXTRA_GAP) {
+                    // attributes with error value
+                    if (JMAttribute != -1 || (it != SUMO_ATTR_JM_DRIVE_AFTER_YELLOW_TIME
+                                              && it != SUMO_ATTR_JM_DRIVE_AFTER_RED_TIME
+                                              && it != SUMO_ATTR_JM_IGNORE_KEEPCLEAR_TIME)) {
+                        // check attributes of type "nonNegativeFloatType" (>= 0)
                         WRITE_ERRORF(TL("Invalid Junction-Model Attribute %. Must be equal or greater than 0"), toString(it));
                         return false;
                     }
@@ -1755,7 +1772,7 @@ SUMOVehicleParserHelper::processActionStepLength(double given) {
             WRITE_WARNING(defaultError + "Ignoring given value (=" + toString(STEPS2TIME(result)) + " s.)");
         }
         result = DELTA_T;
-    } else if (result % DELTA_T != 0) {
+    } else if (result % DELTA_T != 0 && OptionsCont::getOptions().exists("step-length")) {
         result = (SUMOTime)((double)DELTA_T * floor(double(result) / double(DELTA_T)));
         result = MAX2(DELTA_T, result);
         if (fabs(given * 1000. - double(result)) > NUMERICAL_EPS) {
@@ -1769,6 +1786,24 @@ SUMOVehicleParserHelper::processActionStepLength(double given) {
 bool
 SUMOVehicleParserHelper::isInternalRouteID(const std::string& id) {
     return id.substr(0, 1) == "!";
+}
+
+
+bool
+SUMOVehicleParserHelper::validProfile(SUMOVTypeParameter* vtype, const std::string data, const SumoXMLAttr attr) {
+    for (std::string value : StringTokenizer(data).getVector()) {
+        try {
+            double v = StringUtils::toDouble(value);
+            if (v < 0.) {
+                WRITE_ERRORF(TL("Invalid Car-Following-Model Attribute %. An acceleration profile value cannot be negative"), toString(attr));
+                return false;
+            }
+        } catch (...) {
+            WRITE_ERRORF(TL("Entry '%' of % table for vType '%' cannot be parsed as 'double'"), value, toString(attr), vtype->id);
+            return false;
+        }
+    }
+    return true;
 }
 
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -59,6 +59,27 @@ public:
 
         /// @brief get number of defined plans
         int getNumberOfDefinedParameters() const;
+
+        /// @brief get the walk tag for the current combination of parameters
+        SumoXMLTag getWalkTag() const;
+
+        /// @brief get the personTrip tag for the current combination of parameters
+        SumoXMLTag getPersonTripTag() const;
+
+        /// @brief get the ride tag for the current combination of parameters
+        SumoXMLTag getRideTag() const;
+
+        /// @brief get the transport tag for the current combination of parameters
+        SumoXMLTag getTransportTag() const;
+
+        /// @brief get the tranship tag for the current combination of parameters
+        SumoXMLTag getTranshipTag() const;
+
+        /// @brief get the person stop tag for the current combination of parameters
+        SumoXMLTag getPersonStopTag() const;
+
+        /// @brief get the container stop tag for the current combination of parameters
+        SumoXMLTag getContainerStopTag() const;
 
         /// @brief from edge
         std::string fromEdge;
@@ -148,11 +169,17 @@ public:
         /// @brief set SumoBaseObject tag
         void setTag(const SumoXMLTag tag);
 
+        /// @brief mark as successfully created
+        void markAsCreated();
+
         /// @name get functions
         /// @{
 
         /// @brief get XML myTag
         SumoXMLTag getTag() const;
+
+        /// @brief check if the object was successfully created in build<...> function
+        bool wasCreated() const;
 
         /// @brief get pointer to mySumoBaseObjectParent SumoBaseObject (if is null, then is the root)
         SumoBaseObject* getParentSumoBaseObject() const;
@@ -192,6 +219,9 @@ public:
 
         /// @brief get PositionVector attribute
         const PositionVector& getPositionVectorAttribute(const SumoXMLAttr attr) const;
+
+        /// @brief get parent ID
+        const std::string& getParentID(const SumoXMLTag tag) const;
 
         /// @brief vehicle class
         SUMOVehicleClass getVClass() const;
@@ -249,6 +279,9 @@ public:
         /// @brief check if current SumoBaseObject has the given positionVector attribute
         bool hasPositionVectorAttribute(const SumoXMLAttr attr) const;
 
+        /// @brief check if current SumoBaseObject has the given parent ID
+        bool hasParentID(const SumoXMLTag tag) const;
+
         /// @}
 
         /// @name add functions
@@ -284,8 +317,14 @@ public:
         /// @brief add PositionVector attribute into current SumoBaseObject node
         void addPositionVectorAttribute(const SumoXMLAttr attr, const PositionVector& value);
 
+        /// @brief add parameters into current SumoBaseObject node (format: key=value1|key2=value2|....)
+        void addParameters(const std::string& value);
+
         /// @brief add parameter into current SumoBaseObject node
         void addParameter(const std::string& key, const std::string& value);
+
+        /// @brief add parent (string) attribute into current SumoBaseObject node
+        void addParentID(const SumoXMLTag tag, const std::string& ID);
 
         /// @brief set vehicle class
         void setVClass(SUMOVehicleClass vClass);
@@ -309,7 +348,10 @@ public:
         SumoBaseObject* mySumoBaseObjectParent;
 
         /// @brief XML myTag
-        SumoXMLTag myTag;
+        SumoXMLTag myTag = SUMO_TAG_NOTHING;
+
+        /// @brief flag to check if object was created in build<..> function (by default false)
+        bool myWasCreated = false;
 
         /// @brief string attributes
         std::map<const SumoXMLAttr, std::string> myStringAttributes;
@@ -344,11 +386,14 @@ public:
         /// @brief myParameters
         std::map<std::string, std::string> myParameters;
 
+        /// @brief parent IDs
+        std::map<const SumoXMLTag, std::string> myParentIDs;
+
         /// @brief SumoBaseObject children
         std::vector<SumoBaseObject*> mySumoBaseObjectChildren;
 
         /// @brief vehicle class
-        SUMOVehicleClass myVClass;
+        SUMOVehicleClass myVClass = SVC_IGNORING;
 
         /// @brief vehicle type parameter
         SUMOVTypeParameter myVehicleTypeParameter;
@@ -370,13 +415,13 @@ public:
 
     private:
         /// @brief flag for defined vehicle type parameter
-        bool myDefinedVehicleTypeParameter;
+        bool myDefinedVehicleTypeParameter = false;
 
         /// @brief @brief flag for defined vehicle parameter
-        bool myDefinedVehicleParameter;
+        bool myDefinedVehicleParameter = false;
 
         /// @brief @brief flag for defined stop parameter
-        bool myDefinedStopParameter;
+        bool myDefinedStopParameter = false;
 
         /// @brief handle attribute error
         void handleAttributeError(const SumoXMLAttr attr, const std::string& type) const;
@@ -397,8 +442,11 @@ public:
     /// @brief open SUMOBaseOBject
     void openSUMOBaseOBject();
 
-    /// @brief close myTag
+    /// @brief close SUMOBaseOBject
     void closeSUMOBaseOBject();
+
+    /// @brief abort SUMOBaseOBject
+    void abortSUMOBaseOBject();
 
     /// @brief get SumoBaseObject root
     CommonXMLStructure::SumoBaseObject* getSumoBaseObjectRoot() const;

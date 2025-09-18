@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,20 +17,23 @@
 ///
 // Table used in GNETLSFrame for editing TLS programs
 /****************************************************************************/
-#include <config.h>
 
-#include "GNETLSTable.h"
-
+#include <netedit/GNEApplicationWindow.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
-#include <netedit/GNEApplicationWindow.h>
-#include <utils/foxtools/MFXTextFieldTooltip.h>
+#include <netedit/elements/GNEAttributeCarrier.h>
 #include <utils/foxtools/MFXLabelTooltip.h>
 #include <utils/foxtools/MFXMenuButtonTooltip.h>
+#include <utils/foxtools/MFXTextFieldTooltip.h>
 #include <utils/gui/div/GUIDesigns.h>
 #include <utils/gui/images/GUIIconSubSys.h>
 #include <utils/gui/windows/GUIAppEnum.h>
 
+#include "GNETLSTable.h"
+
+// ===========================================================================
+// Defines
+// ===========================================================================
 
 #define EXTRAMARGIN 1
 #define DEFAULTWIDTH 190
@@ -277,6 +280,47 @@ GNETLSTable::setColumnLabelBot(const int column, const std::string& text) {
 
 
 long
+GNETLSTable::testTable(const InternalTestStep::TLSTableTest* tableTest) {
+    // obtain cell
+    if (tableTest->row >= (int)myRows.size()) {
+        throw ProcessError(TL("Invalid row in table test"));
+    } else if (tableTest->column >= (int)myColumns.size()) {
+        throw ProcessError(TL("Invalid column in table test"));
+    } else {
+        // get cell
+        Cell* cell = myRows.at(tableTest->row)->getCells().at(tableTest->column);
+        // continue depending of operation
+        if (tableTest->sel == MID_GNE_TLSTABLE_ADDPHASE) {
+            return onCmdAddPhase(cell->getAddPhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_COPYPHASE) {
+            return onCmdDuplicatePhase(cell->getDuplicatePhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_ADDPHASEALLRED) {
+            return onCmdAddPhaseAllRed(cell->getAddAllRedPhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_ADDPHASEALLYELLOW) {
+            return onCmdAddPhaseAllYellow(cell->getAddAllYellowPhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_ADDPHASEALLGREEN) {
+            return onCmdAddPhaseAllGreen(cell->getAddAllGreenPhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_ADDPHASEALLGREENPRIORITY) {
+            return onCmdAddPhaseAllGreenPriority(cell->getAddAllGreenPriorityPhaseButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_REMOVEPHASE) {
+            return onCmdRemovePhase(cell->getButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_MOVEUPPHASE) {
+            return onCmdMoveUpPhase(cell->getButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_MOVEDOWNPHASE) {
+            return onCmdMoveDownPhase(cell->getButton(), 0, nullptr);
+        } else if (tableTest->sel == MID_GNE_TLSTABLE_TEXTFIELD) {
+            // set text in text field
+            cell->getTextField()->setText(tableTest->text.c_str(), TRUE);
+            return 1;
+        } else {
+            // unknown operation
+            throw ProcessError(TL("Unknown operation in table test"));
+        }
+    }
+}
+
+
+long
 GNETLSTable::onFocusRow(FXObject* sender, FXSelector, void*) {
     int selectedRow = -1;
     // search selected text field
@@ -325,12 +369,10 @@ GNETLSTable::onCmdEditRow(FXObject* sender, FXSelector, void*) {
             if (textField == sender) {
                 // edit value and change value depending of result
                 if (myTLSPhasesParent->changePhaseValue(columnIndex, rowIndex, textField->getText().text())) {
-                    WRITE_DEBUG(("Valid " + myColumns.at(columnIndex)->getColumnLabelTop()).text());
                     textField->setTextColor(FXRGB(0, 0, 0));
                     textField->killFocus();
                     myTLSPhasesParent->getTLSEditorParent()->update();
                 } else {
-                    WRITE_DEBUG(("Invalid " + myColumns.at(columnIndex)->getColumnLabelTop()).text());
                     textField->setTextColor(FXRGB(255, 0, 0));
                 }
                 return 1;
@@ -382,7 +424,6 @@ GNETLSTable::onCmdKeyPress(FXObject* sender, FXSelector sel, void* ptr) {
 
 long
 GNETLSTable::onCmdAddPhase(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Add default phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -403,7 +444,6 @@ GNETLSTable::onCmdAddPhase(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdDuplicatePhase(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Duplicate phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -424,7 +464,6 @@ GNETLSTable::onCmdDuplicatePhase(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdAddPhaseAllRed(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Add red phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -445,7 +484,6 @@ GNETLSTable::onCmdAddPhaseAllRed(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdAddPhaseAllYellow(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Add yellow phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -466,7 +504,6 @@ GNETLSTable::onCmdAddPhaseAllYellow(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdAddPhaseAllGreen(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Add green phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -487,7 +524,6 @@ GNETLSTable::onCmdAddPhaseAllGreen(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdAddPhaseAllGreenPriority(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Add green priority phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -508,7 +544,6 @@ GNETLSTable::onCmdAddPhaseAllGreenPriority(FXObject* sender, FXSelector, void*) 
 
 long
 GNETLSTable::onCmdRemovePhase(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Remove phase");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -527,7 +562,6 @@ GNETLSTable::onCmdRemovePhase(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdMoveUpPhase(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Move phase up");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -546,7 +580,6 @@ GNETLSTable::onCmdMoveUpPhase(FXObject* sender, FXSelector, void*) {
 
 long
 GNETLSTable::onCmdMoveDownPhase(FXObject* sender, FXSelector, void*) {
-    WRITE_DEBUG("Move phase down");
     // search selected text field
     for (int indexRow = 0; indexRow < (int)myRows.size(); indexRow++) {
         // iterate over every cell
@@ -1024,7 +1057,9 @@ GNETLSTable::Cell::getType() const {
 
 void
 GNETLSTable::Cell::hideMenuButtonPopup() {
-    myMenuButtonPopup->popdown();
+    if (myMenuButtonPopup) {
+        myMenuButtonPopup->popdown();
+    }
 }
 
 

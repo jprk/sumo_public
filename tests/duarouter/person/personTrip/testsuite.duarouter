@@ -52,6 +52,12 @@ unusable_bus
 # public transport via bustops
 busstop
 
+# public transport via bustops
+busstop_any
+
+# public transport via bustops
+busstop_line
+
 # public transport via bustops, person arrives very early
 busstop_early
 
@@ -194,6 +200,9 @@ geoTrips
 
 # test reading trips with geo-coordinates
 geoTrips_lonLat
+
+# test reading trips with geo-coordinates
+geoTrips_lonLat_stop_junctions
 
 # test reading walk with geo-coordinates
 geoWalk_lonLat

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -86,7 +86,27 @@ MSLaneChanger::ChangeElem::ChangeElem(MSLane* _lane) :
     firstBlocked(nullptr),
     lastStopped(nullptr),
     ahead(_lane->getWidth()),
-    aheadNext(_lane->getWidth(), nullptr, 0.) {
+    aheadNext(_lane->getWidth(), nullptr, 0.),
+    zipperDist(0),
+    lastBlockedBackPos(-1),
+    lastBlockedWaitingTime(-1)
+{
+    if (lane->isInternal()) {
+        for (auto ili : lane->getIncomingLanes()) {
+            if (ili.viaLink->getState() == LINKSTATE_ZIPPER) {
+                zipperDist = lane->getLength();
+                break;
+            }
+        }
+    } else {
+        for (const MSLink* link : lane->getLinkCont()) {
+            if (link->getState() == LINKSTATE_ZIPPER) {
+                zipperDist = MAX2(zipperDist, link->getFoeVisibilityDistance());
+                // @note: if this lane is shorter than zipperDist it would be better to extend this to any upstream edges within the
+                // visibility distance of the zipper link
+            }
+        }
+    }
 }
 
 void
@@ -170,6 +190,8 @@ MSLaneChanger::initChanger() {
         ce->firstBlocked = nullptr;
         ce->lastStopped = nullptr;
         ce->dens = 0;
+        ce->lastBlockedBackPos = -1;
+        ce->lastBlockedWaitingTime = -1;
         ce->lane->getVehiclesSecure();
 
         //std::cout << SIMTIME << " initChanger lane=" << ce->lane->getID() << " vehicles=" << toString(ce->lane->myVehicles) << "\n";
@@ -209,6 +231,10 @@ MSLaneChanger::updateLanes(SUMOTime t) {
         //std::cout << SIMTIME << " updateLanes lane=" << ce->lane->getID() << " myVehicles=" << toString(ce->lane->myVehicles) << " myTmpVehicles=" << toString(ce->lane->myTmpVehicles) << "\n";
         ce->lane->swapAfterLaneChange(t);
         ce->lane->releaseVehicles();
+        if (ce->lastBlocked != nullptr) {
+            ce->lastBlockedBackPos = ce->lastBlocked->getBackPositionOnLane();
+            ce->lastBlockedWaitingTime = ce->lastBlocked->getWaitingTime();
+        }
     }
 }
 
@@ -379,7 +405,7 @@ MSLaneChanger::change() {
 
     // only emergency vehicles should change to the opposite side on a
     // multi-lane road (or vehicles that need to stop on the opposite side)
-    if ((vehicle->getVehicleType().getVehicleClass() == SVC_EMERGENCY
+    if ((vehicle->getVClass() == SVC_EMERGENCY
             || hasOppositeStop(vehicle))
             && changeOpposite(vehicle, leader, myCandi->lastStopped)) {
         return true;
@@ -872,7 +898,7 @@ MSLaneChanger::checkChange(
     }
     if (blocked == 0 && targetLane->hasPedestrians()) {
         PersonDist nextLeader = targetLane->nextBlocking(vehicle->getBackPositionOnLane(),
-                                vehicle->getRightSideOnLane(), vehicle->getRightSideOnLane() + vehicle->getVehicleType().getWidth(),
+                                vehicle->getRightSideOnLane(targetLane), vehicle->getRightSideOnLane(targetLane) + vehicle->getVehicleType().getWidth(),
                                 ceil(vehicle->getSpeed() / vehicle->getCarFollowModel().getMaxDecel()));
         if (nextLeader.first != 0) {
             const double brakeGap = vehicle->getCarFollowModel().brakeGap(vehicle->getSpeed());
@@ -931,7 +957,19 @@ MSLaneChanger::checkChange(
     }
     if (blocked == 0 && (state & LCA_WANTS_LANECHANGE)) {
         // ensure that merging is safe for any upcoming zipper links after changing
-        if (vehicle->unsafeLinkAhead(targetLane)) {
+        double targetZipperDist = 0;
+        if (laneOffset == 0) {
+            targetZipperDist = myCandi->zipperDist;
+        } else if (laneOffset == 1) {
+            if ((myCandi + 1) != myChanger.end()) {
+                targetZipperDist = (myCandi + 1)->zipperDist;
+            }
+        } else if (laneOffset == -1) {
+            if (myCandi > myChanger.begin()) {
+                targetZipperDist = (myCandi - 1)->zipperDist;
+            }
+        }
+        if (vehicle->unsafeLinkAhead(targetLane, targetZipperDist)) {
             state |= blockedByLeader;
         }
     }
@@ -1262,6 +1300,7 @@ MSLaneChanger::changeOpposite(MSVehicle* vehicle, std::pair<MSVehicle*, double> 
     // currently overtaking ahead of vehicle)
     double vMax = vehicle->getLane()->getVehicleMaxSpeed(vehicle);
     double oncomingSpeed = oncomingLane->getSpeedLimit();
+    const bool isEmergency = vehicle->getVClass() == SVC_EMERGENCY;
 
     // check for opposite direction stop
     if (!oppositeChangeByTraci && hasOppositeStop(vehicle)) {
@@ -1275,7 +1314,7 @@ MSLaneChanger::changeOpposite(MSVehicle* vehicle, std::pair<MSVehicle*, double> 
         return false;
     }
     if (!isOpposite && !oppositeChangeByTraci
-            && vehicle->getVClass() != SVC_EMERGENCY
+            && !isEmergency
             && leader.first != nullptr) {
         if (leader.first->signalSet(MSGlobals::gLefthand
                                     ? MSVehicle::VEH_SIGNAL_BLINKER_RIGHT : MSVehicle::VEH_SIGNAL_BLINKER_LEFT)) {
@@ -1538,7 +1577,8 @@ MSLaneChanger::changeOpposite(MSVehicle* vehicle, std::pair<MSVehicle*, double> 
                 std::cout << "      usableDist=" << usableDist << " opposite=" << Named::getIDSecure((*it)->getOpposite()) << "\n";
             }
 #endif
-            if ((*it)->getOpposite() == nullptr || !(*it)->getOpposite()->allowsVehicleClass(vehicle->getVClass())) {
+            const MSLane* oppLane = (*it)->getOpposite();
+            if ((oppLane == nullptr && !isEmergency) || (oppLane != nullptr && !oppLane->allowsVehicleClass(vehicle->getVClass()))) {
                 // opposite lane ends
                 break;
             }
@@ -1547,7 +1587,7 @@ MSLaneChanger::changeOpposite(MSVehicle* vehicle, std::pair<MSVehicle*, double> 
             if (prev != nullptr) {
                 const MSLink* link = prev->getLinkTo(*it);
                 if (link == nullptr || link->getState() == LINKSTATE_ZIPPER
-                        || (link->getDirection() != LinkDirection::STRAIGHT && vehicle->getVehicleType().getVehicleClass() != SVC_EMERGENCY)
+                        || (link->getDirection() != LinkDirection::STRAIGHT && !isEmergency)
                         || (!link->havePriority()
                             // consider traci-influence
                             && (!vehicle->hasInfluencer() || vehicle->getInfluencer().getRespectJunctionPriority())
@@ -1599,8 +1639,7 @@ MSLaneChanger::changeOpposite(MSVehicle* vehicle, std::pair<MSVehicle*, double> 
             neighLead.first = nullptr;
         }
     } else {
-        if (leader.first != nullptr && neighLead.first != nullptr && leader.first->getWaitingSeconds() >= OPPOSITE_OVERTAKING_DEADLOCK_WAIT
-                && vehicle->getVehicleType().getVehicleClass() != SVC_EMERGENCY) {
+        if (leader.first != nullptr && neighLead.first != nullptr && leader.first->getWaitingSeconds() >= OPPOSITE_OVERTAKING_DEADLOCK_WAIT && !isEmergency) {
 #ifdef DEBUG_CHANGE_OPPOSITE
             if (DEBUG_COND) {
                 std::cout << "   not changing to avoid deadlock\n";
@@ -2318,6 +2357,7 @@ MSLaneChanger::computeOvertakingTime(const MSVehicle* vehicle, double vMax, cons
 std::pair<MSVehicle*, double>
 MSLaneChanger::getColumnleader(double& maxSpace, MSVehicle* vehicle, std::pair<MSVehicle*, double> leader, double maxLookAhead) {
     assert(leader.first != 0);
+    const bool isEmergency = vehicle->getVClass() == SVC_EMERGENCY;
     const MSLane* source = vehicle->getLane();
     // find a leader vehicle with sufficient space ahead for merging back
     const double overtakingSpeed = source->getVehicleMaxSpeed(vehicle); // just a guess
@@ -2328,7 +2368,7 @@ MSLaneChanger::getColumnleader(double& maxSpace, MSVehicle* vehicle, std::pair<M
     double seen = leader.second + leader.first->getVehicleType().getLengthWithGap();
     std::vector<MSLane*> conts = vehicle->getBestLanesContinuation();
     if (maxLookAhead == std::numeric_limits<double>::max()) {
-        maxLookAhead = (vehicle->getVehicleType().getVehicleClass() == SVC_EMERGENCY
+        maxLookAhead = (isEmergency
                         ? OPPOSITE_OVERTAKING_MAX_LOOKAHEAD_EMERGENCY
                         : OPPOSITE_OVERTAKING_MAX_LOOKAHEAD);
         maxLookAhead = MAX2(maxLookAhead, mergeBrakeGap + 10
@@ -2398,9 +2438,8 @@ MSLaneChanger::getColumnleader(double& maxSpace, MSVehicle* vehicle, std::pair<M
             } else {
                 // maybe the columnleader is stopped before a junction or takes a different turn.
                 // try to find another columnleader on successive lanes
-                const bool allowMinor = vehicle->getVehicleType().getVehicleClass() == SVC_EMERGENCY;
                 bool contsEnd = false;
-                const MSLane* next = getLaneAfter(columnLeader.first->getLane(), conts, allowMinor, contsEnd);
+                const MSLane* next = getLaneAfter(columnLeader.first->getLane(), conts, isEmergency, contsEnd);
 #ifdef DEBUG_CHANGE_OPPOSITE
                 if (DEBUG_COND) {
                     std::cout << "   look for another leader on lane " << Named::getIDSecure(next) << "\n";
@@ -2415,7 +2454,7 @@ MSLaneChanger::getColumnleader(double& maxSpace, MSVehicle* vehicle, std::pair<M
                             foundSpaceAhead = true;
                             break;
                         }
-                        next = getLaneAfter(next, conts, allowMinor, contsEnd);
+                        next = getLaneAfter(next, conts, isEmergency, contsEnd);
                     } else {
                         availableSpace += cand->getBackPositionOnLane();
                         if (availableSpace > requiredSpace) {
@@ -2532,6 +2571,15 @@ MSLaneChanger::getMaxOvertakingSpeed(const MSVehicle* vehicle, double maxSpaceTo
     const double d = vehicle->getCarFollowModel().getMaxDecel();
     const double v = sqrt(2 * maxSpaceToOvertake * a * d / (a + d));
     return v;
+}
+
+
+std::pair<double, SUMOTime>
+MSLaneChanger::getLastBlocked(int index) const {
+    assert(index >= 0 && index < (int)myChanger.size());
+    return std::make_pair(
+            myChanger[index].lastBlockedBackPos,
+            myChanger[index].lastBlockedWaitingTime);
 }
 
 /****************************************************************************/

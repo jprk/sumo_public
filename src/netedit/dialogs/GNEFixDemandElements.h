@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -20,35 +20,38 @@
 #pragma once
 #include <config.h>
 
-#include <utils/foxtools/MFXGroupBoxModule.h>
+#include "GNEFixElementsDialog.h"
 
 // ===========================================================================
 // class declarations
 // ===========================================================================
+
 class GNEDemandElement;
-class GNEViewNet;
 
 // ===========================================================================
 // class definitions
 // ===========================================================================
 
-/**
- * @class GNEFixDemandElements
- * @brief Dialog for edit rerouters
- */
-class GNEFixDemandElements : public FXDialogBox {
+class GNEFixDemandElements : public GNEFixElementsDialog {
     /// @brief FOX-declaration
     FXDECLARE(GNEFixDemandElements)
 
 public:
     /// @brief Constructor
-    GNEFixDemandElements(GNEViewNet* viewNet, const std::vector<GNEDemandElement*>& invalidDemandElements);
+    GNEFixDemandElements(GNEViewNet* viewNet);
 
     /// @brief destructor
     ~GNEFixDemandElements();
 
+    /// @brief open fix demand elements dialog
+    FXuint openDialog(const std::vector<GNEDemandElement*>& invalidDemandElements);
+
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* dialogTest);
+
     /// @name FOX-callbacks
     /// @{
+
     /// @brief event when user select a option
     long onCmdSelectOption(FXObject* obj, FXSelector, void*);
 
@@ -57,6 +60,7 @@ public:
 
     /// @brief event after press cancel button
     long onCmdCancel(FXObject*, FXSelector, void*);
+
     /// @}
 
 protected:
@@ -101,6 +105,12 @@ protected:
 
         /// @brief Table with the demand elements
         FXTable* myTable = nullptr;
+
+        /// @brief Invalidated copy constructor.
+        FixOptions(const FixOptions&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        FixOptions& operator=(const FixOptions&) = delete;
     };
 
     /// @brief groupbox for all radio buttons related with fix route options
@@ -123,7 +133,7 @@ protected:
         FXRadioButton* saveInvalidRoutes;
 
         /// @brief Option "Select invalid routes and cancel"
-        FXRadioButton* selectInvalidRoutesAndCancel;
+        FXRadioButton* selectRouteInvalids;
 
         /// @brief Option "Remove stops out of route"
         FXCheckButton* removeStopsOutOfRoute;
@@ -134,6 +144,12 @@ protected:
 
         /// @brief disable route options
         void disableOptions();
+
+        /// @brief Invalidated copy constructor.
+        FixRouteOptions(const FixRouteOptions&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        FixRouteOptions& operator=(const FixRouteOptions&) = delete;
     };
 
     /// @brief groupbox for all radio buttons related with fix vehicle options
@@ -167,6 +183,12 @@ protected:
 
         /// @brief disable vehicle options
         void disableOptions();
+
+        /// @brief Invalidated copy constructor.
+        FixVehicleOptions(const FixVehicleOptions&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        FixVehicleOptions& operator=(const FixVehicleOptions&) = delete;
     };
 
     /// @brief groupbox for all radio buttons related with fix stop options
@@ -200,6 +222,12 @@ protected:
 
         /// @brief disable stop options
         void disableOptions();
+
+        /// @brief Invalidated copy constructor.
+        FixStopPositionOptions(const FixStopPositionOptions&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        FixStopPositionOptions& operator=(const FixStopPositionOptions&) = delete;
     };
 
     /// @brief groupbox for all radio buttons related with fix person plan options
@@ -230,28 +258,13 @@ protected:
 
         /// @brief disable personPlan options
         void disableOptions();
+
+        /// @brief Invalidated copy constructor.
+        FixPersonPlanOptions(const FixPersonPlanOptions&) = delete;
+
+        /// @brief Invalidated assignment operator.
+        FixPersonPlanOptions& operator=(const FixPersonPlanOptions&) = delete;
     };
-
-    /// @brief horizontal frame for buttons
-    class Buttons : public FXHorizontalFrame {
-
-    public:
-        /// @brief build Position Options
-        Buttons(GNEFixDemandElements* fixDemandElementsParent);
-
-    private:
-        /// @brief accept button
-        FXButton* myAcceptButton = nullptr;
-
-        /// @brief cancel button
-        FXButton* myCancelButton = nullptr;
-    };
-
-    /// @brief view net
-    GNEViewNet* myViewNet = nullptr;
-
-    /// @brief main frame
-    FXVerticalFrame* myMainFrame = nullptr;
 
     /// @brief vertical left frame
     FXVerticalFrame* myLeftFrame = nullptr;
@@ -270,9 +283,6 @@ protected:
 
     /// @brief fix person plan options
     FixPersonPlanOptions* myFixPersonPlanOptions = nullptr;
-
-    /// @brief buttons
-    Buttons* myButtons = nullptr;
 
 private:
     /// @brief Invalidated copy constructor.

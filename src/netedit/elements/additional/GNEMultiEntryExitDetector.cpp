@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -15,10 +15,12 @@
 /// @author  Pablo Alvarez Lopez
 /// @date    Nov 2015
 ///
-//
+// multi entry-exit (E3) detector
 /****************************************************************************/
+#include <config.h>
 
 #include <netedit/GNENet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
 #include <netedit/GNEViewNet.h>
 #include <netedit/GNEViewParent.h>
@@ -27,35 +29,36 @@
 
 #include "GNEMultiEntryExitDetector.h"
 
-
 // ===========================================================================
 // member method definitions
 // ===========================================================================
 
 GNEMultiEntryExitDetector::GNEMultiEntryExitDetector(GNENet* net) :
-    GNEAdditional("", net, GLO_E3DETECTOR, SUMO_TAG_ENTRY_EXIT_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E3ENTRY), "", {}, {}, {}, {}, {}, {}) {
-    // reset default values
-    resetDefaultValues();
+    GNEAdditional("", net, "", SUMO_TAG_ENTRY_EXIT_DETECTOR, "") {
 }
 
 
-GNEMultiEntryExitDetector::GNEMultiEntryExitDetector(const std::string& id, GNENet* net, const Position pos, const SUMOTime freq, const std::string& filename,
-        const std::vector<std::string>& vehicleTypes, const std::vector<std::string>& nextEdges, const std::string& detectPersons, const std::string& name,
-        const SUMOTime timeThreshold, const double speedThreshold, const bool openEntry, const bool expectedArrival, const Parameterised::Map& parameters) :
-    GNEAdditional(id, net, GLO_E3DETECTOR, SUMO_TAG_ENTRY_EXIT_DETECTOR, GUIIconSubSys::getIcon(GUIIcon::E3EXIT), name, {}, {}, {}, {}, {}, {}),
-              Parameterised(parameters),
-              myPosition(pos),
-              myPeriod(freq),
-              myFilename(filename),
-              myVehicleTypes(vehicleTypes),
-              myNextEdges(nextEdges),
-              myDetectPersons(detectPersons),
-              myTimeThreshold(timeThreshold),
-              mySpeedThreshold(speedThreshold),
-              myOpenEntry(openEntry),
-myExpectedArrival(expectedArrival) {
+GNEMultiEntryExitDetector::GNEMultiEntryExitDetector(const std::string& id, GNENet* net, const std::string& filename, const Position pos, const SUMOTime freq,
+        const std::string& outputFilename, const std::vector<std::string>& vehicleTypes, const std::vector<std::string>& nextEdges, const std::string& detectPersons,
+        const std::string& name, const SUMOTime timeThreshold, const double speedThreshold, const bool openEntry, const bool expectedArrival, const Parameterised::Map& parameters) :
+    GNEAdditional(id, net, filename, SUMO_TAG_ENTRY_EXIT_DETECTOR, name),
+    Parameterised(parameters),
+    myPosition(pos),
+    myPeriod(freq),
+    myOutputFilename(outputFilename),
+    myVehicleTypes(vehicleTypes),
+    myNextEdges(nextEdges),
+    myDetectPersons(detectPersons),
+    myTimeThreshold(timeThreshold),
+    mySpeedThreshold(speedThreshold),
+    myOpenEntry(openEntry),
+    myExpectedArrival(expectedArrival) {
     // update centering boundary without updating grid
     updateCenteringBoundary(false);
+    // set default output filename
+    if (outputFilename.empty()) {
+        myOutputFilename = id + ".xml";
+    }
 }
 
 
@@ -75,15 +78,15 @@ GNEMultiEntryExitDetector::writeAdditional(OutputDevice& device) const {
     bool exit = false;
     // first check if E3 has at least one entry and one exit
     for (const auto& additionalChild : getChildAdditionals()) {
-        if (additionalChild->getTagProperty().getTag() == SUMO_TAG_DET_ENTRY) {
+        if (additionalChild->getTagProperty()->getTag() == SUMO_TAG_DET_ENTRY) {
             entry = true;
-        } else if (additionalChild->getTagProperty().getTag() == SUMO_TAG_DET_EXIT) {
+        } else if (additionalChild->getTagProperty()->getTag() == SUMO_TAG_DET_EXIT) {
             exit = true;
         }
     }
     // check entry/exits
     if (entry && exit) {
-        device.openTag(getTagProperty().getTag());
+        device.openTag(getTagProperty()->getTag());
         device.writeAttr(SUMO_ATTR_ID, getID());
         if (!myAdditionalName.empty()) {
             device.writeAttr(SUMO_ATTR_NAME, StringUtils::escapeXML(myAdditionalName));
@@ -92,23 +95,23 @@ GNEMultiEntryExitDetector::writeAdditional(OutputDevice& device) const {
         if (getAttribute(SUMO_ATTR_PERIOD).size() > 0) {
             device.writeAttr(SUMO_ATTR_PERIOD, time2string(myPeriod));
         }
-        if (myFilename.size() > 0) {
-            device.writeAttr(SUMO_ATTR_FILE, myFilename);
+        if (myOutputFilename.size() > 0) {
+            device.writeAttr(SUMO_ATTR_FILE, myOutputFilename);
         }
         if (myVehicleTypes.size() > 0) {
             device.writeAttr(SUMO_ATTR_VTYPES, myVehicleTypes);
         }
-        if (getAttribute(SUMO_ATTR_HALTING_TIME_THRESHOLD) != myTagProperty.getDefaultValue(SUMO_ATTR_HALTING_TIME_THRESHOLD)) {
-            device.writeAttr(SUMO_ATTR_HALTING_TIME_THRESHOLD, myTimeThreshold);
+        if (myTimeThreshold != myTagProperty->getDefaultTimeValue(SUMO_ATTR_HALTING_TIME_THRESHOLD)) {
+            device.writeAttr(SUMO_ATTR_HALTING_TIME_THRESHOLD, time2string(myTimeThreshold));
         }
-        if (getAttribute(SUMO_ATTR_HALTING_SPEED_THRESHOLD) != myTagProperty.getDefaultValue(SUMO_ATTR_HALTING_SPEED_THRESHOLD)) {
+        if (mySpeedThreshold != myTagProperty->getDefaultDoubleValue(SUMO_ATTR_HALTING_SPEED_THRESHOLD)) {
             device.writeAttr(SUMO_ATTR_HALTING_SPEED_THRESHOLD, mySpeedThreshold);
         }
-        if (getAttribute(SUMO_ATTR_EXPECT_ARRIVAL) != myTagProperty.getDefaultValue(SUMO_ATTR_EXPECT_ARRIVAL)) {
+        if (myExpectedArrival != myTagProperty->getDefaultBoolValue(SUMO_ATTR_EXPECT_ARRIVAL)) {
             device.writeAttr(SUMO_ATTR_EXPECT_ARRIVAL, myExpectedArrival);
         }
-        if (getAttribute(SUMO_ATTR_OPEN_ENTRY) != myTagProperty.getDefaultValue(SUMO_ATTR_OPEN_ENTRY)) {
-            device.writeAttr(SUMO_ATTR_OPEN_ENTRY, myExpectedArrival);
+        if (myOpenEntry != myTagProperty->getDefaultBoolValue(SUMO_ATTR_OPEN_ENTRY)) {
+            device.writeAttr(SUMO_ATTR_OPEN_ENTRY, myOpenEntry);
         }
         // write all entry/exits
         for (const auto& access : getChildAdditionals()) {
@@ -230,7 +233,7 @@ GNEMultiEntryExitDetector::getAttribute(SumoXMLAttr key) const {
         case SUMO_ATTR_NAME:
             return myAdditionalName;
         case SUMO_ATTR_FILE:
-            return myFilename;
+            return myOutputFilename;
         case SUMO_ATTR_VTYPES:
             return toString(myVehicleTypes);
         case SUMO_ATTR_NEXT_EDGES:
@@ -245,12 +248,8 @@ GNEMultiEntryExitDetector::getAttribute(SumoXMLAttr key) const {
             return toString(myOpenEntry);
         case SUMO_ATTR_EXPECT_ARRIVAL:
             return toString(myExpectedArrival);
-        case GNE_ATTR_SELECTED:
-            return toString(isAttributeCarrierSelected());
-        case GNE_ATTR_PARAMETERS:
-            return getParametersStr();
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            return getCommonAttribute(this, key);
     }
 }
 
@@ -285,12 +284,11 @@ GNEMultiEntryExitDetector::setAttribute(SumoXMLAttr key, const std::string& valu
         case SUMO_ATTR_HALTING_SPEED_THRESHOLD:
         case SUMO_ATTR_OPEN_ENTRY:
         case SUMO_ATTR_EXPECT_ARRIVAL:
-        case GNE_ATTR_SELECTED:
-        case GNE_ATTR_PARAMETERS:
             GNEChange_Attribute::changeAttribute(this, key, value, undoList);
             break;
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            setCommonAttribute(key, value, undoList);
+            break;
     }
 }
 
@@ -336,12 +334,8 @@ GNEMultiEntryExitDetector::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_OPEN_ENTRY:
         case SUMO_ATTR_EXPECT_ARRIVAL:
             return canParse<bool>(value);
-        case GNE_ATTR_SELECTED:
-            return canParse<bool>(value);
-        case GNE_ATTR_PARAMETERS:
-            return areParametersValid(value);
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            return isCommonValid(key, value);
     }
 }
 
@@ -352,9 +346,9 @@ GNEMultiEntryExitDetector::checkChildAdditionalRestriction() const {
     int numExits = 0;
     // iterate over additional chidls and obtain number of entrys and exits
     for (auto i : getChildAdditionals()) {
-        if (i->getTagProperty().getTag() == SUMO_TAG_DET_ENTRY) {
+        if (i->getTagProperty()->getTag() == SUMO_TAG_DET_ENTRY) {
             numEntrys++;
-        } else if (i->getTagProperty().getTag() == SUMO_TAG_DET_EXIT) {
+        } else if (i->getTagProperty()->getTag() == SUMO_TAG_DET_EXIT) {
             numExits++;
         }
     }
@@ -410,7 +404,7 @@ GNEMultiEntryExitDetector::setAttribute(SumoXMLAttr key, const std::string& valu
             myAdditionalName = value;
             break;
         case SUMO_ATTR_FILE:
-            myFilename = value;
+            myOutputFilename = value;
             break;
         case SUMO_ATTR_VTYPES:
             myVehicleTypes = parse<std::vector<std::string> >(value);
@@ -433,18 +427,9 @@ GNEMultiEntryExitDetector::setAttribute(SumoXMLAttr key, const std::string& valu
         case SUMO_ATTR_EXPECT_ARRIVAL:
             myExpectedArrival = parse<bool>(value);
             break;
-        case GNE_ATTR_SELECTED:
-            if (parse<bool>(value)) {
-                selectAttributeCarrier();
-            } else {
-                unselectAttributeCarrier();
-            }
-            break;
-        case GNE_ATTR_PARAMETERS:
-            setParametersStr(value);
-            break;
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            setCommonAttribute(this, key, value);
+            break;
     }
 }
 

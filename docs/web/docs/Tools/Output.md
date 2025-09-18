@@ -6,8 +6,8 @@ All of the tools described below exist in *tools/output* directory.
 
 ## attributeStats.py
 
-Computes statistics on arbitrary numerical attributes in an xml
-document. (eg. attribute *timeLoss* for element *tripinfo* in
+Computes statistics on arbitrary numerical attributes in one or more xml
+documents. (eg. attribute *timeLoss* for element *tripinfo* in
 [tripinfo-output](../Simulation/Output/TripInfo.md)) and writes the
 results to standard output. When the attribute contains time data in HH:MM:SS format, the values will automatically be converted to seconds.
 
@@ -111,6 +111,18 @@ Script for generating mean data definitions from detector definitions.
 
 Execute the *generateITetrisINetworkMetrics.py* script with *--help*
 option to get details about usage and available options.
+
+## generateDetectors.py
+
+Script for generating [different detectors](../Simulation/Output/index.md#simulated_detectors)
+for some or all lanes in the supplied network file.
+
+Example usage:
+```
+python tools\output\generateDetectors.py -n .net.net.xml -o detectors.add.xml --detector-type instantInductionLoop
+```
+
+Execute the *generateDetectors.py* script with *--help* option to get details about additional options.
 
 ## generateTLSE1Detectors.py
 
@@ -384,3 +396,18 @@ python tools/output/fcdDiff fcd.xml fcd2.xml
 - If option **--grouped** is set, separate statistics for each vehicle will be printed
 - If option **--tripId** is set, vehicles will be matched by attribute `tripId` instead of `id` (requires **--fcd-output.params tripId** to be when generating the fcd-output)
 - With option **--xml-output** {{DT_FILE}}, An annotated fcd file with error values is written
+
+## edgeDepartDelay.py
+
+Compute departDelay per edge from tripinfo-output
+
+```
+python tools/output/edgeDepartDelay -t tripinfos.xml -o edgedata.xml
+```
+
+Attributes for each edge will be statistical measures:
+
+    <edge id="4/1to3/1" count="4" min="0.00" minLabel="0" max="3.00" maxLabel="1" mean="0.75" Q1="0.00" median="0.00" Q3="3.00" meanAbs="0.75" medianAbs="0.00"/>
+
+The *maxLabel* attribute will hold the id of the vehicle with the maximum departDelay on a given edge.
+

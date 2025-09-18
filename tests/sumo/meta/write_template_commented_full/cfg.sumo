@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-07-24 18:10:55 by Eclipse SUMO sumo Version v1_20_0+1406-38fbaaedfbd
+<!-- generated on 2025-07-18 16:06:41 by Eclipse SUMO sumo Version v1_23_1+1171-abf54b0e8c3
 -->
 
 <sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
@@ -69,6 +69,18 @@
         <!-- Defines the number of digits after the comma for lon,lat output -->
         <precision.geo value="6" type="INT"/>
 
+        <!-- Defines the standard compression algorithm (currently only for parquet output) -->
+        <output.compression value="" type="STR"/>
+
+        <!-- Defines the standard output format if not derivable from the file name (&apos;xml&apos;, &apos;csv&apos;, &apos;parquet&apos;) -->
+        <output.format value="xml" type="STR"/>
+
+        <!-- How to derive column headers from attribute names (&apos;none&apos;, &apos;tag&apos;, &apos;auto&apos;, &apos;plain&apos;) -->
+        <output.column-header value="tag" type="STR"/>
+
+        <!-- Separator in CSV output -->
+        <output.column-separator value=";" type="STR"/>
+
         <!-- Write time values as hour:minute:second or day:hour:minute:second rather than seconds -->
         <human-readable-time value="false" synonymes="H" type="BOOL"/>
 
@@ -116,6 +128,9 @@
 
         <!-- Write aggregated charging event data instead of single time steps -->
         <chargingstations-output.aggregated value="false" type="BOOL"/>
+
+        <!-- Write aggregated charging event data for vehicles which have not arrived at simulation end -->
+        <chargingstations-output.aggregated.write-unfinished value="false" type="BOOL"/>
 
         <!-- Write data of overhead wire segments -->
         <overheadwiresegments-output value="" type="FILE"/>
@@ -246,6 +261,9 @@
         <!-- Save railsignal-blocks into FILE -->
         <railsignal-block-output value="" type="FILE"/>
 
+        <!-- Record entry and exit times of vehicles for railsignal blocks into FILE -->
+        <railsignal-vehicle-output value="" type="FILE"/>
+
         <!-- Save bluetooth visibilities into FILE (in conjunction with device.btreceiver and device.btsender) -->
         <bt-output value="" type="FILE"/>
 
@@ -278,6 +296,9 @@
 
         <!-- Write overall statistics into FILE -->
         <statistic-output value="" synonymes="statistics-output" type="FILE"/>
+
+        <!-- Write reports on deadlocks FILE -->
+        <deadlock-output value="" type="FILE"/>
 
         <!-- Use TIME[] as times at which a network state written -->
         <save-state.times value="" type="STR[]"/>
@@ -414,11 +435,17 @@
         <!-- Whether vehicles shall be removed after waiting too long instead of being teleported -->
         <time-to-teleport.remove value="false" type="BOOL"/>
 
+        <!-- Whether rail-signal-constraint based deadlocks shall be cleared by removing a constraint -->
+        <time-to-teleport.remove-constraint value="false" type="BOOL"/>
+
         <!-- The waiting time after which persons / containers waiting for a pickup are teleported. Negative values disable teleporting -->
         <time-to-teleport.ride value="-1" type="TIME"/>
 
         <!-- The waiting time after which vehicles on bidirectional edges are teleported -->
         <time-to-teleport.bidi value="-1" type="TIME"/>
+
+        <!-- The waiting time after which vehicles in a rail-signal based deadlock are teleported -->
+        <time-to-teleport.railsignal-deadlock value="-1" type="TIME"/>
 
         <!-- Length of time interval, over which accumulated waiting time is taken into account (default is 100s.) -->
         <waiting-time-memory value="100" type="TIME"/>
@@ -437,6 +464,9 @@
 
         <!-- Allow inserting a vehicle in a situation which requires emergency braking -->
         <emergency-insert value="false" type="BOOL"/>
+
+        <!-- Override default value for vehicle attribute insertionChecks -->
+        <insertion-checks value="all" type="STR"/>
 
         <!-- Each vehicle receives a random offset to its depart value drawn uniformly from [0, TIME] -->
         <random-depart-offset value="0" type="TIME"/>
@@ -468,8 +498,20 @@
         <!-- Let railsignals operate in moving-block mode by default -->
         <railsignal-moving-block value="false" type="BOOL"/>
 
+        <!-- Do not build blocks longer than FLOAT and issue a warning instead -->
+        <railsignal.max-block-length value="20000" type="FLOAT"/>
+
+        <!-- List vehicle classes that uses block-based insertion checks even when the network has no rail signals for them -->
+        <railsignal.default-classes value="rail,rail_fast,rail_electric,rail_urban" type="STR[]"/>
+
         <!-- Specify how long a vehicle may wait until impatience grows from 0 to 1, defaults to 300, non-positive values disable impatience growth -->
         <time-to-impatience value="180" type="TIME"/>
+
+        <!-- Select default depart speed -->
+        <default.departspeed value="0" type="STR"/>
+
+        <!-- Select default depart lane -->
+        <default.departlane value="first" type="STR"/>
 
         <!-- Length of the default interval length between action points for the car-following and lane-change models (in seconds). If not specified, the simulation step-length is used per default. Vehicle- or VType-specific settings override the default. Must be a multiple of the simulation step-length. -->
         <default.action-step-length value="0" type="FLOAT"/>
@@ -504,7 +546,7 @@
         <!-- Override stop arrival times with stop started times when given -->
         <use-stop-started value="false" type="BOOL"/>
 
-        <!-- Select among pedestrian models [&apos;nonInteracting&apos;, &apos;striping&apos;, &apos;remote&apos;] -->
+        <!-- Select among pedestrian models [&apos;nonInteracting&apos;, &apos;striping&apos;, &apos;jupedsim&apos;, &apos;remote&apos;] -->
         <pedestrian.model value="striping" type="STR"/>
 
         <!-- Minimal acceptable gap (in seconds) between two vehicles before starting to cross -->
@@ -527,6 +569,9 @@
 
         <!-- Time in seconds after which pedestrians start squeezing through a jam while on a narrow lane when using model &apos;striping&apos; -->
         <pedestrian.striping.jamtime.narrow value="1" type="TIME"/>
+
+        <!-- Factor for reducing speed of pedestrian in jammed state -->
+        <pedestrian.striping.jamfactor value="0.25" type="FLOAT"/>
 
         <!-- Fraction of stripes to reserve for oncoming pedestrians -->
         <pedestrian.striping.reserve-oncoming value="0" type="FLOAT"/>
@@ -572,6 +617,9 @@
 
         <!-- Match positions to junctions instead of edges -->
         <mapmatch.junctions value="false" type="BOOL"/>
+
+        <!-- Match positions to taz instead of edges -->
+        <mapmatch.taz value="false" type="BOOL"/>
 
         <!-- Apply the given time penalty when computing routing costs for turnaround internal lanes -->
         <weights.turnaround-penalty value="5" type="FLOAT"/>
@@ -624,6 +672,9 @@
         <!-- Estimated time for taxi pickup -->
         <persontrip.taxi.waiting-time value="300" type="TIME"/>
 
+        <!-- Only use the intended public transport line rather than any alternative line that stops at the destination -->
+        <persontrip.ride-public-line value="false" type="BOOL"/>
+
         <!-- Use FLOAT as a maximum train length when initializing the railway router -->
         <railway.max-train-length value="1000" type="FLOAT"/>
 
@@ -670,7 +721,7 @@
         <device.rerouting.synchronize value="false" type="BOOL"/>
 
         <!-- Allow rerouting triggered by rail signals. -->
-        <device.rerouting.railsignal value="true" type="BOOL"/>
+        <device.rerouting.railsignal value="false" type="BOOL"/>
 
         <!-- Compute separate average speeds for bicycles -->
         <device.rerouting.bike-speeds value="false" type="BOOL"/>
@@ -876,11 +927,17 @@
         <!-- After this waiting time vehicle searches for a new station when the initial one is blocked -->
         <device.stationfinder.waitForCharge value="600" type="TIME"/>
 
+        <!-- Only stops with a predicted duration of at least the given threshold are considered for opportunistic charging. -->
+        <device.stationfinder.minOpportunityDuration value="3600" type="TIME"/>
+
         <!-- Target state of charge after which the vehicle stops charging -->
         <device.stationfinder.saturatedChargeLevel value="0.8" type="FLOAT"/>
 
         <!-- State of charge the vehicle begins searching for charging stations -->
         <device.stationfinder.needToChargeLevel value="0.4" type="FLOAT"/>
+
+        <!-- State of charge below which the vehicle may look for charging opportunities along its planned stops -->
+        <device.stationfinder.opportunisticChargeLevel value="0" type="FLOAT"/>
 
         <!-- Share of stopping time of the next independently planned stop to use for charging instead -->
         <device.stationfinder.replacePlannedStop value="0" type="FLOAT"/>
@@ -890,6 +947,9 @@
 
         <!-- Set a charging strategy to alter time and charging load from the set: [none, balanced, latest] -->
         <device.stationfinder.chargingStrategy value="none" type="STR"/>
+
+        <!-- Only search for charging stations if the battery charge is not estimated sufficient to complete the current route -->
+        <device.stationfinder.checkEnergyForRoute value="true" type="BOOL"/>
 
         <!-- The probability for a vehicle to have a &apos;battery&apos; device -->
         <device.battery.probability value="-1" type="FLOAT"/>
@@ -959,6 +1019,9 @@
 
         <!-- Whether to write lanes and their positions for each timestep -->
         <device.ssm.write-lane-positions value="false" type="BOOL"/>
+
+        <!-- Whether to write conflict outputs with no data as NA values or skip it -->
+        <device.ssm.write-na value="true" type="BOOL"/>
 
         <!-- Which conflicts will be excluded from the log according to the conflict type they have been classified (combination of values in &apos;ego&apos;, &apos;foe&apos; , &apos;&apos;, any numerical valid conflict type code). An empty value will log all and &apos;ego&apos;/&apos;foe&apos; refer to a certain conflict type subset. -->
         <device.ssm.exclude-conflict-types value="" type="STR"/>
@@ -1161,7 +1224,7 @@
         <!-- The period between successive calls to the dispatcher -->
         <device.taxi.dispatch-period value="60" type="TIME"/>
 
-        <!-- The behavior of idle taxis [stop|randomCircling] -->
+        <!-- The behavior of idle taxis [stop|randomCircling|taxistand] -->
         <device.taxi.idle-algorithm value="stop" type="STR"/>
 
         <!-- Write information from the idling algorithm to FILE -->
@@ -1190,6 +1253,9 @@
 
         <!-- Additional time the vehicle shall need to reach the intersection after the signal turns green -->
         <device.glosa.add-switchtime value="0" type="FLOAT"/>
+
+        <!-- Use queue in front of the tls for GLOSA calculation -->
+        <device.glosa.use-queue value="false" type="BOOL"/>
 
         <!-- Override safety features - ignore the current light state, always follow GLOSA&apos;s predicted state -->
         <device.glosa.override-safety value="false" type="BOOL"/>

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -161,9 +161,6 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.disableHideByZoom = StringUtils::toBool(attrs.getStringSecure("disableHideByZoom", toString(mySettings.disableHideByZoom)));
             mySettings.edgeParam = attrs.getStringSecure("edgeParam", mySettings.edgeParam);
             mySettings.laneParam = attrs.getStringSecure("laneParam", mySettings.laneParam);
-            mySettings.vehicleParam = attrs.getStringSecure("vehicleParam", mySettings.vehicleParam);
-            mySettings.vehicleScaleParam = attrs.getStringSecure("vehicleScaleParam", mySettings.vehicleScaleParam);
-            mySettings.vehicleTextParam = attrs.getStringSecure("vehicleTextParam", mySettings.vehicleTextParam);
             mySettings.edgeData = attrs.getStringSecure("edgeData", mySettings.edgeData);
             mySettings.edgeDataID = attrs.getStringSecure("edgeDataID", mySettings.edgeDataID);
             mySettings.edgeDataScaling = attrs.getStringSecure("edgeDataScaling", mySettings.edgeDataScaling);
@@ -212,23 +209,31 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             }
         }
         break;
-        case SUMO_TAG_SCALINGSCHEME:
+        case SUMO_TAG_SCALINGSCHEME: {
             myCurrentScheme = nullptr;
             myCurrentScaleScheme = nullptr;
+            const std::string name = attrs.getStringSecure(SUMO_ATTR_NAME, "");
             if (myCurrentColorer == SUMO_TAG_VIEWSETTINGS_EDGES) {
-                myCurrentScaleScheme = mySettings.laneScaler.getSchemeByName(attrs.getStringSecure(SUMO_ATTR_NAME, ""));
+                if (StringUtils::startsWith(name, "meso:")) {
+                    // see edgeScaler.save() in GUIVisualizationSettings::save
+                    myCurrentScaleScheme = mySettings.edgeScaler.getSchemeByName(name.substr(5));
+                } else {
+                    myCurrentScaleScheme = mySettings.laneScaler.getSchemeByName(name);
+                }
                 if (myCurrentScaleScheme == nullptr) {
-                    myCurrentScaleScheme = mySettings.edgeScaler.getSchemeByName(attrs.getStringSecure(SUMO_ATTR_NAME, ""));
+                    // legacy: meso schemes without prefix
+                    myCurrentScaleScheme = mySettings.edgeScaler.getSchemeByName(name);
                 }
             }
             if (myCurrentColorer == SUMO_TAG_VIEWSETTINGS_VEHICLES) {
-                myCurrentScaleScheme = mySettings.vehicleScaler.getSchemeByName(attrs.getStringSecure(SUMO_ATTR_NAME, ""));
+                myCurrentScaleScheme = mySettings.vehicleScaler.getSchemeByName(name);
             }
             if (myCurrentScaleScheme && !myCurrentScaleScheme->isFixed()) {
                 myCurrentScaleScheme->setInterpolated(attrs.getOpt<bool>(SUMO_ATTR_INTERPOLATED, nullptr, ok, false));
                 myCurrentScaleScheme->clear();
             }
-            break;
+        }
+        break;
         case SUMO_TAG_ENTRY:
             if (myCurrentScheme != nullptr) {
                 RGBColor color = attrs.get<RGBColor>(SUMO_ATTR_COLOR, nullptr, ok);
@@ -268,6 +273,10 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.vehicleValue = parseTextSettings("vehicleValue", attrs, mySettings.vehicleValue);
             mySettings.vehicleScaleValue = parseTextSettings("vehicleScaleValue", attrs, mySettings.vehicleScaleValue);
             mySettings.vehicleText = parseTextSettings("vehicleText", attrs, mySettings.vehicleText);
+            mySettings.vehicleParam = attrs.getStringSecure("vehicleParam", mySettings.vehicleParam);
+            mySettings.vehicleScaleParam = attrs.getStringSecure("vehicleScaleParam", mySettings.vehicleScaleParam);
+            mySettings.vehicleTextParam = attrs.getStringSecure("vehicleTextParam", mySettings.vehicleTextParam);
+            mySettings.vehicleValueRainBow = parseRainbowSettings("vehicleValue", attrs, mySettings.vehicleValueRainBow);
             myCurrentColorer = element;
             break;
         case SUMO_TAG_VIEWSETTINGS_PERSONS:
@@ -362,6 +371,8 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.poiType = parseTextSettings("poiType", attrs, mySettings.poiType);
             mySettings.poiText = parseTextSettings("poiText", attrs, mySettings.poiText);
             mySettings.poiColorer.setActive(StringUtils::toInt(attrs.getStringSecure("personMode", "0")));
+            mySettings.poiUseCustomLayer = StringUtils::toBool(attrs.getStringSecure("poiUseCustomLayer", toString(mySettings.poiUseCustomLayer)));
+            mySettings.poiCustomLayer = StringUtils::toDouble(attrs.getStringSecure("poiCustomLayer", toString(mySettings.poiCustomLayer)));
             myCurrentColorer = element;
             break;
         case SUMO_TAG_VIEWSETTINGS_POLYS:
@@ -369,6 +380,8 @@ GUISettingsHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) 
             mySettings.polyName = parseTextSettings("polyName", attrs, mySettings.polyName);
             mySettings.polyType = parseTextSettings("polyType", attrs, mySettings.polyType);
             mySettings.polyColorer.setActive(StringUtils::toInt(attrs.getStringSecure("personMode", "0")));
+            mySettings.polyUseCustomLayer = StringUtils::toBool(attrs.getStringSecure("polyUseCustomLayer", toString(mySettings.polyUseCustomLayer)));
+            mySettings.polyCustomLayer = StringUtils::toDouble(attrs.getStringSecure("polyCustomLayer", toString(mySettings.polyCustomLayer)));
             myCurrentColorer = element;
             break;
         case SUMO_TAG_VIEWSETTINGS_LEGEND:
@@ -491,7 +504,8 @@ GUISettingsHandler::parseRainbowSettings(
                StringUtils::toDouble(attrs.getStringSecure(prefix + "HideThreshold2", toString(defaults.maxThreshold))),
                StringUtils::toBool(attrs.getStringSecure(prefix + "SetNeutral", toString(defaults.hideMax))),
                StringUtils::toDouble(attrs.getStringSecure(prefix + "NeutralThreshold", toString(defaults.neutralThreshold))),
-               StringUtils::toBool(attrs.getStringSecure(prefix + "FixRange", toString(defaults.fixRange))));
+               StringUtils::toBool(attrs.getStringSecure(prefix + "FixRange", toString(defaults.fixRange))),
+               StringUtils::toInt(attrs.getStringSecure(prefix + "RainbowScheme", toString(defaults.rainbowScheme))));
 }
 
 const std::vector<std::string>&

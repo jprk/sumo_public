@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -85,7 +85,8 @@ public:
     /** @brief Builds the complete route
      * (or chooses her from the list of alternatives, when existing) */
     bool repairCurrentRoute(SUMOAbstractRouter<ROEdge, ROVehicle>& router, SUMOTime begin,
-                            const ROVehicle& veh, ConstROEdgeVector oldEdges, ConstROEdgeVector& newEdges) const;
+                            const ROVehicle& veh, ConstROEdgeVector oldEdges, ConstROEdgeVector& newEdges,
+                            bool isTrip = false) const;
 
     /** @brief Adds an alternative to the list of routes
     *
@@ -93,6 +94,7 @@ public:
     void addAlternative(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
                         const ROVehicle* const, RORoute* current, SUMOTime begin);
 
+    const ROEdge* getOrigin() const;
     const ROEdge* getDestination() const;
 
     const RORoute* getFirstRoute() const {
@@ -142,6 +144,12 @@ public:
     static void setUsingJTRR() {
         myUsingJTRR = true;
     }
+
+protected:
+    /// @brief backtrack to last mandatory edge and route to next mandatory
+    static bool backTrack(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
+                          ConstROEdgeVector::const_iterator& i, int lastMandatory, ConstROEdgeVector::iterator nextMandatory,
+                          ConstROEdgeVector& newEdges, const ROVehicle& veh, SUMOTime begin);
 
 protected:
     /// @brief precomputed route for out-of-order computation

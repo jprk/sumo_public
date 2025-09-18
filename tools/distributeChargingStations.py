@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2010-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -113,7 +113,6 @@ def addChildToParent(parentEl, childEl, secondChildTags=[]):
 
 def main(options):
     random.seed(options.seed)
-
     net = sumolib.net.readNet(options.netFile)
     checkSelection = False
     if options.selectionFile is not None:
@@ -302,8 +301,13 @@ def addChargingStation(options, rootCharging, rootParking, edge, parkingArea, ch
         shiftSpaces = parkingCapacity[1] - chargingOnSpaces
         startPos = float(parkingArea.startPos) if parkingArea.startPos is not None else 0
         endPos = float(parkingArea.endPos) if parkingArea.endPos is not None else edge.getLength()
+        if startPos < 0:
+            startPos += edge.getLength()
+        if endPos < 0:
+            endPos += edge.getLength()
         posDownSize = (startPos, endPos) if chargingOnSpaces > 0 else (
-            startPos, startPos + (endPos - startPos)*chargingRoadSide/sum(parkingCapacity))
+            startPos, startPos + (endPos - startPos) * chargingRoadSide / sum(parkingCapacity))
+        assert (posDownSize[0] < posDownSize[1])
         parkingArea.roadsideCapacity = str(chargingRoadSide)
         remainingSpaces = []
 
@@ -314,8 +318,8 @@ def addChargingStation(options, rootCharging, rootParking, edge, parkingArea, ch
                         ) if chargingRoadSide == parkingCapacity[0] else (posDownSize[1], endPos)
             spacesToShift = []
             if shiftSpaces > 0:
-                spacesToShift.extend(parkingArea.getChild("space")[shiftSpaces:])
-                remainingSpaces.extend(parkingArea.getChild("space")[:shiftSpaces])
+                spacesToShift.extend(parkingArea.getChild("space")[chargingOnSpaces:])
+                remainingSpaces.extend(parkingArea.getChild("space")[:chargingOnSpaces])
             shiftedPaDict = {t[0]: t[1] for t in parkingArea.getAttributes()}
             shiftedPaDict["id"] = "%s%s" % (shiftedPaDict["id"], options.suffix)
             shiftedPaDict["startPos"] = str(posShift[0])

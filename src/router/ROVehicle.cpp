@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -54,11 +54,11 @@ ROVehicle::ROVehicle(const SUMOVehicleParameter& pars,
     myJumpTime(-1) {
     getParameter().stops.clear();
     if (route != nullptr && route->getFirstRoute() != nullptr) {
-        for (std::vector<SUMOVehicleParameter::Stop>::const_iterator s = route->getFirstRoute()->getStops().begin(); s != route->getFirstRoute()->getStops().end(); ++s) {
+        for (StopParVector::const_iterator s = route->getFirstRoute()->getStops().begin(); s != route->getFirstRoute()->getStops().end(); ++s) {
             addStop(*s, net, errorHandler);
         }
     }
-    for (std::vector<SUMOVehicleParameter::Stop>::const_iterator s = pars.stops.begin(); s != pars.stops.end(); ++s) {
+    for (StopParVector::const_iterator s = pars.stops.begin(); s != pars.stops.end(); ++s) {
         addStop(*s, net, errorHandler);
     }
     if (pars.via.size() != 0) {
@@ -84,7 +84,7 @@ ROVehicle::addStop(const SUMOVehicleParameter::Stop& stopPar, const RONet* net, 
         return;
     }
     // where to insert the stop
-    std::vector<SUMOVehicleParameter::Stop>::iterator iter = getParameter().stops.begin();
+    StopParVector::iterator iter = getParameter().stops.begin();
     ConstROEdgeVector::iterator edgeIter = myStopEdges.begin();
     if (stopPar.index == STOP_INDEX_END || stopPar.index >= static_cast<int>(getParameter().stops.size())) {
         if (getParameter().stops.size() > 0) {
@@ -236,7 +236,7 @@ ROVehicle::collectJumps(const ConstROEdgeVector& mandatory, std::set<ConstROEdge
 
 
 void
-ROVehicle::saveAsXML(OutputDevice& os, OutputDevice* const typeos, bool asAlternatives, OptionsCont& options) const {
+ROVehicle::saveAsXML(OutputDevice& os, OutputDevice* const typeos, bool asAlternatives, OptionsCont& options, int cloneIndex) const {
     if (typeos != nullptr && getType() != nullptr && !getType()->saved) {
         getType()->write(*typeos);
         getType()->saved = true;
@@ -268,8 +268,14 @@ ROVehicle::saveAsXML(OutputDevice& os, OutputDevice* const typeos, bool asAltern
         }
     }
     // write the vehicle (new style, with included routes)
-    getParameter().write(os, options, writeTrip ? SUMO_TAG_TRIP : SUMO_TAG_VEHICLE);
-
+    if (cloneIndex == 0) {
+        getParameter().write(os, options, writeTrip ? SUMO_TAG_TRIP : SUMO_TAG_VEHICLE);
+    } else {
+        SUMOVehicleParameter p = getParameter();
+        // @note id collisions may occur if scale-suffic occurs in other vehicle ids
+        p.id += options.getString("scale-suffix") + toString(cloneIndex);
+        p.write(os, options, writeTrip ? SUMO_TAG_TRIP : SUMO_TAG_VEHICLE);
+    }
     // save the route
     if (writeTrip) {
         const ConstROEdgeVector edges = myRoute->getFirstRoute()->getEdgeVector();
@@ -369,7 +375,7 @@ ROVehicle::saveAsXML(OutputDevice& os, OutputDevice* const typeos, bool asAltern
     } else {
         myRoute->writeXMLDefinition(os, this, asAlternatives, writeExit, writeCosts, writeLength);
     }
-    for (std::vector<SUMOVehicleParameter::Stop>::const_iterator stop = getParameter().stops.begin(); stop != getParameter().stops.end(); ++stop) {
+    for (StopParVector::const_iterator stop = getParameter().stops.begin(); stop != getParameter().stops.end(); ++stop) {
         stop->write(os);
     }
     getParameter().writeParams(os);

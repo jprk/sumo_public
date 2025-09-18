@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2017-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2017-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -32,6 +32,7 @@
 #include <microsim/MSInsertionControl.h>
 #include <utils/geom/GeomHelper.h>
 #include <libsumo/Helper.h>
+#include <libsumo/StorageHelper.h>
 #include <libsumo/TraCIConstants.h>
 #include "Lane.h"
 
@@ -290,6 +291,9 @@ Lane::getLastStepVehicleIDs(const std::string& laneID) {
 
 std::vector<std::string>
 Lane::getFoes(const std::string& laneID, const std::string& toLaneID) {
+    if (toLaneID == "") {
+        return getInternalFoes(laneID);
+    }
     std::vector<std::string> foeIDs;
     const MSLink* const link = getLane(laneID)->getLinkTo(getLane(toLaneID));
     if (link == nullptr) {
@@ -366,7 +370,7 @@ void
 Lane::setAllowed(const std::string& laneID, std::vector<std::string> allowedClasses) {
     MSLane* const l = getLane(laneID);
     l->setPermissions(parseVehicleClasses(allowedClasses), MSLane::CHANGE_PERMISSIONS_PERMANENT);
-    l->getEdge().rebuildAllowedLanes();
+    l->getEdge().rebuildAllowedLanes(false, true);
 }
 
 
@@ -380,7 +384,7 @@ void
 Lane::setDisallowed(const std::string& laneID, std::vector<std::string> disallowedClasses) {
     MSLane* const l = getLane(laneID);
     l->setPermissions(invertPermissions(parseVehicleClasses(disallowedClasses)), MSLane::CHANGE_PERMISSIONS_PERMANENT); // negation yields allowed
-    l->getEdge().rebuildAllowedLanes();
+    l->getEdge().rebuildAllowedLanes(false, true);
 }
 
 
@@ -477,8 +481,7 @@ Lane::handleVariable(const std::string& objID, const int variable, VariableWrapp
         case LANE_DISALLOWED:
             return wrapper->wrapStringList(objID, variable, getDisallowed(objID));
         case LANE_CHANGES:
-            paramData->readUnsignedByte();
-            return wrapper->wrapStringList(objID, variable, getChangePermissions(objID, paramData->readByte()));
+            return wrapper->wrapStringList(objID, variable, getChangePermissions(objID, StoHelp::readTypedByte(*paramData)));
         case VAR_CO2EMISSION:
             return wrapper->wrapDouble(objID, variable, getCO2Emission(objID));
         case VAR_COEMISSION:
@@ -518,16 +521,17 @@ Lane::handleVariable(const std::string& objID, const int variable, VariableWrapp
         case VAR_PENDING_VEHICLES:
             return wrapper->wrapStringList(objID, variable, getPendingVehicles(objID));
         case VAR_ANGLE:
-            paramData->readUnsignedByte();
-            return wrapper->wrapDouble(objID, variable, getAngle(objID, paramData->readDouble()));
+            return wrapper->wrapDouble(objID, variable, getAngle(objID, StoHelp::readTypedDouble(*paramData)));
         case VAR_BIDI:
             return wrapper->wrapString(objID, variable, getBidiLane(objID));
-        case libsumo::VAR_PARAMETER:
-            paramData->readUnsignedByte();
-            return wrapper->wrapString(objID, variable, getParameter(objID, paramData->readString()));
-        case libsumo::VAR_PARAMETER_WITH_KEY:
-            paramData->readUnsignedByte();
-            return wrapper->wrapStringPair(objID, variable, getParameterWithKey(objID, paramData->readString()));
+        case VAR_FOES:
+            return wrapper->wrapStringList(objID, variable, getFoes(objID, StoHelp::readTypedString(*paramData)));
+        case LANE_LINKS:
+            return wrapper->wrapConnectionVector(objID, variable, getLinks(objID));
+        case VAR_PARAMETER:
+            return wrapper->wrapString(objID, variable, getParameter(objID, StoHelp::readTypedString(*paramData)));
+        case VAR_PARAMETER_WITH_KEY:
+            return wrapper->wrapStringPair(objID, variable, getParameterWithKey(objID, StoHelp::readTypedString(*paramData)));
         default:
             return false;
     }

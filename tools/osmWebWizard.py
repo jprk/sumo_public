@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2014-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -15,6 +15,7 @@
 # @author  Jakob Stigloher
 # @author  Jakob Erdmann
 # @author  Michael Behrisch
+# @author  Mirko Barthauer
 # @date    2014-14-10
 
 from __future__ import absolute_import
@@ -88,13 +89,13 @@ def getParams(vClass, prefix=None):
 vehicleParameters = {
     "passenger":   CP + getParams("passenger", "veh") + ["--min-distance", "300", "--min-distance.fringe", "10",
                                                          "--allow-fringe.min-length", "1000", "--lanes"],
-    "truck":       CP + getParams("truck")            + ["--min-distance", "600", "--min-distance.fringe", "10"],   # noqa
-    "bus":         CP + getParams("bus")              + ["--min-distance", "600", "--min-distance.fringe", "10"],   # noqa
-    "motorcycle":  CP + getParams("motorcycle")       + ["--max-distance", "1200"],                                 # noqa
-    "bicycle":     CP + getParams("bicycle", "bike")  + ["--max-distance", "8000"],                                 # noqa
-    "tram":        CP + getParams("tram")             + ["--min-distance", "1200", "--min-distance.fringe", "10"],  # noqa
-    "rail_urban":  CP + getParams("rail_urban")       + ["--min-distance", "1800", "--min-distance.fringe", "10"],  # noqa
-    "rail":        CP + getParams("rail")             + ["--min-distance", "2400", "--min-distance.fringe", "10"],  # noqa
+    "truck":       CP + getParams("truck") + ["--min-distance", "600", "--min-distance.fringe", "10"],   # noqa
+    "bus":         CP + getParams("bus") + ["--min-distance", "600", "--min-distance.fringe", "10"],   # noqa
+    "motorcycle":  CP + getParams("motorcycle") + ["--max-distance", "1200"],                                 # noqa
+    "bicycle":     CP + getParams("bicycle", "bike") + ["--max-distance", "8000"],                                 # noqa
+    "tram":        CP + getParams("tram") + ["--min-distance", "1200", "--min-distance.fringe", "10"],  # noqa
+    "rail_urban":  CP + getParams("rail_urban") + ["--min-distance", "1800", "--min-distance.fringe", "10"],  # noqa
+    "rail":        CP + getParams("rail") + ["--min-distance", "2400", "--min-distance.fringe", "10"],  # noqa
     "ship":             getParams("ship") + ["--fringe-start-attributes", 'departSpeed="max"', "--validate"],
     "pedestrian":  PP + ["--pedestrians", "--max-distance", "2000"],
     "persontrips": PP + ["--persontrips", "--trip-attributes", 'modes="public"'],
@@ -121,9 +122,9 @@ BATCH_MODE |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
 
 
 def quoted_str(s):
-    if type(s) == float:
+    if isinstance(s, float):
         return "%.6f" % s
-    elif type(s) != str:
+    elif not isinstance(s, str):
         return str(s)
     elif '"' in s or ' ' in s:
         return '"' + s.replace('"', '\\"') + '"'
@@ -145,7 +146,7 @@ class Builder(object):
             for base in ['', os.path.expanduser('~/Sumo')]:
                 try:
                     self.tmp = os.path.abspath(os.path.join(base, now))
-                    os.makedirs(self.tmp)
+                    os.makedirs(self.tmp, exist_ok=data.get("outputDirExistOk", False))
                     break
                 except Exception:
                     print("Cannot create directory '%s'." % self.tmp, file=sys.stderr)
@@ -235,6 +236,7 @@ class Builder(object):
         if self.data["publicTransport"]:
             self.filename("stops", "_stops.add.xml")
             netconvertOptions += ",--ptstop-output,%s" % self.files["stops"]
+            netconvertOptions += ",--ptline-clean-up"
             self.filename("ptlines", "_ptlines.xml")
             self.filename("ptroutes", "_pt.rou.xml")
             netconvertOptions += ",--ptline-output,%s" % self.files["ptlines"]
@@ -298,6 +300,7 @@ class Builder(object):
                 "-t", "100",
                 "-d", "background_images",
                 "-l", "-300",
+                "-a", "Mozilla/5.0 (X11; Linux x86_64) osmWebWizard.py/1.0 (+https://github.com/eclipse-sumo/sumo)",
             ]
             try:
                 os.chdir(self.tmp)
@@ -318,6 +321,7 @@ class Builder(object):
 
             self.edges = sumolib.net.readNet(os.path.join(self.tmp, self.files["net"])).getEdges()
 
+            seed = 42
             for vehicle in sorted(self.data["vehicles"].keys()):
                 options = self.data["vehicles"][vehicle]
                 self.report("Processing %s" % vehicleNames[vehicle])
@@ -334,6 +338,9 @@ class Builder(object):
                     options += ["--additional-files", ",".join([self.files["stops"], self.files["ptroutes"]])]
                     options += ["--persontrip.walk-opposite-factor", "0.8"]
                     options += ["--duarouter-weights.tls-penalty", "20"]
+
+                options += ["--seed", str(seed)]
+                seed += 1
 
                 try:
                     randomTrips.main(randomTrips.get_options(options))
@@ -425,6 +432,20 @@ class Builder(object):
         if self.routenames:
             opts += ["-r", ",".join(self.getRelative(self.routenames))]
 
+            # extra output if the scenario contains traffic
+            opts += ["--tripinfo-output", "tripinfos.xml"]
+            opts += ["--statistic-output", "stats.xml"]
+
+            self.filename("outadd", "output.add.xml", False)
+            with open(self.files["outadd"], 'w') as fadd:
+                sumolib.writeXMLHeader(fadd, "$Id$", "additional")
+                fadd.write('   <edgeData id="wizard_example" period="3600" file="edgeData.xml"/>\n')
+                fadd.write("</additional>\n")
+            self.additionalFiles.append(self.files["outadd"])
+
+        if self.data["publicTransport"]:
+            opts += ["--stop-output", "stopinfos.xml"]
+
         if len(self.additionalFiles) > 0:
             opts += ["-a", ",".join(self.getRelative(self.additionalFiles))]
 
@@ -456,13 +477,16 @@ class Builder(object):
         self.filename("zip", ".zip")
 
         with ZipFile(self.files["zip"], "w") as zipfile:
-            files = ["net", "guisettings", "config", "run.bat", "build.bat"]
+            files = ["net", "guisettings", "config", "run.bat"]
+
+            if self.data["vehicles"] or self.data["publicTransport"]:
+                files += ["build.bat"]
 
             if self.data["poly"]:
                 files += ["poly"]
 
             # translate the pseudo file names to real file names
-            files = map(lambda name: self.files[name], files)
+            files = list(map(lambda name: self.files[name], files))
 
             if self.data["vehicles"]:
                 files += self.routenames
@@ -521,7 +545,7 @@ class OSMImporterWebSocket(WebSocket):
                 data = builder.createZip()
                 builder.finalize()
 
-                self.sendMessage(u"zip " + data)
+                self.sendMessage(b"zip " + data)
         except ssl.CertificateError:
             self.report("Error with SSL certificate, try 'pip install -U certifi'.")
         except Exception as e:
@@ -593,8 +617,16 @@ def main(options):
             subprocess.call([sumolib.checkBinary("sumo"), "-c", builder.files["config"]])
     else:
         if not options.remote:
-            webbrowser.open("file://" +
-                            os.path.join(os.path.dirname(os.path.abspath(__file__)), "webWizard", "index.html"))
+            path = os.path.dirname(os.path.realpath(__file__))
+            # on Linux Firefox refuses to open files in /usr/ #16086
+            if os.name != "nt" and not path.startswith(os.path.expanduser('~')):
+                new_path = os.path.expanduser('~/Sumo')
+                wizard_path = os.path.join(new_path, 'webWizard')
+                if not os.path.exists(wizard_path):
+                    os.makedirs(new_path, exist_ok=True)
+                    shutil.copytree(os.path.join(path, "webWizard"), wizard_path)
+                path = new_path
+            webbrowser.open("file://" + os.path.join(path, "webWizard", "index.html"))
 
         server = SimpleWebSocketServer(options.address, options.port, OSMImporterWebSocket)
         server.serveforever()

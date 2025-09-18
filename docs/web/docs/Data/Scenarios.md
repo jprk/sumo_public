@@ -8,6 +8,11 @@ Building a scenario is a lot of work. If you have built a SUMO scenario
 you can share (under a sufficiently open license), please
 [contact us](../Contact.md).
 
+# Alicante-Murcia highway scenario
+Large-scale and high-accuracy traffic simulation scenario that models 9 full days of traffic over a 97 km freeway section, with mixed traffic (light and heavy vehicles). The simulation scenario has been calibrated using a unique dataset provided by the Spanish road authority and a novel learning-based and iterative traffic demand calibration technique for SUMO.
+
+More info at: https://github.com/msepulcre/Alicante-Murcia-SUMO-Scenario
+
 # Berlin
 
 - [Mosaic Berlin Sumo Traffic (BeST) Scenario on GitHub](https://github.com/mosaic-addons/best-scenario)
@@ -78,7 +83,17 @@ Italy.
 
 # Toronto
 
-- [Toronto Scenarios on GitHub](https://github.com/Jahandad-Baloch/TorontoSUMONetworks)
+- [**TorontoSUMONetworks on GitHub**](https://github.com/Jahandad-Baloch/TorontoSUMONetworks)
+
+TorontoSUMONetworks is an open-source platform designed for creating, manipulating, and simulating traffic networks in Toronto using SUMO. This tool provides a realistic simulation environment for transportation research, urban planning, and traffic management. Its flexibility makes it valuable for diverse research areas, including Intelligent Transportation Systems (ITS), Reinforcement Learning for Adaptive Traffic Signal Control (ATSC), and more.
+
+Key Features:
+- Realistic traffic simulations based on the Toronto network, including major arterials and local streets.
+- Multi-modal transportation support, simulating private vehicles, buses, bicycles, and pedestrians.
+- Utilizes real-world data from the City of Toronto Open Data Portal for accurate simulations.
+- Highly configurable, supporting detectors like inductionloop, lanearea, and multi-entry/exit for traffic management.
+
+This project offers a comprehensive platform for researchers, urban planners, and engineers aiming to improve urban mobility and optimize traffic systems through advanced simulation and analysis.
 
 # Turin SUMO Traffic (TuST)
 A large-scale mesoscopic traffic simulation of a 600-sqkm area around the Municipality of Turin.

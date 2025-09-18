@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -62,8 +62,8 @@ def main():
                 lastTime[obj.id] = time
 
     removeAtTime = defaultdict(list)  # time -> objects to remove
-    for oID, t in lastTime.items():
-        removeAtTime[t + deltaT].append(oID)
+    for oID, rt in lastTime.items():
+        removeAtTime[rt + deltaT].append(oID)
 
     end = max(max(lastTime.values()), traci.simulation.getEndTime())
     created = set()

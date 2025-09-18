@@ -1,5 +1,5 @@
-Eclipse SUMO netgenerate Version v1_20_0+1963-cf76c26275c
- Copyright (C) 2001-2024 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO netgenerate Version v1_23_1+1107-78f51b0269e
+ Copyright (C) 2001-2025 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Synthetic network generator for the microscopic, multi-modal traffic simulation
  SUMO.
 
@@ -64,17 +64,17 @@ Random Network Options:
                                         node
   --rand.connectivity FLOAT            Probability for roads to continue at
                                         each node
-  --rand.neighbor-dist1 FLOAT          Probability for a node having exactly 1
+  --rand.neighbor-dist1 FLOAT          Probability for a node having at most 1
                                         neighbor
-  --rand.neighbor-dist2 FLOAT          Probability for a node having exactly 2
+  --rand.neighbor-dist2 FLOAT          Probability for a node having at most 2
                                         neighbors
-  --rand.neighbor-dist3 FLOAT          Probability for a node having exactly 3
+  --rand.neighbor-dist3 FLOAT          Probability for a node having at most 3
                                         neighbors
-  --rand.neighbor-dist4 FLOAT          Probability for a node having exactly 4
+  --rand.neighbor-dist4 FLOAT          Probability for a node having at most 4
                                         neighbors
-  --rand.neighbor-dist5 FLOAT          Probability for a node having exactly 5
+  --rand.neighbor-dist5 FLOAT          Probability for a node having at most 5
                                         neighbors
-  --rand.neighbor-dist6 FLOAT          Probability for a node having exactly 6
+  --rand.neighbor-dist6 FLOAT          Probability for a node having at most 6
                                         neighbors
   --rand.grid                          Place nodes on a regular grid with
                                         spacing rand.min-distance
@@ -92,6 +92,16 @@ Output Options:
                                         comma for floating point output
   --precision.geo INT                  Defines the number of digits after the
                                         comma for lon,lat output
+  --output.compression STR             Defines the standard compression
+                                        algorithm (currently only for parquet
+                                        output)
+  --output.format STR                  Defines the standard output format if
+                                        not derivable from the file name ('xml',
+                                        'csv', 'parquet')
+  --output.column-header STR           How to derive column headers from
+                                        attribute names ('none', 'tag', 'auto',
+                                        'plain')
+  --output.column-separator STR        Separator in CSV output
   -H, --human-readable-time            Write time values as hour:minute:second
                                         or day:hour:minute:second rather than
                                         seconds
@@ -108,11 +118,13 @@ Output Options:
                                         junctions to FILE (can be loaded as
                                         additional node-file to reproduce joins
   --prefix STR                         Defines a prefix for edge and junction
-                                        names
+                                        IDs
+  --prefix.junction STR                Defines a prefix for unction IDs
+  --prefix.edge STR                    Defines a prefix for edge IDs
   --amitran-output FILE                The generated net will be written to
                                         FILE using Amitran format
   --matsim-output FILE                 The generated net will be written to
-                                        FILE using MATsim format
+                                        FILE using MATSim format
   --opendrive-output FILE              The generated net will be written to
                                         FILE using OpenDRIVE format
   --dlr-navteq-output FILE             The generated net will be written to
@@ -161,6 +173,9 @@ Processing Options:
   --reserved-ids FILE                  Ensures that generated ids do not
                                         included any of the typed IDs from FILE
                                         (sumo-gui selection file format)
+  --kept-ids FILE                      Ensures that objects with typed IDs from
+                                        FILE (sumo-gui selection file format)
+                                        are not renamed
   --geometry.split                     Splits edges across geometry nodes
   -R, --geometry.remove                Replace nodes which only define edge
                                         geometry by geometry points (joins
@@ -322,6 +337,8 @@ TLS Building Options:
                                         network
   --tls.discard-simple                 Does not instantiate traffic lights at
                                         geometry-like nodes
+  --railway.signal.permit-unsignalized STR[]  List rail classes that may run
+                                        without rail signals
 
 Edge Removal Options:
   --keep-edges.min-speed FLOAT         Only keep edges with speed in
@@ -381,6 +398,9 @@ Junctions Options:
                                         other (recommended for OSM import)
   --junctions.join-dist FLOAT          Determines the maximal distance for
                                         joining junctions (defaults to 10)
+  --junctions.join.parallel-threshold FLOAT  The angular threshold in degress
+                                        for rejection of parallel edges when
+                                        joining junctions
   --junctions.join-same                Joins junctions that have the same
                                         coordinates even if not connected
   --max-join-ids INT                   Abbreviate junction or TLS id if it
@@ -455,6 +475,8 @@ Pedestrian Options:
   --crossings.guess.speed-threshold FLOAT  At uncontrolled nodes, do not build
                                         crossings across edges with a speed
                                         above the threshold
+  --crossings.guess.roundabout-priority  Give priority to guessed crossings at
+                                        roundabouts
   --walkingareas                       Always build walking areas even if there
                                         are no crossings
   --walkingareas.join-dist FLOAT       Do not create a walkingarea between

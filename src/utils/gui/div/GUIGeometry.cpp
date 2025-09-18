@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -350,7 +350,7 @@ GUIGeometry::drawGeometryPoints(const GUIVisualizationSettings::Detail d, const 
                                 const RGBColor& color, const double radius, const double exaggeration,
                                 const bool editingElevation) {
     // check detail level
-    if (d <= GUIVisualizationSettings::Detail::GeometryPoint) {
+    if (editingElevation || (d <= GUIVisualizationSettings::Detail::GeometryPoint)) {
         // get exaggeratedRadio
         const double exaggeratedRadio = (radius * exaggeration);
         // iterate over geometryPoints

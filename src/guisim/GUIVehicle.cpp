@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,7 +27,6 @@
 #include <bitset>
 #include <utils/common/MsgHandler.h>
 #include <utils/common/StringUtils.h>
-#include <utils/common/StringTokenizer.h>
 #include <utils/vehicle/SUMOVehicleParameter.h>
 #include <utils/emissions/PollutantsInterface.h>
 #include <utils/geom/GeomHelper.h>
@@ -59,6 +58,7 @@
 #include <microsim/devices/MSDevice_BTreceiver.h>
 #include <microsim/devices/MSDevice_ElecHybrid.h>
 #include <microsim/devices/MSDevice_Battery.h>
+#include <microsim/traffic_lights/MSDriveWay.h>
 #include <gui/GUIApplicationWindow.h>
 #include <gui/GUIGlobals.h>
 #include "GUIVehicle.h"
@@ -70,25 +70,27 @@
 
 #define SPEEDMODE_DEFAULT 31
 #define LANECHANGEMODE_DEFAULT 1621
-
 //#define DEBUG_FOES
 
+
 // ===========================================================================
-// FOX callback mapping
+// member method definitions
 // ===========================================================================
-
-// Object implementation
-
-
 /* -------------------------------------------------------------------------
  * GUIVehicle - methods
  * ----------------------------------------------------------------------- */
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4355) // mask warning about "this" in initializers
+#endif
 GUIVehicle::GUIVehicle(SUMOVehicleParameter* pars, ConstMSRoutePtr route,
                        MSVehicleType* type, const double speedFactor) :
     MSVehicle(pars, route, type, speedFactor),
     GUIBaseVehicle((MSBaseVehicle&) * this) {
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 
 GUIVehicle::~GUIVehicle() {
@@ -193,6 +195,9 @@ GUIVehicle::getParameterWindow(GUIMainWindow& app,
         ret->mkItem(TL("leftmost edge sublane [#]"), true, new FunctionBinding<GUIVehicle, int>(this, &GUIVehicle::getLeftSublaneOnEdge));
         ret->mkItem(TL("lane change maneuver distance [m]"), true, new FunctionBinding<GUIVehicle, double>(this, &GUIVehicle::getManeuverDist));
     }
+    if (isRailway(getVClass())) {
+        ret->mkItem(TL("driveways"), true, new FunctionBindingString<GUIVehicle>(this, &GUIVehicle::getDriveWays));
+    }
     if (hasBattery || isElecHybrid) {
         ret->mkItem(TL("present state of charge [Wh]"), true,
                     new FunctionBinding<GUIVehicle, double>(this, &MSVehicle::getStateOfCharge));
@@ -200,7 +205,7 @@ GUIVehicle::getParameterWindow(GUIMainWindow& app,
     if (hasBattery) {
         ret->mkItem(TL("relative state of charge (SoC) [-]"), true,
                     new FunctionBinding<GUIVehicle, double>(this, &MSVehicle::getRelativeStateOfCharge));
-        ret->mkItem(TL("currently charging [Wh]"), true,
+        ret->mkItem(TL("current timestep charge [Wh]"), true,
                     new FunctionBinding<GUIVehicle, double>(this, &MSVehicle::getChargedEnergy));
         ret->mkItem(TL("maximum charge rate [W]"), true,
                     new FunctionBinding<GUIVehicle, double>(this, &MSVehicle::getMaxChargeRate));
@@ -225,6 +230,7 @@ GUIVehicle::getParameterWindow(GUIMainWindow& app,
 GUIParameterTableWindow*
 GUIVehicle::getTypeParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
     GUIParameterTableWindow* ret = new GUIParameterTableWindow(app, *this, "vType:" + myType->getID());
+    ret->mkItem(TL("type"), false, myType->getID());
     ret->mkItem(TL("length [m]"), false, myType->getLength());
     ret->mkItem(TL("width [m]"), false, myType->getWidth());
     ret->mkItem(TL("height [m]"), false, myType->getHeight());
@@ -244,6 +250,7 @@ GUIVehicle::getTypeParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
     ret->mkItem(TL("imperfection (sigma)"), false, getCarFollowModel().getImperfection());
     ret->mkItem(TL("desired headway (tau) [s]"), false, getCarFollowModel().getHeadwayTime());
     ret->mkItem(TL("speedfactor"), false, myType->getParameter().speedFactor.toStr(gPrecision));
+    ret->mkItem(TL("startupDelay [s]"), false, STEPS2TIME(getCarFollowModel().getStartupDelay()));
     if (myType->getParameter().wasSet(VTYPEPARS_ACTIONSTEPLENGTH_SET)) {
         ret->mkItem(TL("action step length [s]"), false, myType->getActionStepLengthSecs());
     }
@@ -315,7 +322,7 @@ GUIVehicle::drawAction_drawLinkItems(const GUIVisualizationSettings& s) const {
 
 
 void
-GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool asImage) const {
+GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, double scaledLength, bool asImage) const {
     RGBColor current = GLHelper::getColor();
     RGBColor darker = current.changedBrightness(-51);
     const double exaggeration = (s.vehicleSize.getExaggeration(s, this)
@@ -323,8 +330,7 @@ GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool
     if (exaggeration == 0) {
         return;
     }
-    // bool reversed =
-    MSTrainHelper trainHelper(this, isReversed() && s.drawReversed, s.secondaryShape, exaggeration, s.vehicleQuality);
+    MSTrainHelper trainHelper(this, scaledLength, isReversed() && s.drawReversed, s.secondaryShape, exaggeration, s.vehicleQuality);
     const int numCarriages = trainHelper.getNumCarriages();
     const int firstPassengerCarriage = trainHelper.getFirstPassengerCarriage();
     const int noPersonsBackCarriages = (getVehicleType().getGuiShape() == SUMOVehicleShape::TRUCK_SEMITRAILER || getVehicleType().getGuiShape() == SUMOVehicleShape::TRUCK_1TRAILER) && numCarriages > 1 ? 1 : 0;
@@ -342,7 +348,7 @@ GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool
     }
     GLHelper::popMatrix(); // undo initial translation and rotation
     const double xCornerCut = 0.3 * exaggeration;
-    const double yCornerCut = 0.4 * trainHelper.getUpscaleLength();
+    const double yCornerCut = MIN2(0.4 * trainHelper.getUpscaleLength(),  trainHelper.getUpscaleLength() * scaledLength / 4);
     Position front, back;
     double angle = 0.0;
     double curCLength = trainHelper.getFirstCarriageLength();
@@ -384,12 +390,10 @@ GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool
         double halfWidth = trainHelper.getHalfWidth();
         std::string imgFile = getVType().getImgFile();
         if (asImage && i != trainHelper.getFirstCarriageNo()) {
-            if (getVType().getParameter().hasParameter("carriageImages")) {
-                std::vector<std::string> imgFiles = StringTokenizer(getVType().getParameter().getParameter("carriageImages", ""), ",").getVector();
-                if (imgFiles.size() > 0) {
-                    const int carIndex = trainHelper.isReversed() ? numCarriages - i : i;
-                    imgFile = imgFiles[MIN2((int)imgFiles.size() - 1, carIndex - 1)];
-                }
+            const size_t nImages = getVType().getParameter().carriageImages.size();
+            if (nImages > 0) {
+                const int carIndex = trainHelper.isReversed() ? numCarriages - i : i;
+                imgFile = getVType().getParameter().carriageImages[MIN2((int)nImages - 1, carIndex - 1)];
             }
         }
         if (!asImage || !GUIBaseVehicleHelper::drawAction_drawVehicleAsImage(s, imgFile, this, getVType().getWidth() * exaggeration, curCLength)) {
@@ -397,7 +401,13 @@ GUIVehicle::drawAction_drawCarriageClass(const GUIVisualizationSettings& s, bool
                 case SUMOVehicleShape::TRUCK_SEMITRAILER:
                 case SUMOVehicleShape::TRUCK_1TRAILER:
                     if (i == trainHelper.getFirstCarriageNo()) {  // at the moment amReversed is only ever set for rail - so has no impact in this call
+                        GLHelper::pushMatrix();
+                        if (getVType().getGuiShape() == SUMOVehicleShape::TRUCK_SEMITRAILER) {
+                            // default drawing uses a fixed cab length but we want to scale here
+                            glScaled(1, curCLength / 2.5, 1);
+                        }
                         GUIBaseVehicleHelper::drawAction_drawVehicleAsPoly(s, getVType().getGuiShape(), getVType().getWidth() * exaggeration, curCLength, 0, false, reversed);
+                        GLHelper::popMatrix();
                     } else {
                         GLHelper::setColor(current);
                         GLHelper::drawBoxLine(Position(0, 0), 180, curCLength, halfWidth);
@@ -950,6 +960,19 @@ GUIVehicle::getTargetLaneID() const {
     return Named::getIDSecure(getLaneChangeModel().getTargetLane(), "");
 }
 
+
+std::string
+GUIVehicle::getDriveWays() const {
+    std::vector<std::string> result;
+    for (auto item : myMoveReminders) {
+        const MSDriveWay* dw = dynamic_cast<const MSDriveWay*>(item.first);
+        if (dw) {
+            result.push_back(dw->getID());
+        }
+    }
+    return StringUtils::wrapText(joinToStringSorting(result, " "), 60);
+}
+
 double
 GUIVehicle::getManeuverDist() const {
     return getLaneChangeModel().getManeuverDist();
@@ -957,7 +980,7 @@ GUIVehicle::getManeuverDist() const {
 
 std::string
 GUIVehicle::getSpeedMode() const {
-    return std::bitset<6>(getInfluencer()->getSpeedMode()).to_string();
+    return std::bitset<7>(getInfluencer()->getSpeedMode()).to_string();
 }
 
 std::string

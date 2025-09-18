@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-10-08 09:02:51 by Eclipse SUMO netedit Version v1_20_0+2246-02b4422aa12
+<!-- generated on 2025-07-10 10:02:27 by Eclipse SUMO netedit Version v1_23_1+0978-b3f6417a0cf
 <neteditConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
     <input>
@@ -9,6 +9,7 @@
 
     <processing>
         <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
         <geometry.max-grade.fix value="false"/>
         <offset.disable-normalization value="true"/>
         <lefthand value="0"/>
@@ -30,8 +31,10 @@
 
 <tlLogics version="1.20" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tllogic_file.xsd">
     <tlLogic id="J0" type="NEMA" programID="0" offset="0">
-        <phase duration="90" state="rgrgrgrgrgrgrgrgrgrgrgrgrgrg" name="2"/>
-        <phase duration="90" state="grgrgrgrgrgrgrgrgrgrgrgrgrgr" minDur="6" maxDur="55" vehext="3" yellow="4" red="5" name="1"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrrGrrrrrrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="2"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrGrrrrrrrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="6"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrrrrrrrrrrG" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="4"/>
+        <phase duration="90" state="rrrrrrrrrrrrrrrrrrrrrrrrGrrr" minDur="5" maxDur="50" vehext="2" yellow="3" red="2" name="8"/>
         <param key="barrier2Phases" value="2,6"/>
         <param key="barrierPhases" value="4,8"/>
         <param key="ring1" value="0,2,0,4"/>

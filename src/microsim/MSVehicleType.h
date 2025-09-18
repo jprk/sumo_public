@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -204,7 +204,7 @@ public:
      * @return The mass of this vehicle type
      */
     inline double getMass() const {
-        return myParameter.mass;
+        return myEnergyParams.getDouble(SUMO_ATTR_MASS);
     }
 
 
@@ -394,6 +394,16 @@ public:
      */
     void setApparentDecel(double apparentDecel);
 
+    /** @brief Set a new value for this type's maximum acceleration profile.
+     * @param[in] accelProfile The new acceleration profile of this type
+     */
+    void setMaxAccelProfile(std::vector<std::pair<double, double> > accelProfile);
+
+    /** @brief Set a new value for this type's desired acceleration profile.
+     * @param[in] accelProfile The new acceleration profile of this type
+     */
+    void setDesAccelProfile(std::vector<std::pair<double, double> > accelProfile);
+
     /** @brief Set a new value for this type's imperfection.
      * @param[in] imperfection The new imperfection of this type
      */
@@ -465,6 +475,11 @@ public:
      * @param[in] vclass The new vehicle class of this type
      */
     void setVClass(SUMOVehicleClass vclass);
+
+    /** @brief Set a new value for this type's gui shape
+     * @param[in] shapeClass The new shape class of this type
+     */
+    void setGUIShape(SUMOVehicleShape shape);
 
 
     /** @brief Set a new value for this type's default probability
@@ -570,6 +585,10 @@ public:
     /** @brief Set traffic scaling factor
      */
     void setScale(double value);
+
+    /** @brief Set lcContRight (which is the only lc-attribute not used within the laneChange model)
+     */
+    void setLcContRight(const std::string& value);
     /// @}
 
 
@@ -582,7 +601,7 @@ public:
      * @return The built vehicle type
      * @exception ProcessError on false values (not et used)
      */
-    static MSVehicleType* build(SUMOVTypeParameter& from);
+    static MSVehicleType* build(SUMOVTypeParameter& from, const std::string& fileName = "");
 
     /// @brief   Accessor function for parameter equivalent returning entry time for a specific manoeuver angle
     SUMOTime getEntryManoeuvreTime(const int angle) const;

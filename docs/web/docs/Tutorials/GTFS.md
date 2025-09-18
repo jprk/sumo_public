@@ -93,7 +93,7 @@ finding the fastest path between stops.
 If you have downloaded the network and the GTFS data (or have the URL) it is as easy as
 
 ```
-python tools/import/gtfs/gtfs2pt.py -n osm.net.xml --gtfs GTFS_VBB_Juni-Dezember-2019.zip --date 20190904 --modes bus --vtype-output pt_vtypes.xml
+python tools/import/gtfs/gtfs2pt.py -n osm.net.xml.gz --gtfs GTFS_VBB_Juni-Dezember-2019.zip --date 20190904 --modes bus
 ```
 
 The script runs for about five minutes and generates several subdirectories but in the end it provides three output files:
@@ -108,7 +108,7 @@ it to the real situation especially concerning capacity (number of seats) for th
 In order to use them in a simulation you should pass them as additional files (not route files!) in the order given above.
 
 ```
-sumo-gui -n osm.net.xml --additional pt_vtypes.xml,gtfs_publictransport.add.xml,gtfs_publictransport.rou.xml
+sumo-gui -n osm.net.xml.gz --additional vtypes.xml,gtfs_pt_stops.add.xml,gtfs_pt_vehicles.add.xml
 ```
 
 ## Routes from OSM
@@ -120,15 +120,16 @@ which automatically generate the "osm_ptlines.xml" file with the public transpor
 The call is:
 
 ```
-python tools/import/gtfs/gtfs2pt.py -n osm.net.xml --gtfs GTFS_VBB_Juni-Dezember-2019.zip --date 20190904 --osm-routes osm_ptlines.xml --repair --modes bus
+python tools/import/gtfs/gtfs2pt.py -n osm.net.xml.gz --gtfs GTFS_VBB_Juni-Dezember-2019.zip --date 20190904 --modes bus --osm-routes osm_ptlines.xml --repair
 ```
 
 The option **--repair** is not mandatory, but helpful. It takes the given ptLines
 and tries to repair them using duarouter before the mapping. If some routes of the
 ptLines are not valid, they won't be used for the mapping.
 
-The script generates four output files:
+The script generates the following output files:
 
+- `pt_vtypes.xml`
 - `gtfs_publictransport.add.xml` (defining the stops)
 - `gtfs_publictransport.rou.xml` (defining the single public transport vehicles)
 - `gtfs_missing.xml` contains the elements (stops and ptLines) of the GTFS data that could not be imported
@@ -137,8 +138,24 @@ The script generates four output files:
 To run the simulation call:
 
 ```
-sumo-gui -n osm.net.xml --additional gtfs_publictransport.add.xml --routes gtfs_publictransport.rou.xml
+sumo-gui -n osm.net.xml.gz --additional vtypes.xml,gtfs_pt_stops.add.xml,gtfs_pt_vehicles.add.xml
 ```
+
+## Stops from OSM
+
+In this case, the mapping of stops from (imprecise) GTFS coordinates to candidate network edges is guided buy using public transport stop locations from OSM. 
+This is useful when GTFS data has no shape information and provides two advantages:
+
+- mapping is greatly sped up because fever candidate edges are considered
+- mapping of public rail transport is greatly improved because OSM stops encode information about the typical usage direction of rail tracks (and thus stop track assignment at stations)
+
+The call is:
+
+```
+python tools/import/gtfs/gtfs2pt.py -n osm.net.xml.gz --gtfs GTFS_VBB_Juni-Dezember-2019.zip --date 20190904 --modes bus --stops osm_stops.add.xml
+```
+
+The generated simulation inputs are the same as [above](#routes_from_osm) and thus the same call to sumo/sumo-gui can be used.
 
 # Using the outputs in a simulation
 

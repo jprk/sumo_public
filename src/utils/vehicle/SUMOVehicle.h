@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -217,6 +217,10 @@ public:
      */
     virtual bool hasDeparted() const = 0;
 
+    /** @brief Returns the edge on which this vehicle shall depart
+     */
+    virtual int getDepartEdge() const = 0;
+
     /** @brief Returns the distance that was already driven by this vehicle
      * @return the distance driven [m]
      */
@@ -298,6 +302,9 @@ public:
 
     /** @brief Returns whether the vehicle is at a stop and waiting for a person or container to continue
      */
+    virtual bool isStopped() const = 0;
+    /** @brief Returns whether the vehicle is at a stop and waiting for a person or container to continue
+     */
     virtual bool isStoppedTriggered() const = 0;
 
     /** @brief Returns whether the vehicle is at a stop and parking
@@ -328,13 +335,22 @@ public:
     * returns the next imminent stop in the stop queue
     * @return the upcoming stop
     */
-    virtual MSStop& getNextStop() = 0;
+    virtual const MSStop& getNextStop() const = 0;
+
+    /**
+    * returns the next imminent stop in the stop queue
+    * @return the upcoming stop
+    */
+    virtual MSStop& getNextStopMutable() = 0;
 
     /// @brief mark vehicle as active
     virtual void unregisterWaiting() = 0;
 
     /** @brief Returns parameters of the next stop or nullptr **/
     virtual const SUMOVehicleParameter::Stop* getNextStopParameter() const = 0;
+
+    /// @brief get remaining stop duration or 0 if the vehicle isn't stopped
+    virtual SUMOTime getStopDuration() const = 0;
 
     /**
      * schedule a new stop for the vehicle; each time a stop is reached, the vehicle
@@ -363,6 +379,10 @@ public:
 
     /// @brief Returns the vehicles's length
     virtual double getLength() const = 0;
+
+    /* @brief Return whether this vehicle must be treated like a railway vehicle
+     * either due to its vClass or the vClass of it's edge */
+    virtual bool isRail() const = 0;
 
     virtual SUMOTime getLastActionTime() const = 0;
 

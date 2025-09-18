@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -204,15 +204,13 @@ GUITriggeredRerouter::GUIManip_TriggeredRerouter::onCmdShiftProbs(FXObject*, FXS
     return 1;
 }
 
-
-
 /* -------------------------------------------------------------------------
  * GUITriggeredRerouter::GUITriggeredRerouterPopupMenu - methods
  * ----------------------------------------------------------------------- */
+
 GUITriggeredRerouter::GUITriggeredRerouterPopupMenu::GUITriggeredRerouterPopupMenu(
-    GUIMainWindow& app, GUISUMOAbstractView& parent,
-    GUIGlObject& o)
-    : GUIGLObjectPopupMenu(app, parent, o) {}
+    GUIMainWindow& app, GUISUMOAbstractView& parent, GUIGlObject* o) :
+    GUIGLObjectPopupMenu(app, parent, o) {}
 
 
 GUITriggeredRerouter::GUITriggeredRerouterPopupMenu::~GUITriggeredRerouterPopupMenu() {}
@@ -232,15 +230,18 @@ GUITriggeredRerouter::GUITriggeredRerouterPopupMenu::onCmdOpenManip(FXObject*,
 // -------------------------------------------------------------------------
 
 GUITriggeredRerouter::GUITriggeredRerouter(const std::string& id, const MSEdgeVector& edges, double prob,
-        bool off, bool optional, SUMOTime timeThreshold, const std::string& vTypes, const Position& pos, SUMORTree& rtree) :
-    MSTriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos),
+        bool off, bool optional, SUMOTime timeThreshold, const std::string& vTypes, const Position& pos, const double radius, SUMORTree& rtree) :
+    MSTriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos, radius),
     GUIGlObject_AbstractAdd(GLO_REROUTER, id, GUIIconSubSys::getIcon(GUIIcon::REROUTER)),
     myShiftProbDistIndex(0) {
     // add visualisation objects for edges which trigger the rerouter
     for (MSEdgeVector::const_iterator it = edges.begin(); it != edges.end(); ++it) {
-        myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(dynamic_cast<GUIEdge*>(*it), this, REROUTER_TRIGGER_EDGE));
+        myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(dynamic_cast<GUIEdge*>(*it), this, REROUTER_TRIGGER_EDGE, -1, pos, radius));
         rtree.addAdditionalGLObject(myEdgeVisualizations.back());
         myBoundary.add(myEdgeVisualizations.back()->getCenteringBoundary());
+        if (pos != Position::INVALID) {
+            break;
+        }
     }
 }
 
@@ -259,8 +260,9 @@ GUITriggeredRerouter::myEndElement(int element) {
     if (element == SUMO_TAG_INTERVAL) {
         // add visualisation objects for closed edges
         const RerouteInterval& ri = myIntervals.back();
-        for (MSEdgeVector::const_iterator it = ri.closed.begin(); it != ri.closed.end(); ++it) {
-            myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(dynamic_cast<GUIEdge*>(*it), this, REROUTER_CLOSED_EDGE));
+        for (auto item : ri.getClosed()) {
+            const GUIEdge* edge = dynamic_cast<const GUIEdge*>(item.first);
+            myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(const_cast<GUIEdge*>(edge), this, REROUTER_CLOSED_EDGE));
             dynamic_cast<GUINet*>(GUINet::getInstance())->getVisualisationSpeedUp().addAdditionalGLObject(myEdgeVisualizations.back());
             myBoundary.add(myEdgeVisualizations.back()->getCenteringBoundary());
         }
@@ -286,6 +288,7 @@ GUITriggeredRerouter::myEndElement(int element) {
                 }
             }
             if (lastEdge != nullptr) {
+                double maxProb = ri.routeProbs.getProbs()[myShiftProbDistIndex];
                 for (int i = 0; i < (int)ri.routeProbs.getVals().size(); i++) {
                     const ConstMSEdgeVector& edges = ri.routeProbs.getVals()[i]->getEdges();
                     if (nextIndex < (int)edges.size()) {
@@ -293,6 +296,11 @@ GUITriggeredRerouter::myEndElement(int element) {
                         myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(edge, this, REROUTER_SWITCH_EDGE, i));
                         dynamic_cast<GUINet*>(GUINet::getInstance())->getVisualisationSpeedUp().addAdditionalGLObject(myEdgeVisualizations.back());
                         myBoundary.add(myEdgeVisualizations.back()->getCenteringBoundary());
+                    }
+                    double prob = ri.routeProbs.getProbs()[i];
+                    if (prob > maxProb) {
+                        maxProb = prob;
+                        myShiftProbDistIndex = i;
                     }
                 }
             }
@@ -302,9 +310,8 @@ GUITriggeredRerouter::myEndElement(int element) {
 
 
 GUIGLObjectPopupMenu*
-GUITriggeredRerouter::getPopUpMenu(GUIMainWindow& app,
-                                   GUISUMOAbstractView& parent) {
-    GUIGLObjectPopupMenu* ret = new GUITriggeredRerouterPopupMenu(app, parent, *this);
+GUITriggeredRerouter::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
+    GUIGLObjectPopupMenu* ret = new GUITriggeredRerouterPopupMenu(app, parent, this);
     buildPopupHeader(ret, app);
     buildCenterPopupEntry(ret);
     buildShowManipulatorPopupEntry(ret, false);
@@ -357,7 +364,6 @@ GUITriggeredRerouter::shiftProbs() {
     const RerouteInterval* const ri = getCurrentReroute(MSNet::getInstance()->getCurrentTimeStep());
     if (ri != nullptr && ri->routeProbs.getProbs().size() > 1) {
         auto& rp = const_cast<RandomDistributor<ConstMSRoutePtr>&>(ri->routeProbs);
-        myShiftProbDistIndex = myShiftProbDistIndex % rp.getProbs().size();
         double prob = rp.getProbs()[myShiftProbDistIndex];
         rp.add(rp.getVals()[myShiftProbDistIndex], -prob);
         myShiftProbDistIndex = (myShiftProbDistIndex + 1) % rp.getProbs().size();
@@ -382,25 +388,51 @@ GUITriggeredRerouter::shiftProbs() {
 /* -------------------------------------------------------------------------
  * GUITriggeredRerouterEdge - methods
  * ----------------------------------------------------------------------- */
-GUITriggeredRerouter::GUITriggeredRerouterEdge::GUITriggeredRerouterEdge(GUIEdge* edge, GUITriggeredRerouter* parent, RerouterEdgeType edgeType, int distIndex) :
+GUITriggeredRerouter::GUITriggeredRerouterEdge::GUITriggeredRerouterEdge(GUIEdge* edge, GUITriggeredRerouter* parent, RerouterEdgeType edgeType, int distIndex,
+        const Position& pos, const double radius) :
     GUIGlObject(GLO_REROUTER_EDGE, parent->getID() + ":" + edge->getID(), GUIIconSubSys::getIcon(GUIIcon::REROUTER)),
     myParent(parent),
     myEdge(edge),
     myEdgeType(edgeType),
     myDistIndex(distIndex) {
+    UNUSED_PARAMETER(radius);  // it would be nice to have this in the visualization too
     const std::vector<MSLane*>& lanes = edge->getLanes();
-    myFGPositions.reserve(lanes.size());
-    myFGRotations.reserve(lanes.size());
-    for (const MSLane* lane : lanes) {
-        if ((lane->getPermissions() & ~SVC_PEDESTRIAN) == 0) {
-            continue;
+    if (pos == Position::INVALID) {
+        for (const MSLane* lane : lanes) {
+            if ((lane->getPermissions() & ~SVC_PEDESTRIAN) == 0) {
+                continue;
+            }
+            const PositionVector& v = lane->getShape();
+            double lanePos;
+            double centerPos;
+            switch (edgeType) {
+                case REROUTER_TRIGGER_EDGE:
+                    // U sign at end of edge
+                    // (note: symbol is drawn downstream of lanePos and extends 6m)
+                    lanePos = MAX2(0.0, v.length() - 10);
+                    centerPos = MIN2(lanePos + 3, v.length());
+                    break;
+                case REROUTER_SWITCH_EDGE:
+                    // triangle with switch probability
+                    lanePos = 0;
+                    centerPos = lanePos;
+                    break;
+                default:
+                    // closing sign on start of edge
+                    lanePos = MIN2(v.length(), 3.0);
+                    centerPos = MIN2(lanePos + 3, v.length());
+            }
+            myFGPositions.push_back(v.positionAtOffset(lanePos));
+            myFGRotations.push_back(-v.rotationDegreeAtOffset(lanePos));
+            myBoundary.add(v.positionAtOffset(centerPos));
+            myHalfWidths.push_back(lane->getWidth() * 0.5 * 0.875);
         }
-        const PositionVector& v = lane->getShape();
-        const double pos = edgeType == REROUTER_TRIGGER_EDGE ? MAX2(0.0, v.length() - 6) : MIN2(v.length(), 3.0);
-        myFGPositions.push_back(v.positionAtOffset(pos));
-        myFGRotations.push_back(-v.rotationDegreeAtOffset(pos));
+    } else {
+        myFGPositions.push_back(pos);
+        const PositionVector& v = lanes.front()->getShape();
+        myFGRotations.push_back(-v.rotationDegreeAtOffset(lanes.front()->getLength()));
         myBoundary.add(myFGPositions.back());
-        myHalfWidths.push_back(lane->getWidth() * 0.5 * 0.875);
+        myHalfWidths.push_back(SUMO_const_halfLaneWidth * 0.875);
     }
 }
 
@@ -434,7 +466,8 @@ GUITriggeredRerouter::GUITriggeredRerouterEdge::drawGL(const GUIVisualizationSet
                 myParent->getCurrentReroute(MSNet::getInstance()->getCurrentTimeStep());
             if (ri != nullptr && prob > 0) {
                 // draw only if the edge is closed at this time
-                if (std::find(ri->closed.begin(), ri->closed.end(), myEdge) != ri->closed.end()) {
+                const auto& closedEdges = ri->getClosed();
+                if (closedEdges.find(myEdge) != closedEdges.end()) {
                     const int noLanes = (int)myFGPositions.size();
                     for (int j = 0; j < noLanes; ++j) {
                         Position pos = myFGPositions[j];
@@ -482,6 +515,8 @@ GUITriggeredRerouter::GUITriggeredRerouterEdge::drawGL(const GUIVisualizationSet
                 GLHelper::pushMatrix();
                 glTranslated(pos.x(), pos.y(), 0);
                 glRotated(rot, 0, 0, 1);
+                // draw the symbol downstream of pos (without touching the older drawing code)
+                glTranslated(0, -6, 0);
                 glTranslated(0, 0, getType());
                 glScaled(exaggeration, exaggeration, 1);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

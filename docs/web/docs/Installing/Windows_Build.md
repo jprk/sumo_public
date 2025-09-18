@@ -7,11 +7,11 @@ freely available (this does **not** mean "open source") tools.
 Instructions on how to build SUMO on Windows using an Open Source
 toolchain are included in our [building on
 Linux](../Installing/Linux_Build.md) page. Please note that you
-may also [download pre-build Windows binaries](../Downloads.md).
+may also [download pre-built Windows binaries](../Downloads.md).
 
 ## Prerequisites
 
-- A [Visual Studio Community, Professional or Enterprise 2015 or later](https://www.visualstudio.com) installation
+- A [Visual Studio Community, Professional or Enterprise 2017 or later](https://www.visualstudio.com) installation
 - [CMake for Windows](https://cmake.org/download)
 - Python 3.X
 - SUMO sources (either an unpacked src zip or a git clone, see
@@ -96,6 +96,29 @@ For details on building your
 own and also on how to use different versions and additional libraries
 see [Installing/Windows_Libraries](../Installing/Windows_Libraries.md).
 You might not to edit your `CMakeCache.txt` to use the selfmade libraries.
+
+## vcpkg support
+
+If you cannot use SUMOLibraries or want to build from source (maybe for different platforms
+or because you want to anble or disable certain features in the libraries),
+you can also try to build against vcpkg.
+The setup follows those basic steps.
+```
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh
+./vcpkg install arrow gdal xerces-c gettext fmt eigen3
+```
+
+Unless you are determined that all your builds will use vcpkg libraries,
+you should not call `./vcpkg integrate install` because it might mess up
+your environment if you decide to build against SUMOLibraries at a later point.
+Instead you should add
+`-DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake` to your cmake options.
+
+Unfortunately the FOX toolkit is still missing from vcpkg so you
+cannot build any GUI applications by using only vcpkg.
+
 
 ## Install python packages
 

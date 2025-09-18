@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -325,7 +325,7 @@ protected:
      */
     virtual void buildStoppingPlace(MSNet& net, std::string id, std::vector<std::string> lines, MSLane* lane,
                                     double frompos, double topos, const SumoXMLTag element, std::string string,
-                                    int personCapacity, double parkingLength, RGBColor& color);
+                                    int personCapacity, double parkingLength, RGBColor& color, double angle);
 
     /** @brief Builds a charging station
      *
@@ -451,7 +451,7 @@ protected:
     virtual MSTriggeredRerouter* buildRerouter(MSNet& net,
             const std::string& id, MSEdgeVector& edges,
             double prob, bool off, bool optional, SUMOTime timeThreshold,
-            const std::string& vTypes, const Position& pos);
+            const std::string& vTypes, const Position& pos, const double radius);
     //@}
 
 

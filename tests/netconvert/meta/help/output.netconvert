@@ -1,5 +1,5 @@
-Eclipse SUMO netconvert Version v1_20_0+1963-cf76c26275c
- Copyright (C) 2001-2024 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO netconvert Version v1_23_1+1107-78f51b0269e
+ Copyright (C) 2001-2025 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Network importer / builder for the microscopic, multi-modal traffic simulation
  SUMO.
 
@@ -36,7 +36,7 @@ Input Options:
   --visum-file FILE                    Read VISUM-net from FILE
   --vissim-file FILE                   Read VISSIM-net from FILE
   --robocup-dir FILE                   Read RoboCup-net from DIR
-  --matsim-files FILE                  Read MATsim-net from FILE
+  --matsim-files FILE                  Read MATSim-net from FILE
   --itsumo-files FILE                  Read ITSUMO-net from FILE
   --heightmap.shapefiles FILE          Read heightmap from ArcGIS shapefile
   --heightmap.geotiff FILE             Read heightmap from GeoTIFF
@@ -51,6 +51,16 @@ Output Options:
                                         comma for floating point output
   --precision.geo INT                  Defines the number of digits after the
                                         comma for lon,lat output
+  --output.compression STR             Defines the standard compression
+                                        algorithm (currently only for parquet
+                                        output)
+  --output.format STR                  Defines the standard output format if
+                                        not derivable from the file name ('xml',
+                                        'csv', 'parquet')
+  --output.column-header STR           How to derive column headers from
+                                        attribute names ('none', 'tag', 'auto',
+                                        'plain')
+  --output.column-separator STR        Separator in CSV output
   -H, --human-readable-time            Write time values as hour:minute:second
                                         or day:hour:minute:second rather than
                                         seconds
@@ -64,11 +74,13 @@ Output Options:
                                         junctions to FILE (can be loaded as
                                         additional node-file to reproduce joins
   --prefix STR                         Defines a prefix for edge and junction
-                                        names
+                                        IDs
+  --prefix.junction STR                Defines a prefix for unction IDs
+  --prefix.edge STR                    Defines a prefix for edge IDs
   --amitran-output FILE                The generated net will be written to
                                         FILE using Amitran format
   --matsim-output FILE                 The generated net will be written to
-                                        FILE using MATsim format
+                                        FILE using MATSim format
   --opendrive-output FILE              The generated net will be written to
                                         FILE using OpenDRIVE format
   --dlr-navteq-output FILE             The generated net will be written to
@@ -134,6 +146,9 @@ Processing Options:
   --reserved-ids FILE                  Ensures that generated ids do not
                                         included any of the typed IDs from FILE
                                         (sumo-gui selection file format)
+  --kept-ids FILE                      Ensures that objects with typed IDs from
+                                        FILE (sumo-gui selection file format)
+                                        are not renamed
   --dismiss-vclasses                   Removes vehicle class restrictions from
                                         imported edges
   --geometry.split                     Splits edges across geometry nodes
@@ -436,6 +451,9 @@ Junctions Options:
                                         other (recommended for OSM import)
   --junctions.join-dist FLOAT          Determines the maximal distance for
                                         joining junctions (defaults to 10)
+  --junctions.join.parallel-threshold FLOAT  The angular threshold in degress
+                                        for rejection of parallel edges when
+                                        joining junctions
   --junctions.join-exclude STR[]       Interprets STR[] as list of junctions to
                                         exclude from joining
   --junctions.join-same                Joins junctions that have the same
@@ -512,6 +530,8 @@ Pedestrian Options:
   --crossings.guess.speed-threshold FLOAT  At uncontrolled nodes, do not build
                                         crossings across edges with a speed
                                         above the threshold
+  --crossings.guess.roundabout-priority  Give priority to guessed crossings at
+                                        roundabouts
   --walkingareas                       Always build walking areas even if there
                                         are no crossings
   --walkingareas.join-dist FLOAT       Do not create a walkingarea between
@@ -556,6 +576,8 @@ Railway Options:
                                         of rail edges
   --railway.signal.guess.by-stops      Guess signals that guard public
                                         transport stops
+  --railway.signal.permit-unsignalized STR[]  List rail classes that may run
+                                        without rail signals
   --railway.access-distance FLOAT      The search radius for finding suitable
                                         road accesses for rail stops
   --railway.max-accesses INT           The maximum road accesses registered per
@@ -586,6 +608,9 @@ Formats Options:
   --osm.bike-access                    Import bike lanes and fix directions and
                                         permissions on bike paths
   --osm.sidewalks                      Import sidewalks
+  --osm.oneway-reverse-sidewalk        Default to building two sidewalks on
+                                        oneway streets (may affect divided
+                                        roads)
   --osm.crossings                      Import crossings
   --osm.turn-lanes                     Import turning arrows from OSM to help
                                         with connection building
@@ -607,8 +632,10 @@ Formats Options:
                                         all)
   --osm.speedlimit-none FLOAT          The speed limit to be set when there is
                                         no actual speed limit in reality
+  --osm.annotate-defaults              Whether edges shoulds carry information
+                                        on the usage of typemap defaults
   --matsim.keep-length                 The edge lengths given in the
-                                        MATSIM-file will be kept
+                                        MATSim-file will be kept
   --matsim.lanes-from-capacity         The lane number will be computed from
                                         the capacity
   --shapefile.street-id STR            Read edge ids from column STR

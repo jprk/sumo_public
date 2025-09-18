@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -167,7 +167,7 @@ NLTriggerBuilder::parseAndBuildChargingStation(MSNet& net, const SUMOSAXAttribut
     MSParkingArea* parkingArea = getParkingArea(attrs, "parkingArea", id);
 
     // check charge type
-    if ((chargeType != "normal") && (chargeType != "electric") && (chargeType != "fuel")) {
+    if ((chargeType != "normal") && (chargeType != "battery-exchange") && (chargeType != "fuel")) {
         throw InvalidArgument("The chargeType to use within MSLaneSpeedTrigger '" + id + "' is invalid.");
     }
 
@@ -647,6 +647,7 @@ NLTriggerBuilder::parseAndBuildStoppingPlace(MSNet& net, const SUMOSAXAttributes
     // get the positions
     double frompos = attrs.getOpt<double>(SUMO_ATTR_STARTPOS, id.c_str(), ok, 0.);
     double topos = attrs.getOpt<double>(SUMO_ATTR_ENDPOS, id.c_str(), ok, lane->getLength());
+    double angle = attrs.getOpt<double>(SUMO_ATTR_ANGLE, id.c_str(), ok, 90);
     const bool friendlyPos = attrs.getOpt<bool>(SUMO_ATTR_FRIENDLY_POS, id.c_str(), ok, false);
     if (!ok || (myHandler->checkStopPos(frompos, topos, lane->getLength(), POSITION_EPS, friendlyPos) != SUMORouteHandler::StopPos::STOPPOS_VALID)) {
         throw InvalidArgument("Invalid position for " + toString(element) + " '" + id + "'.");
@@ -655,16 +656,16 @@ NLTriggerBuilder::parseAndBuildStoppingPlace(MSNet& net, const SUMOSAXAttributes
     int defaultCapacity;
     SumoXMLAttr capacityAttr;
     if (element != SUMO_TAG_CONTAINER_STOP) {
-        defaultCapacity = MAX2(MSStoppingPlace::getTransportablesAbreast(topos - frompos, element) * 3, 6);
+        defaultCapacity = MAX2(MSStoppingPlace::getDefaultTransportablesAbreast(topos - frompos, element) * 3, 6);
         capacityAttr = SUMO_ATTR_PERSON_CAPACITY;
     } else {
-        defaultCapacity = MSStoppingPlace::getTransportablesAbreast(topos - frompos, element);
+        defaultCapacity = MSStoppingPlace::getDefaultTransportablesAbreast(topos - frompos, element);
         capacityAttr = SUMO_ATTR_CONTAINER_CAPACITY;
     }
     const int transportableCapacity = attrs.getOpt<int>(capacityAttr, id.c_str(), ok, defaultCapacity);
     const double parkingLength = attrs.getOpt<double>(SUMO_ATTR_PARKING_LENGTH, id.c_str(), ok, 0);
     // build the bus stop
-    buildStoppingPlace(net, id, lines, lane, frompos, topos, element, ptStopName, transportableCapacity, parkingLength, color);
+    buildStoppingPlace(net, id, lines, lane, frompos, topos, element, ptStopName, transportableCapacity, parkingLength, color, angle);
 }
 
 
@@ -870,11 +871,19 @@ NLTriggerBuilder::parseAndBuildRerouter(MSNet& net, const SUMOSAXAttributes& att
     const SUMOTime timeThreshold = TIME2STEPS(attrs.getOpt<double>(SUMO_ATTR_HALTING_TIME_THRESHOLD, id.c_str(), ok, 0));
     const std::string vTypes = attrs.getOpt<std::string>(SUMO_ATTR_VTYPES, id.c_str(), ok, "");
     const std::string pos = attrs.getOpt<std::string>(SUMO_ATTR_POSITION, id.c_str(), ok, "");
+    const double radius = attrs.getOpt<double>(SUMO_ATTR_RADIUS, id.c_str(), ok, std::numeric_limits<double>::max());
+    if (attrs.hasAttribute(SUMO_ATTR_RADIUS) && !attrs.hasAttribute(SUMO_ATTR_POSITION)) {
+        WRITE_WARNINGF(TL("It is strongly advisable to give an explicit position when using radius in the definition of rerouter '%'."), id)
+    }
     Position p = Position::INVALID;
     if (pos != "") {
         const std::vector<std::string> posSplit = StringTokenizer(pos, ",").getVector();
         if (posSplit.size() == 1) {
-            p = edges.front()->getLanes()[0]->geometryPositionAtOffset(StringUtils::toDouble(posSplit[0]));
+            double lanePos = StringUtils::toDouble(pos);
+            if (lanePos < 0) {
+                lanePos += edges.front()->getLanes()[0]->getLength();
+            }
+            p = edges.front()->getLanes()[0]->geometryPositionAtOffset(lanePos);
         } else if (posSplit.size() == 2) {
             p = Position(StringUtils::toDouble(posSplit[0]), StringUtils::toDouble(posSplit[1]));
         } else if (posSplit.size() == 3) {
@@ -886,7 +895,7 @@ NLTriggerBuilder::parseAndBuildRerouter(MSNet& net, const SUMOSAXAttributes& att
     if (!ok) {
         throw InvalidArgument("Could not parse rerouter '" + id + "'.");
     }
-    MSTriggeredRerouter* trigger = buildRerouter(net, id, edges, prob, off, optional, timeThreshold, vTypes, p);
+    MSTriggeredRerouter* trigger = buildRerouter(net, id, edges, prob, off, optional, timeThreshold, vTypes, p, radius);
     // read in the trigger description
     trigger->registerParent(SUMO_TAG_REROUTER, myHandler);
 }
@@ -941,16 +950,16 @@ NLTriggerBuilder::buildCalibrator(const std::string& id,
 MSTriggeredRerouter*
 NLTriggerBuilder::buildRerouter(MSNet&, const std::string& id,
                                 MSEdgeVector& edges, double prob, bool off, bool optional,
-                                SUMOTime timeThreshold, const std::string& vTypes, const Position& pos) {
-    return new MSTriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos);
+                                SUMOTime timeThreshold, const std::string& vTypes, const Position& pos, const double radius) {
+    return new MSTriggeredRerouter(id, edges, prob, off, optional, timeThreshold, vTypes, pos, radius);
 }
 
 
 void
 NLTriggerBuilder::buildStoppingPlace(MSNet& net, std::string id, std::vector<std::string> lines, MSLane* lane,
                                      double frompos, double topos, const SumoXMLTag element, std::string ptStopName,
-                                     int personCapacity, double parkingLength, RGBColor& color) {
-    myCurrentStop = new MSStoppingPlace(id, element, lines, *lane, frompos, topos, ptStopName, personCapacity, parkingLength, color);
+                                     int personCapacity, double parkingLength, RGBColor& color, double angle) {
+    myCurrentStop = new MSStoppingPlace(id, element, lines, *lane, frompos, topos, ptStopName, personCapacity, parkingLength, color, angle);
     if (!net.addStoppingPlace(element, myCurrentStop)) {
         delete myCurrentStop;
         myCurrentStop = nullptr;
@@ -1011,6 +1020,7 @@ NLTriggerBuilder::endParkingArea() {
 void
 NLTriggerBuilder::endStoppingPlace() {
     if (myCurrentStop != nullptr) {
+        myCurrentStop->finishedLoading();
         myCurrentStop = nullptr;
     } else {
         throw InvalidArgument("Could not end a stopping place that is not opened.");

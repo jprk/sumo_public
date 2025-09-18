@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -532,7 +532,7 @@ NBEdgeCont::processSplits(NBEdge* e, std::vector<Split> splits,
             //  we can assume that this split was attached to an
             //  existing node. Reset all connections to let the default
             //  algorithm recompute them
-            if (exp.node->getIncomingEdges().size() > 1 || exp.node->getOutgoingEdges().size() > 1) {
+            if (exp.node->getIncomingEdges().size() > 1 || exp.node->getOutgoingEdges().size() > 1 || exp.node->getType() == SumoXMLNodeType::ZIPPER) {
                 for (NBEdge* in : exp.node->getIncomingEdges()) {
                     in->invalidateConnections(true);
                 }
@@ -822,7 +822,7 @@ void
 NBEdgeCont::checkGeometries(const double maxAngle, bool fixAngle, const double minRadius, bool fix, bool fixRailways, bool silent) {
     if (maxAngle > 0 || minRadius > 0) {
         for (auto& item : myEdges) {
-            if (isSidewalk(item.second->getPermissions()) || isForbidden(item.second->getPermissions())) {
+            if ((item.second->getPermissions() & (SVC_PUBLIC_CLASSES | SVC_PASSENGER)) == 0) {
                 continue;
             }
             item.second->checkGeometry(maxAngle, fixAngle, minRadius, fix || (fixRailways && isRailway(item.second->getPermissions())), silent);
@@ -870,82 +870,7 @@ NBEdgeCont::recheckLanes() {
     for (const auto& edgeIt : myEdges) {
         NBEdge* const edge = edgeIt.second;
         edge->recheckLanes();
-        // check opposites
-        if (edge->getNumLanes() > 0) {
-            const int leftmostLane = edge->getNumLanes() - 1;
-            // check oppositeID stored in other lanes
-            for (int i = 0; i < leftmostLane; i++) {
-                const std::string& oppositeID = edge->getLanes()[i].oppositeID;
-                NBEdge* oppEdge = retrieve(oppositeID.substr(0, oppositeID.rfind("_")));
-                if (oppositeID != "" && oppositeID != "-") {
-                    if (edge->getLanes().back().oppositeID == "" && oppEdge != nullptr) {
-                        edge->getLaneStruct(leftmostLane).oppositeID = oppositeID;
-                        WRITE_WARNINGF(TL("Moving opposite lane '%' from invalid lane '%' to lane index %."), oppositeID, edge->getLaneID(i), leftmostLane);
-                    } else {
-                        WRITE_WARNINGF(TL("Removing opposite lane '%' for invalid lane '%'."), oppositeID, edge->getLaneID(i));
-                    }
-                    edge->getLaneStruct(i).oppositeID = "";
-                }
-            }
-            const std::string& oppositeID = edge->getLanes().back().oppositeID;
-            if (oppositeID != "" && oppositeID != "-") {
-                NBEdge* oppEdge = retrieve(oppositeID.substr(0, oppositeID.rfind("_")));
-                if (oppEdge == nullptr) {
-                    WRITE_WARNINGF(TL("Removing unknown opposite lane '%' for edge '%'."), oppositeID, edge->getID());
-                    edge->getLaneStruct(leftmostLane).oppositeID = "";
-                    continue;
-                } else if (oppEdge->getLaneID(oppEdge->getNumLanes() - 1) != oppositeID) {
-                    const std::string oppEdgeLeftmost = oppEdge->getLaneID(oppEdge->getNumLanes() - 1);
-                    WRITE_WARNINGF(TL("Adapting invalid opposite lane '%' for edge '%' to '%'."), oppositeID, edge->getID(), oppEdgeLeftmost);
-                    edge->getLaneStruct(leftmostLane).oppositeID = oppEdgeLeftmost;
-                }
-                NBEdge::Lane& oppLane = oppEdge->getLaneStruct(oppEdge->getNumLanes() - 1);
-                if (oppLane.oppositeID == "") {
-                    const std::string leftmostID = edge->getLaneID(leftmostLane);
-                    WRITE_WARNINGF(TL("Adapting missing opposite lane '%' for edge '%'."), leftmostID, oppEdge->getID());
-                    oppLane.oppositeID = leftmostID;
-                }
-                if (fabs(oppEdge->getLoadedLength() - edge->getLoadedLength()) > NUMERICAL_EPS) {
-                    if (fixOppositeLengths) {
-                        const double avgLength = 0.5 * (edge->getFinalLength() + oppEdge->getFinalLength());
-                        WRITE_WARNINGF(TL("Averaging edge lengths for lane '%' (length %) and edge '%' (length %)."),
-                                       oppositeID, oppEdge->getLoadedLength(), edge->getID(), edge->getLoadedLength());
-                        edge->setLoadedLength(avgLength);
-                        oppEdge->setLoadedLength(avgLength);
-                    } else {
-                        WRITE_ERROR("Opposite lane '" + oppositeID + "' (length " + toString(oppEdge->getLoadedLength()) +
-                                    ") differs in length from edge '" + edge->getID() + "' (length " +
-                                    toString(edge->getLoadedLength()) + "). Set --opposites.guess.fix-lengths to fix this.");
-                        edge->getLaneStruct(edge->getNumLanes() - 1).oppositeID = "";
-                        continue;
-                    }
-                }
-                if (oppEdge->getFromNode() != edge->getToNode() || oppEdge->getToNode() != edge->getFromNode()) {
-                    WRITE_ERRORF(TL("Opposite lane '%' does not connect the same nodes as edge '%'!"), oppositeID, edge->getID());
-                    edge->getLaneStruct(edge->getNumLanes() - 1).oppositeID = "";
-                }
-            }
-        }
-        // check for matching bidi lane shapes (at least for the simple case of 1-lane edges)
-        const NBEdge* bidi = edge->getBidiEdge();
-        if (bidi != nullptr && edge->getNumLanes() == 1 && bidi->getNumLanes() == 1 && edge->getID() < bidi->getID()) {
-            edge->getLaneStruct(0).shape = bidi->getLaneStruct(0).shape.reverse();
-        }
-
-        // check for valid offset and speed
-        const double startOffset = edge->isBidiRail() ? edge->getTurnDestination(true)->getEndOffset() : 0;
-        int i = 0;
-        for (const NBEdge::Lane& l : edge->getLanes()) {
-            if (startOffset + l.endOffset > edge->getLength()) {
-                WRITE_WARNINGF(TL("Invalid endOffset % at lane '%' with length % (startOffset %)."),
-                               toString(l.endOffset), edge->getLaneID(i), toString(l.shape.length()), toString(startOffset));
-            } else if (l.speed < 0.) {
-                WRITE_WARNINGF(TL("Negative allowed speed (%) on lane '%', use --speed.minimum to prevent this."), toString(l.speed), edge->getLaneID(i));
-            } else if (l.speed == 0.) {
-                WRITE_WARNINGF(TL("Lane '%' has a maximum allowed speed of 0."), edge->getLaneID(i));
-            }
-            i++;
-        }
+        edge->recheckOpposite(*this, fixOppositeLengths);
     }
 }
 
@@ -1121,6 +1046,12 @@ NBEdgeCont::joinSameNodeConnectingEdges(NBDistrictCont& dc,
 void
 NBEdgeCont::guessOpposites() {
     //@todo magic values
+    const bool fixOppositeLengths = OptionsCont::getOptions().getBool("opposites.guess.fix-lengths");
+    // ensure consistency of loaded values before starting to guess
+    for (const auto& edgeIt : myEdges) {
+        NBEdge* const edge = edgeIt.second;
+        edge->recheckOpposite(*this, fixOppositeLengths);
+    }
     for (EdgeCont::iterator i = myEdges.begin(); i != myEdges.end(); ++i) {
         NBEdge* edge = i->second;
         edge->guessOpposite();
@@ -1372,25 +1303,39 @@ NBEdgeCont::guessRoundabouts() {
                 std::cout << "   e=" << e->getID() << " left=" << left->getID() << " nextLeft=" << nextLeft->getID() << " angle=" << angle << " nextAngle=" << nextAngle << " eLength=" << e->getLength() << " lLength=" << left->getLength() << " dist=" << e->getLaneShape(0).back().distanceTo2D(left->getLaneShape(0).front()) << "\n";
             }
 #endif
-            if (angle >= 120
-                    || (angle >= 90 &&
-                        // if the edges are long or the junction shape is small we should expect roundness (low angles)
-                        (MAX2(e->getLength(), left->getLength()) > 5
-                         || e->getLaneShape(0).back().distanceTo2D(left->getLaneShape(0).front()) < 10
-                         // there should be no straigher edge further left
-                         || (nextAngle < 45)
-                        ))) {
-                // roundabouts do not have sharp turns (or they wouldn't be called 'round')
-                // however, if the roundabout is very small then most of the roundness may be in the junction so the angle may be as high as 120
+            // there should be no straigher edge further left
+            if (angle >= 90 && nextAngle < 45) {
                 doLoop = false;
 #ifdef DEBUG_GUESS_ROUNDABOUT
                 if (gDebugFlag1) {
-                    std::cout << "     failed angle=" << angle << "\n";
+                    std::cout << "     failed nextAngle=" << nextAngle << "\n";
                 }
                 gDebugFlag1 = false;
 #endif
                 break;
             }
+            // roundabouts do not have sharp turns (or they wouldn't be called 'round')
+            // however, if the roundabout is very small then most of the roundness may be in the junction so the angle may be as high as 180 (for smooth attachments at a joined junction)
+            if (angle >= 90) {
+                double edgeAngle = fabs(NBHelpers::relAngle(e->getStartAngle(), e->getEndAngle()));
+                double edgeAngle2 = fabs(NBHelpers::relAngle(left->getStartAngle(), left->getEndAngle()));
+                double edgeRadius = e->getGeometry().length2D() / DEG2RAD(edgeAngle);
+                double edgeRadius2 = left->getGeometry().length2D() / DEG2RAD(edgeAngle2);
+                const double avgRadius = 0.5 * (edgeRadius + edgeRadius2);
+                double junctionRadius = e->getLaneShape(0).back().distanceTo2D(left->getLaneShape(0).front()) / DEG2RAD(angle);
+                //std::cout << "     junction=" << e->getToNode()->getID() << " e=" << e->getID() << " left=" << left->getID() << " angle=" << angle << " eRadius=" << edgeRadius << " eRadius2=" << edgeRadius2 << " jRadius3=" << junctionRadius << "\n";
+                if (junctionRadius < 0.8 * avgRadius) {
+                    doLoop = false;
+#ifdef DEBUG_GUESS_ROUNDABOUT
+                    if (gDebugFlag1) {
+                        std::cout << "     failed angle=" << angle << " eRadius=" << edgeRadius << " eRadius2=" << edgeRadius2 << " jRadius3=" << junctionRadius << "\n";
+                    }
+                    gDebugFlag1 = false;
+#endif
+                    break;
+                }
+            }
+
             EdgeVector::const_iterator loopClosed = std::find(loopEdges.begin(), loopEdges.end(), left);
             const int loopSize = (int)(loopEdges.end() - loopClosed);
             if (loopSize > 0) {
@@ -1699,8 +1644,10 @@ NBEdgeCont::guessSpecialLanes(SUMOVehicleClass svc, double width, double minSpee
         NBEdge* edge = it->second;
         if (// not excluded
             exclude.count(edge->getID()) == 0
-            // does not yet have a sidewalk
+            // does not yet have a sidewalk/bikelane
             && !edge->hasRestrictedLane(svc)
+            // needs a sidewalk/bikelane
+            && ((edge->getPermissions() & ~SVC_VULNERABLE) != 0 || (edge->getPermissions() & svc) == 0)
             && (
                 // guess.from-permissions
                 (fromPermissions && (edge->getPermissions() & svc) != 0)
@@ -1710,10 +1657,21 @@ NBEdgeCont::guessSpecialLanes(SUMOVehicleClass svc, double width, double minSpee
             edge->addRestrictedLane(width, svc);
             lanesCreated += 1;
             if (svc != SVC_PEDESTRIAN) {
-                edge->invalidateConnections(true);
-                edge->getFromNode()->invalidateOutgoingConnections(true);
-                edge->getFromNode()->invalidateTLS(tlc, true, true);
-                edge->getToNode()->invalidateTLS(tlc, true, true);
+                if (edge->getStep() == NBEdge::EdgeBuildingStep::LANES2LANES_USER) {
+                    // preserve existing connections and only add new ones
+                    edge->declareConnectionsAsLoaded(NBEdge::EdgeBuildingStep::LANES2LANES_DONE);
+                    edge->getFromNode()->recheckVClassConnections(edge);
+                    for (NBEdge* to : edge->getToNode()->getOutgoingEdges()) {
+                        edge->getToNode()->recheckVClassConnections(to);
+                    }
+                    // patching TLS is not feasible because existing states may
+                    // change from 'G' to 'g' when bike lanes are added (i.e. right-turns)
+                } else {
+                    edge->invalidateConnections(true);
+                    edge->getFromNode()->invalidateOutgoingConnections(true);
+                }
+                edge->getFromNode()->invalidateTLS(tlc, true, false);
+                edge->getToNode()->invalidateTLS(tlc, true, false);
             }
         }
     }
@@ -1742,7 +1700,7 @@ NBEdgeCont::addPrefix(const std::string& prefix) {
 
 
 int
-NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& prefix, NBPTStopCont& sc) {
+NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, bool keptIDs, const std::string& prefix, NBPTStopCont& sc) {
     bool startGiven = !OptionsCont::getOptions().isDefault("numerical-ids.edge-start");
     if (!numericaIDs && !reservedIDs && prefix == "" && !startGiven) {
         return 0;
@@ -1776,6 +1734,17 @@ NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& pref
             toChange.insert(it->second);
         }
     }
+    std::set<std::string> keep;
+    if (keptIDs) {
+        NBHelpers::loadPrefixedIDsFomFile(OptionsCont::getOptions().getString("kept-ids"), "edge:", keep);
+        for (auto it = toChange.begin(); it != toChange.end();) {
+            if (keep.count((*it)->getID()) != 0) {
+                toChange.erase(it++);
+            } else {
+                it++;
+            }
+        }
+    }
 
     std::map<std::string, std::vector<std::shared_ptr<NBPTStop> > > stopsOnEdge;
     for (const auto& item : sc.getStops()) {
@@ -1804,7 +1773,7 @@ NBEdgeCont::remapIDs(bool numericaIDs, bool reservedIDs, const std::string& pref
         // make a copy because we will modify the map
         auto oldEdges = myEdges;
         for (auto item : oldEdges) {
-            if (!StringUtils::startsWith(item.first, prefix)) {
+            if (!StringUtils::startsWith(item.first, prefix) && keep.count(item.first) == 0) {
                 rename(item.second, prefix + item.first);
                 renamed++;
             }
@@ -1939,9 +1908,11 @@ NBEdgeCont::joinTramEdges(NBDistrictCont& dc, NBPTStopCont& sc, NBPTLineCont& lc
             nearby.insert(const_cast<NBEdge*>(static_cast<const NBEdge*>(namedEdge)));
         }
         for (NBEdge* const tramEdge : nearby) {
-            // find a continous stretch of tramEdge that runs along one of the
-            // lanes of the road edge
-            const PositionVector& tramShape = tramEdge->getGeometry();
+            // find a continous stretch of tramEdge that runs along one of the lanes of the road edge
+            PositionVector tramShape = tramEdge->getGeometry();
+            if (tramEdge->getToNode() == edge->getToNode()) {
+                tramShape.extrapolate(tramShape.back().distanceTo2D(edge->getGeometry().back()), false, true);
+            }
             double minEdgeDist = maxDist + 1;
             int minLane = -1;
             // find the lane where the maximum distance from the tram geometry
@@ -2005,6 +1976,7 @@ NBEdgeCont::joinTramEdges(NBDistrictCont& dc, NBPTStopCont& sc, NBPTLineCont& lc
                 int laneIndex = item.first.second;
                 const PositionVector& laneShape = road->getLaneShape(laneIndex);
                 double tramPos = tramEdge->getGeometry().nearest_offset_to_point2D(laneShape.front(), false);
+                //std::cout << " road=" << road->getID() << " tramEdge=" << tramEdge->getID() << " tramShape=" << tramEdge->getGeometry() << " laneFront=" << laneShape.front() << " tramPos=" << tramPos << "\n";
                 roads.push_back(std::make_pair(tramPos, item.first));
             }
         }
@@ -2036,7 +2008,7 @@ NBEdgeCont::joinTramEdges(NBDistrictCont& dc, NBPTStopCont& sc, NBPTLineCont& lc
                 const double gap = item.first - pos;
                 NBEdge* road = item.second.first;
                 int laneIndex = item.second.second;
-                if (gap >= JOIN_TRAM_MIN_LENGTH) {
+                if (gap >= JOIN_TRAM_MIN_LENGTH && road->getFromNode() != tramEdge->getFromNode()) {
 #ifdef DEBUG_JOIN_TRAM
                     std::cout << "    splitting tramEdge=" << tramEdge->getID() << " at " << item.first << " (gap=" << gap << ")\n";
 #endif
@@ -2255,6 +2227,7 @@ NBEdgeCont::removeLanesByWidth(NBDistrictCont& dc, const double minWidth) {
         if ((int)indices.size() == edge->getNumLanes()) {
             toRemove.insert(edge);
         } else {
+            std::reverse(indices.begin(), indices.end());
             for (const int i : indices) {
                 edge->deleteLane(i, false, true);
             }

@@ -81,12 +81,12 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--rand.min-angle** {{DT_FLOAT}} | The minimum angle for each pair of (bidirectional) roads in DEGREES; *default:* **45** |
 | **--rand.num-tries** {{DT_INT}} | The number of tries for creating each node; *default:* **50** |
 | **--rand.connectivity** {{DT_FLOAT}} | Probability for roads to continue at each node; *default:* **0.95** |
-| **--rand.neighbor-dist1** {{DT_FLOAT}} | Probability for a node having exactly 1 neighbor; *default:* **0** |
-| **--rand.neighbor-dist2** {{DT_FLOAT}} | Probability for a node having exactly 2 neighbors; *default:* **0** |
-| **--rand.neighbor-dist3** {{DT_FLOAT}} | Probability for a node having exactly 3 neighbors; *default:* **10** |
-| **--rand.neighbor-dist4** {{DT_FLOAT}} | Probability for a node having exactly 4 neighbors; *default:* **10** |
-| **--rand.neighbor-dist5** {{DT_FLOAT}} | Probability for a node having exactly 5 neighbors; *default:* **2** |
-| **--rand.neighbor-dist6** {{DT_FLOAT}} | Probability for a node having exactly 6 neighbors; *default:* **1** |
+| **--rand.neighbor-dist1** {{DT_FLOAT}} | Probability for a node having at most 1 neighbor; *default:* **0** |
+| **--rand.neighbor-dist2** {{DT_FLOAT}} | Probability for a node having at most 2 neighbors; *default:* **0** |
+| **--rand.neighbor-dist3** {{DT_FLOAT}} | Probability for a node having at most 3 neighbors; *default:* **10** |
+| **--rand.neighbor-dist4** {{DT_FLOAT}} | Probability for a node having at most 4 neighbors; *default:* **10** |
+| **--rand.neighbor-dist5** {{DT_FLOAT}} | Probability for a node having at most 5 neighbors; *default:* **2** |
+| **--rand.neighbor-dist6** {{DT_FLOAT}} | Probability for a node having at most 6 neighbors; *default:* **1** |
 | **--rand.grid** {{DT_BOOL}} | Place nodes on a regular grid with spacing rand.min-distance; *default:* **false** |
 
 ### Input
@@ -102,15 +102,21 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--output-prefix** {{DT_STR}} | Prefix which is applied to all output files. The special string 'TIME' is replaced by the current time. |
 | **--precision** {{DT_INT}} | Defines the number of digits after the comma for floating point output; *default:* **2** |
 | **--precision.geo** {{DT_INT}} | Defines the number of digits after the comma for lon,lat output; *default:* **6** |
+| **--output.compression** {{DT_STR}} | Defines the standard compression algorithm (currently only for parquet output) |
+| **--output.format** {{DT_STR}} | Defines the standard output format if not derivable from the file name ('xml', 'csv', 'parquet'); *default:* **xml** |
+| **--output.column-header** {{DT_STR}} | How to derive column headers from attribute names ('none', 'tag', 'auto', 'plain'); *default:* **tag** |
+| **--output.column-separator** {{DT_STR}} | Separator in CSV output; *default:* **;** |
 | **-H** {{DT_BOOL}}<br> **--human-readable-time** {{DT_BOOL}} | Write time values as hour:minute:second or day:hour:minute:second rather than seconds; *default:* **false** |
 | **--alphanumerical-ids** {{DT_BOOL}} | The Ids of generated nodes use an alphanumerical code for easier readability when possible; *default:* **true** |
 | **-o** {{DT_FILE}}<br> **--output-file** {{DT_FILE}} | The generated net will be written to FILE |
 | **-p** {{DT_FILE}}<br> **--plain-output-prefix** {{DT_FILE}} | Prefix of files to write plain xml nodes, edges and connections to |
 | **--plain-output.lanes** {{DT_BOOL}} | Write all lanes and their attributes even when they are not customized; *default:* **false** |
 | **--junctions.join-output** {{DT_FILE}} | Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins |
-| **--prefix** {{DT_STR}} | Defines a prefix for edge and junction names |
+| **--prefix** {{DT_STR}} | Defines a prefix for edge and junction IDs |
+| **--prefix.junction** {{DT_STR}} | Defines a prefix for unction IDs |
+| **--prefix.edge** {{DT_STR}} | Defines a prefix for edge IDs |
 | **--amitran-output** {{DT_FILE}} | The generated net will be written to FILE using Amitran format |
-| **--matsim-output** {{DT_FILE}} | The generated net will be written to FILE using MATsim format |
+| **--matsim-output** {{DT_FILE}} | The generated net will be written to FILE using MATSim format |
 | **--opendrive-output** {{DT_FILE}} | The generated net will be written to FILE using OpenDRIVE format |
 | **--dlr-navteq-output** {{DT_FILE}} | The generated net will be written to dlr-navteq files with the given PREFIX |
 | **--dlr-navteq.version** {{DT_STR}} | The dlr-navteq output format version to write; *default:* **6.5** |
@@ -146,6 +152,7 @@ the offsets given).
 | **--numerical-ids.node-start** {{DT_INT}} | Remaps IDs of nodes to integers starting at INT; *default:* **2147483647** |
 | **--numerical-ids.edge-start** {{DT_INT}} | Remaps IDs of edges to integers starting at INT; *default:* **2147483647** |
 | **--reserved-ids** {{DT_FILE}} | Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format) |
+| **--kept-ids** {{DT_FILE}} | Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed |
 | **--geometry.split** {{DT_BOOL}} | Splits edges across geometry nodes; *default:* **false** |
 | **-R** {{DT_BOOL}}<br> **--geometry.remove** {{DT_BOOL}} | Replace nodes which only define edge geometry by geometry points (joins edges); *default:* **false** |
 | **--geometry.remove.keep-edges.explicit** {{DT_STR_LIST}} | Ensure that the given list of edges is not modified |
@@ -238,6 +245,7 @@ See the [docs](Networks/PlainXML.md) for more info on [junction types](Networks/
 | **--tls.ungroup-signals** {{DT_BOOL}} | Assign a distinct tls link index to every connection; *default:* **false** |
 | **--tls.rebuild** {{DT_BOOL}} | rebuild all traffic light plans in the network; *default:* **false** |
 | **--tls.discard-simple** {{DT_BOOL}} | Does not instantiate traffic lights at geometry-like nodes; *default:* **false** |
+| **--railway.signal.permit-unsignalized** {{DT_STR_LIST}} | List rail classes that may run without rail signals; *default:* **tram,cable_car** |
 
 ### Edge Removal
 
@@ -276,6 +284,7 @@ See the [docs](Networks/PlainXML.md) for more info on [junction types](Networks/
 | **--no-left-connections** {{DT_BOOL}} | Disables building connections to left; *default:* **false** |
 | **--junctions.join** {{DT_BOOL}} | Joins junctions that are close to each other (recommended for OSM import); *default:* **false** |
 | **--junctions.join-dist** {{DT_FLOAT}} | Determines the maximal distance for joining junctions (defaults to 10); *default:* **10** |
+| **--junctions.join.parallel-threshold** {{DT_FLOAT}} | The angular threshold in degress for rejection of parallel edges when joining junctions; *default:* **30** |
 | **--junctions.join-same** {{DT_BOOL}} | Joins junctions that have the same coordinates even if not connected; *default:* **false** |
 | **--max-join-ids** {{DT_INT}} | Abbreviate junction or TLS id if it joins more than INT junctions; *default:* **4** |
 | **--junctions.corner-detail** {{DT_INT}} | Generate INT intermediate points to smooth out intersection corners; *default:* **5** |
@@ -307,6 +316,7 @@ See the [docs](Networks/PlainXML.md) for more info on [junction types](Networks/
 | **--sidewalks.guess.exclude** {{DT_STR_LIST}} | Do not guess sidewalks for the given list of edges |
 | **--crossings.guess** {{DT_BOOL}} | Guess pedestrian crossings based on the presence of sidewalks; *default:* **false** |
 | **--crossings.guess.speed-threshold** {{DT_FLOAT}} | At uncontrolled nodes, do not build crossings across edges with a speed above the threshold; *default:* **13.89** |
+| **--crossings.guess.roundabout-priority** {{DT_BOOL}} | Give priority to guessed crossings at roundabouts; *default:* **true** |
 | **--walkingareas** {{DT_BOOL}} | Always build walking areas even if there are no crossings; *default:* **false** |
 | **--walkingareas.join-dist** {{DT_FLOAT}} | Do not create a walkingarea between sidewalks that are connected by a pedestrian junction within FLOAT; *default:* **15** |
 

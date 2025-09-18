@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -166,6 +166,12 @@ MSVehicleType::setVClass(SUMOVehicleClass vclass) {
 
 
 void
+MSVehicleType::setGUIShape(SUMOVehicleShape shape) {
+    myParameter.shape = shape;
+    myParameter.parametersSet |= VTYPEPARS_SHAPE_SET;
+}
+
+void
 MSVehicleType::setPreferredLateralAlignment(const LatAlignmentDefinition& latAlignment, double latAlignmentOffset) {
     myParameter.latAlignmentProcedure = latAlignment;
     myParameter.latAlignmentOffset = latAlignmentOffset;
@@ -177,6 +183,11 @@ MSVehicleType::setScale(double value) {
     myParameter.scale = value;
     MSInsertionControl& insertControl = MSNet::getInstance()->getInsertionControl();
     insertControl.updateScale(getID());
+}
+
+void
+MSVehicleType::setLcContRight(const std::string& value) {
+    myParameter.lcParameter[SUMO_ATTR_LCA_CONTRIGHT] = value;
 }
 
 void
@@ -193,9 +204,9 @@ MSVehicleType::setDefaultProbability(const double& prob) {
 void
 MSVehicleType::setSpeedFactor(const double& factor) {
     if (myOriginalType != nullptr && factor < 0) {
-        myParameter.speedFactor.getParameter()[0] = myOriginalType->myParameter.speedFactor.getParameter()[0];
+        myParameter.speedFactor.setParameter(0, myOriginalType->myParameter.speedFactor.getParameter(0));
     } else {
-        myParameter.speedFactor.getParameter()[0] = factor;
+        myParameter.speedFactor.setParameter(0, factor);
     }
     myParameter.parametersSet |= VTYPEPARS_SPEEDFACTOR_SET;
 }
@@ -204,9 +215,9 @@ MSVehicleType::setSpeedFactor(const double& factor) {
 void
 MSVehicleType::setSpeedDeviation(const double& dev) {
     if (myOriginalType != nullptr && dev < 0) {
-        myParameter.speedFactor.getParameter()[1] = myOriginalType->myParameter.speedFactor.getParameter()[1];
+        myParameter.speedFactor.setParameter(1, myOriginalType->myParameter.speedFactor.getParameter(1));
     } else {
-        myParameter.speedFactor.getParameter()[1] = dev;
+        myParameter.speedFactor.setParameter(1, dev);
     }
     myParameter.parametersSet |= VTYPEPARS_SPEEDFACTOR_SET;
 }
@@ -259,6 +270,7 @@ void
 MSVehicleType::setMass(double mass) {
     myParameter.mass = mass;
     myParameter.parametersSet |= VTYPEPARS_MASS_SET;
+    const_cast<EnergyParams&>(myEnergyParams).setMass(mass);
 }
 
 
@@ -317,7 +329,7 @@ MSVehicleType::setShape(SUMOVehicleShape shape) {
 
 // ------------ Static methods for building vehicle types
 MSVehicleType*
-MSVehicleType::build(SUMOVTypeParameter& from) {
+MSVehicleType::build(SUMOVTypeParameter& from, const std::string& fileName) {
     if (from.hasParameter("vehicleMass")) {
         if (from.wasSet(VTYPEPARS_MASS_SET)) {
             WRITE_WARNINGF(TL("The vType '%' has a 'mass' attribute and a 'vehicleMass' parameter. The 'mass' attribute will take precedence."), from.id);
@@ -395,7 +407,7 @@ MSVehicleType::build(SUMOVTypeParameter& from) {
             break;
     }
     // init Rail visualization parameters
-    vtype->myParameter.initRailVisualizationParameters();
+    vtype->myParameter.initRailVisualizationParameters(fileName);
     return vtype;
 }
 
@@ -518,6 +530,92 @@ MSVehicleType::setApparentDecel(double apparentDecel) {
 }
 
 void
+MSVehicleType::setMaxAccelProfile(std::vector<std::pair<double, double> > /* accelProfile */) {
+    /*
+    if (myOriginalType != nullptr) {
+        accelProfile = myOriginalType->getCarFollowModel().getMaxAccelProfile();
+    } else {
+        if (accelProfile[0].first > 0.) {
+            accelProfile.insert(accelProfile.begin(), std::make_pair(0.0, accelProfile[0].second));
+        }
+        if (accelProfile.back().first < (10000 / 3.6)) {
+            accelProfile.push_back(std::make_pair((10000 / 3.6), accelProfile.back().second));
+        }
+        double prevSpeed = 0.0;
+        for (const auto& accelPair : accelProfile) {
+            if (accelPair.first < 0.) {
+                accelProfile = myOriginalType->getCarFollowModel().getMaxAccelProfile();
+                break;
+            } else if (accelPair.second < 0.) {
+                accelProfile = myOriginalType->getCarFollowModel().getMaxAccelProfile();
+                break;
+            } else if (accelPair.first < prevSpeed) {
+                accelProfile = myOriginalType->getCarFollowModel().getMaxAccelProfile();
+                break;
+            }
+            prevSpeed = accelPair.first;
+        }
+    }
+    myCarFollowModel->setMaxAccelProfile(accelProfile);
+
+    std::stringstream accelProfileString;
+    accelProfileString << std::fixed << std::setprecision(2);
+    int count = 0;
+    for (const auto& accelPair : accelProfile) {
+        if (count > 0) {
+            accelProfileString << " ";
+        }
+        accelProfileString << toString(accelPair.first) + "," << accelPair.second;
+        count++;
+    }
+    myParameter.cfParameter[SUMO_ATTR_MAXACCEL_PROFILE] = accelProfileString.str();
+    */
+}
+
+void
+MSVehicleType::setDesAccelProfile(std::vector<std::pair<double, double> > /* accelProfile */) {
+    /*
+    if (myOriginalType != nullptr) {
+        accelProfile = myOriginalType->getCarFollowModel().getDesAccelProfile();
+    } else {
+        if (accelProfile[0].first > 0.) {
+            accelProfile.insert(accelProfile.begin(), std::make_pair(0.0, accelProfile[0].second));
+        }
+        if (accelProfile.back().first < (10000 / 3.6)) {
+            accelProfile.push_back(std::make_pair((10000 / 3.6), accelProfile.back().second));
+        }
+        double prevSpeed = 0.0;
+        for (const auto& accelPair : accelProfile) {
+            if (accelPair.first < 0.) {
+                accelProfile = myOriginalType->getCarFollowModel().getDesAccelProfile();
+                break;
+            } else if (accelPair.second < 0.) {
+                accelProfile = myOriginalType->getCarFollowModel().getDesAccelProfile();
+                break;
+            } else if (accelPair.first < prevSpeed) {
+                accelProfile = myOriginalType->getCarFollowModel().getDesAccelProfile();
+                break;
+            }
+            prevSpeed = accelPair.first;
+        }
+    }
+    myCarFollowModel->setDesAccelProfile(accelProfile);
+
+    std::stringstream accelProfileString;
+    accelProfileString << std::fixed << std::setprecision(2);
+    int count = 0;
+    for (const auto& accelPair : accelProfile) {
+        if (count > 0) {
+            accelProfileString << " ";
+        }
+        accelProfileString << toString(accelPair.first) + "," << accelPair.second;
+        count++;
+    }
+    myParameter.cfParameter[SUMO_ATTR_DESACCEL_PROFILE] = accelProfileString.str();
+    */
+}
+
+void
 MSVehicleType::setImperfection(double imperfection) {
     if (myOriginalType != nullptr && imperfection < 0) {
         imperfection = myOriginalType->getCarFollowModel().getImperfection();
@@ -534,5 +632,6 @@ MSVehicleType::setTau(double tau) {
     myCarFollowModel->setHeadwayTime(tau);
     myParameter.cfParameter[SUMO_ATTR_TAU] = toString(tau);
 }
+
 
 /****************************************************************************/

@@ -38,6 +38,7 @@ copy_test_path:input_plain2.typ.xml
 copy_test_path:input_shapes.add.xml
 copy_test_path:heightmap.tif
 copy_test_path:edge_ids.txt
+copy_test_path:input_ids.txt
 copy_test_path:data
 copy_test_path:input_ptstops.xml
 copy_test_path:input_ptlines.xml
@@ -53,6 +54,7 @@ plain_edges:plain.edg.xml
 plain_connections:plain.con.xml
 plain_tllogic:plain.tll.xml
 plain_types:plain.typ.xml
+plain_cfg:plain.netccfg
 foreign:foreign.net
 cfg:config.cfg
 log:log.txt
@@ -76,6 +78,7 @@ plain_edges:<!--{[->]}-->
 plain_connections:<!--{[->]}-->
 plain_tllogic:<!--{[->]}-->
 plain_types:<!--{[->]}-->
+plain_cfg:<!--{[->]}-->
 joined_nodes:<!--{[->]}-->
 topology:<!--{[->]}-->
 net:<!--{[->]}-->

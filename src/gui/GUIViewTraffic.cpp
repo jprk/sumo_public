@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -39,6 +39,8 @@
 #include <guisim/GUINet.h>
 #include <guisim/GUIVehicle.h>
 #include <guisim/GUIVehicleControl.h>
+#include <mesogui/GUIMEVehicle.h>
+#include <mesogui/GUIMEVehicleControl.h>
 #include <microsim/MSEdge.h>
 #include <microsim/MSGlobals.h>
 #include <microsim/MSJunctionControl.h>
@@ -206,6 +208,23 @@ GUIViewTraffic::buildColorRainbow(const GUIVisualizationSettings& s, GUIColorSch
                 }
             }
         }
+    } else if (objectType == GLO_VEHICLE) {
+        MSVehicleControl& c = MSNet::getInstance()->getVehicleControl();
+        for (MSVehicleControl::constVehIt it_v = c.loadedVehBegin(); it_v != c.loadedVehEnd(); ++it_v) {
+            const GUIGlObject* veh;
+            if (MSGlobals::gUseMesoSim) {
+                veh = static_cast<const GUIMEVehicle*>(it_v->second);
+            } else {
+                veh = static_cast<const GUIVehicle*>(it_v->second);
+            }
+            const double val = veh->getColorValue(s, active);
+            if (val == s.MISSING_DATA) {
+                hasMissingData = true;
+                continue;
+            }
+            minValue = MIN2(minValue, val);
+            maxValue = MAX2(maxValue, val);
+        }
     } else if (objectType == GLO_JUNCTION) {
         if (active == 3) {
             std::set<const MSJunction*> junctions;
@@ -289,7 +308,12 @@ GUIViewTraffic::getEdgeLaneParamKeys(bool edgeKeys) const {
 std::vector<std::string>
 GUIViewTraffic::getVehicleParamKeys(bool /*vTypeKeys*/) const {
     std::set<std::string> keys;
-    GUIVehicleControl* vc = GUINet::getGUIInstance()->getGUIVehicleControl();
+    MSVehicleControl* vc = nullptr;
+    if (MSGlobals::gUseMesoSim) {
+        vc = GUINet::getGUIInstance()->getGUIMEVehicleControl();
+    } else {
+        vc = GUINet::getGUIInstance()->getGUIVehicleControl();
+    }
     vc->secureVehicles();
     for (auto vehIt = vc->loadedVehBegin(); vehIt != vc->loadedVehEnd(); ++vehIt) {
         for (auto kv : vehIt->second->getParameter().getParametersMap()) {
@@ -393,7 +417,9 @@ GUIViewTraffic::onGamingClick(Position pos) {
     if (myTLSGame) {
         MSTLLogicControl& tlsControl = MSNet::getInstance()->getTLSControl();
         MSTrafficLightLogic* minTll = nullptr;
+        GUIGlObject* minRR = nullptr;
         double minDist = std::numeric_limits<double>::infinity();
+        double minDistRR = std::numeric_limits<double>::infinity();
         for (MSTrafficLightLogic* const tll : tlsControl.getAllLogics()) {
             if (tlsControl.isActive(tll) && tll->getProgramID() != "off") {
                 // get the links
@@ -407,6 +433,24 @@ GUIViewTraffic::onGamingClick(Position pos) {
                 }
             }
         }
+        if (makeCurrent()) {
+            for (GUIGlObject* o : getGUIGlObjectsAtPosition(getPositionInformation(), MIN2(minDist, 20.0))) {
+                if (o->getType() == GLO_REROUTER_EDGE) {
+                    const double dist = o->getCenter().distanceTo2D(pos);
+                    if (dist < minDistRR) {
+                        minDistRR = dist;
+                        minRR = o;
+                    }
+                }
+            }
+            makeNonCurrent();
+        }
+        if (minDistRR < minDist && minRR != nullptr) {
+            minRR->onLeftBtnPress(nullptr);
+            update();
+            return;
+        }
+
         if (minTll != nullptr) {
             if (minTll->getPhaseNumber() == 0) {
                 // MSRailSignal
@@ -470,7 +514,7 @@ GUIViewTraffic::onGamingClick(Position pos) {
         if (MSGlobals::gUseMesoSim) {
             return;
         }
-        const std::set<GUIGlID>& sel = gSelected.getSelected(GLO_VEHICLE);
+        const auto& sel = gSelected.getSelected(GLO_VEHICLE);
         if (sel.size() == 0) {
             // find closest pt vehicle
             double minDist = std::numeric_limits<double>::infinity();
@@ -523,7 +567,7 @@ GUIViewTraffic::onGamingClick(Position pos) {
 
 void
 GUIViewTraffic::onGamingRightClick(Position /*pos*/) {
-    const std::set<GUIGlID>& sel = gSelected.getSelected(GLO_VEHICLE);
+    const auto& sel = gSelected.getSelected(GLO_VEHICLE);
     if (sel.size() > 0) {
         GUIGlID id = *sel.begin();
         GUIVehicle* veh = dynamic_cast<GUIVehicle*>(GUIGlObjectStorage::gIDStorage.getObjectBlocking(id));
@@ -593,7 +637,7 @@ GUIViewTraffic::showLaneReachability(GUILane* lane, FXObject* menu, FXSelector) 
         // prepare
         FXMenuCommand* mc = dynamic_cast<FXMenuCommand*>(menu);
         const SUMOVehicleClass svc = SumoVehicleClassStrings.get(mc->getText().text());
-        const double defaultMaxSpeed = SUMOVTypeParameter::VClassDefaultValues(svc).maxSpeed;
+        const double defaultMaxSpeed = SUMOVTypeParameter::VClassDefaultValues(svc).desiredMaxSpeed;
         // find reachable
         std::map<MSEdge*, double> reachableEdges;
         reachableEdges[&lane->getEdge()] = 0;
@@ -630,6 +674,19 @@ GUIViewTraffic::showLaneReachability(GUILane* lane, FXObject* menu, FXSelector) 
                              reachableEdges[prevEdge] > traveltime)) {
                         reachableEdges[prevEdge] = traveltime;
                         check.push_back(prevEdge);
+                    }
+                }
+                // and connect to arbitrary incoming if there are no walkingareas
+                if (!MSNet::getInstance()->hasPedestrianNetwork()) {
+                    for (const MSEdge* const in_const : e->getToJunction()->getIncoming()) {
+                        MSEdge* in = const_cast<MSEdge*>(in_const);
+                        if ((in->getPermissions() & svc) == svc &&
+                                (reachableEdges.count(in) == 0 ||
+                                 // revisit edge via faster path
+                                 reachableEdges[in] > traveltime)) {
+                            reachableEdges[in] = traveltime;
+                            check.push_back(in);
+                        }
                     }
                 }
             }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2007-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2007-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -17,11 +17,22 @@
 # @date    2021-11-05
 
 """
-This script plots arbitrary xml attributes from xml files
-Individual trajectories can be clicked in interactive mode to print the data Id on the console
+This script plots arbitrary xml attributes from xml files.
 
-selects two attributes for x and y axis and a third (id-attribute) for grouping
-of data points into lines
+Options -x, -y, -i select attributes for the x and y axis and an id
+for grouping of data points into lines  (-i @NONE creates one group)
+The following special attributes are also supported
+  @INDEX: the index of the other value within the input file is used.
+  @RANK: the index of the other value within the sorted (descending) list of values is used
+  @COUNT: the number of occurrences of the other value is used.
+          Together with option --barplot or -hbarplot this gives a histogram.
+          Binning size can be set via options --xbin and --ybin.
+  @DENSITY: the number of occurrences of the other value is used, normalized by the total number of values.
+  @BOX: one or more box plots of the other value are drawn.
+        The --idattr is used for grouping and there will be one box plot per id
+  @FILE: the (shortened) input file name is used (useful when plotting one value per file)
+
+Individual trajectories can be clicked in interactive mode to print the data Id on the console.
 
 """
 from __future__ import absolute_import
@@ -62,13 +73,8 @@ NON_DATA_ATTRS = SYMBOLIC_ATTRS + [NONE_ATTR]
 
 def getOptions(args=None):
     optParser = ArgumentParser(
-        description='Plot arbitrary attributes from xml files',
-        epilog='Individual trajectories can be clicked in interactive mode to print the data Id on the console\n'
-        'selects two attributs for x and y axis and optionally a third (id-attribute)\n'
-        'for grouping of data points into lines\n\n'
-        'Example\n'
-        '  plotXMLAttributes.py -x started -y initialPersons -s stopout.xml\n'
-        '    plots passengers over time for vehicles from SUMO stop output',
+        description=__doc__.split('\n')[1],
+        epilog=__doc__,
         formatter_class=RawDescriptionHelpFormatter, conflict_handler='resolve')
 
     optParser.add_option("files", nargs='+', category="input", type=optParser.file_list,
@@ -93,6 +99,10 @@ def getOptions(args=None):
                          help="if --xattr is a list concatenate the values")
     optParser.add_option("--join-y", action="store_true", dest="joiny", default=False,
                          help="if --yattr is a list concatenate the values")
+    optParser.add_option("--split-x", action="store_true", dest="splitx", default=False,
+                         help="interpret the x value as a list of values")
+    optParser.add_option("--split-y", action="store_true", dest="splity", default=False,
+                         help="interpret the y value as a list of values")
     optParser.add_option("--xfactor", help="multiplier for x-data", type=float, default=1)
     optParser.add_option("--yfactor", help="multiplier for y-data", type=float, default=1)
     optParser.add_option("--xbin", help="binning size for x-data", type=float)
@@ -103,6 +113,10 @@ def getOptions(args=None):
                          help="clamp y values to range A:B or half-range A: / :B")
     optParser.add_option("--invert-yaxis", dest="invertYAxis", action="store_true",
                          default=False, help="Invert the Y-Axis")
+    optParser.add_option("--xstr", action="store_true",
+                         default=False, help="Interpret x-data as string")
+    optParser.add_option("--ystr", action="store_true",
+                         default=False, help="Interpret y-data as string")
     optParser.add_option("--scatterplot", action="store_true", category="visualization",
                          default=False, help="Draw a scatterplot instead of lines")
     optParser.add_option("--barplot", action="store_true", category="visualization",
@@ -211,6 +225,24 @@ def write_csv(data, fname):
 def onpick(event):
     mevent = event.mouseevent
     print("dataID=%s x=%d y=%d" % (event.artist.get_label(), mevent.xdata, mevent.ydata))
+
+
+def makeSplitter(splitx, otherIsIndex, ds_fun):
+    def splitter(file):
+        for dataID, x, y in ds_fun(file):
+            if splitx:
+                for i, x2 in enumerate(x.split()):
+                    if otherIsIndex:
+                        yield dataID, x2, i
+                    else:
+                        yield dataID, x2, y
+            else:
+                for i, y2 in enumerate(y.split()):
+                    if otherIsIndex:
+                        yield dataID, i, y2
+                    else:
+                        yield dataID, x, y2
+    return splitter
 
 
 def getDataStream(options):
@@ -354,6 +386,11 @@ def getDataStream(options):
             if missingParents:
                 print("Use options --xelem, --yelem, --idelem to resolve ambiguous elements")
 
+        if options.splitx:
+            datastream = makeSplitter(True, options.yattr == INDEX_ATTR, datastream)
+        if options.splity:
+            datastream = makeSplitter(False, options.xattr == INDEX_ATTR, datastream)
+
         return datastream
 
     elif len(allElems) == 1:
@@ -478,7 +515,7 @@ def interpretValue(value):
 
 
 def isnumeric(value):
-    return type(value) == int or type(value) == float
+    return isinstance(value, int) or isinstance(value, float)
 
 
 def keepNumeric(d, xyIndex):
@@ -539,8 +576,15 @@ def makeNumeric(val):
 
 
 def applyTicks(d, xyIndex, ticksFile):
-    offsets, labels = sumolib.visualization.helpers.parseTicks(ticksFile)
+    mapping = dict()
+    offsets, labels = sumolib.visualization.helpers.parseTicks(ticksFile, mapping)
     l2o = dict(zip(labels, offsets))
+    if mapping:
+        l2oMapped = {}
+        for k, v in mapping.items():
+            l2oMapped[k] = l2o[v]
+        labels = mapping.keys()
+        l2o = l2oMapped
     if useWildcards(labels):
         def getOffset(val):
             for label in labels:
@@ -592,6 +636,9 @@ def main(options):
     usableIDs = 0
     idFromSplitAttrs = ',' in options.xattr or ',' in options.yattr
 
+    interpretx = (lambda x: x) if options.xstr else interpretValue
+    interprety = (lambda x: x) if options.ystr else interpretValue
+
     for fileIndex, datafile in enumerate(options.files):
         totalIDs = 0
         filteredIDs = 0
@@ -615,8 +662,8 @@ def main(options):
                 suffix = shortFileNames[fileIndex]
                 if len(suffix) > 0:
                     dataID = str(dataID) + "#" + suffix
-            x = interpretValue(x)
-            y = interpretValue(y)
+            x = interpretx(x)
+            y = interprety(y)
             if options.xattr == FILE_ATTR:
                 x = titleFileNames[fileIndex]
             if options.yattr == FILE_ATTR:
@@ -655,6 +702,7 @@ def main(options):
 
     barOffset = 0
     barWidth = options.barbin / (len(data.items()) + 1)
+    hadData = False
 
     for dataID, d in data.items():
 
@@ -694,6 +742,8 @@ def main(options):
         if len(xvalues) == 0:
             assert len(yvalues) == 0
             continue
+        else:
+            hadData = True
 
         minY = min(minY, min(yvalues))
         maxY = max(maxY, max(yvalues))
@@ -739,7 +789,7 @@ def main(options):
             plt.yticks(range(len(labels)), labels)
         plt.boxplot(boxdata, vert=options.xattr == BOX_ATTR)
 
-    if options.invertYAxis:
+    if options.invertYAxis and hadData:
         plt.axis([minX, maxX, maxY, minY])
 
     if options.csv_output is not None:

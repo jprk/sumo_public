@@ -1,6 +1,6 @@
 <hTitles >SUMO User Documentation<hr style="border: 0.5px solid #338033;"></hTitles>
 
-"**S**imulation of **U**rban **MO**bility" (SUMO) is an open source, highly portable, microscopic and continuous traffic simulation package designed to handle large networks. It allows for intermodal simulation including pedestrians and comes with a large set of tools for scenario creation. It is mainly developed by employees of the [Institute of Transportation Systems](https://www.dlr.de/ts) at the [German Aerospace Center](https://www.dlr.de). SUMO is licensed under the [EPL 2.0](https://eclipse.org/legal/epl-v20.html). The source code may also be made available under the following Secondary
+"**S**imulation of **U**rban **MO**bility" (SUMO) is an open source, highly portable, microscopic and continuous traffic simulation package designed to handle large networks. It allows for intermodal simulation including pedestrians and comes with a large set of tools for scenario creation. It is mainly developed by employees of the [Institute of Transportation Systems](https://www.dlr.de/ts) at the [German Aerospace Center](https://www.dlr.de). SUMO is licensed under the [EPL 2.0](https://www.eclipse.org/legal/epl-2.0/). The source code may also be made available under the following Secondary
 Licenses when the conditions for such availability set forth in the EPL 2.0 are satisfied: [GPL2 or later](https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html).
 
 Please use the [mailing lists](Contact.md) for sharing your results or for asking questions. Answers to some common questions may also be found in the [FAQ](FAQ.md).
@@ -23,12 +23,12 @@ This Documentation is continuously updated and always refers to the latest devel
 # Basic Usage
 
 - [Notation in this Documentation](Basics/Notation.md)
-- [Needed, basic Computer
-  Skills](Basics/Basic_Computer_Skills.md)
+- [Needed, basic Computer Skills](Basics/Basic_Computer_Skills.md)
 - [Installing SUMO](Installing/index.md)
 - [Using SUMO Command Line Applications](Basics/Using_the_Command_Line_Applications.md)
 - [Tutorials](Tutorials/index.md)
 - [Validating application inputs](XMLValidation.md)
+- [Tabular outputs](TabularOutputs.md)
 
 # Network Building
 
@@ -87,6 +87,7 @@ This Documentation is continuously updated and always refers to the latest devel
 
 - [Basic Definition](Simulation/Basic_Definition.md)
 - [Saving and Loading Simulation State](Simulation/SaveAndLoad.md)
+- [The SUMO-JuPedSim coupling](jupedsim.md)
 
 ## Output
 - [Simulation output overview](Simulation/Output/index.md)
@@ -155,7 +156,7 @@ This Documentation is continuously updated and always refers to the latest devel
 # Additional Tools
 
 In addition to the [main applications (sumo, sumo-gui, netedit, netconvert, etc.)](SUMO_at_a_Glance.md#included_applications), there are
-over 150 additional tools. They cover topics from traffic network
+over 250 additional tools. They cover topics from traffic network
 analysis, demand generation, demand modification to output analysis.
 Most of them are written in [python](https://www.python.org/). All tools
 can be found in the SUMO-distribution under {{SUMO}}/tools.

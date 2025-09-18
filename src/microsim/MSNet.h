@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -117,13 +117,19 @@ public:
         std::string victimType;
         double colliderSpeed;
         double victimSpeed;
+        Position colliderFront;
+        Position victimFront;
+        Position colliderBack;
+        Position victimBack;
         std::string type;
         const MSLane* lane;
         double pos;
         SUMOTime time;
+        SUMOTime continuationTime;
     };
 
     typedef std::map<std::string, std::vector<Collision> > CollisionMap;
+    typedef std::map<const MSEdge*, double> Prohibitions;
 
 public:
     /** @brief Returns the pointer to the unique instance of MSNet (singleton).
@@ -768,10 +774,10 @@ public:
     /* @brief get the router, initialize on first use
      * @param[in] prohibited The vector of forbidden edges (optional)
      */
-    MSVehicleRouter& getRouterTT(const int rngIndex, const MSEdgeVector& prohibited = MSEdgeVector()) const;
-    MSVehicleRouter& getRouterEffort(const int rngIndex, const MSEdgeVector& prohibited = MSEdgeVector()) const;
-    MSPedestrianRouter& getPedestrianRouter(const int rngIndex, const MSEdgeVector& prohibited = MSEdgeVector()) const;
-    MSTransportableRouter& getIntermodalRouter(const int rngIndex, const int routingMode = 0, const MSEdgeVector& prohibited = MSEdgeVector()) const;
+    MSVehicleRouter& getRouterTT(int rngIndex, const Prohibitions& prohibited = {}) const;
+    MSVehicleRouter& getRouterEffort(int rngIndex, const Prohibitions& prohibited = {}) const;
+    MSPedestrianRouter& getPedestrianRouter(int rngIndex, const Prohibitions& prohibited = {}) const;
+    MSTransportableRouter& getIntermodalRouter(int rngIndex, const int routingMode = 0, const Prohibitions& prohibited = {}) const;
 
     static void adaptIntermodalRouter(MSTransportableRouter& router);
 
@@ -821,6 +827,8 @@ public:
     virtual bool skipFinalReset() const {
         return false;
     }
+
+    MSMapMatcher* getMapMatcher() const;
 
     /// @brief find electrical substation by its id
     MSTractionSubstation* findTractionSubstation(const std::string& substationId);

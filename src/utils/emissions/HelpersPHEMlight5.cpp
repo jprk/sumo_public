@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,6 +26,7 @@
 #include <foreign/PHEMlight/V5/cpp/Constants.h>
 #include <foreign/PHEMlight/V5/cpp/Correction.h>
 #include <utils/common/StringUtils.h>
+#include <utils/geom/GeomHelper.h>
 #include <utils/options/OptionsCont.h>
 
 #include "EnergyParams.h"
@@ -127,6 +128,12 @@ HelpersPHEMlight5::getFuel(const SUMOEmissionClass c) const {
 
 
 double
+HelpersPHEMlight5::getWeight(const SUMOEmissionClass c) const {
+    return myCEPs.find(c)->second->getVehicleMass();
+}
+
+
+double
 HelpersPHEMlight5::getEmission(PHEMlightdllV5::CEP* currCep, const std::string& e, const double p, const double v, const double drivingPower, const double ratedPower) const {
     return currCep->GetEmission(e, p, v, &myHelper, drivingPower, ratedPower);
 }
@@ -149,7 +156,7 @@ HelpersPHEMlight5::calcWheelPower(PHEMlightdllV5::CEP* currCep, const double v, 
     const double rotFactor = currCep->GetRotationalCoeffecient(v);
     const double mass = param->getDoubleOptional(SUMO_ATTR_MASS, currCep->getVehicleMass());
     const double massRot = param->getDoubleOptional(SUMO_ATTR_ROTATINGMASS, currCep->getVehicleMassRot());
-    const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading());
+    const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading()) + param->getTransportableMass();
     const double cw = param->getDoubleOptional(SUMO_ATTR_FRONTSURFACEAREA, currCep->getCrossSectionalArea()) * param->getDoubleOptional(SUMO_ATTR_AIRDRAGCOEFFICIENT, currCep->getCWValue());
     const double rf0 = param->getDoubleOptional(SUMO_ATTR_ROLLDRAGCOEFFICIENT, currCep->getResistanceF0());
 
@@ -172,8 +179,8 @@ HelpersPHEMlight5::getModifiedAccel(const SUMOEmissionClass c, const double v, c
         const double rotFactor = currCep->GetRotationalCoeffecient(v);
         const double mass = param->getDoubleOptional(SUMO_ATTR_MASS, currCep->getVehicleMass());
         const double massRot = param->getDoubleOptional(SUMO_ATTR_ROTATINGMASS, currCep->getVehicleMassRot());
-        const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading());
-        const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, currCep->getRatedPower());
+        const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading()) + param->getTransportableMass();
+        const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, 1000. * currCep->getRatedPower()) / 1000.;
         const double pMaxForAcc = currCep->GetPMaxNorm(v) * ratedPower - calcPower(currCep, v, 0, slope, param);
         const double maxAcc = (pMaxForAcc * 1000) / ((mass * rotFactor + massRot + load) * v);
         return MIN2(a, maxAcc);
@@ -185,21 +192,21 @@ HelpersPHEMlight5::getModifiedAccel(const SUMOEmissionClass c, const double v, c
 double
 HelpersPHEMlight5::getCoastingDecel(const SUMOEmissionClass c, const double v, const double a, const double slope, const EnergyParams* param) const {
     PHEMlightdllV5::CEP* const currCep = myCEPs.find(c)->second;
-    // this is a copy of CEP::GetDecelCoast
+    // this is a copy of CEP::GetDecelCoast with an adapted slope force calculation
     if (v < PHEMlightdllV5::Constants::SPEED_DCEL_MIN) {
         return v / PHEMlightdllV5::Constants::SPEED_DCEL_MIN * getCoastingDecel(c, PHEMlightdllV5::Constants::SPEED_DCEL_MIN, a, slope, param);
     }
     const double rotFactor = currCep->GetRotationalCoeffecient(v);
     const double mass = param->getDoubleOptional(SUMO_ATTR_MASS, currCep->getVehicleMass());
-    const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading());
+    const double load = param->getDoubleOptional(SUMO_ATTR_LOADING, currCep->getVehicleLoading()) + param->getTransportableMass();
     const double cw = param->getDoubleOptional(SUMO_ATTR_FRONTSURFACEAREA, currCep->getCrossSectionalArea()) * param->getDoubleOptional(SUMO_ATTR_AIRDRAGCOEFFICIENT, currCep->getCWValue());
-    const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, currCep->getRatedPower());
+    const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, 1000. * currCep->getRatedPower()) / 1000.;
     const double wheelRadius = param->getDoubleOptional(SUMO_ATTR_WHEELRADIUS, currCep->getWheelRadius());
     const double rf0 = param->getDoubleOptional(SUMO_ATTR_ROLLDRAGCOEFFICIENT, currCep->getResistanceF0());
 
     const double fRoll = currCep->getResistance(v, rf0) * (mass + load) * PHEMlightdllV5::Constants::GRAVITY_CONST;
     const double fAir = cw * PHEMlightdllV5::Constants::AIR_DENSITY_CONST * 0.5 * std::pow(v, 2);
-    const double fGrad = (mass + load) * PHEMlightdllV5::Constants::GRAVITY_CONST * slope / 100;
+    const double fGrad = (mass + load) * PHEMlightdllV5::Constants::GRAVITY_CONST * sin(DEG2RAD(slope));
 
     return -(currCep->getFMot(v, ratedPower, wheelRadius) + fRoll + fAir + fGrad) / ((mass + load) * rotFactor);
 }
@@ -217,7 +224,7 @@ HelpersPHEMlight5::compute(const SUMOEmissionClass c, const PollutantsInterface:
     const bool isBEV = currCep->getFuelType() == PHEMlightdllV5::Constants::strBEV;
     const bool isHybrid = currCep->getCalcType() == PHEMlightdllV5::Constants::strHybrid;
     const double power_raw = calcPower(currCep, corrSpeed, corrAcc, slope, param);
-    const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, currCep->getRatedPower());
+    const double ratedPower = param->getDoubleOptional(SUMO_ATTR_MAXIMUMPOWER, 1000. * currCep->getRatedPower()) / 1000.;
     const double power = isHybrid ? calcWheelPower(currCep, corrSpeed, corrAcc, slope, param) : currCep->CalcEngPower(power_raw, ratedPower);
 
     if (!isBEV && corrAcc < getCoastingDecel(c, corrSpeed, corrAcc, slope, param) &&

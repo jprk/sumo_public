@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -40,7 +40,6 @@
 #include <microsim/MSVehicleControl.h>
 #include <microsim/MSStoppingPlace.h>
 #include <microsim/MSRouteHandler.h>
-#include <microsim/devices/MSDevice_Tripinfo.h>
 #include <microsim/devices/MSDevice_Taxi.h>
 #include <microsim/trigger/MSTriggeredRerouter.h>
 #include "MSPModel_Striping.h"
@@ -73,13 +72,18 @@ MSPerson::MSPersonStage_Access::clone() const {
 }
 
 void
-MSPerson::MSPersonStage_Access::proceed(MSNet* net, MSTransportable* person, SUMOTime now, MSStage* /* previous */) {
+MSPerson::MSPersonStage_Access::proceed(MSNet* net, MSTransportable* person, SUMOTime now, MSStage* previous) {
     myDeparted = now;
-    myEstimatedArrival = now + TIME2STEPS(myDist / person->getMaxSpeed());
+    if (myDist >= 0) {
+        myEstimatedArrival = now + TIME2STEPS(myDist / person->getMaxSpeed());
+    } else {
+        myEstimatedArrival = now + previous->getJumpDuration();
+    }
     // TODO myEstimatedArrival is not a multiple of DELTA_T here. This might give a problem because the destination position will not be reached precisely
-    net->getBeginOfTimestepEvents()->addEvent(new ProceedCmd(person, &myDestinationStop->getLane().getEdge()), myEstimatedArrival);
+    MSEdge* edge = myDestinationStop != nullptr ? &myDestinationStop->getLane().getEdge() : const_cast<MSEdge*>(myDestination);
+    net->getBeginOfTimestepEvents()->addEvent(new ProceedCmd(person, edge), myEstimatedArrival);
     net->getPersonControl().startedAccess();
-    myDestinationStop->getLane().getEdge().addTransportable(person);
+    edge->addTransportable(person);
 }
 
 
@@ -91,7 +95,11 @@ MSPerson::MSPersonStage_Access::getStageDescription(const bool /* isPerson */) c
 
 std::string
 MSPerson::MSPersonStage_Access::getStageSummary(const bool /* isPerson */) const {
-    return (myAmExit ? "access from stop '" : "access to stop '") + getDestinationStop()->getID() + "'";
+    if (myDestination == nullptr) {
+        return ("jump to edge '") + getDestination()->getID() + "'";
+    } else {
+        return (myAmExit ? "access from stop '" : "access to stop '") + getDestinationStop()->getID() + "'";
+    }
 }
 
 
@@ -115,7 +123,9 @@ MSPerson::MSPersonStage_Access::getSpeed() const {
 void
 MSPerson::MSPersonStage_Access::tripInfoOutput(OutputDevice& os, const MSTransportable* const) const {
     os.openTag("access");
-    os.writeAttr("stop", getDestinationStop()->getID());
+    if (getDestinationStop() != nullptr) {
+        os.writeAttr("stop", getDestinationStop()->getID());
+    }
     os.writeAttr("depart", time2string(myDeparted));
     os.writeAttr("arrival", myArrived >= 0 ? time2string(myArrived) : "-1");
     os.writeAttr("duration", myArrived > 0 ? time2string(getDuration()) : "-1");
@@ -141,7 +151,8 @@ MSPerson::MSPersonStage_Access::ProceedCmd::execute(SUMOTime currentTime) {
 MSPerson::MSPerson(const SUMOVehicleParameter* pars, MSVehicleType* vtype, MSTransportable::MSTransportablePlan* plan, const double speedFactor) :
     MSTransportable(pars, vtype, plan, true),
     myInfluencer(nullptr),
-    myChosenSpeedFactor(pars->speedFactor < 0 ? speedFactor : pars->speedFactor)
+    myChosenSpeedFactor(pars->speedFactor < 0 ? speedFactor : pars->speedFactor),
+    myTimegapCrossing(getFloatParam("pedestrian.timegap-crossing"))
 { }
 
 
@@ -202,6 +213,13 @@ MSPerson::checkAccess(const MSStage* const prior, const bool waitAtStop) {
             return true;
         }
     }
+    if (prior->getJumpDuration() > 0) {
+        // negative distance indicates jump
+        MSStage* newStage = new MSPersonStage_Access(getDestination(), nullptr, getArrivalPos(), 0.0, -1, true,
+                prior->getPosition(SIMSTEP) , (*myStep)->getPosition(SIMSTEP));
+        myStep = myPlan->insert(myStep, newStage);
+        return true;
+    }
     return false;
 }
 
@@ -209,7 +227,7 @@ MSPerson::checkAccess(const MSStage* const prior, const bool waitAtStop) {
 double
 MSPerson::getImpatience() const {
     return MAX2(0., MIN2(1., getVehicleType().getImpatience()
-                         + STEPS2TIME((*myStep)->getWaitingTime(SIMSTEP)) / MSPModel_Striping::MAX_WAIT_TOLERANCE));
+                         + STEPS2TIME((*myStep)->getWaitingTime()) / MSPModel_Striping::MAX_WAIT_TOLERANCE));
 }
 
 const std::string&

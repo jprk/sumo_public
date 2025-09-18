@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-10-09 19:54:03 by Eclipse SUMO netedit Version v1_20_0+2262-4c4b720e23e
+<!-- generated on 2025-07-21 21:32:03 by Eclipse SUMO netedit Version v1_23_1+1211-c292db0a7e7
 -->
 
 <xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -41,6 +41,7 @@
             <xsd:element name="meandata-files" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="ignore-missing-inputs" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="selection-file" type="fileOptionType" minOccurs="0"/>
+            <xsd:element name="test-file" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="sumo-net-file" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="node-files" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="edge-files" type="fileOptionType" minOccurs="0"/>
@@ -69,12 +70,18 @@
             <xsd:element name="output-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="precision" type="intOptionType" minOccurs="0"/>
             <xsd:element name="precision.geo" type="intOptionType" minOccurs="0"/>
+            <xsd:element name="output.compression" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="output.format" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="output.column-header" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="output.column-separator" type="strOptionType" minOccurs="0"/>
             <xsd:element name="human-readable-time" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="output-file" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="plain-output-prefix" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="plain-output.lanes" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="junctions.join-output" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="prefix" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="prefix.junction" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="prefix.edge" type="strOptionType" minOccurs="0"/>
             <xsd:element name="amitran-output" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="matsim-output" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="opendrive-output" type="fileOptionType" minOccurs="0"/>
@@ -122,6 +129,7 @@
             <xsd:element name="numerical-ids.node-start" type="intOptionType" minOccurs="0"/>
             <xsd:element name="numerical-ids.edge-start" type="intOptionType" minOccurs="0"/>
             <xsd:element name="reserved-ids" type="fileOptionType" minOccurs="0"/>
+            <xsd:element name="kept-ids" type="fileOptionType" minOccurs="0"/>
             <xsd:element name="dismiss-vclasses" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="geometry.split" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="geometry.remove" type="boolOptionType" minOccurs="0"/>
@@ -294,6 +302,7 @@
             <xsd:element name="no-left-connections" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="junctions.join" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="junctions.join-dist" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="junctions.join.parallel-threshold" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="junctions.join-exclude" type="strArrayOptionType" minOccurs="0"/>
             <xsd:element name="junctions.join-same" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="max-join-ids" type="intOptionType" minOccurs="0"/>
@@ -326,6 +335,7 @@
             <xsd:element name="sidewalks.guess.exclude" type="strArrayOptionType" minOccurs="0"/>
             <xsd:element name="crossings.guess" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="crossings.guess.speed-threshold" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="crossings.guess.roundabout-priority" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="walkingareas" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="walkingareas.join-dist" type="floatOptionType" minOccurs="0"/>
         </xsd:all>
@@ -355,6 +365,7 @@
             <xsd:element name="railway.topology.extend-priority" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="railway.geometry.straighten" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="railway.signal.guess.by-stops" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="railway.signal.permit-unsignalized" type="strArrayOptionType" minOccurs="0"/>
             <xsd:element name="railway.access-distance" type="floatOptionType" minOccurs="0"/>
             <xsd:element name="railway.max-accesses" type="intOptionType" minOccurs="0"/>
             <xsd:element name="railway.access-factor" type="floatOptionType" minOccurs="0"/>
@@ -374,6 +385,7 @@
             <xsd:element name="osm.lane-access" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.bike-access" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.sidewalks" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="osm.oneway-reverse-sidewalk" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.crossings" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.turn-lanes" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.stop-output.length" type="floatOptionType" minOccurs="0"/>
@@ -384,6 +396,7 @@
             <xsd:element name="osm.all-attributes" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="osm.extra-attributes" type="strArrayOptionType" minOccurs="0"/>
             <xsd:element name="osm.speedlimit-none" type="floatOptionType" minOccurs="0"/>
+            <xsd:element name="osm.annotate-defaults" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="matsim.keep-length" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="matsim.lanes-from-capacity" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="shapefile.street-id" type="strOptionType" minOccurs="0"/>
@@ -436,6 +449,8 @@
             <xsd:element name="ignore-supermode-question" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="ignore.additionalelements" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="ignore.routeelements" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="e2.friendlyPos.automatic" type="boolOptionType" minOccurs="0"/>
+            <xsd:element name="force-saving" type="boolOptionType" minOccurs="0"/>
             <xsd:element name="node-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="edge-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="edge-infix" type="strOptionType" minOccurs="0"/>
@@ -469,6 +484,7 @@
             <xsd:element name="personflow-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="container-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="containerflow-prefix" type="strOptionType" minOccurs="0"/>
+            <xsd:element name="dataSet-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="meanDataEdge-prefix" type="strOptionType" minOccurs="0"/>
             <xsd:element name="meanDataLane-prefix" type="strOptionType" minOccurs="0"/>
         </xsd:all>

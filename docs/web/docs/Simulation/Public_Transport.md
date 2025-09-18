@@ -38,6 +38,8 @@ stop is an area on a lane. The parameters have the following meanings:
 !!! note
     The alias `<trainStop>` may be used anywhere instead of `<busStop>` and has the exact same functionality.
 
+The [generic parameter](GenericParameters.md) `<param key="waitingWidth" value="FLOAT"/>` can be used to define the visual spacing of waiting persons at the busStop. 
+
 ## Access Lanes
 
 Each bus or train stop may have additional child elements to model access from
@@ -64,7 +66,20 @@ OSM](../Tutorials/PT_from_OpenStreetMap.md#initial_network_and_public_transit_in
 The value `doors` is currently only used when exiting a train or bus. The starting position for a
 subsequent walk of the exiting passengers will be randomly chosen among the door positions of the train or bus.
 The door positions themselves cannot be defined but they are derived from the number of carriages
-and the number of doors per carriage of the vehicle, see [carriage definition](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#carriages).
+and the number of doors per carriage of the vehicle, see [carriage definition](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#carriages_custom_visualization).
+
+## Virtual Stops
+
+While it is possible to [stop anywhere](#stopping_without_defining_a_bus_stop), it may be useful to define busStops that are visible as infrastructure but only when in use.
+This makes it possible to define a limited list of potential stopping locations for use with [on-demand public transport](Taxi.md) and [intermodal routing](../IntermodalRouting.md#switching_between_modes). To distinguish "real" busStops from "virtual" busStops the [generic parameter](GenericParameters.md) `emptyColor` can be set:
+
+```
+    <busStop id="example" lane="E0_0" startPos="50" endPos="60" color="255,145,4">
+        <param key="emptyColor" value="1,1,1,0"/>
+    </busStop>
+```
+
+The busStop will take on the `emptyColor` if it has neither waiting persons nor stopping vehicles. If the fourth value of the color definition (the *alpha*-channel) is set to *0*, the busStop will be invisible when empty.
 
 # Letting Vehicles stop at a bus stop
 

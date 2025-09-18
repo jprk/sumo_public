@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -82,6 +82,11 @@ public:
      */
     static std::string escapeXML(const std::string& orig, const bool maskDoubleHyphen = false);
 
+    /**
+     * @brief Escape special characters with backslash
+     */
+    static std::string escapeShell(const std::string& orig);
+
     /// @brief An empty string
     static std::string emptyString;
 
@@ -103,6 +108,9 @@ public:
      */
     static int toInt(const std::string& sData);
 
+    /// @brief check if the given sData can be converted to int
+    static bool isInt(const std::string& sData);
+
     /// @brief converts a string into the integer value described by it
     /// @return the default value if the data is empty
     static int toIntSecure(const std::string& sData, int def);
@@ -113,17 +121,26 @@ public:
      */
     static long long int toLong(const std::string& sData);
 
+    /// @brief Check if the given sData can be converted to long
+    static bool isLong(const std::string& sData);
+
     /**@brief converts a string with a hex value into the integer value described by it by calling the char-type converter
      * @throw an EmptyData - exception if the given string is empty
      * @throw a NumberFormatException - exception when the string does not contain an integer
      */
     static int hexToInt(const std::string& sData);
 
+    /// @brief check if the given string can be converted to hex
+    static bool isHex(std::string sData);
+
     /**@brief converts a string into the double value described by it by calling the char-type converter
      * @throw an EmptyData - exception if the given string is empty
      * @throw a NumberFormatException - exception when the string does not contain a double
      */
     static double toDouble(const std::string& sData);
+
+    /// @brief check if the given sData can be conveted to double
+    static bool isDouble(const std::string& sData);
 
     /// @brief converts a string into the integer value described by it
     /// @return the default value if the data is empty
@@ -136,6 +153,9 @@ public:
      * @throw BoolFormatException in any other case
      */
     static bool toBool(const std::string& sData);
+
+    /// @brief check if the given value can be converted to bool
+    static bool isBool(const std::string& sData);
 
     /// @brief parse a (network) version string
     static MMVersion toVersion(const std::string& sData);

@@ -1,5 +1,5 @@
-Eclipse SUMO duarouter Version v1_20_0+1699-94bb18538d6
- Copyright (C) 2001-2024 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO duarouter Version v1_23_1+0813-5f3c910f36e
+ Copyright (C) 2001-2025 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Shortest path router and DUE computer for the microscopic, multi-modal traffic
  simulation SUMO.
 
@@ -55,6 +55,16 @@ Output Options:
                                        comma for floating point output
   --precision.geo INT                 Defines the number of digits after the
                                        comma for lon,lat output
+  --output.compression STR            Defines the standard compression
+                                       algorithm (currently only for parquet
+                                       output)
+  --output.format STR                 Defines the standard output format if not
+                                       derivable from the file name ('xml',
+                                       'csv', 'parquet')
+  --output.column-header STR          How to derive column headers from
+                                       attribute names ('none', 'tag', 'auto',
+                                       'plain')
+  --output.column-separator STR       Separator in CSV output
   -H, --human-readable-time           Write time values as hour:minute:second
                                        or day:hour:minute:second rather than
                                        seconds
@@ -93,11 +103,14 @@ Processing Options:
   --repair.to                         Tries to correct an invalid destination
                                        edge by using the last usable edge
                                        instead
+  --repair.max-detour-factor FLOAT    Backtrack on route if the detour is
+                                       longer than the gap by FACTOR
   --mapmatch.distance FLOAT           Maximum distance when mapping input
                                        coordinates (fromXY etc.) to the road
                                        network
   --mapmatch.junctions                Match positions to junctions instead of
                                        edges
+  --mapmatch.taz                      Match positions to taz instead of edges
   --bulk-routing                      Aggregate routing queries with the same
                                        origin
   --routing-threads INT               The number of parallel execution threads
@@ -135,6 +148,10 @@ Processing Options:
                                        ALT-variant from the given file
   --astar.save-landmark-distances FILE  Save lookup table for astar ALT-variant
                                        to the given file
+  --scale FLOAT                       Scale demand by the given factor (by
+                                       discarding or duplicating vehicles)
+  --scale-suffix STR                  Suffix to be added when creating ids for
+                                       cloned vehicles
   --gawron.beta FLOAT                 Use FLOAT as Gawron's beta
   --gawron.a FLOAT                    Use FLOAT as Gawron's a
   --keep-all-routes                   Save routes with near zero probability
@@ -163,6 +180,9 @@ Processing Options:
   --persontrip.transfer.walk-taxi STR[]  Where taxis can pick up customers
                                        ('allJunctions, 'ptStops')
   --persontrip.taxi.waiting-time TIME  Estimated time for taxi pickup
+  --persontrip.ride-public-line       Only use the intended public transport
+                                       line rather than any alternative line
+                                       that stops at the destination
   --railway.max-train-length FLOAT    Use FLOAT as a maximum train length when
                                        initializing the railway router
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <utils/common/Command.h>
 #include <utils/common/Named.h>
 #include <utils/xml/SUMOSAXHandler.h>
@@ -40,7 +41,9 @@ class MSNet;
 class MSLane;
 class MSRoute;
 class SUMOVehicle;
+class MSBaseVehicle;
 class MSParkingArea;
+class MSRailSignal;
 
 
 // ===========================================================================
@@ -72,13 +75,13 @@ public:
      */
     MSTriggeredRerouter(const std::string& id, const MSEdgeVector& edges,
                         double prob, bool off, bool optional, SUMOTime timeThreshold,
-                        const std::string& vTypes, const Position& pos);
+                        const std::string& vTypes, const Position& pos, const double radius);
 
 
     /** @brief Destructor */
     virtual ~MSTriggeredRerouter();
 
-    //typedef std::pair<MSParkingArea*, bool> ParkingAreaVisible;
+    typedef std::map<const MSEdge*, double> Prohibitions;
 
     /**
      * @struct RerouteInterval
@@ -91,23 +94,59 @@ public:
         SUMOTime begin;
         /// The end time these definitions are valid
         SUMOTime end;
-        /// The list of closed edges
-        MSEdgeVector closed;
-        /// The list of closed lanes
-        std::vector<MSLane*> closedLanes;
-        /// The list of edges that are affect by closed lanes
+        /// The map of closed edges to their permissions and expected end of closing
+        std::map<MSEdge*, std::pair<SVCPermissions, double> > closed;
+        /// The list of closed lanes to their permissions
+        std::map<MSLane*, SVCPermissions> closedLanes;
+        /// The list of edges that are affected by closed lanes
         MSEdgeVector closedLanesAffected;
         /// The distributions of new destinations or vias to use
         RandomDistributor<MSEdge*> edgeProbs;
         /// The distributions of new routes to use
         RandomDistributor<ConstMSRoutePtr> routeProbs;
-        /// The permissions to use
-        SVCPermissions permissions;
         /// The distributions of new parking areas to use as destinations
-        //RandomDistributor<ParkingAreaVisible> parkProbs;
         RandomDistributor<MSStoppingPlaceRerouter::StoppingPlaceVisible> parkProbs;
         /// The edge probs are vias and not destinations
         bool isVia = false;
+        /// The permissions are all SVCAll
+        bool permissionsAllowAll = false;
+
+        /// @name overtakingReroute
+        ///@{
+        /// @brief The list of main edges (const and non-const for different usage)
+        MSEdgeVector main;
+        ConstMSEdgeVector cMain;
+        /// @brief The list of siding edges
+        MSEdgeVector siding;
+        ConstMSEdgeVector cSiding;
+        /// @brief The rail signal at the end of the siding
+        MSRailSignal* sidingExit = nullptr;
+        /// @brief The usable length of the siding
+        double sidingLength = 0;
+        /// @brief The threshold in savings for triggering reroute
+        double minSaving;
+        //}
+
+        /// @name stationReroute
+        ///@{
+        std::vector<MSStoppingPlaceRerouter::StoppingPlaceVisible> stopAlternatives;
+        //}
+
+        Prohibitions getClosed() const {
+            Prohibitions v;
+            for (const auto& settings : closed) {
+                v[settings.first] = settings.second.second;
+            }
+            return v;
+        }
+
+        MSEdgeVector getClosedEdges() const {
+            MSEdgeVector v;
+            for (const auto& settings : closed) {
+                v.push_back(settings.first);
+            }
+            return v;
+        }
     };
 
     /** @brief Tries to reroute the vehicle
@@ -184,14 +223,14 @@ public:
         return myPosition;
     }
 
-    /// @brief Return the number of occupied places of the ParkingArea
-    double getStoppingPlaceOccupancy(MSStoppingPlace* parkingArea);
+    /// @brief Return the number of occupied places of the stopping place
+    double getStoppingPlaceOccupancy(MSStoppingPlace* sp);
 
-    /// @brief Return the number of occupied places of the StoppingPlace from the previous time step
-    double getLastStepStoppingPlaceOccupancy(MSStoppingPlace* parkingArea);
+    /// @brief Return the number of occupied places of the stopping place from the previous time step
+    double getLastStepStoppingPlaceOccupancy(MSStoppingPlace* sp);
 
-    /// @brief Return the number of places the ParkingArea provides
-    double getStoppingPlaceCapacity(MSStoppingPlace* parkingArea);
+    /// @brief Return the number of places the stopping place provides
+    double getStoppingPlaceCapacity(MSStoppingPlace* sp);
 
     /// @brief store the blocked ParkingArea in the vehicle
     void rememberBlockedStoppingPlace(SUMOVehicle& veh, const MSStoppingPlace* parkingArea, bool blocked);
@@ -215,6 +254,15 @@ public:
     MSParkingArea* rerouteParkingArea(const MSTriggeredRerouter::RerouteInterval* rerouteDef,
                                       SUMOVehicle& veh, bool& newDestination, ConstMSEdgeVector& newRoute);
 
+    /// @brief determine whether veh should switch from main to siding to be overtaken and return the overtaking vehicle or nullptr
+    std::pair<const SUMOVehicle*, MSRailSignal*> overtakingTrain(const SUMOVehicle& veh, ConstMSEdgeVector::const_iterator mainStart, const MSTriggeredRerouter::RerouteInterval*);
+
+    /// @brief consider switching the location of the upcoming stop
+    void checkStopSwitch(MSBaseVehicle& veh, const MSTriggeredRerouter::RerouteInterval* def);
+
+    /// @brief find the last downstream signal on the given route
+    MSRailSignal* findSignal(ConstMSEdgeVector::const_iterator begin, ConstMSEdgeVector::const_iterator end);
+
     /// @brief return all rerouter instances
     static const std::map<std::string, MSTriggeredRerouter*>& getInstances() {
         return myInstances;
@@ -230,6 +278,8 @@ public:
         }
         return 0.;
     }
+
+    static const double DEFAULT_MAXDELAY;
 
 protected:
     /// @name inherited from GenericSAXHandler
@@ -262,6 +312,9 @@ protected:
     */
     bool applies(const SUMOTrafficObject& obj) const;
 
+    /// @brief reset router after closing edges
+    void resetClosedEdges(bool hasReroutingDevice, const SUMOTrafficObject& o);
+
     static bool affected(const std::set<SUMOTrafficObject::NumericalID>& edgeIndices, const MSEdgeVector& closed);
 
 protected:
@@ -283,6 +336,9 @@ protected:
     /// Where are we located in the network
     Position myPosition;
 
+    /// At which distance are we activated
+    double myRadius;
+
     // @brief waiting time threshold for activation
     SUMOTime myTimeThreshold;
 
@@ -294,6 +350,8 @@ protected:
 
     /// whether this rerouter has loaded parkingReroute definitions
     bool myHaveParkProbs;
+
+    std::set<const MSStoppingPlace*> myBlockedStoppingPlaces;
 
     /// @brief special destination values
     static MSEdge mySpecialDest_keepDestination;

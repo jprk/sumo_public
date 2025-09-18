@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -66,7 +66,13 @@ NWFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
                       "Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins");
 
     oc.doRegister("prefix", new Option_String(""));
-    oc.addDescription("prefix", "Output", TL("Defines a prefix for edge and junction names"));
+    oc.addDescription("prefix", "Output", TL("Defines a prefix for edge and junction IDs"));
+
+    oc.doRegister("prefix.junction", new Option_String(""));
+    oc.addDescription("prefix.junction", "Output", TL("Defines a prefix for unction IDs"));
+
+    oc.doRegister("prefix.edge", new Option_String(""));
+    oc.addDescription("prefix.edge", "Output", TL("Defines a prefix for edge IDs"));
 
 #ifdef PROJ_API_FILE
     if (!forNetgen) {
@@ -79,7 +85,7 @@ NWFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
     oc.addDescription("amitran-output", "Output", TL("The generated net will be written to FILE using Amitran format"));
 
     oc.doRegister("matsim-output", new Option_FileName());
-    oc.addDescription("matsim-output", "Output", TL("The generated net will be written to FILE using MATsim format"));
+    oc.addDescription("matsim-output", "Output", TL("The generated net will be written to FILE using MATSim format"));
 
     oc.doRegister("opendrive-output", new Option_FileName());
     oc.addDescription("opendrive-output", "Output", TL("The generated net will be written to FILE using OpenDRIVE format"));
@@ -178,6 +184,12 @@ NWFrame::checkOptions(OptionsCont& oc) {
     }
     if (oc.exists("ptline-clean-up") && oc.getBool("ptline-clean-up") && !oc.isSet("ptline-output")) {
         WRITE_WARNING(TL("'ptline-clean-up' only works in conjunction with 'ptline-output'. Ignoring invalid option."));
+    }
+    if (oc.isDefault("prefix.junction")) {
+        oc.setDefault("prefix.junction", oc.getString("prefix"));
+    }
+    if (oc.isDefault("prefix.edge")) {
+        oc.setDefault("prefix.edge", oc.getString("prefix"));
     }
 
     return ok;

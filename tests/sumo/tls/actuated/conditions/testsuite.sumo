@@ -25,8 +25,14 @@ multi_term
 # only switch to side direction on request
 request_or_skip
 
+# only switch to side direction on request and after waiting for 5s
+request_or_skip_w5
+
 # only switch to side direction on request but use an E2 detector for this.
 request_or_skip_E2
+
+# only switch to side direction on request (after waiting for 3s) but use an E2 detector for this.
+request_or_skip_E2_w3
 
 # test condition for the running green duration of a link
 linkGreen
@@ -52,3 +58,10 @@ bus_prio
 # 
 # (otherwise behave like the default actuated controller)
 allRed_default
+
+# similar to tlLayout=alternateOneWay, only one direction is permitted at a time.
+# However, the is aware of the traffic presence inside and switches immediately to either direction when it is safe to do so.
+alternate_oneWay
+
+# no checking for internal state (as a performance reference)
+alternate_oneWay_default

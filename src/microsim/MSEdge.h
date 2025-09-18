@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -240,8 +240,8 @@ public:
      */
     const std::vector<MSLane*>* allowedLanes(SUMOVehicleClass vclass = SVC_IGNORING) const;
 
-    inline bool isConnectedTo(const MSEdge& destination, SUMOVehicleClass vclass) const {
-        const std::vector<MSLane*>* const lanes = allowedLanes(destination, vclass);
+    inline bool isConnectedTo(const MSEdge& destination, SUMOVehicleClass vclass, bool ignoreTransientPermissions = false) const {
+        const std::vector<MSLane*>* const lanes = allowedLanes(destination, vclass, ignoreTransientPermissions);
         return lanes != nullptr && !lanes->empty();
     }
     /// @}
@@ -553,6 +553,21 @@ public:
      */
     MSLane* getFreeLane(const std::vector<MSLane*>* allowed, const SUMOVehicleClass vclass, double departPos) const;
 
+    /** @brief Finds the most probable lane allowing the vehicle class
+     *
+     * The most probable lane is the one which best corresponds to the desired speed of the vehicle
+     * Vehicles with lower speeds will use lanes to the right while
+     * vehicles with higher speeds will use lanes to the left
+     *
+     * @param[in] allowed The lanes to choose from
+     * @param[in] vclass The vehicle class to look for
+     * @param[in] departPos An upper bound on vehicle depart position
+     * @param[in] maxSpeed The vehicles maxSpeed (including speedFactor)
+     * @return the least occupied lane
+     * @see allowedLanes
+     */
+    MSLane* getProbableLane(const std::vector<MSLane*>* allowed, const SUMOVehicleClass vclass, double departPos, double maxSpeed) const;
+
 
     /** @brief Finds a depart lane for the given vehicle parameters
      *
@@ -647,7 +662,7 @@ public:
         return mySublaneSides;
     }
 
-    void rebuildAllowedLanes(const bool onInit = false);
+    void rebuildAllowedLanes(const bool onInit = false, bool updateVehicles = false);
 
     void rebuildAllowedTargets(const bool updateVehicles = true);
 
@@ -724,6 +739,9 @@ public:
         return myLaneChanger != nullptr;
     }
 
+    /// @brief retrieve properties of a blocked vehicle that wants to chane to the lane with the given index
+    std::pair<double, SUMOTime> getLastBlocked(int index) const;
+
     /// @brief whether this edge allows changing to the opposite direction edge
     bool canChangeToOpposite() const;
 
@@ -778,6 +796,14 @@ public:
 
     /// @brief update meso segment parameters
     void updateMesoType();
+
+    static DepartLaneDefinition& getDefaultDepartLaneDefinition() {
+        return myDefaultDepartLaneDefinition;
+    }
+
+    static int& getDefaultDepartLane() {
+        return myDefaultDepartLane;
+    }
 
     /** @brief Inserts edge into the static dictionary
         Returns true if the key id isn't already in the dictionary. Otherwise
@@ -1006,6 +1032,9 @@ protected:
     static MSEdgeVector myEdges;
 
     static SVCPermissions myMesoIgnoredVClasses;
+
+    static DepartLaneDefinition myDefaultDepartLaneDefinition;
+    static int myDefaultDepartLane;
     /// @}
 
 

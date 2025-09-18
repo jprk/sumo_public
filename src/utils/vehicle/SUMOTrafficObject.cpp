@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -55,8 +55,17 @@ SUMOTrafficObject::getStringParam(const std::string& paramName, const bool requi
 
 
 double
-SUMOTrafficObject::getFloatParam(const std::string& paramName, const bool required, const double deflt) const {
+SUMOTrafficObject::getFloatParam(const std::string& paramName, const bool required, const double deflt, bool checkDist) const {
     const std::string val = getStringParam(paramName, required, toString(deflt));
+    if (!checkDist) {
+        try {
+            return StringUtils::toDouble(val);
+        } catch (NumberFormatException& e) {
+            const std::string type = isVehicle() ? "vehicle" : (isPerson() ? "person" : "container");
+            WRITE_ERRORF(TL("Invalid float value '%' for parameter '%' in % '%' (%)."), val, paramName, type, getID(), e.what());
+            return deflt;
+        }
+    }
     try {
         Distribution_Parameterized dist(val);
         const std::string& error = dist.isValid();

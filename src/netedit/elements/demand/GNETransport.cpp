@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,29 +27,37 @@
 
 #include "GNETransport.h"
 
+
 // ===========================================================================
 // method definitions
 // ===========================================================================
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4355) // mask warning about "this" in initializers
+#endif
 GNETransport::GNETransport(SumoXMLTag tag, GNENet* net) :
-    GNEDemandElement("", net, GLO_TRANSPORT, tag, GUIIconSubSys::getIcon(GUIIcon::TRANSHIP_EDGE),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-GNEDemandElementPlan(this, -1, -1) {
-    // reset default values
-    resetDefaultValues();
+    GNEDemandElement("", net, "", tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementPlan(this, -1, -1) {
 }
 
 
-GNETransport::GNETransport(GNENet* net, SumoXMLTag tag, GUIIcon icon, GNEDemandElement* containerParent, const GNEPlanParents& planParameters,
+GNETransport::GNETransport(SumoXMLTag tag, GNEDemandElement* containerParent, const GNEPlanParents& planParameters,
                            const double arrivalPosition, const std::vector<std::string>& lines, const std::string& group) :
-    GNEDemandElement(containerParent, net, GLO_TRANSPORT, tag, GUIIconSubSys::getIcon(icon),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT,
-                     planParameters.getJunctions(), planParameters.getEdges(), {},
-planParameters.getAdditionalElements(), planParameters.getDemandElements(containerParent), {}),
-GNEDemandElementPlan(this, -1, arrivalPosition),
-myLines(lines),
-myGroup(group) {
+    GNEDemandElement(containerParent, tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementPlan(this, -1, arrivalPosition),
+    myLines(lines),
+    myGroup(group) {
+    // set parents
+    setParents<GNEJunction*>(planParameters.getJunctions());
+    setParents<GNEEdge*>(planParameters.getEdges());
+    setParents<GNEAdditional*>(planParameters.getAdditionalElements());
+    setParents<GNEDemandElement*>(planParameters.getDemandElements(containerParent));
+    // update centering boundary without updating grid
+    updatePlanCenteringBoundary(false);
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 
 GNETransport::~GNETransport() {}
@@ -157,13 +165,13 @@ GNETransport::computePathElement() {
 
 
 void
-GNETransport::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNETransport::drawLanePartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     drawPlanLanePartial(checkDrawContainerPlan(), s, segment, offsetFront, s.widthSettings.transportWidth, s.colorSettings.transportColor, s.colorSettings.selectedContainerPlanColor);
 }
 
 
 void
-GNETransport::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNETransport::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     drawPlanJunctionPartial(checkDrawContainerPlan(), s, segment, offsetFront, s.widthSettings.transportWidth, s.colorSettings.transportColor, s.colorSettings.selectedContainerPlanColor);
 }
 
@@ -225,7 +233,7 @@ GNETransport::isValid(SumoXMLAttr key, const std::string& value) {
     switch (key) {
         // specific person plan attributes
         case SUMO_ATTR_LINES:
-            return canParse<std::vector<std::string> >(value);
+            return true;
         case SUMO_ATTR_GROUP:
             return true;
         default:

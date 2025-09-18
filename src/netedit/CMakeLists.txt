@@ -7,33 +7,41 @@ add_subdirectory(tools)
 
 # create set with all main netedit source code files
 set(netedit_SRCS
-   netedit_main.cpp
-   GNEApplicationWindowHelper.h
-   GNEApplicationWindowHelper.cpp
-   GNEApplicationWindow.h
    GNEApplicationWindow.cpp
-   GNELoadThread.h
-   GNELoadThread.cpp
-   GNENet.h
-   GNENet.cpp
-   GNENetHelper.h
-   GNENetHelper.cpp
-   GNEViewNet.h
-   GNEViewNet.cpp
-   GNEViewNetHelper.h
-   GNEViewNetHelper.cpp
-   GNEViewParent.h
-   GNEViewParent.cpp
-   GNEUndoList.h
-   GNEUndoList.cpp
-   GNEMoveElement.h
-   GNEMoveElement.cpp
-   GNEPathManager.h
-   GNEPathManager.cpp
-   GNEReferenceCounter.h
+   GNEApplicationWindow.h
+   GNEApplicationWindowHelper.cpp
+   GNEApplicationWindowHelper.h
+   GNEAttributeProperties.cpp
+   GNEAttributeProperties.h
    GNEEvent_NetworkLoaded.h
-   GNELane2laneConnection.h
+   GNEInternalTest.cpp
+   GNEInternalTest.h
    GNELane2laneConnection.cpp
+   GNELane2laneConnection.h
+   GNELoadThread.cpp
+   GNELoadThread.h
+   GNENet.cpp
+   GNENet.h
+   GNENetHelper.cpp
+   GNENetHelper.h
+   GNEPathManager.cpp
+   GNEPathManager.h
+   GNEReferenceCounter.h
+   GNESegment.cpp
+   GNESegment.h
+   GNETagProperties.cpp
+   GNETagProperties.h
+   GNETagPropertiesDatabase.cpp
+   GNETagPropertiesDatabase.h
+   GNEUndoList.cpp
+   GNEUndoList.h
+   GNEViewNet.cpp
+   GNEViewNet.h
+   GNEViewNetHelper.cpp
+   GNEViewNetHelper.h
+   GNEViewParent.cpp
+   GNEViewParent.h
+   netedit_main.cpp
    templates.h
 )
 
@@ -48,7 +56,7 @@ set_target_properties(netedit PROPERTIES OUTPUT_NAME netedit${BINARY_SUFFIX})
 set_target_properties(netedit PROPERTIES OUTPUT_NAME_DEBUG netedit${BINARY_SUFFIX}D)
 
 # link all previously compiled libraries to netedit. Every library was compiled in their own folder using own CMakeList.txt
-target_link_libraries(netedit gui_dialogs utils_gui_cursors utils_gui_shortcuts utils_foxtools foreign_eulerspiral
+target_link_libraries(netedit gui_dialogs utils_gui_cursors utils_gui_shortcuts utils_tests utils_foxtools foreign_eulerspiral
         netedit_frames_common netedit_frames_network netedit_frames_demand netedit_frames_data netedit_frames
         netedit_elements netedit_elements_network netedit_elements_additional netedit_elements_demand netedit_elements_data
         netedit_changes utils_gui_div utils_gui_settings utils_gui_images netedit_dialogs_tools netedit_dialogs_options netedit_tools
@@ -94,7 +102,7 @@ add_dependencies(generate-templates-h sumo netgenerate)
 # create CMake custom command that generates templates.h file (OUTPUT) giving as argument python executable (PYTHON_EXECUTABLE),
 # the python script <SUMO>/tools/build_config/templates.py (<SUMO/src/netedit>/../../tools/build_config/templates.py) and the sumo binary
 add_custom_command(OUTPUT templates.h
-                   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/build_config/templates.py $<TARGET_FILE:sumo> $<TARGET_FILE:netgenerate>
+                   COMMAND ${PYTHON_EXECUTABLE} ${SUMO_TOOLS_DIR}/build_config/templates.py $<TARGET_FILE:sumo> $<TARGET_FILE:netgenerate>
                    DEPENDS sumo netgenerate
                    )
 

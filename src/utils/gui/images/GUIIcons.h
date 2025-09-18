@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -298,7 +298,7 @@ enum class GUIIcon {
     NETWORKMODE_CHECKBOX_SELECTEDGES,
     NETWORKMODE_CHECKBOX_SHOWCONNECTIONS,
     NETWORKMODE_CHECKBOX_AUTOSELECTJUNCTIONS,
-    NETWORKMODE_CHECKBOX_ASKFORMERGE,
+    NETWORKMODE_CHECKBOX_MERGEAUTOMATICALLY,
     NETWORKMODE_CHECKBOX_BUBBLES,
     NETWORKMODE_CHECKBOX_ELEVATION,
     NETWORKMODE_CHECKBOX_CHAIN,
@@ -489,8 +489,10 @@ enum class GUIIcon {
     /// @name Netedit Demand elements icons
     /// @{
     ROUTE,
+    ROUTEREF,
     ROUTEDISTRIBUTION,
     VTYPE,
+    VTYPEREF,
     VTYPE_DEFAULT,
     VTYPE_BIKE,
     VTYPE_TAXI,
@@ -728,6 +730,7 @@ enum class GUIIcon {
     LANGUAGE_HU,
     LANGUAGE_TR,
     LANGUAGE_ZH,
-    LANGUAGE_ZHT
+    LANGUAGE_ZHT,
+    LANGUAGE_JA
     /// @}
 };

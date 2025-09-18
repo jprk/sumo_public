@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -29,6 +29,7 @@
 #include <utils/router/SUMOAbstractRouter.h>
 #include <utils/xml/SUMOXMLDefinitions.h>
 #include <microsim/MSNet.h>
+#include <microsim/MSStop.h>
 #include <microsim/MSStoppingPlace.h>
 
 class MSEdge;
@@ -130,9 +131,10 @@ public:
     typedef std::map<std::string, bool> StoppingPlaceParamSwitchMap_t;
     typedef std::map<MSStoppingPlace*, StoppingPlaceParamMap_t, ComparatorIdLess> StoppingPlaceMap_t;
     typedef std::pair<MSStoppingPlace*, bool> StoppingPlaceVisible;
+    typedef std::map<const MSEdge*, double> Prohibitions;
 
     ///@brief Constructor
-    MSStoppingPlaceRerouter(SumoXMLTag stoppingType, std::string paramPrefix = "", bool checkValidity = false, bool checkVisibility = true, StoppingPlaceParamMap_t addEvalParams = {}, StoppingPlaceParamSwitchMap_t addInvertParams = {});
+    MSStoppingPlaceRerouter(std::string paramPrefix = "", bool checkValidity = false, StoppingPlaceParamMap_t addEvalParams = {}, StoppingPlaceParamSwitchMap_t addInvertParams = {});
 
     // Destructor
     virtual ~MSStoppingPlaceRerouter() {}
@@ -146,10 +148,13 @@ public:
      * @param[out] newRoute the route to/from the chosen stopping place is stored here
      * @param[in,out] scores input score values from external source and get scores of all components of the "best" StoppingPlace
      * @param[in] closedEdges edges to avoid during routing
+     * @param[in] insertStopIndex the stop index where the new StoppingPlace should be inserted
+     * @param[in] keepCurrentStop whether the current stop at the given stopp index should still be served after the new one
      * @return the best stopping place according to the target function or nullptr
      */
-    MSStoppingPlace* reroute(std::vector<StoppingPlaceVisible>& stoppingPlaceCandidates, const std::vector<double>& probs, SUMOVehicle& veh,
-                             bool& newDestination, ConstMSEdgeVector& newRoute, StoppingPlaceParamMap_t& scores, const MSEdgeVector& closedEdges = {});
+    MSStoppingPlace* rerouteStoppingPlace(MSStoppingPlace* destStoppingPlace, const std::vector<StoppingPlaceVisible>& stoppingPlaceCandidates, const std::vector<double>& probs, SUMOVehicle& veh,
+                                          bool& newDestination, ConstMSEdgeVector& newRoute, StoppingPlaceParamMap_t& scores, const Prohibitions& closedEdges = {},
+                                          const int insertStopIndex = 0, const bool keepCurrentStop = true);
     /** @brief compute the target function for a single alternative
      *
      * @param[in] veh the concerned vehicle
@@ -164,6 +169,8 @@ public:
      * @param[in,out] stoppingPlaceApproaches the data structure to write the chosen route to the stopping place to
      * @param[in,out] maxValues maximum values for all evaluation components
      * @param[in] addInput external input data
+     * @param[in] insertStopIndex the stop index where the new StoppingPlace should be inserted
+     * @param[in] keepCurrentStop whether the current stop at the given stopp index should still be served after the new one
      * @return false if the stopping place cannot be used
      */
     virtual bool evaluateDestination(SUMOVehicle& veh, double brakeGap, bool newDestination,
@@ -172,7 +179,9 @@ public:
                                      std::map<MSStoppingPlace*, ConstMSEdgeVector>& newRoutes,
                                      std::map<MSStoppingPlace*, ConstMSEdgeVector>& stoppingPlaceApproaches,
                                      StoppingPlaceParamMap_t& maxValues,
-                                     StoppingPlaceParamMap_t& addInput);
+                                     StoppingPlaceParamMap_t& addInput,
+                                     const int insertStopIndex = 0,
+                                     const bool keepCurrentStop = true);
 
     /** @brief Compute some custom target function components
      *
@@ -204,7 +213,7 @@ public:
     virtual bool useStoppingPlace(MSStoppingPlace* stoppingPlace);
 
     /// @brief Provide the router to use (MSNet::getRouterTT or MSRoutingEngine)
-    virtual SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouter(SUMOVehicle& veh, const MSEdgeVector& prohibited = {});
+    virtual SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouter(SUMOVehicle& veh, const Prohibitions& prohibited = {});
 
     /// @brief Return the number of occupied places of the StoppingPlace
     virtual double getStoppingPlaceOccupancy(MSStoppingPlace* stoppingPlace) = 0;
@@ -267,13 +276,27 @@ public:
 protected:
     /// @brief Ask the vehicle about the relevant rerouting parameters and initiate the maximum value data structure
     void readEvaluationWeights(SUMOVehicle& veh, StoppingPlaceParamMap_t& stoppingPlaceParams, StoppingPlaceParamMap_t& stoppingPlaceDefaults, StoppingPlaceParamMap_t& maxValues) {
-        for (StoppingPlaceParamMap_t::iterator it = stoppingPlaceParams.begin(); it != stoppingPlaceParams.end(); ++it) {
-            double value = getWeight(veh, it->first, stoppingPlaceDefaults[it->first]);
-            it->second = value;
-            if (value > maxValues[it->first]) {
-                maxValues[it->first] = value;
+        for (auto& it : stoppingPlaceParams) {
+            const double value = getWeight(veh, it.first, stoppingPlaceDefaults[it.first]);
+            it.second = value;
+            if (value > maxValues[it.first]) {
+                maxValues[it.first] = value;
             }
         }
+    }
+
+    /// @brief Determine the rerouting origin edge (not necessarily the current edge of the vehicle!)
+    const MSRouteIterator determineRerouteOrigin(SUMOVehicle& veh, int insertStopIndex) {
+        const int stopCount = (int)veh.getStops().size();
+        if (insertStopIndex == 0 || stopCount == 0) {
+            return veh.getRerouteOrigin();
+        }
+        // if the stop index is too high cap to route end
+        const int stopIndex = MIN2(insertStopIndex, stopCount - 1);
+        std::list<MSStop>::const_iterator it = veh.getStops().begin();
+        std::advance(it, stopIndex);
+        MSStop relevantStop = *it;
+        return relevantStop.edge;
     }
 
 private:
@@ -282,10 +305,8 @@ private:
     MSStoppingPlaceRerouter() = delete;
 
 protected:
-    const SumoXMLTag myStoppingType;
     const std::string myParamPrefix;
     bool myCheckValidity;
-    const bool myConsiderDestVisibility;
     StoppingPlaceParamMap_t myEvalParams;
     StoppingPlaceParamSwitchMap_t myNormParams;
     StoppingPlaceParamSwitchMap_t myInvertParams;

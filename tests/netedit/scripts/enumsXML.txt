@@ -1,4 +1,5 @@
 editElements.overlapped
+move.moveWholePolygon
 selection.lockSelectionNetwork.junctions
 selection.lockSelectionNetwork.edges
 selection.lockSelectionNetwork.lanes
@@ -297,7 +298,7 @@ crossing.inspectSelectionTLS.linkIndex
 crossing.inspectSelectionTLS.linkIndex2
 crossing.inspectSelectionTLS.parameters
 crossing.clearEdges
-crossing.invertEdges
+crossing.useSelectedEdges
 crossing.firstField
 TLS.common.TLID
 TLS.common.TLType
@@ -765,6 +766,7 @@ E3.create.file
 E3.create.vTypes
 E3.create.nextEdges
 E3.create.detectPersons
+E3.create.openEntry
 E3.create.timeThreshold
 E3.create.speedThreshold
 E3.create.expectArrival
@@ -776,6 +778,7 @@ E3.inspect.file
 E3.inspect.vTypes
 E3.inspect.nextEdges
 E3.inspect.detectPersons
+E3.inspect.openEntry
 E3.inspect.timeThreshold
 E3.inspect.speedThreshold
 E3.inspect.expectArrival
@@ -786,6 +789,7 @@ E3.inspectSelection.file
 E3.inspectSelection.vTypes
 E3.inspectSelection.nextEdges
 E3.inspectSelection.detectPersons
+E3.inspectSelection.openEntry
 E3.inspectSelection.timeThreshold
 E3.inspectSelection.speedThreshold
 E3.inspectSelection.expectArrival
@@ -797,9 +801,11 @@ entryExit.inspect.moveLane
 entryExit.inspect.pos
 entryExit.inspect.friendlyPos
 entryExit.inspect.parameters
+entryExit.inspect.parentButton
 entryExit.inspect.parent
 entryExit.inspectSelection.friendlyPos
 entryExit.inspectSelection.parameters
+entryExit.inspectSelection.parentButton
 entryExit.inspectSelection.parent
 E1Instant.create.id
 E1Instant.create.name
@@ -869,6 +875,7 @@ routeProbe.create.frequency
 routeProbe.create.name
 routeProbe.create.file
 routeProbe.create.begin
+routeProbe.create.vTypes
 routeProbe.create.center
 routeProbe.inspect.id
 routeProbe.inspect.edge
@@ -876,11 +883,13 @@ routeProbe.inspect.frequency
 routeProbe.inspect.name
 routeProbe.inspect.file
 routeProbe.inspect.begin
+routeProbe.inspect.vTypes
 routeProbe.inspect.parameters
 routeProbe.inspectSelection.frequency
 routeProbe.inspectSelection.name
 routeProbe.inspectSelection.file
 routeProbe.inspectSelection.begin
+routeProbe.inspectSelection.vTypes
 routeProbe.inspectSelection.parameters
 vaporizer.create.begin
 vaporizer.create.end
@@ -906,6 +915,7 @@ poly.create.name
 poly.create.imgFile
 poly.create.reativePath
 poly.create.angle
+poly.create.geo
 poly.create.closeShape
 poly.inspect.id
 poly.inspect.shape
@@ -919,8 +929,8 @@ poly.inspect.name
 poly.inspect.imgFile
 poly.inspect.reativePath
 poly.inspect.angle
-poly.inspect.geoshape
 poly.inspect.geo
+poly.inspect.geoshape
 poly.inspect.parameters
 poly.inspect.closeShape
 poly.inspectSelection.colorButton
@@ -988,8 +998,6 @@ poiGeo.create.relativePath
 poiGeo.create.angle
 poiGeo.create.lonLat
 poiGeo.inspect.id
-poiGeo.inspect.lon
-poiGeo.inspect.lat
 poiGeo.inspect.colorButton
 poiGeo.inspect.color
 poiGeo.inspect.type
@@ -1001,6 +1009,8 @@ poiGeo.inspect.height
 poiGeo.inspect.imgFile
 poiGeo.inspect.relativePath
 poiGeo.inspect.angle
+poiGeo.inspect.lon
+poiGeo.inspect.lat
 poiGeo.inspect.parameters
 poiGeo.inspectSelection.colorButton
 poiGeo.inspectSelection.color
@@ -1104,6 +1114,7 @@ type.buttons.dialog
 type.edit.id
 type.edit.typeDist
 type.edit.vClass
+type.edit.vClassEdited
 type.edit.colorButton
 type.edit.color
 type.edit.length
@@ -1116,6 +1127,7 @@ type.edit.decel
 type.edit.sigma
 type.edit.tau
 type.editDefault.vClass
+type.editDefault.vClassEdited
 type.editDefault.colorButton
 type.editDefault.color
 type.editDefault.length
@@ -1215,6 +1227,7 @@ trip.inspect.arrivalPosLat
 trip.inspect.insertionChecks
 trip.inspect.depart
 trip.inspect.parameters
+trip.inspectSelection.typeButton
 trip.inspectSelection.type
 trip.inspectSelection.colorButton
 trip.inspectSelection.color
@@ -1270,6 +1283,7 @@ tripJunction.inspect.arrivalPosLat
 tripJunction.inspect.insertionChecks
 tripJunction.inspect.depart
 tripJunction.inspect.parameters
+tripJunction.inspectSelection.typeButton
 tripJunction.inspectSelection.type
 tripJunction.inspectSelection.colorButton
 tripJunction.inspectSelection.color
@@ -1325,6 +1339,7 @@ tripTAZ.inspect.arrivalPosLat
 tripTAZ.inspect.insertionChecks
 tripTAZ.inspect.depart
 tripTAZ.inspect.parameters
+tripTAZ.inspectSelection.typeButton
 tripTAZ.inspectSelection.type
 tripTAZ.inspectSelection.colorButton
 tripTAZ.inspectSelection.color
@@ -1381,6 +1396,7 @@ vehicle.inspect.arrivalPosLat
 vehicle.inspect.insertionChecks
 vehicle.inspect.depart
 vehicle.inspect.parameters
+vehicle.inspectSelection.typeButton
 vehicle.inspectSelection.type
 vehicle.inspectSelection.colorButton
 vehicle.inspectSelection.color
@@ -1436,6 +1452,7 @@ vehicleEmbedded.inspect.arrivalPosLat
 vehicleEmbedded.inspect.insertionChecks
 vehicleEmbedded.inspect.depart
 vehicleEmbedded.inspect.parameters
+vehicleEmbedded.inspectSelection.typeButton
 vehicleEmbedded.inspectSelection.type
 vehicleEmbedded.inspectSelection.colorButton
 vehicleEmbedded.inspectSelection.color
@@ -1503,6 +1520,7 @@ flow.inspect.end
 flow.inspect.terminateOption
 flow.inspect.spacingOption
 flow.inspect.parameters
+flow.inspectSelection.typeButton
 flow.inspectSelection.type
 flow.inspectSelection.colorButton
 flow.inspectSelection.color
@@ -1573,6 +1591,7 @@ flowJunction.inspect.end
 flowJunction.inspect.terminateOption
 flowJunction.inspect.spacingOption
 flowJunction.inspect.parameters
+flowJunction.inspectSelection.typeButton
 flowJunction.inspectSelection.type
 flowJunction.inspectSelection.colorButton
 flowJunction.inspectSelection.color
@@ -1643,6 +1662,7 @@ flowTAZ.inspect.end
 flowTAZ.inspect.terminateOption
 flowTAZ.inspect.spacingOption
 flowTAZ.inspect.parameters
+flowTAZ.inspectSelection.typeButton
 flowTAZ.inspectSelection.type
 flowTAZ.inspectSelection.colorButton
 flowTAZ.inspectSelection.color
@@ -1714,6 +1734,7 @@ routeFlow.inspect.end
 routeFlow.inspect.terminateOption
 routeFlow.inspect.spacingOption
 routeFlow.inspect.parameters
+routeFlow.inspectSelection.typeButton
 routeFlow.inspectSelection.type
 routeFlow.inspectSelection.colorButton
 routeFlow.inspectSelection.color
@@ -1784,6 +1805,7 @@ flowEmbedded.inspect.end
 flowEmbedded.inspect.terminateOption
 flowEmbedded.inspect.spacingOption
 flowEmbedded.inspect.parameters
+flowEmbedded.inspectSelection.typeButton
 flowEmbedded.inspectSelection.type
 flowEmbedded.inspectSelection.colorButton
 flowEmbedded.inspectSelection.color
@@ -2390,6 +2412,7 @@ person.inspect.color
 person.inspect.departPos
 person.inspect.depart
 person.inspect.parameters
+person.inspectSelection.typeButton
 person.inspectSelection.type
 person.inspectSelection.colorButton
 person.inspectSelection.color
@@ -2420,6 +2443,7 @@ personFlow.inspect.end
 personFlow.inspect.terminateOption
 personFlow.inspect.spacingOption
 personFlow.inspect.parameters
+personFlow.inspectSelection.typeButton
 personFlow.inspectSelection.type
 personFlow.inspectSelection.colorButton
 personFlow.inspectSelection.color
@@ -2761,6 +2785,7 @@ container.inspect.color
 container.inspect.departPos
 container.inspect.depart
 container.inspect.parameters
+container.inspectSelection.typeButton
 container.inspectSelection.type
 container.inspectSelection.colorButton
 container.inspectSelection.color
@@ -2791,6 +2816,7 @@ containerFlow.inspect.end
 containerFlow.inspect.terminateOption
 containerFlow.inspect.spacingOption
 containerFlow.inspect.parameters
+containerFlow.inspectSelection.typeButton
 containerFlow.inspectSelection.type
 containerFlow.inspectSelection.colorButton
 containerFlow.inspectSelection.color
@@ -2985,6 +3011,40 @@ TAZRelData.inspect.fromTAZ
 TAZRelData.inspect.toTAZ
 TAZRelData.inspect.parameters
 TAZRelData.inspectSelection.parameters
+edgeMeanData.inspect.id
+edgeMeanData.inspect.file
+edgeMeanData.inspect.period
+edgeMeanData.inspect.begin
+edgeMeanData.inspect.end
+edgeMeanData.inspect.excludeEmpty
+edgeMeanData.inspect.withInternal
+edgeMeanData.inspect.maxTravelTime
+edgeMeanData.inspect.minSamples
+edgeMeanData.inspect.speedThreshold
+edgeMeanData.inspect.vTypes
+edgeMeanData.inspect.trackVehicles
+edgeMeanData.inspect.detectPersons
+edgeMeanData.inspect.writeAttributes
+edgeMeanData.inspect.edges
+edgeMeanData.inspect.edgesFile
+edgeMeanData.inspect.aggregate
+laneMeanData.inspect.id
+laneMeanData.inspect.file
+laneMeanData.inspect.period
+laneMeanData.inspect.begin
+laneMeanData.inspect.end
+laneMeanData.inspect.excludeEmpty
+laneMeanData.inspect.withInternal
+laneMeanData.inspect.maxTravelTime
+laneMeanData.inspect.minSamples
+laneMeanData.inspect.speedThreshold
+laneMeanData.inspect.vTypes
+laneMeanData.inspect.trackVehicles
+laneMeanData.inspect.detectPersons
+laneMeanData.inspect.writeAttributes
+laneMeanData.inspect.edges
+laneMeanData.inspect.edgesFile
+laneMeanData.inspect.aggregate
 dialog.allowVClass.allVehicles
 dialog.allowVClass.onlyRoadVehicles
 dialog.allowVClass.onlyRailVehicles

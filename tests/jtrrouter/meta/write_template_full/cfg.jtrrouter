@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-06-26 13:30:33 by Eclipse SUMO jtrrouter Version v1_20_0+0837-89657f7d4be
+<!-- generated on 2025-07-03 09:53:11 by Eclipse SUMO jtrrouter Version v1_23_1+0813-5f3c910f36e
 -->
 
 <jtrrouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/jtrrouterConfiguration.xsd">
@@ -35,6 +35,10 @@
         <output-prefix value="" type="STR" help="Prefix which is applied to all output files. The special string &apos;TIME&apos; is replaced by the current time."/>
         <precision value="2" type="INT" help="Defines the number of digits after the comma for floating point output"/>
         <precision.geo value="6" type="INT" help="Defines the number of digits after the comma for lon,lat output"/>
+        <output.compression value="" type="STR" help="Defines the standard compression algorithm (currently only for parquet output)"/>
+        <output.format value="xml" type="STR" help="Defines the standard output format if not derivable from the file name (&apos;xml&apos;, &apos;csv&apos;, &apos;parquet&apos;)"/>
+        <output.column-header value="tag" type="STR" help="How to derive column headers from attribute names (&apos;none&apos;, &apos;tag&apos;, &apos;auto&apos;, &apos;plain&apos;)"/>
+        <output.column-separator value=";" type="STR" help="Separator in CSV output"/>
         <human-readable-time value="false" synonymes="H" type="BOOL" help="Write time values as hour:minute:second or day:hour:minute:second rather than seconds"/>
         <exit-times value="false" type="BOOL" help="Write exit times (weights) for each edge"/>
     </output>
@@ -50,8 +54,10 @@
         <repair value="false" type="BOOL" help="Tries to correct a false route"/>
         <repair.from value="false" type="BOOL" help="Tries to correct an invalid starting edge by using the first usable edge instead"/>
         <repair.to value="false" type="BOOL" help="Tries to correct an invalid destination edge by using the last usable edge instead"/>
+        <repair.max-detour-factor value="10" type="FLOAT" help="Backtrack on route if the detour is longer than the gap by FACTOR"/>
         <mapmatch.distance value="100" type="FLOAT" help="Maximum distance when mapping input coordinates (fromXY etc.) to the road network"/>
         <mapmatch.junctions value="false" type="BOOL" help="Match positions to junctions instead of edges"/>
+        <mapmatch.taz value="false" type="BOOL" help="Match positions to taz instead of edges"/>
         <bulk-routing value="false" type="BOOL" help="Aggregate routing queries with the same origin"/>
         <routing-threads value="0" type="INT" help="The number of parallel execution threads used for routing"/>
         <restriction-params value="" type="STR[]" help="Comma separated list of param keys to compare for additional restrictions"/>

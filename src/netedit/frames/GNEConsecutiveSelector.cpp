@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -17,7 +17,6 @@
 ///
 // Consecutive lane selector module
 /****************************************************************************/
-#include <config.h>
 
 #include <netedit/GNEApplicationWindow.h>
 #include <netedit/GNENet.h>
@@ -31,7 +30,6 @@
 
 #include "GNEConsecutiveSelector.h"
 #include "GNEFrame.h"
-
 
 // ===========================================================================
 // FOX callback mapping
@@ -174,8 +172,8 @@ GNEConsecutiveSelector::addLane(GNELane* lane) {
     myAbortCreationButton->enable();
     // enable finish button
     myFinishCreationButton->enable();
-    // disable undo/redo
-    myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->disableUndoRedo(TL("route creation"));
+    // disable undo/redo temporally
+    myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->disableUndoRedoTemporally(TL("route creation"));
     // enable or disable remove last lane button
     if (myLanePath.size() > 1) {
         myRemoveLastInsertedElement->enable();
@@ -200,7 +198,7 @@ void
 GNEConsecutiveSelector::updateLaneColors() {
     // reset all flags
     for (const auto& edge : myFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getEdges()) {
-        for (const auto& lane : edge.second->getLanes()) {
+        for (const auto& lane : edge.second->getChildLanes()) {
             lane->resetCandidateFlags();
         }
     }
@@ -208,7 +206,7 @@ GNEConsecutiveSelector::updateLaneColors() {
     if (myLanePath.size() > 0 && (myShowCandidateLanes->getCheck() == TRUE)) {
         // first mark all lanes as invalid
         for (const auto& edge : myFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getEdges()) {
-            for (const auto& lane : edge.second->getLanes()) {
+            for (const auto& lane : edge.second->getChildLanes()) {
                 lane->setConflictedCandidate(true);
             }
         }
@@ -301,16 +299,13 @@ GNEConsecutiveSelector::drawTemporalConsecutiveLanePath() const {
             // Pop matrix
             GLHelper::popMatrix();
         }
-        /*
-            // draw points
-            const RGBColor pointColor = RGBColor::RED;
-            // positions
-            const Position firstPosition = myLanePath.front().first->getLaneShape().positionAtOffset2D(myLanePath.front().second);
-            const Position secondPosition = myLanePath.back().first->getLaneShape().positionAtOffset2D(myLanePath.back().second);
+        // draw points
+        if (shapes.size() > 0) {
             // draw geometry points
-            GUIGeometry::drawGeometryPoints(s, nullptr, myFrameParent->getViewNet()->getPositionInformation(), {firstPosition, secondPosition},
-                                            pointColor, RGBColor::WHITE, s.neteditSizeSettings.polylineWidth, 1, false, true);
-        */
+            GUIGeometry::drawGeometryPoints(GUIVisualizationSettings::Detail::AdditionalDetails,
+            {shapes.front().front(), shapes.back().back()}, RGBColor::RED,
+            myFrameParent->getViewNet()->getVisualisationSettings().neteditSizeSettings.additionalGeometryPointRadius, 1, false);
+        }
         // Pop last matrix
         GLHelper::popMatrix();
     }
@@ -322,7 +317,7 @@ GNEConsecutiveSelector::abortPathCreation() {
     // first check that there is elements
     if (myLanePath.size() > 0) {
         // unblock undo/redo
-        myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->enableUndoRedo();
+        myFrameParent->getViewNet()->getViewParent()->getGNEAppWindows()->enableUndoRedoTemporally();
         // clear lanes
         clearPath();
         // disable buttons
@@ -431,7 +426,7 @@ void
 GNEConsecutiveSelector::clearPath() {
     // reset all flags
     for (const auto& edge : myFrameParent->getViewNet()->getNet()->getAttributeCarriers()->getEdges()) {
-        for (const auto& lane : edge.second->getLanes()) {
+        for (const auto& lane : edge.second->getChildLanes()) {
             lane->resetCandidateFlags();
         }
     }

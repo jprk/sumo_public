@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -354,7 +354,7 @@ public:
     /* @brief discards traffic lights
      * @param[in] geometryLike Whether only tls at geometry-like nodes shall be discarded
      */
-    void discardTrafficLights(NBTrafficLightLogicCont& tlc, bool geometryLike, bool guessSignals);
+    void discardTrafficLights(NBTrafficLightLogicCont& tlc, bool geometryLike);
 
     /// @brief discards rail signals
     void discardRailSignals();
@@ -370,7 +370,7 @@ public:
     }
 
     /// @brief remap node IDs according to options --numerical-ids and --reserved-ids
-    int remapIDs(bool numericaIDs, bool reservedIDs, const std::string& prefix, NBTrafficLightLogicCont& tlc);
+    int remapIDs(bool numericaIDs, bool reservedIDs, bool keptIDs, const std::string& prefix, NBTrafficLightLogicCont& tlc);
 
     /// @brief guess and mark fringe nodes
     int guessFringe();
@@ -395,7 +395,7 @@ private:
     void generateNodeClusters(double maxDist, NodeClusters& into) const;
 
     /// @brief remove geometry-like fringe nodes from cluster
-    void pruneClusterFringe(NodeSet& cluster, double maxDist) const;
+    void pruneClusterFringe(NodeSet& cluster, double maxDist, bool remove2TLS = false) const;
 
     /// @brief avoid removal of long edges when joining junction clusters
     static int pruneLongEdges(NodeSet& cluster, double maxDist, const bool dryRun = false);
@@ -411,7 +411,7 @@ private:
 
     /// @brief determine wether the cluster is not too complex for joining
     bool feasibleCluster(const NodeSet& cluster, const std::map<const NBNode*, std::vector<NBNode*> >& ptStopEnds,
-                         double maxDist, std::string& reason) const;
+                         double maxDist, std::string& reason, NBNode*& tryRemove) const;
 
     /// @brief joins the given node clusters
     void joinNodeClusters(NodeClusters clusters, NBDistrictCont& dc, NBEdgeCont& ec, NBTrafficLightLogicCont& tlc, bool resetConnections = false);

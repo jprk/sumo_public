@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -89,6 +89,7 @@ int MSPModel_Striping::myWalkingAreaDetail;
 SUMOTime MSPModel_Striping::jamTime;
 SUMOTime MSPModel_Striping::jamTimeCrossing;
 SUMOTime MSPModel_Striping::jamTimeNarrow;
+double MSPModel_Striping::jamFactor;
 bool MSPModel_Striping::myLegacyPosLat;
 const double MSPModel_Striping::LOOKAHEAD_SAMEDIR(4.0); // seconds
 const double MSPModel_Striping::LOOKAHEAD_ONCOMING(10.0); // seconds
@@ -103,6 +104,7 @@ const double MSPModel_Striping::SQUEEZE(0.7);
 double MSPModel_Striping::RESERVE_FOR_ONCOMING_FACTOR;
 double MSPModel_Striping::RESERVE_FOR_ONCOMING_FACTOR_JUNCTIONS;
 double MSPModel_Striping::RESERVE_FOR_ONCOMING_MAX;
+bool MSPModel_Striping::USE_NET_SPEEDS(false);
 const double MSPModel_Striping::MAX_WAIT_TOLERANCE(120.); // seconds
 const double MSPModel_Striping::LATERAL_SPEED_FACTOR(0.4);
 const double MSPModel_Striping::MIN_STARTUP_DIST(0.4); // meters
@@ -128,6 +130,8 @@ MSPModel_Striping::MSPModel_Striping(const OptionsCont& oc, MSNet* net) {
     RESERVE_FOR_ONCOMING_FACTOR = oc.getFloat("pedestrian.striping.reserve-oncoming");
     RESERVE_FOR_ONCOMING_FACTOR_JUNCTIONS = oc.getFloat("pedestrian.striping.reserve-oncoming.junctions");
     RESERVE_FOR_ONCOMING_MAX = oc.getFloat("pedestrian.striping.reserve-oncoming.max");
+    // beginning with 1.20.0, sensible default speeds were set for crossings and walkingareas
+    USE_NET_SPEEDS = net->getNetworkVersion() >= MMVersion(1, 20);
 
     jamTime = string2time(oc.getString("pedestrian.striping.jamtime"));
     if (jamTime <= 0) {
@@ -141,6 +145,7 @@ MSPModel_Striping::MSPModel_Striping(const OptionsCont& oc, MSNet* net) {
     if (jamTimeNarrow <= 0) {
         jamTimeNarrow = SUMOTime_MAX;
     }
+    jamFactor = oc.getFloat("pedestrian.striping.jamfactor");
     myLegacyPosLat = oc.getBool("pedestrian.striping.legacy-departposlat");
 }
 
@@ -451,9 +456,9 @@ MSPModel_Striping::getNextLane(const PState& ped, const MSLane* currentLane, con
             const double arrivalPos = (nextRouteEdge == ped.getStage()->getRoute().back()
                                        ? ped.getStage()->getArrivalPos()
                                        : (nextRouteEdgeDir == FORWARD ? 0 : nextRouteEdge->getLength()));
-            MSEdgeVector prohibited;
+            std::map<const MSEdge*, double> prohibited;
             if (prevLane != nullptr) {
-                prohibited.push_back(&prevLane->getEdge());
+                prohibited[&prevLane->getEdge()] = -1;
             }
             MSNet::getInstance()->getPedestrianRouter(0, prohibited).compute(currentEdge, nextRouteEdge, 0, arrivalPos, ped.getStage()->getMaxSpeed(ped.getPerson()), 0, junction, crossingRoute, true);
             if DEBUGCOND(ped) {
@@ -1083,7 +1088,13 @@ MSPModel_Striping::moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane*
         const MSLane* nextLane = p.myNLI.lane;
         const MSLink* link = p.myNLI.link;
         const double dist = p.distToLaneEnd();
-        const double speed = p.getStage()->getMaxSpeed(p.getPerson());
+        const double speed(p.getStage()->getConfiguredSpeed() >= 0
+                           ? p.getStage()->getConfiguredSpeed()
+                           : ((nextLane != nullptr && (USE_NET_SPEEDS || nextLane->isNormal() || nextLane->isInternal()))
+                              ? nextLane->getVehicleMaxSpeed(p.getPerson())
+                              : p.getStage()->getMaxSpeed(p.getPerson())));
+
+
         if (nextLane != nullptr && dist <= LOOKAHEAD_ONCOMING_DIST) {
             const double currentLength = (p.myWalkingAreaPath == nullptr ? lane->getLength() : p.myWalkingAreaPath->length);
             const Obstacles& nextObs = getNextLaneObstacles(
@@ -1106,8 +1117,7 @@ MSPModel_Striping::moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane*
             DEBUG_PRINT(currentObs);
         }
         // time gap to pass the intersection ahead of a vehicle.
-        const double passingClearanceTime = p.getPerson()->getFloatParam("pedestrian.timegap-crossing");
-        const double passingLength = p.getLength() + passingClearanceTime * speed;
+        const double passingLength = p.getLength() + p.getPerson()->getTimegapCrossing() * speed;
         // check link state
         if DEBUGCOND(p) {
             gDebugFlag1 = true; // get debug output from MSLink
@@ -1118,7 +1128,8 @@ MSPModel_Striping::moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane*
                 // only check close before junction, @todo we should take deceleration into account here
                 && dist - p.getMinGap() < LOOKAHEAD_SAMEDIR * speed
                 // persons move before vehicles so we subtract DELTA_TO because they cannot rely on vehicles having passed the intersection in the current time step
-                && !link->opened(currentTime - DELTA_T, speed, speed, passingLength, p.getImpatience(currentTime), speed, 0, 0, nullptr, p.ignoreRed(link), p.getPerson())) {
+                && (!link->opened(currentTime - DELTA_T, speed, speed, passingLength, p.getImpatience(), speed, 0, 0, nullptr, p.ignoreRed(link), p.getPerson())
+                    || p.stopForYellow(link))) {
             // prevent movement passed a closed link
             Obstacles closedLink(stripes, Obstacle(p.getEdgePos(0) + dir * (dist - NUMERICAL_EPS), 0, OBSTACLE_LINKCLOSED, "closedLink_" + link->getViaLaneOrLane()->getID(), 0));
             p.mergeObstacles(currentObs, closedLink);
@@ -1141,7 +1152,8 @@ MSPModel_Striping::moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane*
         }
         if (&lane->getEdge() == p.getStage()->getDestination() && p.getStage()->getDestinationStop() != nullptr) {
             Obstacles arrival;
-            if (p.getStage()->getDestinationStop()->getWaitingCapacity() > p.getStage()->getDestinationStop()->getNumWaitingPersons()) {
+            if (p.getStage()->getDestinationStop()->getWaitingCapacity() > p.getStage()->getDestinationStop()->getNumWaitingPersons() ||
+                    (!p.getStage()->getDestinationStop()->checkPersonCapacity())) {
                 arrival = Obstacles(stripes, Obstacle(p.getStage()->getArrivalPos() + dir * p.getMinGap(), 0, OBSTACLE_ARRIVALPOS, "arrival", 0));
             } else {
                 arrival = Obstacles(stripes, Obstacle(p.getStage()->getArrivalPos() - dir * p.getMinGap(), 0, OBSTACLE_ARRIVALPOS, "arrival_blocked", 0));
@@ -1168,7 +1180,7 @@ MSPModel_Striping::moveInDirectionOnLane(Pedestrians& pedestrians, const MSLane*
         }
 
         // walk, taking into account all obstacles
-        p.walk(currentObs, currentTime);
+        p.walk(currentObs);
         gDebugFlag1 = false;
         if (!p.isWaitingToEnter() && !p.isJammed()) {
             Obstacle o(p);
@@ -1888,7 +1900,7 @@ MSPModel_Striping::getReserved(int stripes, double factor) {
 }
 
 void
-MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
+MSPModel_Striping::PState::walk(const Obstacles& obs) {
     const int stripes = (int)obs.size();
     const int sMax =  stripes - 1;
     assert(stripes == numStripes(myLane));
@@ -1896,7 +1908,7 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
     // (speed limits on crossings and walkingareas ignored due to #11527)
     const double vMax = (myStage->getConfiguredSpeed() >= 0
                          ? myStage->getConfiguredSpeed()
-                         : (myLane->isNormal() || myLane->isInternal()
+                         : (USE_NET_SPEEDS || myLane->isNormal() || myLane->isInternal()
                             ? myLane->getVehicleMaxSpeed(myPerson)
                             : myStage->getMaxSpeed(myPerson)));
     // ultimate goal is to choose the preferred stripe (chosen)
@@ -2039,7 +2051,7 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
                                myPerson->getID(), myStage->getEdge()->getID(), time2string(SIMSTEP));
                 myAmJammed = true;
             }
-            xSpeed = vMax / 4;
+            xSpeed = vMax * jamFactor;
         }
     } else if (myAmJammed && stripe(myPosLat) >= 0 && stripe(myPosLat) <= sMax && xDist >= MIN_STARTUP_DIST)  {
         myAmJammed = false;
@@ -2105,7 +2117,7 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
                   << " xd=" << xDist
                   << " yd=" << yDist
                   << " vMax=" << vMax
-                  << " wTime=" << myStage->getWaitingTime(currentTime)
+                  << " wTime=" << myStage->getWaitingTime()
                   << " jammed=" << myAmJammed
                   << "\n";
         if (DEBUGCOND(*this)) {
@@ -2140,15 +2152,16 @@ MSPModel_Striping::PState::walk(const Obstacles& obs, SUMOTime currentTime) {
         myWaitingTime = 0;
     } else {
         myWaitingTime += DELTA_T;
+        myTotalWaitingTime += DELTA_T;
     }
     myAngle = std::numeric_limits<double>::max(); // set on first access or via remote control
 }
 
 
 double
-MSPModel_Striping::PState::getImpatience(SUMOTime now) const {
+MSPModel_Striping::PState::getImpatience() const {
     return MAX2(0., MIN2(1., myPerson->getVehicleType().getImpatience()
-                         + STEPS2TIME(myStage->getWaitingTime(now)) / MAX_WAIT_TOLERANCE));
+                         + STEPS2TIME(myStage->getWaitingTime()) / MAX_WAIT_TOLERANCE));
 }
 
 
@@ -2316,7 +2329,7 @@ MSPModel_Striping::PState::moveToXY(MSPerson* p, Position pos, MSLane* lane, dou
               << " path=" << (myWalkingAreaPath == nullptr ? "null" : (myWalkingAreaPath->from->getID() + "->" + myWalkingAreaPath->to->getID())) << "\n";
 #endif
 
-    if (lane != myLane && myLane != nullptr) {
+    if (lane != myLane && myLane != nullptr && lane != nullptr) {
         pm->remove(this);
         pm->registerActive();
     }
@@ -2366,6 +2379,7 @@ MSPModel_Striping::PState::moveToXY(MSPerson* p, Position pos, MSLane* lane, dou
             myWalkingAreaPath = nullptr;
             myEdgePos = lanePos;
             myPosLat = lateral_offset - lanePosLat;
+            lane->requireCollisionCheck();
         }
         // guess direction
         const double angleDiff = GeomHelper::getMinAngleDiff(angle, oldAngle);
@@ -2400,7 +2414,9 @@ MSPModel_Striping::PState::moveToXY(MSPerson* p, Position pos, MSLane* lane, dou
 #endif
         }
 #ifdef DEBUG_MOVETOXY
-        std::cout << " newRelPos=" << Position(myEdgePos, myPosLat) << " edge=" << myPerson->getEdge()->getID() << " newPos=" << myPerson->getPosition()
+        std::cout << " newRelPos=" << Position(myEdgePos, myPosLat) << " edge=" << myPerson->getEdge()->getID()
+                  << " newPos=" << myPerson->getPosition()
+                  << " latOffset=" << getLatOffset()
                   << " oldAngle=" << oldAngle << " angleDiff=" << angleDiff << " newDir=" << myDir << "\n";
 #endif
         if (oldLane == myLane) {
@@ -2500,6 +2516,26 @@ MSPModel_Striping::PState::ignoreRed(const MSLink* link) const {
             return ignoreRedTime > redDuration;
         } else {
             return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+
+bool
+MSPModel_Striping::PState::stopForYellow(const MSLink* link) const {
+    // main use case is at rail_crossing
+    if (link->haveYellow()) {
+        const double ignoreYellowTime = myPerson->getVehicleType().getParameter().getJMParam(SUMO_ATTR_JM_DRIVE_AFTER_YELLOW_TIME, -1);
+        if (ignoreYellowTime >= 0) {
+            const double yellowDuration = STEPS2TIME(MSNet::getInstance()->getCurrentTimeStep() - link->getLastStateChange());
+            if (DEBUGCOND(*this)) {
+                std::cout << SIMTIME << "  ignoreYellowTime=" << ignoreYellowTime << " yellowDuration=" << yellowDuration << "\n";
+            }
+            return ignoreYellowTime < yellowDuration;
+        } else {
+            return true;
         }
     } else {
         return false;

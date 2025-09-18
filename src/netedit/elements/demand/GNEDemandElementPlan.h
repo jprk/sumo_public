@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -42,28 +42,6 @@ class GNERoute;
 // ===========================================================================
 
 class GNEDemandElementPlan {
-
-public:
-    /// @brief get the walk tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getWalkTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the personTrip tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getPersonTripTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the ride tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getRideTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the transport tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getTransportTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the tranship tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getTranshipTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the person stop tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getPersonStopTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
-
-    /// @brief get the container stop tag and icon for the combination
-    static std::pair<SumoXMLTag, GUIIcon> getContainerStopTagIcon(const CommonXMLStructure::PlanParameters& planParameters);
 
 protected:
     /// @brief variable used for draw central contour
@@ -165,11 +143,11 @@ protected:
     void drawPlanGL(const bool drawPlan, const GUIVisualizationSettings& s, const RGBColor& planColor, const RGBColor& planSelectedColor) const;
 
     /// @brief draw plan partial lane
-    void drawPlanLanePartial(const bool drawPlan, const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront,
+    void drawPlanLanePartial(const bool drawPlan, const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront,
                              const double planWidth, const RGBColor& planColor, const RGBColor& planSelectedColor) const;
 
     /// @brief draw plan partial junction
-    void drawPlanJunctionPartial(const bool drawPlan, const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront,
+    void drawPlanJunctionPartial(const bool drawPlan, const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront,
                                  const double planWidth, const RGBColor& planColor, const RGBColor& planSelectedColor) const;
 
     /// @}
@@ -188,13 +166,13 @@ protected:
 
 private:
     /// @brief get end position radius
-    double getEndPosRadius(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const bool drawHalfWidth) const;
+    double getEndPosRadius(const GUIVisualizationSettings& s, const GNESegment* segment, const bool drawHalfWidth) const;
 
     /// @brief draw from arrow
-    void drawFromArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment) const;
+    void drawFromArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNESegment* segment) const;
 
     /// @brief draw to arrow
-    void drawToArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNEPathManager::Segment* segment) const;
+    void drawToArrow(const GUIVisualizationSettings& s, const GNELane* lane, const GNESegment* segment) const;
 
     /// @brief draw to arrow
     void drawEndPosition(const GUIVisualizationSettings& s, const GUIVisualizationSettings::Detail d, const double endPosRadius) const;

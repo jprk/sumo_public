@@ -166,6 +166,10 @@ expected waiting time for random arrival within the cycle
 travelTimePenalty = p * (redTime * redTime + redTime) / (2 * cycleTime)
 ```
 
+!!! caution
+    When edges ahead of a traffic light are shorter than 15m an [unrealistic reduction in traffic flow](https://github.com/eclipse-sumo/sumo/issues/16014) will result from the use of this option and a warning will be given.
+    To identify affected edges in netedit, the tool `net/netcheck.py net.net.xml --short-tls-edges --selection-output selection.txt` can be used.
+
 ### TLS-Flow-Penalty
 When setting **--meso-tls-flow-penalty** {{DT_FLOAT}}: to a value \> 0 (default is 0), a headway penalty is applied
  which serves to reduce the maximum flow across a tls-controlled intersection (In contrast to actual junction control, they flow is spread evenly across the phase cycle rather than being concentrated during the green phases).
@@ -179,6 +183,19 @@ headway = defaultHeadway / greenFraction
 ```
 
 Note, that the maximum flow cannot exceed the value at permanent green light regardless of penalty value.
+
+### Partial TLS Penalties
+
+The above two options apply to all traffic lights in the network by default.
+By adding the [generic parameter](GenericParameters.md) key `<param key="meso.tls.control" value="true"/>` to a `<tlLogic>` definition, individual traffic lights can be made exempt from the penalties and instead by treated in full detail (when option **--meso-junction-control** is also set).
+
+It is also possible to load an additional file where only this option is set:
+
+```
+    <tlLogic id="C" programID="0">
+        <param key="meso.tls.control" value="true"/>
+    </tlLogic>
+```
 
 ### Penalty at uncontrolled intersections
 

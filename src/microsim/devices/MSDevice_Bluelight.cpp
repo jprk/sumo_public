@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -113,6 +113,7 @@ MSDevice_Bluelight::notifyMove(SUMOTrafficObject& veh, double /* oldPos */,
         // advance as far as possible (assume vehicles will keep moving out of the way)
         ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_LCA_STRATEGIC_PARAM), "-1");
         ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD), "0");
+        ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME), "0");
         try {
             ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_MINGAP_LAT), "0");
         } catch (InvalidArgument&) {
@@ -124,6 +125,8 @@ MSDevice_Bluelight::notifyMove(SUMOTrafficObject& veh, double /* oldPos */,
                                               ego.getVehicleType().getParameter().getLCParamString(SUMO_ATTR_LCA_STRATEGIC_PARAM, "1"));
         ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD),
                                               ego.getVehicleType().getParameter().getLCParamString(SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD, "5"));
+        ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME),
+                                              ego.getVehicleType().getParameter().getLCParamString(SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME, "20"));
         try {
             ego.getLaneChangeModel().setParameter(toString(SUMO_ATTR_MINGAP_LAT),
                                                   toString(ego.getVehicleType().getMinGapLat()));
@@ -289,14 +292,15 @@ MSDevice_Bluelight::notifyMove(SUMOTrafficObject& veh, double /* oldPos */,
                     // emergency vehicles should not react
                     continue;
                 }
-                const double timeToBrake = foe->getSpeed() / 4.5;
+                const double timeToBrake = foe->getSpeed() / SUMOVTypeParameter::getDefaultDecel();
                 if (timeToArrival < TIME2STEPS(timeToBrake + 1)) {
-                    ;
+                    // trigger emergency braking
+                    const double decel = 0.5 * foe->getSpeed() * foe->getSpeed() / avi.dist;
                     std::vector<std::pair<SUMOTime, double> > speedTimeLine;
                     speedTimeLine.push_back(std::make_pair(SIMSTEP, foe->getSpeed()));
-                    speedTimeLine.push_back(std::make_pair(avi.arrivalTime, 0));
+                    speedTimeLine.push_back(std::make_pair(SIMSTEP + TIME2STEPS(foe->getSpeed() / decel), 0));
                     microFoe->getInfluencer().setSpeedTimeLine(speedTimeLine);
-                    //std::cout << SIMTIME << " foe=" << foe->getID() << " dist=" << dist << " timeToBrake= " << timeToBrake << " ttA=" << STEPS2TIME(timeToArrival) << "\n";
+                    //std::cout << SIMTIME << " foe=" << foe->getID() << " timeToBrake=" << timeToBrake << " timeToArrival=" << STEPS2TIME(timeToArrival) << " decel=" << decel << "\n";
                 }
             }
         }

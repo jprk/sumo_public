@@ -17,11 +17,14 @@ the definition. The declaration values are:
 | Attribute Name | Value Type  | Description                                                                                            |
 | -------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
 | **id**         | id (string) | The id of of the rerouter                                                                              |
-| **edges**      | float       | An edge id or a list of edge ids where vehicles shall be rerouted                                      |
+| **edges**      | stringList  | A list of edge ids where vehicles shall be rerouted                                                    |
 | probability    | float       | The probability for vehicle rerouting (0-1), default 1                                                 |
 | timeThreshold  | time (s)    | minimum accumulated waiting time before the rerouter takes effect (default 0 applies always)           |
 | vTypes         | stringList  | Space-separated list of vType IDs for which this rerouter should apply (default "" applies to all)     |
 | off            | bool        | Whether the router should be inactive initially (and switched on in the gui), *default:false*          |
+| optional       | bool        | Whether the vehicle / person needs to request rerouting actively, *default:false*                      |
+| pos            | float       | The position on the edge, *default:undefined*                                                          |
+| radius         | float       | At which distance the rerouter will trigger, *default:infinity*                                        |
 
 A rerouter may work in several different ways. Within a time period you
 may close an edge, or assign new destinations or predefined routes to
@@ -110,6 +113,7 @@ The attributes used within such definitions are:
 | **id**         | id (string)             | The id of the closed edge; the id must be the id of an edge within the network                                                                                                                                             |
 | allow          | list of vehicle classes | The (optional) ' '-separated list of [vehicle classes](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#abstract_vehicle_class) which are still allowed to drive on the closed edge. All others are forbidden. |
 | disallow       | list of vehicle classes | The (optional) ' '-separated list of [vehicle classes](../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#abstract_vehicle_class) which are forbidden from driving on the closed edge. All others are allowed.   |
+| until       | time | optional estimated end time of the closing. Vehicles will stay on their old route and wait if a detour would take more time than waiting for the closing to end. |
 
 When using a `<closingReroute>` without attributes `allow` and `disallow`, vehicles that cannot reach their
 destination by an alternative route simply continue on their old route
@@ -339,7 +343,7 @@ vType](../Simulation/GenericParameters.md):
 | parking.relfreespace.weight | 0             | The relative number of free spaces                                       | yes                        |
 | parking.distanceto.weight   | 1             | The road distance to the parking area                                    | no                         |
 | parking.timeto.weight       | 0             | The assumed travel time to the parking area                              | no                         |
-| parking.distancefrom.weight | 0             | The road distance from the parking area to the vehicles destination      | no                         |
+| parking.distancefrom.weight | 0             | The road distance from the parking area to the vehicle destination      | no                         |
 | parking.timefrom.weight     | 0             | The assumed travel time from the parking area to the vehicle destination | no                         |
 
 When 'parking.probability.weight' is set to a positive value, a random number between 0 and attribute 'probability' is drawn for each candidate parkingArea. This value is then normalized to the range [0,1] by dividing with the maximum probability value of all parkingAreaReroute elements. The inverted normalized value is then multiplied with parking.probability.weight to enter into the candidate score.
@@ -349,6 +353,7 @@ When 'parking.probability.weight' is set to a positive value, a random number be
 Parameter Name         | Default value | Description                                                              |
 | -------------------- | ------------- | ------------------------------------------------------------------------ |
 | parking.anywhere     | -1            | permit using any free parkingArea along the way after doing unsuccessful parkingAreaReroute x times (-1 disables this behavior) |
+| parking.ignoreDest   | 0             | When rerouting is triggered, any alternative may be used regardless of visibility and occupancy of the current destination |
 | parking.frustration  | 100           | increases the preference for visibly free parkingAreas over time (after x unsuccessful parkingAreaReroutes, targets with unknown occupancy will assumed to be *almost* full)                                 |
 | parking.knowledge    | 0             | Let driver "guess" the exact occupancy of invisible parkingAreas with probability x                   |
 
@@ -422,12 +427,12 @@ To following effects occur:
 - 1a-2a-3b-4b-5a: **W**
 - 1a-2a-3b-4b-5b: **W**
 
-- 1a-2b-3a-4a-5a: **E** (becomes **W** with **--ignore-route-errors**)
+- 1a-2b-3a-4a-5a: **E** (becomes **W** with **--ignore-route-errors** or **--device.rerouting.mode 8**)
 - 1a-2b-3a-4a-5b: **W**
 - 1a-2b-3a-4b-5a: **W**
 - 1a-2b-3a-4b-5b: **W**
 
-- 1a-2b-3b-4a-5a: **E** (becomes **W** with **--ignore-route-errors**)
+- 1a-2b-3b-4a-5a: **E** (becomes **W** with **--ignore-route-errors** or **--device.rerouting.mode 8**)
 - 1a-2b-3b-4a-5b: **W**
 - 1a-2b-3b-4b-5a: **W**
 - 1a-2b-3b-4b-5b: **W**

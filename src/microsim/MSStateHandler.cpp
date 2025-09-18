@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -36,11 +36,14 @@
 #include <microsim/traffic_lights/MSTLLogicControl.h>
 #include <microsim/traffic_lights/MSRailSignalConstraint.h>
 #include <microsim/traffic_lights/MSRailSignal.h>
+#include <microsim/traffic_lights/MSDriveWay.h>
 #include <microsim/devices/MSDevice_Routing.h>
+#include <microsim/devices/MSRoutingEngine.h>
 #include <microsim/devices/MSDevice_BTreceiver.h>
 #include <microsim/devices/MSDevice_ToC.h>
 #include <microsim/transportables/MSTransportableControl.h>
 #include <microsim/traffic_lights/MSRailSignalControl.h>
+#include <microsim/output/MSDetectorControl.h>
 #include <microsim/MSEdge.h>
 #include <microsim/MSLane.h>
 #include <microsim/MSLink.h>
@@ -57,7 +60,6 @@
 
 #include <mesosim/MESegment.h>
 #include <mesosim/MELoop.h>
-
 
 // ===========================================================================
 // MSStateTimeHandler method definitions
@@ -110,6 +112,7 @@ MSStateHandler::MSStateHandler(const std::string& file, const SUMOTime offset) :
     myVCAttrs(nullptr),
     myLastParameterised(nullptr),
     myRemoved(0),
+    myFlowIndex(-1),
     myConstrainedSignal(nullptr) {
     myAmLoadingState = true;
     const std::vector<std::string> vehIDs = OptionsCont::getOptions().getStringVector("load-state.remove-vehicles");
@@ -126,15 +129,21 @@ MSStateHandler::~MSStateHandler() {
 void
 MSStateHandler::saveState(const std::string& file, SUMOTime step, bool usePrefix) {
     OutputDevice& out = OutputDevice::getDevice(file, usePrefix);
-    out.setPrecision(OptionsCont::getOptions().getInt("save-state.precision"));
-    out.writeHeader<MSEdge>(SUMO_TAG_SNAPSHOT);
-    out.writeAttr("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance").writeAttr("xsi:noNamespaceSchemaLocation", "http://sumo.dlr.de/xsd/state_file.xsd");
-    out.writeAttr(SUMO_ATTR_VERSION, VERSION_STRING);
-    out.writeAttr(SUMO_ATTR_TIME, time2string(step));
-    out.writeAttr(SUMO_ATTR_TYPE, MSGlobals::gUseMesoSim ? "meso" : "micro");
+    const int statePrecision = OptionsCont::getOptions().getInt("save-state.precision");
+    out.setPrecision(statePrecision);
+    const int defaultPrecision = gPrecision;
+    gPrecision = statePrecision;
+    std::map<SumoXMLAttr, std::string> attrs;
+    attrs[SUMO_ATTR_VERSION] = VERSION_STRING;
+    attrs[SUMO_ATTR_TIME] = time2string(step);
+    attrs[SUMO_ATTR_TYPE] = MSGlobals::gUseMesoSim ? "meso" : "micro";
     if (OptionsCont::getOptions().getBool("save-state.constraints")) {
-        out.writeAttr(SUMO_ATTR_CONSTRAINTS, true);
+        attrs[SUMO_ATTR_CONSTRAINTS] = "1";
     }
+    if (MSDriveWay::haveDriveWays()) {
+        attrs[SUMO_ATTR_RAIL] = "1";
+    }
+    out.writeXMLHeader("snapshot", "state_file.xsd", attrs);
     if (OptionsCont::getOptions().getBool("save-state.rng")) {
         saveRNGs(out);
         if (!MSGlobals::gUseMesoSim) {
@@ -169,7 +178,9 @@ MSStateHandler::saveState(const std::string& file, SUMOTime step, bool usePrefix
         }
     }
     MSNet::getInstance()->getTLSControl().saveState(out);
+    MSRoutingEngine::saveState(out);
     out.close();
+    gPrecision = defaultPrecision;
 }
 
 
@@ -187,6 +198,10 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             bool ok;
             if (attrs.getOpt<bool>(SUMO_ATTR_CONSTRAINTS, nullptr, ok, false)) {
                 MSRailSignalConstraint::clearAll();
+            }
+            if (attrs.getOpt<bool>(SUMO_ATTR_RAIL, nullptr, ok, false)) {
+                // init before loading any vehicles to ensure that driveways are built early
+                MSRailSignalControl::getInstance();
             }
             break;
         }
@@ -234,6 +249,29 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             MSNet::getInstance()->getEdgeControl().setActiveLanes(activeLanes);
             break;
         }
+        case SUMO_TAG_ROUTINGENGINE: {
+            bool ok = true;
+            const SUMOTime lastAdaptation = attrs.get<SUMOTime>(SUMO_ATTR_LAST, nullptr, ok);
+            const int index = attrs.get<int>(SUMO_ATTR_INDEX, nullptr, ok);
+            MSRoutingEngine::initEdgeWeights(SVC_PASSENGER, lastAdaptation, index);
+            if (OptionsCont::getOptions().getBool("device.rerouting.bike-speeds")) {
+                MSRoutingEngine::initEdgeWeights(SVC_BICYCLE);
+            }
+            if (MSGlobals::gUseMesoSim) {
+                for (const MSEdge* e : MSEdge::getAllEdges()) {
+                    for (MESegment* segment = MSGlobals::gMesoNet->getSegmentForEdge(*e); segment != nullptr; segment = segment->getNextSegment()) {
+                        segment->resetCachedSpeeds();
+                    }
+                }
+            }
+            break;
+        }
+        case SUMO_TAG_EDGE: {
+#ifdef HAVE_FOX
+            MSRoutingEngine::loadState(attrs);
+#endif
+            break;
+        }
         case SUMO_TAG_DELAY: {
             if (myVCAttrs != nullptr) {
                 delete myVCAttrs;
@@ -246,8 +284,8 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             SUMOVehicleParameter* pars = SUMOVehicleParserHelper::parseFlowAttributes(SUMO_TAG_FLOWSTATE, attrs, true, true, -1, -1, true);
             pars->repetitionsDone = attrs.get<int>(SUMO_ATTR_DONE, pars->id.c_str(), ok);
             pars->repetitionTotalOffset = attrs.getOptSUMOTimeReporting(SUMO_ATTR_NEXT, pars->id.c_str(), ok, 0);
-            int index = attrs.getInt(SUMO_ATTR_INDEX);
-            MSNet::getInstance()->getInsertionControl().addFlow(pars, index);
+            myFlowIndex = attrs.getInt(SUMO_ATTR_INDEX);
+            myVehicleParameter = pars;
             break;
         }
         case SUMO_TAG_VTYPE: {
@@ -263,6 +301,10 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             myDeviceAttrs.push_back(attrs.clone());
             break;
         }
+        case SUMO_TAG_REMINDER: {
+            myReminderAttrs.push_back(attrs.clone());
+            break;
+        }
         case SUMO_TAG_VEHICLETRANSFER: {
             MSVehicleTransfer::getInstance()->loadState(attrs, myOffset, vc);
             break;
@@ -272,8 +314,11 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
             const MSEdge* const edge = MSEdge::dictionary(segmentID.substr(0, segmentID.rfind(":")));
             int idx = StringUtils::toInt(segmentID.substr(segmentID.rfind(":") + 1));
             mySegment = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
-            while (idx-- > 0) {
+            while (idx-- > 0 && mySegment != nullptr) {
                 mySegment = mySegment->getNextSegment();
+            }
+            if (mySegment == nullptr) {
+                throw ProcessError(TLF("Unknown segment '%' in loaded state.", segmentID));
             }
             myQueIndex = 0;
             break;
@@ -290,12 +335,26 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         case SUMO_TAG_VIEWSETTINGS_VEHICLES: {
             bool ok;
             const std::vector<std::string>& vehIDs = attrs.get<std::vector<std::string> >(SUMO_ATTR_VALUE, nullptr, ok, false);
-            if (MSGlobals::gUseMesoSim) {
-                mySegment->loadState(vehIDs, MSNet::getInstance()->getVehicleControl(), StringUtils::toLong(attrs.getString(SUMO_ATTR_TIME)) - myOffset, myQueIndex);
-            } else {
-                myCurrentLane->loadState(vehIDs, MSNet::getInstance()->getVehicleControl());
+            std::vector<SUMOVehicle*> vehs;
+            for (const std::string& id : vehIDs) {
+                SUMOVehicle* v = vc.getVehicle(id);
+                // vehicle could be removed due to options
+                if (v != nullptr) {
+                    vehs.push_back(v);
+                    myArrived.erase(v);
+                }
             }
-            myQueIndex++;
+            if (MSGlobals::gUseMesoSim) {
+                if (myQueIndex >= mySegment->numQueues()) {
+                    throw ProcessError(TLF("Invalid queue index '%' on segment '%'. Check for consistency of lane numbers and queue options.", myQueIndex, mySegment->getID()));
+                }
+                const SUMOTime blockTime = StringUtils::toLong(attrs.getString(SUMO_ATTR_TIME));
+                const SUMOTime entryBlockTime = StringUtils::toLong(attrs.getString(SUMO_ATTR_BLOCKTIME));
+                mySegment->loadState(vehs, blockTime - myOffset, entryBlockTime - myOffset, myQueIndex);
+                myQueIndex++;
+            } else {
+                myCurrentLane->loadState(vehs);
+            }
             break;
         }
         case SUMO_TAG_LINK: {
@@ -333,6 +392,11 @@ MSStateHandler::myStartElement(int element, const SUMOSAXAttributes& attrs) {
         }
         case SUMO_TAG_RAILSIGNAL_CONSTRAINT_TRACKER: {
             MSRailSignalConstraint_Predecessor::loadState(attrs);
+            break;
+        }
+        case SUMO_TAG_DRIVEWAY:
+        case SUMO_TAG_SUBDRIVEWAY: {
+            MSDriveWay::loadState(attrs, element);
             break;
         }
         case SUMO_TAG_PARAM: {
@@ -420,6 +484,11 @@ MSStateHandler::myEndElement(int element) {
             myAttrs = nullptr;
             break;
         }
+        case SUMO_TAG_FLOWSTATE: {
+            MSNet::getInstance()->getInsertionControl().addFlow(myVehicleParameter, myFlowIndex);
+            myVehicleParameter = nullptr;
+            break;
+        }
         case SUMO_TAG_SNAPSHOT: {
             if (myVCAttrs == nullptr) {
                 throw ProcessError(TL("Could not load vehicle control state"));
@@ -433,6 +502,10 @@ MSStateHandler::myEndElement(int element) {
             if (myRemoved > 0) {
                 WRITE_MESSAGEF(TL("Removed % vehicles while loading state."), toString(myRemoved));
                 vc.discountStateRemoved(myRemoved);
+            }
+            for (SUMOVehicle* v : myArrived) {
+                // state was created with active option --keep-after-arrival
+                vc.deleteKeptVehicle(v);
             }
             break;
         }
@@ -454,8 +527,18 @@ MSStateHandler::closeVehicle() {
     // make a copy because myVehicleParameter is reset in closeVehicle()
     const std::string vehID = myVehicleParameter->id;
     if (myVehiclesToRemove.count(vehID) == 0) {
+
+        // devices that influence simulation behavior must replicate stochastic assignment
+        // also, setting the parameter avoids extra calls to MSDevice::myEquipmentRNG (which would pollute replication)
+        std::vector<std::string> deviceNames;
+        for (auto attrs : myDeviceAttrs) {
+            deviceNames.push_back(MSDevice::getDeviceName(attrs->getString(SUMO_ATTR_ID)));
+        }
+        myVehicleParameter->setParameter(MSDevice::LOADSTATE_DEVICENAMES, toString(deviceNames));
         MSRouteHandler::closeVehicle();
         SUMOVehicle* v = vc.getVehicle(vehID);
+        // clean up added param after initializing devices in closeVehicle
+        ((SUMOVehicleParameter&)v->getParameter()).unsetParameter(MSDevice::LOADSTATE_DEVICENAMES);
         if (v == nullptr) {
             throw ProcessError(TLF("Could not load vehicle '%' from state", vehID));
         }
@@ -475,8 +558,7 @@ MSStateHandler::closeVehicle() {
             }
             vc.handleTriggeredDepart(v, false);
             if (v->hasArrived()) {
-                // state was created with active option --keep-after-arrival
-                vc.deleteKeptVehicle(v);
+                myArrived.insert(v);
             }
         }
         while (!myDeviceAttrs.empty()) {
@@ -488,6 +570,19 @@ MSStateHandler::closeVehicle() {
             }
             delete myDeviceAttrs.back();
             myDeviceAttrs.pop_back();
+        }
+        bool ok = true;
+        while (!myReminderAttrs.empty()) {
+            const std::string attrID = myReminderAttrs.back()->getString(SUMO_ATTR_ID);
+            const SUMOTime time = myReminderAttrs.back()->get<SUMOTime>(SUMO_ATTR_TIME, nullptr, ok, false);
+            const double pos = myReminderAttrs.back()->get<double>(SUMO_ATTR_POSITION, nullptr, ok, false);
+            const auto& remDict = MSNet::getInstance()->getDetectorControl().getAllReminders();
+            auto it = remDict.find(attrID);
+            if (it != remDict.end()) {
+                it->second->loadReminderState(v->getNumericalID(), time, pos);
+            }
+            delete myReminderAttrs.back();
+            myReminderAttrs.pop_back();
         }
     } else {
         delete myVehicleParameter;

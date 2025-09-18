@@ -6,72 +6,72 @@ title: Projects
 
 ### Current Projects
 
-- [ReTraSON](https://verkehrsforschung.dlr.de/de/projekte/retrason-infrastrukturelle-transformation-suedostniedersachsen)
+- [ReTraSON](https://www.dlr.de/en/ts/research-transfer/projects/retrason)
    Infrastructure Transformation in Lower Saxony (German)
 
 - [SHOW](https://www.uitp.org/projects/show/)
 shows the integration of fleets of automated vehicles in public transport, demand-responsive transport (DRT), Mobility a Service (MaaS) and Logistics as a Service (LaaS) schemes
 
-- [Spurplan](https://verkehrsforschung.dlr.de/de/projekte/sumo-spurplan-5-deadlock-aufbereitung-fuer-grossraeumige-szenarien)
+- [Spurplan](https://www.dlr.de/en/ts/research-transfer/projects/sumo-trackplan-5-deadlock-processing-for-large-scale-scenarios)
 SUMO is being expanded and improved in various areas for modeling rail traffic
 
-- [VMo4Orte](https://verkehrsforschung.dlr.de/en/projects/vmo4orte)
+- [VMo4Orte](https://www.dlr.de/en/research-and-transfer/projects-and-missions/vmo4orte-connected-mobility-for-liveable-places)
 Development of solution modules that can be used to contribute to the transformation of the transport system
 
-- [MoCKiii](https://verkehrsforschung.dlr.de/de/projekte/projekt-mockiii-visualisierte-verkehrsmittelnutzung-fuer-die-stadt-koeln)
+- [MoCKiii](https://www.dlr.de/en/ts/research-transfer/projects/mockiii)
 Creation of a dash board with which the city of Cologne can easily detect the current traffic situation, changes in mobility behavior and the traffic situation in order to then be able to initiate suitable countermeasures
 
-- [KoKoVi](https://verkehrsforschung.dlr.de/de/projekte/kokovi)
+- [KoKoVi](https://www.dlr.de/en/research-and-transfer/projects-and-missions/kokovi)
 Transport as a cooperative and networked system
 
-- [TAPAS](https://verkehrsforschung.dlr.de/en/projects/tapas-model-future-demand-passenger-transport-urban-areas)
+- [TAPAS](https://github.com/DLR-VF/TAPAS)
 Model for data on the future development of passenger transport demand in urban areas
 
 
 ### Past Projects
 
-- [ITS for Asia](https://verkehrsforschung.dlr.de/en/projects/itsforasia)
+- [ITS for Asia](https://www.dlr.de/en/ts/research-transfer/projects/itsforasia)
 Monitoring intersections to identify accident spots
 
-- [Digitaler Knoten 4.0](https://verkehrsforschung.dlr.de/de/projekte/digitaler-knoten-40)
+- [Digitaler Knoten 4.0](https://www.dlr.de/en/ts/research-transfer/projects/digitaler-knoten-4-0)
 Investigation of networked, efficient and safe organization of mixed traffic situations
 
-- [UrMo Digital](https://verkehrsforschung.dlr.de/de/projekte/urmo-digital)
+- [UrMo Digital](http://web.archive.org/web/20240424063206/https://verkehrsforschung.dlr.de/de/projekte/urmo-digital)
 Investigation of mobility and logistics concepts under the influence of digitalization
 
-- [Local Traffic Safety Analyzer (LTSA)](https://verkehrsforschung.dlr.de/de/projekte/local-traffic-safety-analyzer-ltsa)
+- [Local Traffic Safety Analyzer (LTSA)](https://www.dlr.de/en/ts/research-transfer/projects/ltsa)
 In terms of infrastructure, it recognizes and analyzes the road and provides movement lines (trajectories) as well as messages describing the situation for road users
 
-- [DATAMOST](https://verkehrsforschung.dlr.de/en/projects/datamost-data-and-model-based-solutions-transformation-mobility)
+- [DATAMOST](https://www.dlr.de/en/vf/research-and-transfer/projects/datamost)
 Data and Model-based Solutions for the Transformation of Mobility
 
-- [DIGEST](https://verkehrsforschung.dlr.de/de/projekte/digest-digitaler-zwilling-des-verkehrssystems-strasse)
+- [DIGEST](https://www.dlr.de/en/ts/research-transfer/projects/digest)
 Digital twin of the road transport system
 
-- [ALFRIED](https://verkehrsforschung.dlr.de/de/projekte/automatisiertes-und-vernetztes-fahren-der-logistik-am-testfeld-friedrichshafen-kurz)
+- [ALFRIED](https://www.dlr.de/en/ts/research-transfer/projects/alfried)
 Automatisiertes und vernetztes Fahren in der Logistik am Testfeld Friedrichshafen
 
-- [Spurplan-4](https://verkehrsforschung.dlr.de/de/projekte/spurplan-4)
+- [Spurplan-4](https://www.dlr.de/en/ts/research-transfer/projects/spurplan-4)
 Simulation of regional rail traffic for regular operations, disrupted operations and planning interventions
 
-- [VM50City](https://verkehrsforschung.dlr.de/de/projekte/vm50kcity-automatisierung-und-digitalisierung-der-verkehrssteuerung-auf)
+- [VM50City](https://www.dlr.de/en/ts/research-transfer/projects/vm50kcity)
 Examination of established categories of measures for potential and feasibility for small and medium-sized cities
 
-- [eUVM](https://verkehrsforschung.dlr.de/de/projekte/euvm-reduktion-von-luftschadstoffen-berlin-durch-optimiertes-verkehrsmanagement)
+- [eUVM](https://www.dlr.de/en/ts/research-transfer/projects/euvm)
 Testing and implementing suitable measures to reduce traffic-related emissions
 
-- [AutomoVer](https://verkehrsforschung.dlr.de/de/projekte/automatisierung-des-verkehrssystems)
+- [AutomoVer](https://www.dlr.de/en/fk/research-and-transfer/research-services/market-simulation-vector21/vector21-projects)
 Development of guidance for decision-makers
 - [MAVEN](http://www.maven-its.eu/) Managing Automated Vehicles
   Enhances Network
 - [TransAID](https://ec.europa.eu/inea/en/horizon-2020/projects/H2020-Transport/Automated-Road-Transport/TransAID)
   new hierarchical traffic management procedures to allow the smooth
   integration of automated vehicles in traffic systems
-- [VITAL](https://verkehrsforschung.dlr.de/de/projekte/vital-verkehrsabhaengig-intelligente-steuerung-von-lichtsignalanlagen):
+- [VITAL](https://www.dlr.de/en/ts/research-transfer/projects/vital):
   innovative traffic light control with V2X Communication.
-- [VABENE](https://verkehrsforschung.dlr.de/en/projects/vabene). SUMO simulates and predicts
+- [VABENE](https://www.dlr.de/en/ts/research-transfer/projects/vabene). SUMO simulates and predicts
   large-scale traffic for disaster and public event management
-- [I.MoVe](https://verkehrsforschung.dlr.de/de/projekte/imove)
+- [I.MoVe](http://web.archive.org/web/20240722035725/https://verkehrsforschung.dlr.de/de/projekte/imove)
   developing additional car following models
 - [Urban Mobility](https://web.archive.org/web/20180329070141/http://www.urmo.info/) Intermodal routing and
   modeling of transfer between vehicles in SUMO
@@ -81,7 +81,7 @@ Development of guidance for decision-makers
   autonomous public transport in rural areas
 - [VEU](https://web.archive.org/web/20220802080754/https://verkehrsforschung.dlr.de/de/projekte/veu). In this project, SUMO is used to
   simulated the traffic of Berlin
-- [COLOMBO](https://verkehrsforschung.dlr.de/en/projects/colombo) Cooperative Self-Organizing
+- [COLOMBO](http://web.archive.org/web/20240722054138/https://verkehrsforschung.dlr.de/en/projects/colombo) Cooperative Self-Organizing
   System for low Carbon Mobility at low Penetration Rates
 - [AMITRAN](https://web.archive.org/web/20180815190303/https://www.amitran.eu/)
 CO2 Assessment Methodology for ICT in Transport
@@ -154,7 +154,7 @@ Addresses the environmental footprint in the transport sector by developing a ne
   (2)](../Publications.md#publications_using_sumo)
 - "Assessment of traffic regulation policies for the minimization of
   pollutants emissions"
-  by Mauro Bianchi at [CEFRIEL](https://www.cefriel.it/), Italy.
+  by Mauro Bianchi at [CEFRIEL](https://www.cefriel.com/), Italy.
   This project uses SUMO in combination with EMEP/CORINAIR methodology
   for evaluating the impact of different traffic regulation strategies
   on pollutants emissions. Traffic simulations are performed offline

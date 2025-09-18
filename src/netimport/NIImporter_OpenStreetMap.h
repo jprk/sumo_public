@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -312,6 +312,9 @@ private:
     /// @brief import sidewalks
     bool myImportSidewalks;
 
+    /// @brief import sidewalks
+    bool myOnewayDualSidewalk;
+
     /// @brief import bike path specific permissions and directions
     bool myImportBikeAccess;
 
@@ -320,6 +323,9 @@ private:
 
     /// @brief import turning signals (turn:lanes) to guide connection building
     bool myImportTurnSigns;
+
+    /// @brief whether edges should carry information on the use of typemap defaults
+    bool myAnnotateDefaults;
 
     /// @brief whether additional way and node attributes shall be imported
     static bool myAllAttributes;
@@ -459,6 +465,9 @@ protected:
         /// @brief the currently parsed node
         NIOSMNode* myCurrentNode;
 
+        bool myIsStation;
+        std::string myRailwayRef;
+
         /// @brief The current hierarchy level
         int myHierarchyLevel;
 
@@ -471,7 +480,7 @@ protected:
         /// @brief custom requirements for rail signal tagging
         StringVector myRailSignalRules;
 
-        /// @brief number of diplicate nodes
+        /// @brief number of duplicate nodes
         int myDuplicateNodes;
 
         /// @brief the options
@@ -499,7 +508,8 @@ protected:
          * @param[in, out] toFill The edges container to fill with read edges
          */
         EdgesHandler(const std::map<long long int, NIOSMNode*>& osmNodes,
-                     std::map<long long int, Edge*>& toFill, std::map<long long int, Edge*>& platformShapes);
+                     std::map<long long int, Edge*>& toFill, std::map<long long int, Edge*>& platformShapes,
+                     const NBTypeCont& tc);
 
 
         /// @brief Destructor
@@ -535,6 +545,8 @@ protected:
 
         void interpretLaneUse(const std::string& value, SUMOVehicleClass svc, const bool forward) const;
 
+        void addType(const std::string& singleTypeID);
+
 
     private:
         /// @brief The previously parsed nodes
@@ -551,6 +563,8 @@ protected:
 
         /// @brief A map of non-numeric speed descriptions to their numeric values
         std::map<std::string, double> mySpeedMap;
+
+        const NBTypeCont& myTypeCont;
 
     private:
         /** @brief invalidated copy constructor */
@@ -641,6 +655,8 @@ protected:
         long long int myViaNode;
         long long int myViaWay;
 
+        /// @brief the station node for the current stop_area
+        long long int myStation;
 
         /// @brief the options cont
         const OptionsCont& myOptionsCont;

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2007-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2007-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -86,7 +86,7 @@ MSDevice_Routing::insertOptions(OptionsCont& oc) {
     oc.doRegister("device.rerouting.synchronize", new Option_Bool(false));
     oc.addDescription("device.rerouting.synchronize", "Routing", TL("Let rerouting happen at the same time for all vehicles"));
 
-    oc.doRegister("device.rerouting.railsignal", new Option_Bool(true));
+    oc.doRegister("device.rerouting.railsignal", new Option_Bool(false));
     oc.addDescription("device.rerouting.railsignal", "Routing", TL("Allow rerouting triggered by rail signals."));
 
     oc.doRegister("device.rerouting.bike-speeds", new Option_Bool(false));
@@ -195,7 +195,7 @@ MSDevice_Routing::notifyEnter(SUMOTrafficObject& /*veh*/, MSMoveReminder::Notifi
                              false, MSRoutingEngine::withTaz(), false);
         }
         // build repetition trigger if routing shall be done more often
-        rebuildRerouteCommand();
+        rebuildRerouteCommand(SIMSTEP + myPeriod);
     }
     if (MSGlobals::gWeightsSeparateTurns > 0) {
         if (reason == MSMoveReminder::NOTIFICATION_JUNCTION) {
@@ -223,18 +223,19 @@ MSDevice_Routing::notifyStopEnded() {
 
 
 void
-MSDevice_Routing::rebuildRerouteCommand() {
+MSDevice_Routing::rebuildRerouteCommand(SUMOTime start) {
     if (myRerouteCommand != nullptr) {
         myRerouteCommand->deschedule();
         myRerouteCommand = nullptr;
     }
     if (myPeriod > 0) {
         myRerouteCommand = new WrappingCommand<MSDevice_Routing>(this, &MSDevice_Routing::wrappedRerouteCommandExecute);
-        SUMOTime start = MSNet::getInstance()->getCurrentTimeStep();
         if (OptionsCont::getOptions().getBool("device.rerouting.synchronize")) {
             start -= start % myPeriod;
         }
-        MSNet::getInstance()->getBeginOfTimestepEvents()->addEvent(myRerouteCommand, myPeriod + start);
+        // ensure stable sorting of events (for repeatable routing with randomness)
+        myRerouteCommand->priority = myHolder.getNumericalID();
+        MSNet::getInstance()->getBeginOfTimestepEvents()->addEvent(myRerouteCommand, start);
     }
 }
 
@@ -333,7 +334,7 @@ MSDevice_Routing::setParameter(const std::string& key, const std::string& value)
     } else if (key == "period") {
         myPeriod = TIME2STEPS(doubleValue);
         // re-schedule routing command
-        rebuildRerouteCommand();
+        rebuildRerouteCommand(SIMSTEP + myPeriod);
     } else {
         throw InvalidArgument("Setting parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
     }
@@ -346,6 +347,7 @@ MSDevice_Routing::saveState(OutputDevice& out) const {
     out.writeAttr(SUMO_ATTR_ID, getID());
     std::vector<std::string> internals;
     internals.push_back(toString(myPeriod));
+    internals.push_back(toString(myLastRouting));
     out.writeAttr(SUMO_ATTR_STATE, toString(internals));
     out.closeTag();
 }
@@ -355,8 +357,16 @@ void
 MSDevice_Routing::loadState(const SUMOSAXAttributes& attrs) {
     std::istringstream bis(attrs.getString(SUMO_ATTR_STATE));
     bis >> myPeriod;
+    bis >> myLastRouting;
     if (myHolder.hasDeparted()) {
-        rebuildRerouteCommand();
+        SUMOTime offset = myPeriod;
+        if (myPeriod > 0) {
+            offset = ((SIMSTEP - myHolder.getDeparture()) % myPeriod);
+            if (offset != 0) {
+                offset = myPeriod - offset;
+            }
+        }
+        rebuildRerouteCommand(SIMSTEP + offset);
     }
 }
 

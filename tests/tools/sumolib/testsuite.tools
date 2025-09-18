@@ -12,6 +12,9 @@ net_roundabout
 
 # parsing a network and accessing objects
 net_intermodal
+
+# test functions when shape length and lane length differ (#16269)
+net_customLength
 sumolib3d
 
 # unit tests for functions in init
@@ -30,6 +33,9 @@ patch_network
 # finding routes
 getShortestRoute
 
+# finding routes
+getShortestRoute_ped
+
 # finding routes in a railway network
 getShortestRoute_rail
 
@@ -47,3 +53,6 @@ net_and_additional
 
 # reading files with BOM marker
 utf8_bom
+
+# see #16633
+connection_permissions

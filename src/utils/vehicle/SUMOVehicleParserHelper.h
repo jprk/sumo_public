@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -172,7 +172,20 @@ public:
      */
     static bool isInternalRouteID(const std::string& id);
 
+
+    /** @brief Parse string containing a vector of pairs
+     *
+     * @param[in] vtype - the vtype element constructed in the parser
+     * @param[in] atm - containing separated pairs "A1,B1 A2,B2"
+     * @param[in] attr - XML-attribute that is being parsed
+     * @exception ProcessError If an attribute's value is invalid
+     *
+     * @note  if the vector parameter set is an empty string, then the vtype map will not be changed
+     */
+    static bool validProfile(SUMOVTypeParameter* vtype, const std::string data, const SumoXMLAttr attr);
+
     static int parseCarWalkTransfer(const OptionsCont& oc, const bool hasTaxi = false);
+
 private:
     /**@brief parse ID
      * @return empty string if ID obtained from attrs isn't valid

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2024-09-12 14:47:37 by Eclipse SUMO netconvert Version v1_20_0+1963-cf76c26275c
+<!-- generated on 2025-07-16 12:01:37 by Eclipse SUMO netconvert Version v1_23_1+1107-78f51b0269e
 -->
 
 <netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
@@ -75,7 +75,7 @@
         <!-- Read RoboCup-net from DIR -->
         <robocup-dir value="" synonymes="robocup robocup-net" type="FILE"/>
 
-        <!-- Read MATsim-net from FILE -->
+        <!-- Read MATSim-net from FILE -->
         <matsim-files value="" synonymes="matsim" type="FILE"/>
 
         <!-- Read ITSUMO-net from FILE -->
@@ -102,6 +102,18 @@
         <!-- Defines the number of digits after the comma for lon,lat output -->
         <precision.geo value="6" type="INT"/>
 
+        <!-- Defines the standard compression algorithm (currently only for parquet output) -->
+        <output.compression value="" type="STR"/>
+
+        <!-- Defines the standard output format if not derivable from the file name (&apos;xml&apos;, &apos;csv&apos;, &apos;parquet&apos;) -->
+        <output.format value="xml" type="STR"/>
+
+        <!-- How to derive column headers from attribute names (&apos;none&apos;, &apos;tag&apos;, &apos;auto&apos;, &apos;plain&apos;) -->
+        <output.column-header value="tag" type="STR"/>
+
+        <!-- Separator in CSV output -->
+        <output.column-separator value=";" type="STR"/>
+
         <!-- Write time values as hour:minute:second or day:hour:minute:second rather than seconds -->
         <human-readable-time value="false" synonymes="H" type="BOOL"/>
 
@@ -117,13 +129,19 @@
         <!-- Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins -->
         <junctions.join-output value="" type="FILE"/>
 
-        <!-- Defines a prefix for edge and junction names -->
+        <!-- Defines a prefix for edge and junction IDs -->
         <prefix value="" type="STR"/>
+
+        <!-- Defines a prefix for unction IDs -->
+        <prefix.junction value="" type="STR"/>
+
+        <!-- Defines a prefix for edge IDs -->
+        <prefix.edge value="" type="STR"/>
 
         <!-- The generated net will be written to FILE using Amitran format -->
         <amitran-output value="" type="FILE"/>
 
-        <!-- The generated net will be written to FILE using MATsim format -->
+        <!-- The generated net will be written to FILE using MATSim format -->
         <matsim-output value="" type="FILE"/>
 
         <!-- The generated net will be written to FILE using OpenDRIVE format -->
@@ -230,6 +248,9 @@
 
         <!-- Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format) -->
         <reserved-ids value="" type="FILE"/>
+
+        <!-- Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed -->
+        <kept-ids value="" type="FILE"/>
 
         <!-- Removes vehicle class restrictions from imported edges -->
         <dismiss-vclasses value="false" type="BOOL"/>
@@ -675,6 +696,9 @@
         <!-- Determines the maximal distance for joining junctions (defaults to 10) -->
         <junctions.join-dist value="10" type="FLOAT"/>
 
+        <!-- The angular threshold in degress for rejection of parallel edges when joining junctions -->
+        <junctions.join.parallel-threshold value="30" type="FLOAT"/>
+
         <!-- Interprets STR[] as list of junctions to exclude from joining -->
         <junctions.join-exclude value="" type="STR[]"/>
 
@@ -759,6 +783,9 @@
         <!-- At uncontrolled nodes, do not build crossings across edges with a speed above the threshold -->
         <crossings.guess.speed-threshold value="13.89" type="FLOAT"/>
 
+        <!-- Give priority to guessed crossings at roundabouts -->
+        <crossings.guess.roundabout-priority value="true" type="BOOL"/>
+
         <!-- Always build walking areas even if there are no crossings -->
         <walkingareas value="false" type="BOOL"/>
 
@@ -822,6 +849,9 @@
         <!-- Guess signals that guard public transport stops -->
         <railway.signal.guess.by-stops value="false" type="BOOL"/>
 
+        <!-- List rail classes that may run without rail signals -->
+        <railway.signal.permit-unsignalized value="tram,cable_car" type="STR[]"/>
+
         <!-- The search radius for finding suitable road accesses for rail stops -->
         <railway.access-distance value="150" synonymes="osm.stop-output.footway-access-distance" type="FLOAT"/>
 
@@ -867,6 +897,9 @@
         <!-- Import sidewalks -->
         <osm.sidewalks value="false" type="BOOL"/>
 
+        <!-- Default to building two sidewalks on oneway streets (may affect divided roads) -->
+        <osm.oneway-reverse-sidewalk value="false" type="BOOL"/>
+
         <!-- Import crossings -->
         <osm.crossings value="false" type="BOOL"/>
 
@@ -897,7 +930,10 @@
         <!-- The speed limit to be set when there is no actual speed limit in reality -->
         <osm.speedlimit-none value="39.4444" type="FLOAT"/>
 
-        <!-- The edge lengths given in the MATSIM-file will be kept -->
+        <!-- Whether edges shoulds carry information on the usage of typemap defaults -->
+        <osm.annotate-defaults value="false" type="BOOL"/>
+
+        <!-- The edge lengths given in the MATSim-file will be kept -->
         <matsim.keep-length value="false" type="BOOL"/>
 
         <!-- The lane number will be computed from the capacity -->

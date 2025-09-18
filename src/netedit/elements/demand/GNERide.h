@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2016-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2016-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -43,15 +43,13 @@ public:
     GNERide(SumoXMLTag tag, GNENet* net);
 
     /**@brief constructor called in buildRide
-     * @param[in] net Network in which this Ride is placed
      * @param[in] tag personTrip tag
-     * @param[in] icon personTrip icon
      * @param[in] personParent person parent
      * @param[in] planParameters plan parameters
      * @param[in] lines list of lines
      * @param[in] group group
      */
-    GNERide(GNENet* net, SumoXMLTag tag, GUIIcon icon, GNEDemandElement* personParent, const GNEPlanParents& planParameters,
+    GNERide(SumoXMLTag tag, GNEDemandElement* personParent, const GNEPlanParents& planParameters,
             const double arrivalPosition, const std::vector<std::string>& lines, const std::string& group);
 
     /// @brief destructor
@@ -128,7 +126,7 @@ public:
 
     /// @}
 
-    /// @name inherited from GNEPathManager::PathElement
+    /// @name inherited from GNEPathElement
     /// @{
 
     /// @brief compute pathElement
@@ -139,14 +137,14 @@ public:
      * @param[in] segment lane segment
      * @param[in] offsetFront front offset
      */
-    void drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const;
+    void drawLanePartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const;
 
     /**@brief Draws partial object over junction
      * @param[in] s The settings for the current view (may influence drawing)
      * @param[in] segment junction segment
      * @param[in] offsetFront front offset
      */
-    void drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const;
+    void drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const;
 
     /// @brief get first path lane
     GNELane* getFirstPathLane() const;

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -43,6 +43,8 @@
 const MSTrafficLightLogic::LaneVector MSTrafficLightLogic::myEmptyLaneVector;
 
 
+#define SHORT_EDGE ((SUMOVTypeParameter::getDefault().length + SUMOVTypeParameter::getDefault().minGap) * 2)
+
 // ===========================================================================
 // member method definitions
 // ===========================================================================
@@ -54,7 +56,7 @@ MSTrafficLightLogic::SwitchCommand::SwitchCommand(MSTLLogicControl& tlcontrol,
     myTLControl(tlcontrol), myTLLogic(tlLogic),
     myAssumedNextSwitch(nextSwitch), myAmValid(true) {
     // higher than default command priority of 0
-    priority = 1;
+    priority = std::numeric_limits<int>::max();
 }
 
 
@@ -138,7 +140,6 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
     }
     if (phases.size() > 1) {
         bool haveWarnedAboutUnusedStates = false;
-        std::vector<bool> foundGreen(phases.front()->getState().size(), false);
         for (int i = 0; i < (int)phases.size(); ++i) {
             // warn about unused states
             std::vector<int> nextPhases;
@@ -152,6 +153,9 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
                 if (iNext < 0 || iNext >= (int)phases.size()) {
                     throw ProcessError("Invalid nextPhase " + toString(iNext) + " in tlLogic '" + getID()
                                        + "', program '" + getProgramID() + "' with " + toString(phases.size()) + " phases");
+                }
+                if (iNext == i && (int)nextPhases.size() == 1 && (int)phases.size() > 1) {
+                    WRITE_WARNINGF("Phase % only loops backs to itself in tlLogic '%', program '%'.", i, getID(), getProgramID());
                 }
                 const std::string optionalFrom = iNextDefault ? "" : " from phase " + toString(i);
                 const std::string& state1 = phases[i]->getState();
@@ -190,22 +194,77 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
                         }
                     }
                 }
-                // warn about links that never get the green light
-                for (int j = 0; j < (int)state1.size(); ++j) {
-                    LinkState ls = (LinkState)state1[j];
-                    if (ls == LINKSTATE_TL_GREEN_MAJOR || ls == LINKSTATE_TL_GREEN_MINOR || ls == LINKSTATE_TL_OFF_BLINKING || ls == LINKSTATE_TL_OFF_NOSIGNAL || ls == LINKSTATE_STOP) {
-                        foundGreen[j] = true;
-                    }
-                }
-            }
-        }
-        for (int j = 0; j < (int)foundGreen.size(); ++j) {
-            if (!foundGreen[j]) {
-                WRITE_WARNINGF(TL("Missing green phase in tlLogic '%', program '%' for tl-index %."), getID(), getProgramID(), j);
-                break;
             }
         }
     }
+    // warn about links that never get the green light
+    std::vector<bool> foundGreen(phases.front()->getState().size(), false);
+    for (int i = 0; i < (int)phases.size(); ++i) {
+        const std::string& state = phases[i]->getState();
+        for (int j = 0; j < (int)state.size(); ++j) {
+            LinkState ls = (LinkState)state[j];
+            if (ls == LINKSTATE_TL_GREEN_MAJOR || ls == LINKSTATE_TL_GREEN_MINOR || ls == LINKSTATE_TL_OFF_BLINKING || ls == LINKSTATE_TL_OFF_NOSIGNAL || ls == LINKSTATE_STOP) {
+                foundGreen[j] = true;
+            }
+        }
+    }
+    std::vector<bool> usedIndices(phases.front()->getState().size(), false);
+    for (auto lv : myLinks) {
+        for (const MSLink* link : lv) {
+            if (link->getTLIndex() >= 0) {
+                usedIndices[link->getTLIndex()] = true;
+            }
+        }
+    }
+    for (int j = 0; j < (int)foundGreen.size(); ++j) {
+        if (!foundGreen[j] && usedIndices[j]) {
+            WRITE_WARNINGF(TL("Missing green phase in tlLogic '%', program '%' for tl-index %."), getID(), getProgramID(), j);
+            break;
+        }
+    }
+    // check direct conflict (two green links targeting the same lane)
+    const int numLinks = (int)myLinks.size();
+    std::set<const MSLane*> unsafeGreen;
+    int firstUnsafePhase = -1;
+    const MSLane* firstUnsafeLane = nullptr;
+    int firstUnsafeOrigins = 0;
+    int unsafeGreenPhases = 0;
+    for (int i = 0; i < (int)phases.size(); ++i) {
+        std::map<const MSLane*, int, ComparatorNumericalIdLess> greenLanes;
+        const std::string& state = phases[i]->getState();
+        for (int j = 0; j < numLinks; ++j) {
+            if (state[j] == LINKSTATE_TL_GREEN_MAJOR) {
+                for (const MSLink* link : myLinks[j]) {
+                    if (link->isInternalJunctionLink()) {
+                        // links from an internal junction have implicit priority in case of conflict
+                        continue;
+                    }
+                    greenLanes[link->getLane()] += 1;
+                }
+            }
+        }
+        bool unsafe = false;
+        for (auto item : greenLanes) {
+            if (item.second > 1) {
+                if (unsafeGreenPhases == 0 && !unsafe) {
+                    firstUnsafePhase = i;
+                    firstUnsafeLane = item.first;
+                    firstUnsafeOrigins = item.second;
+                }
+                unsafe = true;
+                unsafeGreen.insert(item.first);
+            }
+        }
+        if (unsafe) {
+            unsafeGreenPhases++;
+        }
+    }
+    if (unsafeGreenPhases > 0) {
+        const std::string furtherAffected = unsafeGreen.size() > 1 || unsafeGreenPhases > 1 ? TLF(" Overall % lanes in % phases are unsafe.", unsafeGreen.size(), unsafeGreenPhases) : "";
+        WRITE_WARNINGF(TL("Unsafe green phase % in tlLogic '%', program '%'. Lane '%' is targeted by % 'G'-links. (use 'g' instead)%"),
+                firstUnsafePhase, getID(), getProgramID(), firstUnsafeLane->getID(), firstUnsafeOrigins, furtherAffected);
+    }
+
     // check incompatible junction logic
     // this can happen if the network was built with a very different signal
     // plan from the one currently being used.
@@ -223,7 +282,6 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
     if (mustCheck && phases.size() > 0) {
         // see NBNode::tlsConflict
         std::set<const MSJunction*> controlledJunctions;
-        const int numLinks = (int)myLinks.size();
         for (int j = 0; j < numLinks; ++j) {
             for (int k = 0; k < (int)myLinks[j].size(); ++k) {
                 MSLink* link = myLinks[j][k];
@@ -252,6 +310,14 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
                                         for (int k = 0; k < (int)myLinks[j].size(); ++k) {
                                             MSLink* link = myLinks[j][k];
                                             if (link->getJunction() == junction) {
+                                                if (link->fromInternalLane()) {
+                                                    // internal links may have their own control (i.e. for indirect left turn) but they also have their own conflict matrix
+                                                    continue;
+                                                }
+                                                if (link->isCont() && link->getViaLane() != nullptr && link->getViaLane()->getLinkCont()[0]->getTLIndex() >= 0) {
+                                                    // if the internal junction link is controlled, the first-part indices are not deadlock-relevant
+                                                    continue;
+                                                }
                                                 tlIndex[link->getIndex()] = link->getTLIndex();
                                             }
                                         }
@@ -407,6 +473,9 @@ MSTrafficLightLogic::setCurrentDurationIncrement(SUMOTime delay) {
 
 
 void MSTrafficLightLogic::initMesoTLSPenalties() {
+    if (myLogicType == TrafficLightType::RAIL_SIGNAL) {
+        return;
+    }
     // set mesoscopic time penalties
     const Phases& phases = getPhases();
     const int numLinks = (int)myLinks.size();
@@ -450,6 +519,7 @@ void MSTrafficLightLogic::initMesoTLSPenalties() {
     double tlsPenalty = MSGlobals::gTLSPenalty;
     const double durationSeconds = STEPS2TIME(duration);
     std::set<const MSJunction*> controlledJunctions;
+    std::set<const MSEdge*> shortEdges;;
     for (int j = 0; j < numLinks; ++j) {
         for (int k = 0; k < (int)myLinks[j].size(); ++k) {
             MSLink* link = myLinks[j][k];
@@ -467,6 +537,10 @@ void MSTrafficLightLogic::initMesoTLSPenalties() {
                     WRITE_WARNINGF(TL("Green fraction is only 1% for link % in tlLogic '%', program '%'."), "%", j, getID(), getProgramID());
                 }
                 link->setGreenFraction(greenFraction);
+                if (tlsPenalty > 0 && edge.getLength() < SHORT_EDGE && shortEdges.count(&edge) == 0) {
+                    shortEdges.insert(&edge);
+                    WRITE_WARNINGF(TL("Edge '%' is shorter than %m (%m) and will cause incorrect flow reduction with option --meso-tls-penalty"), edge.getID(), SHORT_EDGE, edge.getLength());
+                }
             }
             link->setMesoTLSPenalty(TIME2STEPS(tlsPenalty * penalty[j] / durationSeconds));
             controlledJunctions.insert(link->getLane()->getEdge().getFromJunction()); // MSLink::myJunction is not yet initialized

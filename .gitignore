@@ -52,6 +52,7 @@
 /bin/*.manifest
 /bin/osgPlugins*
 /bin/libsumoc*
+/bin/libtracic*
 /bin/liblibsumojni.jnilib
 /bin/liblibtracijni.jnilib
 /bin/libsumofmi2.dylib
@@ -104,16 +105,10 @@
 /tools/*.vs
 /tools/*.egg-info
 /tools/[0-9]*
-/tools/game/*.netstate.xml
-/tools/game/*.tlsstate.xml
-/tools/game/netstate.xml
-/tools/game/tlsstate.xml
-/tools/game/*.tripinfos.xml
-/tools/game/*.stats.xml
-/tools/game/racing/log
-/tools/game/racing/tripinfos.xml
-/tools/game/A10KW/*
+/tools/game/output
+/tools/game/tls
 /tools/game/scores.pkl
+/tools/game/refscores.pkl
 /tools/contributed/lisum/lisum-core/target/
 /tools/contributed/lisum/lisum-gui/target/
 /tools/contributed/traas/dist
@@ -128,7 +123,7 @@
 # extracted tests
 /tests/_*
 # netedit test
-/tests/netedit/.vs/netedit
+/tools/neteditTestFunctions/.vs
 /tests/netedit/filter_files
 # global patterns
 Makefile

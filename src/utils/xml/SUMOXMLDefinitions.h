@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -127,8 +127,12 @@ enum SumoXMLTag {
     SUMO_TAG_ROUTE_PROB_REROUTE,
     /// @brief entry for an alternative parking zone
     SUMO_TAG_PARKING_AREA_REROUTE,
-    /// @brief probability of a via fora reroute
+    /// @brief probability of a via reroute
     SUMO_TAG_VIA_PROB_REROUTE,
+    /// @brief decision point for rerouting to be overtaken
+    SUMO_TAG_OVERTAKING_REROUTE,
+    /// @brief decision point for switching trainStop/busStop within a station
+    SUMO_TAG_STATION_REROUTE,
     /// @brief A variable speed sign
     SUMO_TAG_VSS,
     /// @brief VSS Symbol
@@ -171,8 +175,12 @@ enum SumoXMLTag {
     SUMO_TAG_FLOWSTATE,
     /// @brief description of a vehicle/person/container type
     SUMO_TAG_VTYPE,
-    /// @brief begin/end of the description of a route
+    /// @brief reference to a vType (used in VType distributions)
+    GNE_TAG_VTYPEREF,
+    /// @brief description of a route
     SUMO_TAG_ROUTE,
+    /// @brief virtual element used to reference routes with distributions
+    GNE_TAG_ROUTEREF,
     /// @brief embedded route
     GNE_TAG_ROUTE_EMBEDDED,
     /// @brief description of a logic request within the junction
@@ -199,6 +207,8 @@ enum SumoXMLTag {
     SUMO_TAG_FUNCTION,
     /// @brief the internal state for edge control
     SUMO_TAG_EDGECONTROL,
+    /// @brief the internal state for MSRoutingEngine
+    SUMO_TAG_ROUTINGENGINE,
     /// @brief a relation between two edges
     SUMO_TAG_EDGEREL,
     /// @brief a relation between two TAZs
@@ -284,6 +294,11 @@ enum SumoXMLTag {
     SUMO_TAG_BIDI_PREDECESSOR,
     /// @brief Saved state for constraint tracker
     SUMO_TAG_RAILSIGNAL_CONSTRAINT_TRACKER,
+    /// @brief Saved deadlock information, also for loading as an extra check
+    SUMO_TAG_DEADLOCK,
+    /// @brief Saved driveway information
+    SUMO_TAG_DRIVEWAY,
+    SUMO_TAG_SUBDRIVEWAY,
     /// @brief Link information for state-saving
     SUMO_TAG_LINK,
     /// @brief Link-approaching vehicle information for state-saving
@@ -330,6 +345,7 @@ enum SumoXMLTag {
 
     SUMO_TAG_VEHICLETRANSFER,
     SUMO_TAG_DEVICE,
+    SUMO_TAG_REMINDER,
 
     /// @name Car-Following models
     /// @{
@@ -793,8 +809,34 @@ enum SumoXMLTag {
     GNE_TAG_STOPCONTAINER_CONTAINERSTOP,
     GNE_TAG_STOPCONTAINER_CHARGINGSTATION,
     GNE_TAG_STOPCONTAINER_PARKINGAREA,
+    // @brief netedit sets
+    GNE_TAG_SUPERMODE_NETWORK,
+    GNE_TAG_SUPERMODE_DEMAND,
+    GNE_TAG_SUPERMODE_DATA,
+    GNE_TAG_STOPPINGPLACES,
+    GNE_TAG_DETECTORS,
+    GNE_TAG_SHAPES,
+    GNE_TAG_TAZS,
+    GNE_TAG_WIRES,
+    GNE_TAG_JUPEDSIM,
+    GNE_TAG_FLOWS,
+    GNE_TAG_STOPS,
+    GNE_TAG_PERSONPLANS,
+    GNE_TAG_PERSONTRIPS,
+    GNE_TAG_RIDES,
+    GNE_TAG_WALKS,
+    GNE_TAG_PERSONSTOPS,
+    GNE_TAG_CONTAINERPLANS,
+    GNE_TAG_TRANSPORTS,
+    GNE_TAG_TRANSHIPS,
+    GNE_TAG_CONTAINERSTOPS,
+    GNE_TAG_DATAS,
+    // @brief attributes
+    GNE_TAG_ATTRIBUTES_ALL,
     /// @}
 
+    /// @brief tag used for indicate that there is an error (usually loading elements in handlers)
+    SUMO_TAG_ERROR,
     /// @brief invalid tag, must be the last one
     SUMO_TAG_NOTHING,
 };
@@ -895,6 +937,16 @@ enum SumoXMLAttr {
     SUMO_ATTR_ECLASS             = 73,
     SUMO_ATTR_WAITING            = 74,
 
+    // meso-attributes
+    SUMO_ATTR_SEGMENT            = 75,
+    SUMO_ATTR_QUEUE              = 76,
+    SUMO_ATTR_ENTRYTIME          = 77,
+    SUMO_ATTR_EVENTTIME          = 78,
+    SUMO_ATTR_BLOCKTIME          = 79,
+
+    // write the tag name
+    SUMO_ATTR_TAG                = 80,
+
     /// @}
 
     /// @name common attributes
@@ -957,6 +1009,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_DEPARTEDGE,
     SUMO_ATTR_ARRIVALLANE,
     SUMO_ATTR_ARRIVALPOS,
+    SUMO_ATTR_ARRIVALPOS_RANDOMIZED,
     SUMO_ATTR_ARRIVALPOS_LAT,
     SUMO_ATTR_ARRIVALSPEED,
     SUMO_ATTR_ARRIVALEDGE,
@@ -969,6 +1022,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_DECEL,
     SUMO_ATTR_EMERGENCYDECEL,
     SUMO_ATTR_APPARENTDECEL,
+    SUMO_ATTR_MAXACCEL_PROFILE,
+    SUMO_ATTR_DESACCEL_PROFILE,
     SUMO_ATTR_ACTIONSTEPLENGTH,
     SUMO_ATTR_VCLASS,
     SUMO_ATTR_VCLASSES,
@@ -1277,6 +1332,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_LCA_OPPOSITE_PARAM,
     SUMO_ATTR_LCA_PUSHY,
     SUMO_ATTR_LCA_PUSHYGAP,
+    SUMO_ATTR_LCA_STRATEGIC_LOOKAHEAD,
     SUMO_ATTR_LCA_ASSERTIVE,
     SUMO_ATTR_LCA_IMPATIENCE,
     SUMO_ATTR_LCA_TIME_TO_IMPATIENCE,
@@ -1284,8 +1340,11 @@ enum SumoXMLAttr {
     SUMO_ATTR_LCA_LOOKAHEADLEFT,
     SUMO_ATTR_LCA_SPEEDGAINRIGHT,
     SUMO_ATTR_LCA_SPEEDGAIN_LOOKAHEAD,
+    SUMO_ATTR_LCA_SPEEDGAIN_REMAIN_TIME,
+    SUMO_ATTR_LCA_SPEEDGAIN_URGENCY,
     SUMO_ATTR_LCA_COOPERATIVE_ROUNDABOUT,
     SUMO_ATTR_LCA_COOPERATIVE_SPEED,
+    SUMO_ATTR_LCA_COOPERATIVE_HELPTIME,
     SUMO_ATTR_LCA_MAXSPEEDLATSTANDING,
     SUMO_ATTR_LCA_MAXSPEEDLATFACTOR,
     SUMO_ATTR_LCA_MAXDISTLATSTANDING,
@@ -1295,6 +1354,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_LCA_SIGMA,
     SUMO_ATTR_LCA_KEEPRIGHT_ACCEPTANCE_TIME,
     SUMO_ATTR_LCA_OVERTAKE_DELTASPEED_FACTOR,
+    SUMO_ATTR_LCA_CONTRIGHT,
     SUMO_ATTR_LCA_EXPERIMENTAL1,
     /// @}
 
@@ -1310,8 +1370,11 @@ enum SumoXMLAttr {
     SUMO_ATTR_JM_IGNORE_JUNCTION_FOE_PROB,
     SUMO_ATTR_JM_SIGMA_MINOR,
     SUMO_ATTR_JM_STOPLINE_GAP,
+    SUMO_ATTR_JM_STOPLINE_GAP_MINOR,
     SUMO_ATTR_JM_STOPLINE_CROSSING_GAP,
     SUMO_ATTR_JM_TIMEGAP_MINOR,
+    SUMO_ATTR_JM_EXTRA_GAP,
+    SUMO_ATTR_JM_ADVANCE,
     SUMO_ATTR_JM_STOPSIGN_WAIT,
     SUMO_ATTR_JM_ALLWAYSTOP_WAIT,
     SUMO_ATTR_JM_IGNORE_IDS,
@@ -1483,6 +1546,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_FOES,
     /// @}
     SUMO_ATTR_CONSTRAINTS,
+    SUMO_ATTR_RAIL,
 
     SUMO_ATTR_DETECTORS,
     SUMO_ATTR_CONDITIONS,
@@ -1531,6 +1595,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_INTENDED,
     SUMO_ATTR_ONDEMAND,
     SUMO_ATTR_JUMP,
+    SUMO_ATTR_JUMP_UNTIL,
     SUMO_ATTR_USED_ENDED,
     SUMO_ATTR_COLLISION,
     SUMO_ATTR_VALUE,
@@ -1552,7 +1617,6 @@ enum SumoXMLAttr {
     SUMO_ATTR_GUISHAPE,
     SUMO_ATTR_OSGFILE,
     SUMO_ATTR_IMGFILE,
-    SUMO_ATTR_RELATIVEPATH,
     SUMO_ATTR_EMISSIONCLASS,
     SUMO_ATTR_MASS,
     SUMO_ATTR_IMPATIENCE,
@@ -1661,12 +1725,16 @@ enum SumoXMLAttr {
     SUMO_ATTR_ORIGIN,
     SUMO_ATTR_DESTINATION,
     SUMO_ATTR_VISIBLE,
+    SUMO_ATTR_MAIN,
+    SUMO_ATTR_SIDING,
+    SUMO_ATTR_MINSAVING,
     SUMO_ATTR_LIMIT,
     SUMO_ATTR_ACTIVE,
     SUMO_ATTR_ARRIVALTIME,
     SUMO_ATTR_ARRIVALTIMEBRAKING,
     SUMO_ATTR_ARRIVALSPEEDBRAKING,
     SUMO_ATTR_OPTIONAL,
+    SUMO_ATTR_VEHICLES,
 
     /// @name ActivityGen Tags
     /// @{
@@ -1812,8 +1880,6 @@ enum SumoXMLAttr {
     GNE_ATTR_STOPINDEX,
     /// @brief stop index (position in the parent's path)
     GNE_ATTR_PATHSTOPINDEX,
-    /// @brief check number of additional children (used in vTypeDistribution)
-    GNE_ATTR_ADDITIONALCHILDREN,
     /// @brief person/container geometry start position
     GNE_ATTR_PLAN_GEOMETRY_STARTPOS,
     /// @brief person/container geometry end position
@@ -1824,8 +1890,27 @@ enum SumoXMLAttr {
     GNE_ATTR_TO_LANEID,
     /// @brief TAZ Center (uses to return the TAZ centroid if center is not defined)
     GNE_ATTR_TAZ_CENTROID,
-
-    // virtual attributes for easier UI
+    /// @brief flow terminating
+    GNE_ATTR_FLOW_TERMINATE,
+    /// @brief flow spacing
+    GNE_ATTR_FLOW_SPACING,
+    /// @brief reference position (used creating stoppingPlaces)
+    GNE_ATTR_REFERENCE,
+    /// @brief size (used in stopping places)
+    GNE_ATTR_SIZE,
+    /// @brief size (used in stopping places)
+    GNE_ATTR_FORCESIZE,
+    /// @brief size (used in stopping places)
+    GNE_ATTR_LANELENGTH,
+    /// @brief additional save file
+    GNE_ATTR_ADDITIONAL_FILE,
+    /// @brief demand demand file
+    GNE_ATTR_DEMAND_FILE,
+    /// @brief data data file
+    GNE_ATTR_DATA_FILE,
+    /// @brief meanData data file
+    GNE_ATTR_MEANDATA_FILE,
+    // @brief virtual attributes for easier UI
     GNE_ATTR_FROM_BUSSTOP,
     GNE_ATTR_FROM_TRAINSTOP,
     GNE_ATTR_FROM_CONTAINERSTOP,
@@ -1833,6 +1918,11 @@ enum SumoXMLAttr {
     GNE_ATTR_FROM_PARKINGAREA,
     GNE_ATTR_FROM_ROUTE,
     GNE_ATTR_IS_ROUNDABOUT,
+    GNE_ATTR_FRONTELEMENT,
+    /// @brief virtual attribute used for use edges within during TAZ creation
+    GNE_ATTR_EDGES_WITHIN,
+    /// @brief no common attributes
+    GNE_ATTR_NOCOMMON,
     // @}
 
     /// @name train parameters
@@ -1858,6 +1948,13 @@ enum SumoXMLAttr {
     SUMO_ATTR_RNG_DRIVERSTATE,
     // @}
 
+    //@name further state saving attributes
+    // @{
+    SUMO_ATTR_BIKESPEED,
+    SUMO_ATTR_PASTSPEED,
+    SUMO_ATTR_PASTBIKESPEED,
+    // @}
+
     //@name meso edge type attributes
     // @{
     SUMO_ATTR_MESO_TAUFF,
@@ -1870,6 +1967,7 @@ enum SumoXMLAttr {
     SUMO_ATTR_MESO_MINOR_PENALTY,
     SUMO_ATTR_MESO_OVERTAKING,
     // @}
+
     /// @brief invalid attribute, must be the last one
     SUMO_ATTR_NOTHING,
 };
@@ -1950,6 +2048,16 @@ enum class ParkingType {
     ONROAD = 0,
     OFFROAD = 1,
     OPPORTUNISTIC = 2
+};
+
+/**
+ * @enum ChargeType
+ * @brief Charging types of charging stations
+ */
+enum class ChargeType {
+    NORMAL = 0,
+    BATTERY_ECHANGE = 1,
+    FUEL = 2,
 };
 
 /// @brief algorithms for computing right of way
@@ -2221,6 +2329,203 @@ enum class POIIcon {
     NONE = 0,
 };
 
+/// @brief Exclude empty
+enum class ExcludeEmpty {
+    TRUES,
+    FALSES,
+    DEFAULTS,
+};
+
+/// @brief Reference position
+enum class ReferencePosition {
+    LEFT,
+    RIGHT,
+    CENTER,
+};
+
+/// @brief XML extension
+enum class XMLFileExtension {
+    XML,
+    ALL,
+};
+
+/// @brief TXT extension
+enum class TXTFileExtension {
+    TXT,
+    ALL,
+};
+
+/// @brief CSV extension
+enum class CSVFileExtension {
+    CSV,
+    ALL,
+};
+
+/// @brief OSG extension
+enum class OSGFileExtension {
+    OSG,
+    ALL,
+};
+
+/// @brief image extension
+enum class ImageFileExtension {
+    IMG,
+    GIF,
+    BMP,
+    XPM,
+    PCX,
+    ICO,
+    RGB,
+    XBM,
+    TGA,
+    PNG,
+    JPG,
+    TIF,
+    PS,
+    EPS,
+    PDF,
+    SVG,
+    TEX,
+    PGF,
+    ALL,
+};
+
+/// @brief image and video extension
+enum class ImageVideoFileExtension {
+    IMG,
+    VIDEO,
+    H264,
+    HEVC,
+    MP4,
+    GIF,
+    BMP,
+    XPM,
+    PCX,
+    ICO,
+    RGB,
+    XBM,
+    TGA,
+    PNG,
+    JPG,
+    TIF,
+    PS,
+    EPS,
+    PDF,
+    SVG,
+    TEX,
+    PGF,
+    ALL,
+};
+
+/// @brief output file extension
+enum class OutputFileExtension {
+    XML,
+    TXT,
+    ALL,
+};
+
+/// @brief view settings file extension
+enum class ViewSettingsFileExtension {
+    XML,
+    ALL,
+};
+
+/// @brief State file extension
+enum class StateFileExtension {
+    XML_GZ,
+    XML,
+    ALL,
+};
+
+/// @brief sumo file extension
+enum class SumoConfigFileExtension {
+    SUMOCONF,
+    XML,
+    ALL,
+};
+
+/// @brief netedit file extension
+enum class NeteditConfigFileExtension {
+    NETECFG,
+    XML,
+    ALL,
+};
+
+/// @brief netconvert file extension
+enum class NetconvertConfigFileExtension {
+    NETCCFG,
+    XML,
+    ALL,
+};
+
+/// @brief OSM file extension
+enum class OSMFileExtension {
+    OSM,
+    XML,
+    ALL,
+};
+
+/// @brief net file extension
+enum class NetFileExtension {
+    NET_XML,
+    XML,
+    ALL,
+};
+
+/// @brief TLS file extension
+enum class TLSFileExtension {
+    TTL_XML,
+    XML,
+    ALL,
+};
+
+/// @brief Junction file extension
+enum class JunctionFileExtension {
+    NOD_XML,
+    XML,
+    ALL,
+};
+
+/// @brief Edge type file extension
+enum class EdgeTypeFileExtension {
+    TYP_XML,
+    XML,
+    ALL,
+};
+
+/// @brief additional file extension
+enum class AdditionalFileExtension {
+    ADD_XML,
+    XML,
+    ALL,
+};
+
+/// @brief additional file extension
+enum class ShapesFileExtension {
+    XML,
+    ALL,
+};
+
+/// @brief route file extension
+enum class RouteFileExtension {
+    ROU_XML,
+    XML,
+    ALL,
+};
+
+/// @brief edge data file extension
+enum class EdgeDataFileExtension {
+    XML,
+    ALL,
+};
+
+/// @brief mean data file extension
+enum class MeanDataFileExtension {
+    ADD,
+    XML,
+    ALL,
+};
+
 // @}
 
 /**
@@ -2256,6 +2561,9 @@ public:
 
     /// @brief parking types
     static StringBijection<ParkingType> ParkingTypes;
+
+    /// @brief charge type
+    static StringBijection<ChargeType> ChargeTypes;
 
     /// @brief righ of way algorithms
     static StringBijection<RightOfWay> RightOfWayValues;
@@ -2295,6 +2603,79 @@ public:
 
     /// @brief POI icon values
     static StringBijection<POIIcon> POIIcons;
+
+    /// @brief exclude empty values
+    static StringBijection<ExcludeEmpty> ExcludeEmptys;
+
+    /// @brief reference positions (used creating certain elements in netedit)
+    static StringBijection<ReferencePosition> ReferencePositions;
+
+    /// @brief XML file Extensions
+    static StringBijection<XMLFileExtension> XMLFileExtensions;
+
+    /// @brief TXT file Extensions
+    static StringBijection<TXTFileExtension> TXTFileExtensions;
+
+    /// @brief CSV file Extensions
+    static StringBijection<CSVFileExtension> CSVFileExtensions;
+
+    /// @brief OSG file Extensions
+    static StringBijection<OSGFileExtension> OSGFileExtensions;
+
+    /// @brief image file extensions
+    static StringBijection<ImageFileExtension> ImageFileExtensions;
+
+    /// @brief image and videofile extensions
+    static StringBijection<ImageVideoFileExtension> ImageVideoFileExtensions;
+
+    /// @brief output file extensions
+    static StringBijection<OutputFileExtension> OutputFileExtensions;
+
+    /// @brief view settings file extensions
+    static StringBijection<ViewSettingsFileExtension> ViewSettingsFileExtensions;
+
+    /// @brief state file extensions
+    static StringBijection<StateFileExtension> StateFileExtensions;
+
+    /// @brief sumo config file extensions
+    static StringBijection<SumoConfigFileExtension> SumoConfigFileExtensions;
+
+    /// @brief netedit config file extensions
+    static StringBijection<NeteditConfigFileExtension> NeteditConfigFileExtensions;
+
+    /// @brief netconvert config file extensions
+    static StringBijection<NetconvertConfigFileExtension> NetconvertConfigFileExtensions;
+
+    /// @brief OSM file extensions
+    static StringBijection<OSMFileExtension> OSMFileExtensions;
+
+    /// @brief net file extensions
+    static StringBijection<NetFileExtension> NetFileExtensions;
+
+    /// @brief TLS file extensions
+    static StringBijection<TLSFileExtension> TLSFileExtensions;
+
+    /// @brief juntion file extensions
+    static StringBijection<JunctionFileExtension> JunctionFileExtensions;
+
+    /// @brief edge file extensions
+    static StringBijection<EdgeTypeFileExtension> EdgeTypeFileExtensions;
+
+    /// @brief additional file extensions
+    static StringBijection<AdditionalFileExtension> AdditionalFileExtensions;
+
+    /// @brief additional file extensions
+    static StringBijection<ShapesFileExtension> ShapesFileExtensions;
+
+    /// @brief route file extensions
+    static StringBijection<RouteFileExtension> RouteFileExtensions;
+
+    /// @brief edgedata file extensions
+    static StringBijection<EdgeDataFileExtension> EdgeDataFileExtensions;
+
+    /// @brief mean data file extensions
+    static StringBijection<MeanDataFileExtension> MeanDataFileExtensions;
+
     /// @}
 
     /// @name Helper functions for ID-string manipulations
@@ -2346,6 +2727,7 @@ public:
 
     /// @brief return lane index when given the lane ID
     static int getIndexFromLane(const std::string laneID);
+
     /// @}
 
     /// @brief all allowed characters for phase state
@@ -2366,6 +2748,9 @@ private:
 
     /// @brief lane spread function values
     static StringBijection<ParkingType>::Entry parkingTypeValues[];
+
+    /// @brief charge type values
+    static StringBijection<ChargeType>::Entry chargeTypeValues[];
 
     /// @brief lane spread function values
     static StringBijection<RightOfWay>::Entry rightOfWayValuesInitializer[];
@@ -2405,6 +2790,78 @@ private:
 
     /// @brief POI icon values
     static StringBijection<POIIcon>::Entry POIIconValues[];
+
+    /// @brief Exclude empty values
+    static StringBijection<ExcludeEmpty>::Entry excludeEmptyValues[];
+
+    /// @brief Reference position values
+    static StringBijection<ReferencePosition>::Entry referencePositionValues[];
+
+    /// @brief XML file extension values
+    static StringBijection<XMLFileExtension>::Entry XMLFileExtensionValues[];
+
+    /// @brief TXT file extension values
+    static StringBijection<TXTFileExtension>::Entry TXTFileExtensionValues[];
+
+    /// @brief CSV file extension values
+    static StringBijection<CSVFileExtension>::Entry CSVFileExtensionValues[];
+
+    /// @brief OSG file extension values
+    static StringBijection<OSGFileExtension>::Entry OSGFileExtensionValues[];
+
+    /// @brief image file extension values
+    static StringBijection<ImageFileExtension>::Entry imageFileExtensionValues[];
+
+    /// @brief image and video file extension values
+    static StringBijection<ImageVideoFileExtension>::Entry imageVideoFileExtensionValues[];
+
+    /// @brief output file extension values
+    static StringBijection<OutputFileExtension>::Entry outputFileExtensionValues[];
+
+    /// @brief view settings file extension values
+    static StringBijection<ViewSettingsFileExtension>::Entry viewSettingsFileExtensionValues[];
+
+    /// @brief state file extension values
+    static StringBijection<StateFileExtension>::Entry stateFileExtensionValues[];
+
+    /// @brief sumo config file extension values
+    static StringBijection<SumoConfigFileExtension>::Entry sumoConfigFileExtensionValues[];
+
+    /// @brief netedit config file extension values
+    static StringBijection<NeteditConfigFileExtension>::Entry neteditConfigFileExtensionValues[];
+
+    /// @brief netconvert config file extension values
+    static StringBijection<NetconvertConfigFileExtension>::Entry netconvertConfigFileExtensionValues[];
+
+    /// @brief OSM file extension values
+    static StringBijection<OSMFileExtension>::Entry osmFileExtensionValues[];
+
+    /// @brief net file extension values
+    static StringBijection<NetFileExtension>::Entry netFileExtensionValues[];
+
+    /// @brief TLS file extension values
+    static StringBijection<TLSFileExtension>::Entry TLSFileExtensionValues[];
+
+    /// @brief junction file extension values
+    static StringBijection<JunctionFileExtension>::Entry junctionFileExtensionValues[];
+
+    /// @brief edge file extension values
+    static StringBijection<EdgeTypeFileExtension>::Entry edgeTypeFileExtensionValues[];
+
+    /// @brief additional file extension values
+    static StringBijection<AdditionalFileExtension>::Entry additionalFileExtensionValues[];
+
+    /// @brief additional file extension values
+    static StringBijection<ShapesFileExtension>::Entry shapesFileExtensionValues[];
+
+    /// @brief route file extension values
+    static StringBijection<RouteFileExtension>::Entry routeFileExtensionsValues[];
+
+    /// @brief edge data file extension values
+    static StringBijection<EdgeDataFileExtension>::Entry edgeDataFileExtensionsValues[];
+
+    /// @brief mean data file extension values
+    static StringBijection<MeanDataFileExtension>::Entry meanDataFileExtensionsValues[];
 
     /// @}
 

@@ -4,11 +4,17 @@ edges
 # write kml lane geometries
 lanes
 
+# write edges and lanes
+edges_lanes
+
 # write kml edge geometries including junction coordinates
 junctionCoordinates
 
 # write geojson  junction shapes
 junctions
+
+# write geojson  tls shapes
+tls
 
 # write geojson edge boundaries
 boundaries
@@ -22,3 +28,6 @@ extra
 
 # write extra attributes for all lanes
 extra_lanes
+
+# write kml edge geometries including edgedata
+edgedata

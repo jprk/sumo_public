@@ -1,5 +1,5 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2010-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -12,6 +12,7 @@
 
 # @file    gtfs2osm.py
 # @author  Giuliana Armellini
+# @author  Mirko Barthauer
 # @date    2021-02-18
 
 """
@@ -27,6 +28,8 @@ import math
 import io
 import re
 from collections import defaultdict
+import hashlib
+
 # from pprint import pprint
 
 import pandas as pd
@@ -105,6 +108,10 @@ for i in range(900, 907):
 # }
 
 
+def md5hash(s):
+    return hashlib.md5(s.encode('utf-8')).hexdigest()
+
+
 @benchmark
 def import_gtfs(options, gtfsZip):
     """
@@ -123,6 +130,8 @@ def import_gtfs(options, gtfsZip):
 
     if 'trip_headsign' not in trips:
         trips['trip_headsign'] = ''
+    if 'direction_id' not in trips:
+        trips = discover_direction(routes, trips, stop_times)
     if 'route_short_name' not in routes:
         routes['route_short_name'] = routes['route_long_name']
 
@@ -195,6 +204,20 @@ def import_gtfs(options, gtfsZip):
         print("Warning! No GTFS data found for the given date %s." % options.date)
 
     return routes, trips_on_day, shapes, stops, stop_times
+
+
+@benchmark
+def discover_direction(routes, trips, stop_times):
+    """
+    Sets the direction value if it is not present in the GTFS data to identify separate
+    directions of the same PT line.
+    """
+    # create a direction_id identifier from the stop sequence
+    enhancedStopTimes = pd.merge(stop_times, pd.merge(trips, routes, on='route_id', how='left'), on='trip_id')
+    groupedStopTimes = enhancedStopTimes.groupby(["trip_id"], as_index=False).agg({'stop_id': ' '.join})
+    groupedStopTimes['direction_id'] = groupedStopTimes['stop_id'].apply(md5hash)
+    # copy the direction_id back to the trips file / join the DataFrame
+    return pd.merge(trips, groupedStopTimes[['trip_id', 'direction_id']], on='trip_id', how='left')
 
 
 @benchmark
@@ -392,8 +415,8 @@ def repair_routes(options, net):
             # find ptLine direction
             line_dir = get_line_dir(line_orig, line_dest)
 
-            osm_routes[ptLine.id] = (ptLine.attr_name, ptLine.line, ptLine.type, line_dir, ptLine.color,
-                                     ptLine.route[0].edges, [s.attr_name for s in (ptLine.stops or [])])
+            osm_routes[ptLine.id] = [ptLine.attr_name, ptLine.line, ptLine.type, line_dir, ptLine.color,
+                                     None, [s.attr_name for s in (ptLine.stops or [])]]
             dua_file.write(u'    <trip id="%s" type="%s" depart="0" via="%s"/>\n' %
                            (ptLine.id, ptLine.type, (" ").join(route_edges)))
         dua_file.write(u"</routes>\n")
@@ -410,8 +433,10 @@ def repair_routes(options, net):
 
     # parse repaired routes
     n_routes = len(osm_routes)
+    broken = set(osm_routes.keys())
     for ptline, ptline_route in parse_fast_nested("dua_output.xml", "vehicle", "id", "route", "edges"):
-        osm_routes[ptline.id] += (ptline_route.edges, )
+        osm_routes[ptline.id][5] = ptline_route.edges
+        broken.remove(ptline.id)
 
     # remove dua files
     os.remove("dua_input.xml")
@@ -419,7 +444,7 @@ def repair_routes(options, net):
     os.remove("dua_output.alt.xml")
 
     # remove invalid routes from dict
-    [osm_routes.pop(line) for line in list(osm_routes) if len(osm_routes[line]) < 5]
+    [osm_routes.pop(line) for line in list(osm_routes) if line in broken]
 
     if n_routes != len(osm_routes):
         print("%s of %s routes have been imported, see '%s' for more information." %
@@ -445,6 +470,7 @@ def import_osm(options, net):
             if ptLine.type not in options.modes or not ptLine.route:
                 continue
             route_edges = ptLine.route[0].edges.split()
+            route_edges = [e for e in route_edges if net.hasEdge(e)]
             if route_edges:
                 # TODO recheck what happens if it is only one edge
                 x, y = net.getEdge(route_edges[0]).getFromNode().getCoord()
@@ -530,7 +556,7 @@ def map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes, shapes_dict, filte
     filtered_stops['stop_name'] = [[x] + re.split(r', | ,|,', x) + [x.replace(',', '')]
                                    for x in filtered_stops['stop_name']]
     filtered_shapes = filtered_stops.groupby(['shape_id', 'route_short_name',
-                                              'route_type', 'direction_id']).stop_name.aggregate(sum).reset_index(
+                                              'route_type', 'direction_id']).stop_name.aggregate("sum").reset_index(
         name='stop_name_all')
     filtered_stops = pd.merge(filtered_stops, filtered_shapes)
 
@@ -545,8 +571,8 @@ def map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes, shapes_dict, filte
             aux_shapes = shapes[shapes['shape_id'] == row.shape_id]
             pt_orig = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.min()]
             pt_dest = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.max()]
-            line_dir = get_line_dir((pt_orig.shape_pt_lon, pt_orig.shape_pt_lat),
-                                    (pt_dest.shape_pt_lon, pt_dest.shape_pt_lat))
+            line_dir = get_line_dir((pt_orig.shape_pt_lon.iloc[0], pt_orig.shape_pt_lat.iloc[0]),
+                                    (pt_dest.shape_pt_lon.iloc[0], pt_dest.shape_pt_lat.iloc[0]))
 
             # get osm lines with same route name and pt type,
             # and if they have at least one matching stop name in osm and gtfs routes
@@ -636,7 +662,7 @@ def map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes, shapes_dict, filte
 def write_vtypes(options, seen=None):
     if options.vtype_output:
         with sumolib.openz(options.vtype_output, mode='w') as vout:
-            sumolib.xml.writeHeader(vout, root="additional")
+            sumolib.xml.writeHeader(vout, root="additional", options=options)
             for osm_type, sumo_class in sorted(OSM2SUMO_MODES.items()):
                 if osm_type in options.modes and (seen is None or osm_type in seen):
                     vout.write(u'    <vType id="%s" vClass="%s"/>\n' %
@@ -653,11 +679,11 @@ def write_gtfs_osm_outputs(options, map_routes, map_stops, missing_stops, missin
         print("Generates stops and routes output")
 
     # determine if we need to format times (depart, duration, until) to be human readable or whole seconds
-    ft = humanReadableTime if "hrtime" in options and options.hrtime else lambda x: int(x)
+    ft = humanReadableTime if "hrtime" in options and options.hrtime else int
 
     with sumolib.openz(options.additional_output, mode='w') as output_file:
-        sumolib.xml.writeHeader(output_file, root="additional")
-        for stop, value in map_stops.items():
+        sumolib.xml.writeHeader(output_file, root="additional", options=options)
+        for stop, value in sorted(map_stops.items()):
             name, lane, start_pos, end_pos, access, v_type = value[:6]
             typ = "busStop" if v_type == "bus" else "trainStop"
             output_file.write(u'    <%s id="%s" lane="%s" startPos="%.2f" endPos="%.2f" name=%s friendlyPos="true"%s>\n' %  # noqa
@@ -672,7 +698,7 @@ def write_gtfs_osm_outputs(options, map_routes, map_stops, missing_stops, missin
     write_vtypes(options)
 
     with sumolib.openz(options.route_output, mode='w') as output_file:
-        sumolib.xml.writeHeader(output_file, root="routes")
+        sumolib.xml.writeHeader(output_file, root="routes", options=options)
         numDays = int(options.end) // 86401
         start_time = pd.to_timedelta(time.strftime('%H:%M:%S', time.gmtime(options.begin)))
         shapes_written = set()
@@ -721,17 +747,37 @@ def write_gtfs_osm_outputs(options, map_routes, map_stops, missing_stops, missin
                 stopSeq = tuple([stop.stop_item_id for stop in stop_list.itertuples()])
                 if stopSeq not in seqs:
                     seqs[stopSeq] = row.trip_id
+
+                # determine departure from first valid stop
+                depart = None
+                for stop in stop_list.itertuples():
+                    if stop.stop_item_id:
+                        depart = ft(parseTime(str(stop.arrival_fixed.days + day) +
+                                    ":" + str(stop.arrival_fixed).split(' ')[2]))
+                        break
+
                 veh_attr = (row.trip_id, day,
-                            main_shape, row.route_id, seqs[stopSeq],
-                            ft(parseTime(str(row.arrival_fixed.days + day) +
-                               ":" + str(row.arrival_fixed).split(' ')[2])),
+                            main_shape, row.route_id, seqs[stopSeq], depart,
                             min(stop_index), max(stop_index), pt_type, pt_color)
                 output_file.write(u'    <vehicle id="%s.%s" route="%s" line="%s_%s" depart="%s" departEdge="%s" arrivalEdge="%s" type="%s"%s>\n' % veh_attr)  # noqa
-                output_file.write(u'        <param key="gtfs.route_name" value=%s/>\n' %
-                                  sumolib.xml.quoteattr(str(row.route_short_name), True))
+                params = [("gtfs.route_name", row.route_short_name)]
                 if row.trip_headsign:
-                    output_file.write(u'        <param key="gtfs.trip_headsign" value=%s/>\n' %
-                                      sumolib.xml.quoteattr(str(row.trip_headsign), True))
+                    params.append(("gtfs.trip_headsign", row.trip_headsign))
+                if options.writeTerminals:
+                    firstStop = stop_list.iloc[0]
+                    lastStop = stop_list.iloc[-1]
+                    firstDepart = parseTime(str(firstStop.departure_fixed.days + day) +
+                                            ":" + str(firstStop.departure_fixed).split(' ')[2])
+                    lastArrival = parseTime(str(lastStop.arrival_fixed.days + day) +
+                                            ":" + str(lastStop.arrival_fixed).split(' ')[2])
+                    params += [("gtfs.origin_stop", firstStop.stop_name),
+                               ("gtfs.origin_depart", ft(firstDepart)),
+                               ("gtfs.destination_stop", lastStop.stop_name),
+                               ("gtfs.destination_arrrival", ft(lastArrival))]
+                for k, v in params:
+                    output_file.write(u'        <param key="%s" value=%s/>\n' % (
+                        k, sumolib.xml.quoteattr(str(v), True)))
+
                 check_seq = -1
                 for stop in stop_list.itertuples():
                     if not stop.stop_item_id:
@@ -764,7 +810,7 @@ def write_gtfs_osm_outputs(options, map_routes, map_stops, missing_stops, missin
     if any([missing_stops, missing_lines, sequence_errors]):
         print("Not all given gtfs elements have been mapped, see %s for more information" % options.warning_output)
         with io.open(options.warning_output, 'w', encoding="utf8") as output_file:
-            output_file.write(u'<missingElements>\n')
+            sumolib.xml.writeHeader(output_file, root="missingElements", rootAttrs=None, options=options)
             for stop in sorted(set(missing_stops)):
                 output_file.write(u'    <stop id="%s" name=%s ptLine="%s" direction_id="%s"/>\n' % stop)
             for line in sorted(set(missing_lines)):

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -30,10 +30,10 @@
 // ===========================================================================
 // class declarations
 // ===========================================================================
+
 class GUISUMOAbstractView;
 class GUIGlObject;
 class GUIMainWindow;
-
 
 // ===========================================================================
 // class definitions
@@ -62,7 +62,7 @@ public:
      * @param[in] parent The parent view for changing it
      * @param[in] o The object of interest
      */
-    GUIGLObjectPopupMenu(GUIMainWindow& app, GUISUMOAbstractView& parent, GUIGlObject& o);
+    GUIGLObjectPopupMenu(GUIMainWindow& app, GUISUMOAbstractView& parent, GUIGlObject* o);
 
     /** @brief Constructor
      * @param[in] app The main window for instantiation of other windows
@@ -81,6 +81,9 @@ public:
 
     /// @brief return the real owner of this popup
     GUISUMOAbstractView* getParentView();
+
+    /// @brief The object that belongs to this popup-menu
+    GUIGlObject* getGLObject() const;
 
     /// @brief popup type;
     PopupType getPopupType() const;

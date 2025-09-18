@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -269,6 +269,12 @@ NBOwnTLDef::hasStraightConnection(const NBEdge* fromEdge) {
 
 NBTrafficLightLogic*
 NBOwnTLDef::myCompute(int brakingTimeSeconds) {
+    if (myControlledNodes.size() > 1) {
+        // call this first so that the following call to computeLogicAndConts resets linkIndices
+        initNeedsContRelation();
+        // reset insideTLS info
+        collectEdges();
+    }
     return computeLogicAndConts(brakingTimeSeconds);
 }
 
@@ -279,7 +285,7 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
         // otherwise, use values from previous call to initNeedsContRelation
         myNeedsContRelation.clear();
     }
-    myRightOnRedConflicts.clear();
+    myExtraConflicts.clear();
     const bool isNEMA = myType == TrafficLightType::NEMA;
     const SUMOTime brakingTime = TIME2STEPS(brakingTimeSeconds);
     const SUMOTime leftTurnTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.left-green.time"));
@@ -287,6 +293,17 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
     const SUMOTime maxDur = (myType == TrafficLightType::STATIC) ? UNSPECIFIED_DURATION : TIME2STEPS(OptionsCont::getOptions().getInt("tls.max-dur"));
     const SUMOTime earliestEnd = UNSPECIFIED_DURATION;
     const SUMOTime latestEnd = UNSPECIFIED_DURATION;
+    const SUMOTime greenTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.green.time"));
+    SUMOTime allRedTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.allred.time"));
+    const double minorLeftSpeedThreshold = OptionsCont::getOptions().getFloat("tls.minor-left.max-speed");
+    const bool noMixed = OptionsCont::getOptions().getBool("tls.no-mixed");
+    // left-turn phases do not work well for joined tls, so we build incoming instead
+    if (myLayout == TrafficLightLayout::DEFAULT) {
+        // @note this prevents updating after loading plain-xml into netedit computing tls and then changing the default layout
+        myLayout = SUMOXMLDefinitions::TrafficLightLayouts.get(OptionsCont::getOptions().getString("tls.layout"));
+    }
+    // corridorLike() resets crossing indices so should be called first
+    const bool groupOpposites = (myLayout == TrafficLightLayout::OPPOSITES && (myControlledNodes.size() <= 2 || corridorLike()));
 
     // things collect for NEMA phase building
     std::vector<std::pair<NBEdge*, NBEdge*> > chosenList;
@@ -362,26 +379,13 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
     std::vector<NBNode::Crossing*> crossings;
     for (NBNode* const node : myControlledNodes) {
         const std::vector<NBNode::Crossing*>& c = node->getCrossings();
-        if (!onlyConts) {
-            // set tl indices for crossings
-            node->setCrossingTLIndices(getID(), totalNumLinks);
-        }
+        node->setCrossingTLIndices(getID(), totalNumLinks, onlyConts);
+        totalNumLinks = MAX2(totalNumLinks, maxCrossingIndex(node) + 1);
         copy(c.begin(), c.end(), std::back_inserter(crossings));
-        totalNumLinks += (int)c.size();
     }
 
     NBTrafficLightLogic* logic = new NBTrafficLightLogic(getID(), getProgramID(), totalNumLinks, myOffset, myType);
     EdgeVector toProc = getConnectedOuterEdges(incoming);
-    const SUMOTime greenTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.green.time"));
-    SUMOTime allRedTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.allred.time"));
-    const double minorLeftSpeedThreshold = OptionsCont::getOptions().getFloat("tls.minor-left.max-speed");
-    const bool noMixed = OptionsCont::getOptions().getBool("tls.no-mixed");
-    // left-turn phases do not work well for joined tls, so we build incoming instead
-    if (myLayout == TrafficLightLayout::DEFAULT) {
-        // @note this prevents updating after loading plain-xml into netedit computing tls and then changing the default layout
-        myLayout = SUMOXMLDefinitions::TrafficLightLayouts.get(OptionsCont::getOptions().getString("tls.layout"));
-    }
-    const bool groupOpposites = (myLayout == TrafficLightLayout::OPPOSITES && (myControlledNodes.size() <= 2 || corridorLike()));
 
     // build all phases
     std::vector<int> greenPhases; // indices of green phases
@@ -424,7 +428,11 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
             if (perms == SVC_TRAM) {
                 groupTram = true;
             } else if ((perms & ~(SVC_PEDESTRIAN | SVC_BICYCLE | SVC_DELIVERY)) == 0) {
-                groupOther = true;
+                if (OptionsCont::getOptions().getBool("tls.ignore-internal-junction-jam")) {
+                    // otherwise, we can get a mutual conflict for minor green
+                    // streams which would create deadlock
+                    groupOther = true;
+                }
             }
             // group all edges with the same permissions into a single phase (later)
             if (groupTram || groupOther) {
@@ -615,7 +623,7 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
 
         state = addPedestrianPhases(logic, greenTime, minDur, maxDur, earliestEnd, latestEnd, state, crossings, fromEdges, toEdges);
         // pedestrians have 'r' from here on
-        for (int i1 = pos; i1 < pos + (int)crossings.size(); ++i1) {
+        for (int i1 = pos; i1 < (int)state.size(); ++i1) {
             state[i1] = 'r';
         }
         if (brakingTime > 0) {
@@ -759,7 +767,7 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
             leftStates.push_back(leftState);
         }
         // fix edges within joined traffic lights that did not get the green light yet
-        if (myEdgesWithin.size() > 0 && !isNEMA && toProc.size() == 0) {
+        if (myEdgesWithin.size() > 0 && !isNEMA && toProc.size() == 0 && !onlyConts) {
             addGreenWithin(logic, fromEdges, toProc);
         }
     }
@@ -773,10 +781,6 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
         const SUMOTime redTime = TIME2STEPS(OptionsCont::getOptions().getInt("tls.red.time"));
         logic->addStep(redTime, std::string(totalNumLinks, 'r'));
     }
-    // fix states to account for custom crossing link indices
-    if (crossings.size() > 0 && !onlyConts) {
-        checkCustomCrossingIndices(logic);
-    }
 
     if (myLayout == TrafficLightLayout::ALTERNATE_ONEWAY) {
         // exiting the oneway section should always be possible
@@ -785,7 +789,7 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
     if (isNEMA) {
         NBTrafficLightLogic* nemaLogic = buildNemaPhases(fromEdges, toEdges, crossings, chosenList, straightStates, leftStates);
         if (nemaLogic == nullptr) {
-            WRITE_WARNINGF(TL("Generating NEMA phases is not support for traffic light '%' with % incoming edges. Using tlType 'actuated' as fallback"), getID(), incoming.size());
+            WRITE_WARNINGF(TL("Generating NEMA phases is not supported for traffic light '%' with % incoming edges. Using tlType 'actuated' as fallback"), getID(), incoming.size());
             logic->setType(TrafficLightType::ACTUATED);
             setType(TrafficLightType::ACTUATED);
         } else {
@@ -836,9 +840,8 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
         const std::string nextState = allPhases[(i + 1) % phaseCount].state;
         bool updatedState = false;
         for (int i1 = 0; i1 < stateSize; ++i1) {
-            if (currState[i1] == 'y' && (nextState[i1] == 'g' || nextState[i1] == 'G') && (prevState[i1] == 'g' || prevState[i1] == 'G')) {
-                LinkState ls = (nextState[i1] == prevState[i1]) ? (LinkState)prevState[i1] : (LinkState)'g';
-                logic->setPhaseState(i, i1, ls);
+            if (currState[i1] == 'y' && (nextState[i1] == prevState[i1] || nextState[i1] == 'G') && (prevState[i1] == 'g' || prevState[i1] == 'G')) {
+                logic->setPhaseState(i, i1, (LinkState)prevState[i1]);
                 updatedState = true;
             }
         }
@@ -854,11 +857,13 @@ NBOwnTLDef::computeLogicAndConts(int brakingTimeSeconds, bool onlyConts) {
     }
 
 
-    myRightOnRedConflictsReady = true;
+    myExtraConflictsReady = true;
     // this computation only makes sense for single nodes
-    myNeedsContRelationReady = (myControlledNodes.size() == 1);
+    if (myControlledNodes.size() == 1) {
+        myNeedsContRelationReady = true;
+    }
     if (totalDuration > 0) {
-        if (totalDuration > 3 * (greenTime + 2 * brakingTime + leftTurnTime) && !isNEMA) {
+        if (totalDuration > 3 * (greenTime + 2 * brakingTime + leftTurnTime) && !isNEMA && getID() != DummyID) {
             WRITE_WARNINGF(TL("The traffic light '%' has a high cycle time of %."), getID(), time2string(totalDuration));
         }
         logic->closeBuilding();
@@ -906,14 +911,26 @@ NBOwnTLDef::addPedestrianPhases(NBTrafficLightLogic* logic, const SUMOTime green
         const SUMOTime pedTime = greenTime - pedClearingTime;
         if (pedTime >= minPedTime) {
             // ensure clearing time for pedestrians
-            const int pedStates = (int)crossings.size();
+            const bool isSimpleActuatedCrossing = logic->getType() == TrafficLightType::ACTUATED
+                                                  && minDur == UNSPECIFIED_DURATION && logic->getPhases().size() == 2;
+            if (isSimpleActuatedCrossing) {
+                // permit green phase to extend when there are no pedestrians
+                logic->setPhaseNext(0, {0, 1});
+            }
             logic->addStep(pedTime, state, minDur, maxDur, earliestEnd, latestEnd);
 #ifdef DEBUG_PHASES
             if (DEBUGCOND2(logic)) {
                 std::cout << " intermidate state for addPedestrianPhases " << state << "\n";
             }
 #endif
-            state = state.substr(0, state.size() - pedStates) + std::string(pedStates, 'r');
+            for (auto cross : crossings) {
+                if (cross->tlLinkIndex >= (int)fromEdges.size() || fromEdges[cross->tlLinkIndex] == nullptr) {
+                    state[cross->tlLinkIndex] = 'r';
+                }
+                if (cross->tlLinkIndex2 >= 0 && (cross->tlLinkIndex2 >= (int)fromEdges.size() || fromEdges[cross->tlLinkIndex2] == nullptr)) {
+                    state[cross->tlLinkIndex2] = 'r';
+                }
+            }
             logic->addStep(pedClearingTime, state);
         } else {
             state = orig;
@@ -933,17 +950,14 @@ NBOwnTLDef::addPedestrianPhases(NBTrafficLightLogic* logic, const SUMOTime green
 std::string
 NBOwnTLDef::patchStateForCrossings(const std::string& state, const std::vector<NBNode::Crossing*>& crossings, const EdgeVector& fromEdges, const EdgeVector& toEdges) {
     std::string result = state;
-    const int pos = (int)(state.size() - crossings.size()); // number of controlled vehicle links
-    for (int ic = 0; ic < (int)crossings.size(); ++ic) {
-        const int i1 = pos + ic;
-        const NBNode::Crossing& cross = *crossings[ic];
+    for (const NBNode::Crossing* cross : crossings) {
         bool isForbidden = false;
-        for (int i2 = 0; i2 < pos && !isForbidden; ++i2) {
+        for (int i2 = 0; i2 < (int)fromEdges.size() && !isForbidden; ++i2) {
             // only check connections at this crossings node
-            if (fromEdges[i2] != 0 && toEdges[i2] != 0 && fromEdges[i2]->getToNode() == cross.node) {
-                for (EdgeVector::const_iterator it = cross.edges.begin(); it != cross.edges.end(); ++it) {
+            if (fromEdges[i2] != 0 && toEdges[i2] != 0 && fromEdges[i2]->getToNode() == cross->node) {
+                for (EdgeVector::const_iterator it = cross->edges.begin(); it != cross->edges.end(); ++it) {
                     const NBEdge* edge = *it;
-                    const LinkDirection i2dir = cross.node->getDirection(fromEdges[i2], toEdges[i2]);
+                    const LinkDirection i2dir = cross->node->getDirection(fromEdges[i2], toEdges[i2]);
                     if (state[i2] != 'r' && state[i2] != 's' && (edge == fromEdges[i2] ||
                             (edge == toEdges[i2] && (i2dir == LinkDirection::STRAIGHT || i2dir == LinkDirection::PARTLEFT || i2dir == LinkDirection::PARTRIGHT)))) {
                         isForbidden = true;
@@ -952,21 +966,37 @@ NBOwnTLDef::patchStateForCrossings(const std::string& state, const std::vector<N
                 }
             }
         }
-        if (!isForbidden) {
-            result[i1] = 'G';
+        const int i1 = cross->tlLinkIndex;
+        assert(i1 >= 0 && i1 < (int)result.size());
+        const char newState = isForbidden ? 'r' : 'G';
+        if (i1 < (int)toEdges.size() && toEdges[i1] != nullptr && (result[i1] != newState || !isForbidden)) {
+            if (cross->tlID != DummyID) {
+                WRITE_WARNINGF(TL("Custom crossing linkIndex % conflicts with vehicular connections at tlLogic '%'"), i1, cross->tlID);
+            }
         } else {
-            result[i1] = 'r';
+            result[i1] = newState;
+        }
+        if (cross->tlLinkIndex2 >= 0) {
+            const int i2 = cross->tlLinkIndex2;
+            if (i2 < (int)toEdges.size() && toEdges[i2] != nullptr && (result[i2] != newState || !isForbidden)) {
+                if (cross->tlID != DummyID) {
+                    WRITE_WARNINGF(TL("Custom crossing linkIndex2 % conflicts with vehicular connections at tlLogic '%'"), i2, cross->tlID);
+                }
+            } else {
+                result[i2] = newState;
+            }
         }
     }
 
     // correct behaviour for roads that are in conflict with a pedestrian crossing
-    for (int i1 = 0; i1 < pos; ++i1) {
+    for (int i1 = 0; i1 < (int)fromEdges.size(); ++i1) {
         if (result[i1] == 'G') {
-            for (int ic = 0; ic < (int)crossings.size(); ++ic) {
-                const NBNode::Crossing& crossing = *crossings[ic];
-                if (fromEdges[i1] != 0 && toEdges[i1] != 0 && fromEdges[i1]->getToNode() == crossing.node) {
-                    const int i2 = pos + ic;
-                    if (result[i2] == 'G' && crossing.node->mustBrakeForCrossing(fromEdges[i1], toEdges[i1], crossing)) {
+            for (const NBNode::Crossing* cross : crossings) {
+                const int i2 = cross->tlLinkIndex;
+                const int i3 = cross->tlLinkIndex2;
+                if (fromEdges[i1] != 0 && toEdges[i1] != 0 && fromEdges[i1]->getToNode() == cross->node) {
+                    if ((result[i2] == 'G' || (i3 >= 0 && result[i3] == 'G'))
+                            && cross->node->mustBrakeForCrossing(fromEdges[i1], toEdges[i1], *cross)) {
                         result[i1] = 'g';
                         break;
                     }
@@ -1086,11 +1116,6 @@ void
 NBOwnTLDef::initNeedsContRelation() const {
     if (!myNeedsContRelationReady) {
         if (myControlledNodes.size() > 0) {
-            // setParticipantsInformation resets myAmInTLS so we need to make a copy
-            std::vector<bool> edgeInsideTLS;
-            for (const NBEdge* e : myIncomingEdges) {
-                edgeInsideTLS.push_back(e->isInsideTLS());
-            }
             // we use a dummy node just to maintain const-correctness
             myNeedsContRelation.clear();
             for (NBNode* n : myControlledNodes) {
@@ -1100,13 +1125,6 @@ NBOwnTLDef::initNeedsContRelation() const {
                 delete tllDummy;
                 myNeedsContRelation.insert(dummy.myNeedsContRelation.begin(), dummy.myNeedsContRelation.end());
                 n->removeTrafficLight(&dummy);
-            }
-            if (myControlledNodes.size() > 1) {
-                int i = 0;
-                for (NBEdge* e : myIncomingEdges) {
-                    e->setInsideTLS(edgeInsideTLS[i]);
-                    i++;
-                }
             }
 #ifdef DEBUG_CONTRELATION
             if (DEBUGCOND) {
@@ -1368,7 +1386,7 @@ NBOwnTLDef::correctConflicting(std::string state, const EdgeVector& fromEdges, c
                         if (state[i2] == 'G' && !isTurnaround[i2] &&
                                 (forbids(fromEdges[i2], toEdges[i2], fromEdges[i1], toEdges[i1], true) ||
                                  forbids(fromEdges[i1], toEdges[i1], fromEdges[i2], toEdges[i2], true))) {
-                            myRightOnRedConflicts.insert(std::make_pair(i1, i2));
+                            myExtraConflicts.insert(std::make_pair(i1, i2));
                         }
                     }
                 }
@@ -1428,16 +1446,22 @@ NBOwnTLDef::addGreenWithin(NBTrafficLightLogic* logic, const EdgeVector& fromEdg
 void
 NBOwnTLDef::addPedestrianScramble(NBTrafficLightLogic* logic, int totalNumLinks, SUMOTime /* greenTime */, SUMOTime brakingTime,
                                   const std::vector<NBNode::Crossing*>& crossings, const EdgeVector& fromEdges, const EdgeVector& toEdges) {
-    const int vehLinks = totalNumLinks - (int)crossings.size();
-    std::vector<bool> foundGreen(crossings.size(), false);
+    // check both indices for each crossing (they may have green in different phases)
+    std::vector<bool> foundGreen(crossings.size() * 2, false);
     const std::vector<NBTrafficLightLogic::PhaseDefinition>& phases = logic->getPhases();
     for (int i = 0; i < (int)phases.size(); i++) {
         const std::string state = phases[i].state;
-        for (int j = 0; j < (int)crossings.size(); j++) {
-            LinkState ls = (LinkState)state[vehLinks + j];
+        int j = 0;
+        for (auto cross : crossings) {
+            LinkState ls = (LinkState)state[cross->tlLinkIndex];
+            LinkState ls2 = cross->tlLinkIndex2 >= 0 ? (LinkState)state[cross->tlLinkIndex2] : ls;
             if (ls == LINKSTATE_TL_GREEN_MAJOR || ls == LINKSTATE_TL_GREEN_MINOR) {
                 foundGreen[j] = true;
             }
+            if (ls2 == LINKSTATE_TL_GREEN_MAJOR || ls2 == LINKSTATE_TL_GREEN_MINOR) {
+                foundGreen[j + crossings.size()] = true;
+            }
+            j++;
         }
     }
 #ifdef DEBUG_PHASES
@@ -1451,7 +1475,7 @@ NBOwnTLDef::addPedestrianScramble(NBTrafficLightLogic* logic, int totalNumLinks,
             if (phases.size() > 0) {
                 bool needYellowPhase = false;
                 std::string state = phases.back().state;
-                for (int i1 = 0; i1 < vehLinks; ++i1) {
+                for (int i1 = 0; i1 < (int)fromEdges.size(); ++i1) {
                     if (state[i1] == 'G' || state[i1] == 'g') {
                         state[i1] = 'y';
                         needYellowPhase = true;
@@ -1487,27 +1511,14 @@ NBOwnTLDef::buildAllRedState(SUMOTime allRedTime, NBTrafficLightLogic* logic, co
 }
 
 
-void
-NBOwnTLDef::checkCustomCrossingIndices(NBTrafficLightLogic* logic) const {
-    int minCustomIndex = -1;
-    int maxCustomIndex = -1;
-    // collect crossings
-    for (std::vector<NBNode*>::const_iterator i = myControlledNodes.begin(); i != myControlledNodes.end(); i++) {
-        const std::vector<NBNode::Crossing*>& c = (*i)->getCrossings();
-        for (auto crossing : c) {
-            minCustomIndex = MIN2(minCustomIndex, crossing->customTLIndex);
-            minCustomIndex = MIN2(minCustomIndex, crossing->customTLIndex2);
-            maxCustomIndex = MAX2(maxCustomIndex, crossing->customTLIndex);
-            maxCustomIndex = MAX2(maxCustomIndex, crossing->customTLIndex2);
-        }
+int
+NBOwnTLDef::maxCrossingIndex(const NBNode* node) const {
+    int result = 0;
+    for (auto crossing : node->getCrossings()) {
+        result = MAX2(result, crossing->tlLinkIndex);
+        result = MAX2(result, crossing->tlLinkIndex2);
     }
-    // custom crossing linkIndex could lead to longer states. ensure that every index has a state
-    if (maxCustomIndex >= logic->getNumLinks()) {
-        logic->setStateLength(maxCustomIndex + 1);
-    }
-    // XXX shorter state vectors are possible as well
-    // XXX if the indices are shuffled the guessed crossing states should be shuffled correspondingly
-    // XXX initialize the backward index to the same state as the forward index
+    return result;
 }
 
 void
@@ -1606,6 +1617,11 @@ NBOwnTLDef::corridorLike() const {
         // avoid infinite recursion
         return true;
     }
+    // setParticipantsInformation resets myAmInTLS so we need to make a copy
+    std::vector<bool> edgeInsideTLS;
+    for (const NBEdge* e : myIncomingEdges) {
+        edgeInsideTLS.push_back(e->isInsideTLS());
+    }
     assert(myControlledNodes.size() >= 2);
     NBOwnTLDef dummy(DummyID, myControlledNodes, 0, TrafficLightType::STATIC);
     dummy.setParticipantsInformation();
@@ -1619,6 +1635,11 @@ NBOwnTLDef::corridorLike() const {
     delete tllDummy;
     for (const auto& controlledNode : myControlledNodes) {
         controlledNode->removeTrafficLight(&dummy);
+    }
+    int i = 0;
+    for (NBEdge* e : myIncomingEdges) {
+        e->setInsideTLS(edgeInsideTLS[i]);
+        i++;
     }
     return greenPhases <= 2;
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -28,6 +28,8 @@ if test -z $HTTPS_PROXY; then
     yum install -y --nogpgcheck ccache libxerces-c-devel proj-devel fox16-devel bzip2-devel gl2ps-devel swig3 eigen3-devel
     yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
     yum install -y geos311-devel
+    yum install -y https://packages.apache.org/artifactory/arrow/centos/$(cut -d: -f5 /etc/system-release-cpe | cut -d. -f1)/apache-arrow-release-latest.rpm
+    yum install -y arrow-devel parquet-devel # For Apache Parquet
     pipx install -f patchelf==0.16.1.0  # see https://github.com/pypa/manylinux/issues/1421
 fi
 
@@ -46,10 +48,10 @@ mkdir -p $HOME/.ccache
 echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
 echo "base_dir = $PWD/_skbuild/linux-x86_64-3.8" >> $HOME/.ccache/ccache.conf
 cp build_config/pyproject.toml .
-py=/opt/python/cp38-cp38
+py=/opt/python/cp312-cp312
 $py/bin/python tools/build_config/version.py tools/build_config/setup-sumo.py ./setup.py
 $py/bin/python -m build --wheel
-mv dist/eclipse_sumo-* `echo dist/eclipse_sumo-* | sed 's/cp38-cp38/py2.py3-none/'`
+mv dist/eclipse_sumo-* `echo dist/eclipse_sumo-* | sed 's/cp312-cp312/py2.py3-none/'`
 auditwheel repair dist/eclipse_sumo*.whl
 cp -a data tools/libsumo
 for py in /opt/python/cp3[1789]*; do

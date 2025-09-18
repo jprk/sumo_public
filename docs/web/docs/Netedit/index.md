@@ -96,6 +96,7 @@ In addition to these hotkeys, [all hotkeys for moving and zooming in
 sumo-gui](../sumo-gui.md#keyboard_shortcuts) are supported.
 
 - <Button-Left\>: Execute mode specific action
+  - in 'Inspect'-mode repeated clicks on the same location cycle through objects at that location
 - <Button-Right\>: Open context-menu
 - <Button-Right-Drag\>: Change zoom
 - <Button-Left-Drag\>: Move the view around (*panning*)
@@ -119,6 +120,9 @@ sumo-gui](../sumo-gui.md#keyboard_shortcuts) are supported.
   - in 'Create Edge'-mode, allow moving the view without defining junctions
   - in 'Create Additional'-mode, allow moving the view without adding additionals
   - in 'POI-Poly'-mode, allow moving the view without adding POIs
+- <kbd>ALT</kbd>:
+  - in 'Inspect'-mode: <Button-Left\> inspects individual object instead of selection (when object is selected)
+  - in 'Inspect'-mode: <Button-Right\> opens a menu for selecting among all objects at the same location
 - <kbd>Enter</kbd>:
   - in 'Inspect'-mode: confirm attribute changes
   - in 'Connect'-mode: deselect current lane and save all changes
@@ -229,6 +233,7 @@ Right clicking over an element will open a popup-menu with functions and operati
 - [Converting an intersection into a roundabout](neteditUsageExamples.md#converting_an_intersection_into_a_roundabout)
 - [Correcting road access permissions](neteditUsageExamples.md#correcting_road_access_permissions)
 - [Creating bidirectional railway tracks](neteditUsageExamples.md#creating_bidirectional_railway_tracks)
+- [Creating pedestrian infrastructure](neteditUsageExamples.md#building_pedestrian_infrastructure)
 - [**+ many others**](neteditUsageExamples.md).
 
 # Planned Features
@@ -241,6 +246,5 @@ Right clicking over an element will open a popup-menu with functions and operati
     Currently, you may either switching on **--opposites.guess** via the [F10-menu](#processing_menu_options) or set lane attribute 'oppositeID'.
 
 - Editing [walkingarea shapes](../Networks/PlainXML.md#walking_areas)
-- Integration of [netgenerate](../netgenerate.md)
-- Integration of [netdiff](../Tools/Net.md#netdiffpy)
+- Ability to graphically edit decals in the "Decals"-Mode
 - Adding / merging of sub-networks to the existing network

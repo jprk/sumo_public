@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -80,7 +80,7 @@ enum {
     /// @{
 
     /// @brief Start the simulation in SUMO and open Additionals Elements in netedit
-    MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS,
+    MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALELEMENTS,
     /// @brief Edit simulation breakpoints in SUMO and open Data Elements in netedit
     MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS,
     /// @brief Copy the current selection / element
@@ -199,7 +199,7 @@ enum {
     /// @{
 
     /// @brief Save Additional Elements
-    MID_HOTKEY_CTRL_SHIFT_A_SAVEADDITIONALS,
+    MID_HOTKEY_CTRL_SHIFT_A_SAVEADDITIONALELEMENTS,
     /// @brief save Data Elements
     MID_HOTKEY_CTRL_SHIFT_B_SAVEDATAELEMENTS,
     /// @brief Save neteditConfig
@@ -213,7 +213,7 @@ enum {
     /// @brief save TLS Programs
     MID_HOTKEY_CTRL_SHIFT_K_SAVETLS,
     /// @brief save Mean Datas
-    MID_HOTKEY_CTRL_SHIFT_M_SAVEMEANDATAS,
+    MID_HOTKEY_CTRL_SHIFT_M_SAVEMEANDATAELEMENTS,
     /// @brief open a new window (SUMO AND netedit)
     MID_HOTKEY_CTRL_SHIFT_N_NEWWINDOW,
     /// @brief open Netconvert file
@@ -344,7 +344,7 @@ enum {
 
     /// @brief The loading thread
     ID_LOADTHREAD_EVENT,
-    /// @brief The Simulation execution thread
+    /// @brief The testing thread
     ID_RUNTHREAD_EVENT,
     /// @brief ID for message passing between threads
     ID_THREAD_EVENT,
@@ -717,12 +717,12 @@ enum {
     MID_GNE_TOOLBARFILE_SAVESUMOCONFIG_AS,
     /// @brief save network as
     MID_GNE_TOOLBARFILE_SAVENETWORK_AS,
-    /// @brief save additionals as
-    MID_GNE_TOOLBARFILE_SAVEADDITIONALS_AS,
+    /// @brief save additionals unified
+    MID_GNE_TOOLBARFILE_SAVEADDITIONALELEMENTS_UNIFIED,
     /// @brief save JuPedSim as
     MID_GNE_TOOLBARFILE_SAVEJUPEDSIMELEMENTS_AS,
     /// @brief reload additionals
-    MID_GNE_TOOLBARFILE_RELOAD_ADDITIONALS,
+    MID_GNE_TOOLBARFILE_RELOAD_ADDITIONALELEMENTS,
     /// @brief save TLS Programs as
     MID_GNE_TOOLBARFILE_SAVETLSPROGRAMS_AS,
     /// @brief reload TLS Programs
@@ -731,20 +731,20 @@ enum {
     MID_GNE_TOOLBARFILE_SAVEEDGETYPES_AS,
     /// @brief reload edge types
     MID_GNE_TOOLBARFILE_RELOAD_EDGETYPES,
-    /// @brief save demand elements as
-    MID_GNE_TOOLBARFILE_SAVEDEMAND_AS,
+    /// @brief save demand elements unified
+    MID_GNE_TOOLBARFILE_SAVEDEMANDELEMENTS_UNIFIED,
     /// @brief reload demand elements
     MID_GNE_TOOLBARFILE_RELOAD_DEMANDELEMENTS,
-    /// @brief save data elements as
-    MID_GNE_TOOLBARFILE_SAVEDATA_AS,
+    /// @brief save data elements unified
+    MID_GNE_TOOLBARFILE_SAVEDATAELEMENTS_UNIFIED,
     /// @brief reload data elements
     MID_GNE_TOOLBARFILE_RELOAD_DATAELEMENTS,
     /// @brief open meanData file
-    MID_GNE_TOOLBARFILE_OPENMEANDATAS,
-    /// @brief save meanDatas as
-    MID_GNE_TOOLBARFILE_SAVEMEANDATAS_AS,
+    MID_GNE_TOOLBARFILE_OPENMEANDATAELEMENTS,
+    /// @brief save meanDatas unified
+    MID_GNE_TOOLBARFILE_SAVEMEANDATAELEMENTS_UNIFIED,
     /// @brief reload meanDatas
-    MID_GNE_TOOLBARFILE_RELOAD_MEANDATAS,
+    MID_GNE_TOOLBARFILE_RELOAD_MEANDATAELEMENTS,
 
     /// @}
 
@@ -786,13 +786,17 @@ enum {
 
     /// @}
 
-    /// @name Toolbar windows messages
+    /// @name Toolbar processing messages
     /// @{
 
     /// @brief compute path manager
     MID_GNE_TOOLBAREDIT_COMPUTEPATHMANAGER,
     /// @brief enable/disable computing after switchin between supermodes
     MID_GNE_TOGGLE_COMPUTE_NETWORK_DATA,
+    /// @brief enable/disable undo-redo
+    MID_GNE_TOGGLE_UNDOREDO,
+    /// @brief enable/disable undo-redo during loading
+    MID_GNE_TOGGLE_UNDOREDO_LOADING,
     /// @brief switch time format
     MID_GNE_TOGGLE_TIMEFORMAT,
 
@@ -831,8 +835,8 @@ enum {
     MID_GNE_NETWORKVIEWOPTIONS_EXTENDSELECTION,
     /// @brief change all phases
     MID_GNE_NETWORKVIEWOPTIONS_CHANGEALLPHASES,
-    /// @brief ask before merging junctions
-    MID_GNE_NETWORKVIEWOPTIONS_ASKFORMERGE,
+    /// @brief don't ask before merging junctions
+    MID_GNE_NETWORKVIEWOPTIONS_MERGEAUTOMATICALLY,
     /// @brief show junctions as bubbles
     MID_GNE_NETWORKVIEWOPTIONS_SHOWBUBBLES,
     /// @brief move elevation instead of x,y
@@ -845,8 +849,60 @@ enum {
     MID_GNE_ADDSELECT_EDGE,
     /// @brief Remove edge from selected items - Menu Entry
     MID_GNE_REMOVESELECT_EDGE,
-    /// @brief lock element
+    /// @brief lock element (general, used if we press directly the menuCommand in the toolbar)
     MID_GNE_LOCK_ELEMENT,
+    /// @brief lock junctions
+    MID_GNE_LOCK_JUNCTION,
+    /// @brief lock edges
+    MID_GNE_LOCK_EDGE,
+    /// @brief lock lanes
+    MID_GNE_LOCK_LANE,
+    /// @brief lock connections
+    MID_GNE_LOCK_CONNECTION,
+    /// @brief lock crossings
+    MID_GNE_LOCK_CROSSING,
+    /// @brief lock walkingareas
+    MID_GNE_LOCK_WALKINGAREA,
+    /// @brief lock additional elements
+    MID_GNE_LOCK_ADDITIONALELEMENT,
+    /// @brief lock wires
+    MID_GNE_LOCK_WIRE,
+    /// @brief lock TAZs
+    MID_GNE_LOCK_TAZ,
+    /// @brief lock polygons
+    MID_GNE_LOCK_POLYGON,
+    /// @brief lock POIs
+    MID_GNE_LOCK_POI,
+    /// @brief lock walkableAreas
+    MID_GNE_LOCK_JPS_WALKABLEAREA,
+    /// @brief lock obstacles
+    MID_GNE_LOCK_JPS_OBSTACLE,
+    /// @brief lock routes
+    MID_GNE_LOCK_ROUTE,
+    /// @brief lock vehicles
+    MID_GNE_LOCK_VEHICLE,
+    /// @brief lock persons
+    MID_GNE_LOCK_PERSON,
+    /// @brief lock personTrips
+    MID_GNE_LOCK_PERSONTRIP,
+    /// @brief lock walks
+    MID_GNE_LOCK_WALK,
+    /// @brief lock rides
+    MID_GNE_LOCK_RIDE,
+    /// @brief lock containers
+    MID_GNE_LOCK_CONTAINER,
+    /// @brief lock transports
+    MID_GNE_LOCK_TRANSPORT,
+    /// @brief lock tranships
+    MID_GNE_LOCK_TRANSHIP,
+    /// @brief lock stops
+    MID_GNE_LOCK_STOP,
+    /// @brief lock edgeDatas
+    MID_GNE_LOCK_EDGEDATA,
+    /// @brief lock edgeRelDatas
+    MID_GNE_LOCK_EDGERELDATA,
+    /// @brief lock TAZRelDatas
+    MID_GNE_LOCK_TAZRELDATA,
     /// @brief lock all element
     MID_GNE_LOCK_ALLELEMENTS,
     /// @brief unlock all element
@@ -969,14 +1025,6 @@ enum {
     MID_GNE_SET_ATTRIBUTE_BOOL,
     /// @brief attribute edited trough dialog
     MID_GNE_SET_ATTRIBUTE_DIALOG,
-    /// @brief inspect attribute parent element
-    MID_GNE_SET_ATTRIBUTE_INSPECTPARENT,
-    /// @brief edit attribute allow
-    MID_GNE_SET_ATTRIBUTE_ALLOW,
-    /// @brief edit attribute color
-    MID_GNE_SET_ATTRIBUTE_COLOR,
-    /// @brief open parameters dialog
-    MID_GNE_OPEN_PARAMETERS_DIALOG,
     /// @brief attribute selected using button (radio button or checkbox)
     MID_GNE_SET_ATTRIBUTE_BUTTON,
     /// @brief abort edge path creation
@@ -1031,12 +1079,41 @@ enum {
     MID_GNE_PROTECT_ALL,
     /// @brief unprotect all elements
     MID_GNE_UNPROTECT_ALL,
-    /// @brief move up
-    MID_GNE_MOVEUP,
-    /// @brief move down
-    MID_GNE_MOVEDOWN,
-
     /// @}
+
+    /// @name GNEAttributesEditorType messages
+    /// @{
+
+    /// @brief mark element as front
+    MID_GNE_ATTRIBUTESEDITOR_FRONT,
+    /// @brief open element dialog
+    MID_GNE_ATTRIBUTESEDITOR_DIALOG,
+    /// @brief open extended attributes
+    MID_GNE_ATTRIBUTESEDITOR_EXTENDED,
+    /// @brief open generic parameters editor
+    MID_GNE_ATTRIBUTESEDITOR_PARAMETERS,
+    /// @brief open help dialog
+    MID_GNE_ATTRIBUTESEDITOR_HELP,
+    /// @brief reset attributes
+    MID_GNE_ATTRIBUTESEDITOR_RESET,
+    /// @brief set attribute (string, bool, etc.) in attributes editor row
+    MID_GNE_ATTRIBUTESEDITORROW_SETATTRIBUTE,
+    /// @brief toogle enable attribute in attributes editor row
+    MID_GNE_ATTRIBUTESEDITORROW_TOGGLEENABLEATTRIBUTE,
+    /// @brief open color dialog in attributes editor row
+    MID_GNE_ATTRIBUTESEDITORROW_OPENDIALOG_COLOR,
+    /// @brief open allow dialog in attributes editor row
+    MID_GNE_ATTRIBUTESEDITORROW_OPENDIALOG_ALLOW,
+    /// @brief open file dialog in attributes editor row
+    MID_GNE_ATTRIBUTESEDITORROW_OPENDIALOG_FILE,
+    /// @brief reparent
+    MID_GNE_ATTRIBUTESEDITORROW_REPARENT,
+    /// @brief inspect parent
+    MID_GNE_ATTRIBUTESEDITORROW_INSPECTPARENT,
+    /// @brief move lane up
+    MID_GNE_ATTRIBUTESEDITORROW_MOVELANEUP,
+    /// @brief move lane down
+    MID_GNE_ATTRIBUTESEDITORROW_MOVELANEDOWN,
 
     /// @name GNESelectorFrame messages
     /// @{
@@ -1045,6 +1122,8 @@ enum {
     MID_GNE_SELECTORFRAME_SELECTTAG,
     /// @brief select attribute in selector frame
     MID_GNE_SELECTORFRAME_SELECTATTRIBUTE,
+    /// @brief toogle only show common
+    MID_GNE_SELECTORFRAME_TOGGLECOMMON,
     /// @brief process string
     MID_GNE_SELECTORFRAME_PROCESSSTRING,
     /// @brief changes the visual scaling of selected items
@@ -1084,7 +1163,7 @@ enum {
     /// @{
 
     /// @brief go back to the previous element
-    MID_GNE_INSPECTORFRAME_GOBACK,
+    MID_GNE_INSPECTORFRAME_INSPECTPREVIOUSELEMENT,
 
     /// @}
 
@@ -1180,8 +1259,6 @@ enum {
     MID_GNE_USESELECTED,
     /// @brief clear selection of elements
     MID_GNE_CLEARSELECTION,
-    /// @brief invert selection of elements
-    MID_GNE_INVERTSELECTION,
     /// @brief stop selection of consecutive edges/lanes
     MID_GNE_STOPSELECTION,
     /// @brief abort selection of consecutive edges/lanes
@@ -1304,6 +1381,8 @@ enum {
     MID_GNE_POLYGON_DELETE_GEOMETRY_POINT,
     /// @brief select elements within polygon boundary
     MID_GNE_POLYGON_SELECT,
+    /// @brief triangulate polygon
+    MID_GNE_POLYGON_TRIANGULATE,
 
     /// @}
 
@@ -1602,8 +1681,8 @@ enum {
     MID_GNE_UNDOLIST_UPDATE,
     /// @brief check if recomputing is needed
     MID_GNE_RECOMPUTINGNEEDED,
-    /// @brief force save elements (using for saving netedit and sumo configs)
-    MID_GNE_FORCESAVE,
+    /// @brief create automatic filename if it was not defined previously
+    MID_GNE_AUTOMATICFILENAME,
 
     /// @}
 
@@ -1643,8 +1722,20 @@ enum {
     MID_LANGUAGE_TR,
     /// @brief change language to hungarian
     MID_LANGUAGE_HU,
+    /// @brief change language to japanese
+    MID_LANGUAGE_JA,
 
     /// @}
+
+    /// @name test
+    /// @{
+
+    /// @brief run tests
+    MID_RUNTESTS,
+    /// @brief execute internal test in modal dialog
+    MID_INTERNALTEST,
+
+    /// @{
 
     /// @brief last element of enum (not used)
     MID_LAST

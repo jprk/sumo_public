@@ -299,6 +299,12 @@ message) [you can run sumo in a debugger while executing your script](TraCI/Inte
 The TraCI protocol changed in version 1.0.0. Please make sure that TraCI
 client version and SUMO version match. When using SUMO version 1.0.0 or larger you cannot use traci version 17 or lower (check by calling `traci.getVersion()`)
 
+## Libsumo
+
+### ImportError: DLL load failed while importing _libsumo: The specified module could not be found.
+
+  There is probably a library missing. Try to use https://github.com/lucasg/Dependencies to analyze _libsumo.pyd and find out which one it is.
+
 ## Features
 
 ### Does SUMO support traffic within the junctions?
@@ -436,6 +442,11 @@ and simply type `git pull`.
   Make sure that your computer supports 3D Acceleration and graphical
   drivers are correctly installed and configured. It will probably not
   work on machines accessed via RDP or a similar remote desktop protocol.
+
+### The build process aborts with an error on `src/netedit/templates.h`
+
+   Make sure that environment variable SUMO_HOME points at the base folder of the most recent version rather than some older version of SUMO.
+   See https://github.com/eclipse-sumo/sumo/issues/16115
 
 ### Troubleshooting
 
@@ -932,6 +943,10 @@ There are several reasons why a counter-lane-change-deadlock can happen:
   (not a proper junction) make sure to use the [zipper type](Networks/PlainXML.md#node_types). If you want to change the way vehicles behave
   for the whole scenario, lower their [lcStrategic](Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#lane-changing_models) value.
 
+  In cases where one lane has multiple target lanes on the next edge, vehicles will prefer the rightmost continuation lane by default.
+  This can be changed with vType-attribute [lcContRight](Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.md#lane-changing_models).
+  Also the eagerness to use the rightmost lane can be configured using the vType-attribute lcKeepRight.
+
 ### How do I get high flows/vehicle densities?
 
 By default, insertion flow is [limited by the time resolution of the simulation](Simulation/VehicleInsertion.md#forcing_insertion_avoiding_depart_delay) (vehicles are only inserted every full second) and by the default insertion speed of 0.
@@ -983,7 +998,7 @@ density:
 <flow id="lane0" from="startEdge" to="destEdge" begin="0" end="3600" period="1.951" departPos="base" departSpeed="7.885" departLane="0"/>
 ```
 !!! caution
-    For the continuous case, the specified density is reached **only** close to the inflow as vehicles start accelerating to their preferred speeds. In order to maintain the density along the edge, use a ring road scenario or limit the allowed speed to te *departSpeed* value. Remember [time-resolution dependency](#how_do_i_get_high_flowsvehicle_densities) for further adjustment.
+    For the continuous case, the specified density is reached **only** close to the inflow as vehicles start accelerating to their preferred speeds. In order to maintain the density along the edge, use a ring road scenario or limit the allowed speed to the *departSpeed* value. Remember [time-resolution dependency](#how_do_i_get_high_flowsvehicle_densities) for further adjustment.
 
 
 ### How do I force a lane change?
@@ -1056,6 +1071,10 @@ The tool [runSeeds.py](Tools/Misc.md#runseedspy) can be used to automate this, p
 The tool [attributeStats.py](Tools/Output.md#attributestatspy) can be used to generated statistics for multiple runs:
 i.e. if simulations where run with the option `<statistic-output value="stats.xml">/`, the command
 `tools/output/attributeStats.py *.stats.xml` will generate statistics on each of the attributes in the statistic-output file over all runs.
+
+The tool [attributeCompare.py](Tools/Output.md#attributecomparepy) can be used if the attribute of interest must be grouped. An example would be to obtain averaged traffic data for each individual edge and hour in an hourly [edgeData-output](Simulation/Output/Lane-_or_Edge-based_Traffic_Measures.md). The following command groups each of the traffic attributes by edge id and interval begin time:
+
+`tools/output/attributeCompare.py *.ed.xml -o output.xml -i id,begin`
 
 ### How to simulate autonomous vehicles?
 
@@ -1206,7 +1225,7 @@ SUMO uses the fox-toolkit which permits [system-wide and per-application setting
 Under windows these settings must be configured using `regedit` i.e. at the registry location `Computer\HKEY_CURRENT_USER\SOFTWARE\sumo-gui\SUMO GUI\SETTINGS`
 
 - Supported color entries are: bordercolor, basecolor, hilitecolor, shadowcolor, backcolor, forecolor, selforecolor, selbackcolor, tipforecolor, tipbackcolor, selmenutextcolor, selmenubackcolor
-  - supported color values are RGB hex codes (#aea395) as well as symbolic names (red). A full list of colornames can be found in [`FXColorNames.cpp`](https://github.com/DLR-TS/SUMOLibraries/blob/main/fox-1.6.58/src/FXColorNames.cpp).
+  - supported color values are RGB hex codes (#aea395) as well as symbolic names (red). A full list of colornames can be found in [`FXColorNames.cpp`](https://github.com/DLR-TS/SUMOLibraries/blob/main/fox-1.6.59/src/FXColorNames.cpp).
 - The font is configured with: normalfont (i.e. normalfont="Times,100")
 - Further config entries are: typingspeed, clickspeed, scrollspeed, scrolldelay, blinkspeed, animspeed, menupause, tippause, tiptime, dragdelta, wheellines, scrollbarsize, displaygamma
 

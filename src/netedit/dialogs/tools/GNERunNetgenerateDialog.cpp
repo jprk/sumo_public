@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -25,6 +25,10 @@
 
 #include "GNERunNetgenerateDialog.h"
 
+// ===========================================================================
+// Defines
+// ===========================================================================
+
 #define MARGIN 4
 
 // ===========================================================================
@@ -44,14 +48,14 @@ FXDEFMAP(GNERunNetgenerateDialog) GNERunNetgenerateDialogMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNERunNetgenerateDialog, FXDialogBox, GNERunNetgenerateDialogMap, ARRAYNUMBER(GNERunNetgenerateDialogMap))
+FXIMPLEMENT(GNERunNetgenerateDialog, MFXDialogBox, GNERunNetgenerateDialogMap, ARRAYNUMBER(GNERunNetgenerateDialogMap))
 
 // ============================================-===============================
 // member method definitions
 // ===========================================================================
 
 GNERunNetgenerateDialog::GNERunNetgenerateDialog(GNEApplicationWindow* GNEApp) :
-    FXDialogBox(GNEApp->getApp(), "", GUIDesignDialogBoxExplicit(0, 0)),
+    MFXDialogBox(GNEApp->getApp(), "", GUIDesignDialogBoxExplicit(0, 0)),
     myGNEApp(GNEApp) {
     // build the thread - io
     myThreadEvent.setTarget(this);
@@ -102,6 +106,12 @@ GNERunNetgenerateDialog::GNERunNetgenerateDialog(GNEApplicationWindow* GNEApp) :
 GNERunNetgenerateDialog::~GNERunNetgenerateDialog() {}
 
 
+void
+GNERunNetgenerateDialog::runInternalTest(const InternalTestStep::DialogTest* /*dialogTest*/) {
+    // finish
+}
+
+
 GNEApplicationWindow*
 GNERunNetgenerateDialog::getGNEApp() const {
     return myGNEApp;
@@ -117,7 +127,7 @@ GNERunNetgenerateDialog::run(const OptionsCont* netgenerateOptions) {
     // clear text
     myText->setText("");
     // show dialog
-    FXDialogBox::show(PLACEMENT_SCREEN);
+    MFXDialogBox::show(PLACEMENT_SCREEN);
     // set netgenerate options
     myNetgenerateOptions = netgenerateOptions;
     // reset error flag
@@ -142,7 +152,7 @@ GNERunNetgenerateDialog::updateDialog() {
         myCloseButton->enable();
     }
     // update dialog
-    FXDialogBox::update();
+    MFXDialogBox::update();
 }
 
 

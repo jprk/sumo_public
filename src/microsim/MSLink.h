@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -187,7 +187,8 @@ public:
         CONFLICT_DEFAULT,
         CONFLICT_DUMMY_MERGE,
         CONFLICT_NO_INTERSECTION,
-        CONFLICT_STOP_AT_INTERNAL_JUNCTION
+        CONFLICT_STOP_AT_INTERNAL_JUNCTION,
+        CONFLICT_SIBLING_CONTINUATION
     };
 
     /// @brief pre-computed information for conflict points
@@ -303,10 +304,16 @@ public:
      * approaching (dummy values otherwise)
      * @note used for visualisation of link items */
     ApproachingVehicleInformation getApproaching(const SUMOVehicle* veh) const;
+    const ApproachingVehicleInformation* getApproachingPtr(const SUMOVehicle* veh) const;
 
     /// @brief return all approaching vehicles
     const ApproachInfos& getApproaching() const {
         return myApproachingVehicles;
+    }
+
+    /// @brief return all approaching vehicles
+    const PersonApproachInfos* getApproachingPersons() const {
+        return myApproachingPersons;
     }
 
     /** @brief Remove all approaching vehicles before quick-loading state */
@@ -474,6 +481,10 @@ public:
 
     inline bool haveGreen() const {
         return myState == LINKSTATE_TL_GREEN_MAJOR || myState == LINKSTATE_TL_GREEN_MINOR;
+    }
+
+    inline bool mustStop() const {
+        return myState == LINKSTATE_STOP || myState == LINKSTATE_ALLWAY_STOP;
     }
 
     inline bool isTLSControlled() const {
@@ -687,6 +698,13 @@ public:
     /// @brief get string description for this link
     std::string  getDescription() const;
 
+    /// @brief get the closest vehicle approaching this link
+    std::pair<const SUMOVehicle* const, const ApproachingVehicleInformation> getClosest() const;
+
+    inline bool hasFoeCrossing() const {
+        return myHavePedestrianCrossingFoe;
+    }
+
     /// @brief post-processing for legacy networks
     static void recheckSetRequestInformation();
 
@@ -730,7 +748,7 @@ private:
     bool contIntersect(const MSLane* lane, const MSLane* foe);
 
     /// @brief compute point of divergence for geomatries with a common start or end
-    double computeDistToDivergence(const MSLane* lane, const MSLane* sibling, double minDist, bool sameSource) const;
+    double computeDistToDivergence(const MSLane* lane, const MSLane* sibling, double minDist, bool sameSource, double siblingPredLength = 0) const;
 
     /// @brief compute arrival time if foe vehicle is braking for ego
     static SUMOTime computeFoeArrivalTimeBraking(SUMOTime arrivalTime, const SUMOVehicle* foe, SUMOTime foeArrivalTime, double impatience, double dist, double& fasb);

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -362,7 +362,11 @@ public:
             totalLength += (*splitIt)->getLength();
             ++splitIt;
         }
-        return *splitIt;
+        if (splitIt != splitList.end()) {
+            return *splitIt;
+        } else {
+            return splitList.back();
+        }
     }
 
     /// @brief Returns the arriving intermodal connector at the given split offset
@@ -640,9 +644,9 @@ public:
         }
     }
 
-    void addSchedule(const SUMOVehicleParameter& pars, const std::vector<SUMOVehicleParameter::Stop>* addStops = nullptr) {
+    void addSchedule(const SUMOVehicleParameter& pars, const StopParVector* addStops = nullptr) {
         SUMOTime lastUntil = 0;
-        std::vector<SUMOVehicleParameter::Stop> validStops;
+        StopParVector validStops;
         if (addStops != nullptr) {
             // stops are part of a stand-alone route. until times are offsets from vehicle departure
             for (const SUMOVehicleParameter::Stop& stop : *addStops) {
@@ -708,7 +712,7 @@ public:
                 return;
             }
             typename std::vector<_PTEdge*>::const_iterator lineEdge = lineEdges.begin();
-            typename std::vector<SUMOVehicleParameter::Stop>::const_iterator s = validStops.begin() + 1;
+            typename StopParVector::const_iterator s = validStops.begin() + 1;
             for (; s != validStops.end(); ++s, ++lineEdge) {
                 if ((*lineEdge)->getSuccessors(SVC_IGNORING)[0] != myStopConnections[s->busstop]) {
                     WRITE_WARNINGF("Different stop for '%' compared to earlier definitions, ignoring schedule.", pars.line);

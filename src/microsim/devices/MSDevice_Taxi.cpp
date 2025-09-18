@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -95,7 +95,7 @@ MSDevice_Taxi::insertOptions(OptionsCont& oc) {
     oc.addDescription("device.taxi.dispatch-period", "Taxi Device", TL("The period between successive calls to the dispatcher"));
 
     oc.doRegister("device.taxi.idle-algorithm", new Option_String("stop"));
-    oc.addDescription("device.taxi.idle-algorithm", "Taxi Device", TL("The behavior of idle taxis [stop|randomCircling]"));
+    oc.addDescription("device.taxi.idle-algorithm", "Taxi Device", TL("The behavior of idle taxis [stop|randomCircling|taxistand]"));
 
     oc.doRegister("device.taxi.idle-algorithm.output", new Option_FileName());
     oc.addDescription("device.taxi.idle-algorithm.output", "Taxi Device", TL("Write information from the idling algorithm to FILE"));
@@ -325,23 +325,24 @@ MSDevice_Taxi::dispatchShared(std::vector<const Reservation*> reservations) {
 #endif
     myLastDispatch = reservations;
     ConstMSEdgeVector tmpEdges;
-    std::vector<SUMOVehicleParameter::Stop> stops;
+    StopParVector stops;
     double lastPos = myHolder.getPositionOnLane();
     const MSEdge* rerouteOrigin = *myHolder.getRerouteOrigin();
     if (isEmpty()) {
         // start fresh from the current edge
         if (myHolder.isStoppedParking()) {
             // parking stop must be ended normally
-            MSStop& stop = myHolder.getNextStop();
+            MSStop& stop = myHolder.getNextStopMutable();
             stop.duration = 0;
             lastPos = stop.pars.endPos;
             if (myHolder.isStoppedTriggered()) {
                 stop.triggered = false;
                 stop.containerTriggered = false;
                 stop.joinTriggered = false;
-                const_cast<SUMOVehicleParameter::Stop&>(stop.pars).permitted.insert("");
                 myHolder.unregisterWaiting();
             }
+            // prevent unauthorized/premature entry
+            const_cast<SUMOVehicleParameter::Stop&>(stop.pars).permitted.insert("");
             while (myHolder.getStops().size() > 1) {
                 myHolder.abortNextStop(1);
             }
@@ -620,7 +621,7 @@ MSDevice_Taxi::cancelCustomer(const MSTransportable* t) {
 
 void
 MSDevice_Taxi::prepareStop(ConstMSEdgeVector& edges,
-                           std::vector<SUMOVehicleParameter::Stop>& stops,
+                           StopParVector& stops,
                            double& lastPos, const MSEdge* stopEdge, double stopPos,
                            const MSStoppingPlace* stopPlace,
                            const std::string& action, const Reservation* res, const bool isPickup) {
@@ -683,6 +684,14 @@ MSDevice_Taxi::prepareStop(ConstMSEdgeVector& edges,
     if (stopPlace != nullptr && &stopPlace->getLane().getEdge() == stopEdge) {
         stop.startPos = stopPlace->getBeginLanePosition();
         stop.endPos = stopPlace->getEndLanePosition();
+        const SumoXMLTag tag = stopPlace->getElement();
+        if (tag == SUMO_TAG_BUS_STOP || tag == SUMO_TAG_TRAIN_STOP) {
+            stop.busstop = stopPlace->getID();
+        } else if (tag == SUMO_TAG_PARKING_AREA) {
+            stop.parkingarea = stopPlace->getID();
+        } else if (tag == SUMO_TAG_CONTAINER_STOP) {
+            stop.containerstop = stopPlace->getID();
+        }
     } else {
         stop.startPos = stopPos;
         stop.endPos = MAX2(stopPos, MIN2(myHolder.getVehicleType().getLength(), stopEdge->getLength()));
@@ -744,7 +753,7 @@ MSDevice_Taxi::updateMove(const SUMOTime traveltime, const double travelledDist)
     }
     if (myHolder.isStopped() && (isEmpty() || MSGlobals::gUseMesoSim) && myHolder.getNextStop().endBoarding > myServiceEnd) {
         // limit duration of stop (but only for idling-related stops)
-        myHolder.getNextStop().endBoarding = myServiceEnd;
+        myHolder.getNextStopMutable().endBoarding = myServiceEnd;
     }
 #ifdef DEBUG_DISPATCH
     if (DEBUG_COND && myIsStopped != myHolder.isStopped()) {

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -153,6 +153,25 @@ MSStop::getUntil() const {
 }
 
 
+SUMOTime
+MSStop::getArrival() const {
+    return MSGlobals::gUseStopStarted && pars.started >= 0 ? pars.started : pars.arrival;
+}
+
+
+SUMOTime
+MSStop::getArrivalFallback() const {
+    SUMOTime result = getArrival();
+    if (result < 0) {
+        result = getUntil();
+        if (result >= 0 && pars.duration >= 0) {
+            result -= pars.duration;
+        }
+    }
+    return result;
+}
+
+
 double
 MSStop::getSpeed() const {
     return skipOnDemand ? std::numeric_limits<double>::max() : pars.speed;
@@ -162,6 +181,28 @@ MSStop::getSpeed() const {
 bool
 MSStop::isInRange(const double pos, const double tolerance) const {
     return pars.startPos - tolerance <= pos && pars.endPos + tolerance >= pos;
+}
+
+
+std::vector<MSStoppingPlace*>
+MSStop::getPlaces() const {
+    std::vector<MSStoppingPlace*> result;
+    if (busstop != nullptr) {
+        result.push_back(busstop);
+    }
+    if (containerstop != nullptr) {
+        result.push_back(containerstop);
+    }
+    if (parkingarea != nullptr) {
+        result.push_back(parkingarea);
+    }
+    if (chargingStation != nullptr) {
+        result.push_back(chargingStation);
+    }
+    if (overheadWireSegment != nullptr) {
+        result.push_back(overheadWireSegment);
+    }
+    return result;
 }
 
 /****************************************************************************/

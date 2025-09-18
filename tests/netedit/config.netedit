@@ -1,11 +1,12 @@
+# Import common configuration
 import_config_file:../config_all
-binary:test.py
+
+# Internal tests use netedit as binary
+binary:$NETEDIT_BINARY
 use_case_record_mode:GUI
-virtual_display_wm_executable:fluxbox
-virtual_display_extra_args:-dpi 100 -shmem
 
+# Copy files to sandbox folder
 copy_test_path:test.py
-
 copy_test_path:gui-settings.xml
 
 copy_test_path:netedit.netecfg
@@ -38,6 +39,7 @@ copy_test_path:additionals.add.xml
 copy_test_path:routes.rou.xml
 copy_test_path:vtypes.rou.xml
 copy_test_path:datas.dat.xml
+copy_test_path:datas.med.add.xml
 
 copy_test_path:berlin_icon.ico
 copy_test_path:fileA.txt
@@ -46,12 +48,11 @@ copy_test_path_merge:selection.txt
 copy_test_path_merge:myOwnFilenameRerouter.txt
 copy_test_path:loadViewport.xml
 
+
 [collate_file]
+neteconfigas:configAs.netecfg
+sumoconfigas:configAs.sumo
 
-sumoConfigAs:saveConfigAs.netecfg
-neteditConfigAs:saveConfigAs.sumo
-
-net:net.net.xml
 netcon:net.con.xml
 netedg:net.edg.xml
 netnod:net.nod.xml
@@ -69,14 +70,29 @@ netccfgedg:netccfg.edg.xml
 netccfgnod:netccfg.nod.xml
 netccfgtll:netccfg.tll.xml
 
+net:net.net.xml
+netas:netAs.net.xml
+
 additionals:additionals.add.xml
-additionals:netedit.add.xml
+additionalsas:additionalsAs.add.xml
+additionalssecondfile:additional.secondFile.add.xml
+additionalsthirdFilefile:additional.thirdFile.add.xml
+
 routes:routes.rou.xml
-routes:netedit.rou.xml
+routesas:routesAs.rou.xml
+routesssecondfile:routes.secondFile.add.xml
+routessthirdFilefile:routes.thirdFile.add.xml
+
 datas:datas.dat.xml
-datas:netedit.dat.xml
-meandatas:meandatas.dat.xml
-meandatas:netedit.med.dat.xml
+datasas:datasAs.dat.xml
+datasssecondfile:datas.secondFile.add.xml
+datassthirdFilefile:datas.thirdFile.add.xml
+
+meandatas:datas.med.add.xml
+meandatasas:datasAs.med.add.xml
+meandatasssecondfile:datas.secondFile.med.add.xml
+meandatassthirdFilefile:datasAs.thirdFile.med.add.xml
+
 guisettingsoutput:guisettingsoutput.xml
 cfg:config.cfg
 log:log.txt
@@ -84,23 +100,70 @@ selection:selection.txt
 errorScreenshot:errorScreenshot.png
 viewport:viewport.xml
 
+
 [run_dependent_text]
 net:<!--{[->]}-->
+netas:<!--{[->]}-->
+
 additionals:<!-- generated{[->]}-->
-additionals:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
 additionals:\\{REPLACE /}
+
+additionalsas:<!-- generated{[->]}-->
+additionalsas:\\{REPLACE /}
+
+additionalssecondfile:<!-- generated{[->]}-->
+additionalssecondfile:\\{REPLACE /}
+
+additionalsthirdFilefile:<!-- generated{[->]}-->
+additionalsthirdFilefile:\\{REPLACE /}
+
 routes:<!-- generated{[->]}-->
-routes:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
 routes:\\{REPLACE /}
-configmanually:<!-- generated{[->]}-->
+
+routesas:<!-- generated{[->]}-->
+routesas:\\{REPLACE /}
+
+routesssecondfile:<!-- generated{[->]}-->
+routesssecondfile:\\{REPLACE /}
+
+routessthirdFilefile:<!-- generated{[->]}-->
+routessthirdFilefile:\\{REPLACE /}
+
 datas:<!-- generated{[->]}-->
-datas:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
 datas:\\{REPLACE /}
+
+datasas:<!-- generated{[->]}-->
+datasas:\\{REPLACE /}
+
+datasssecondfile:<!-- generated{[->]}-->
+datasssecondfile:\\{REPLACE /}
+
+datassthirdFilefile:<!-- generated{[->]}-->
+datassthirdFilefile:\\{REPLACE /}
+
+meandatas:<!-- generated{[->]}-->
+meandatas:\\{REPLACE /}
+
+meandatasas:<!-- generated{[->]}-->
+meandatasas:\\{REPLACE /}
+
+meandatasssecondfile:<!-- generated{[->]}-->
+meandatasssecondfile:\\{REPLACE /}
+
+meandatassthirdFilefile:<!-- generated{[->]}-->
+meandatassthirdFilefile:\\{REPLACE /}
+
 netcon:<!--{[->]}-->
 netedg:<!--{[->]}-->
 netnod:<!--{[->]}-->
 nettll:<!--{[->]}-->
+
 neteconfig:<!--{[->]}-->
+neteconfigas:<!--{[->]}-->
+
+sumoconfig:<!--{[->]}-->
+sumoconfigas:<!--{[->]}-->
+
 output:\[log\]
 output:\[info\]
 output:+++
@@ -108,7 +171,9 @@ output:\\{REPLACE /}
 output:script{LINES 1}
 output:  File{LINES 1}
 output:{INTERNAL writedir}
+
 guisettingsoutput:<scheme{[->]}</scheme>
+
 errors:Leaked object at
 errors:*** 9 leaks found
 errors:delete: freed
@@ -117,12 +182,16 @@ errors:Java{LINES 1}
 errors:X connection to
 errors:Could not load{LINES 1}
 errors:Debug: Modules:
-errors:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
+errors:error: XDG_RUNTIME_DIR is invalid or not set in the environment.
+errors:MESA: error: ZINK: {LINES 2}
 errors:\\{REPLACE /}
-log:{INTERNAL writedir}{REPLACE <TEXTTEST_SANDBOX>}
+errors:avx512er{LINES 1}
+errors:avx512pf{LINES 1}
+
 log:\\{REPLACE /}
 log:Discarding invalid crossing{LINES 1}
 log:Invalid pedestrian topology{LINES 1}
+
 
 [floating_point_tolerance]
 net:0.0101

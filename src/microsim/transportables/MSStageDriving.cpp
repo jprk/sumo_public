@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -177,7 +177,8 @@ MSStageDriving::getPosition(SUMOTime /* now */) const {
 double
 MSStageDriving::getAngle(SUMOTime /* now */) const {
     if (isWaiting4Vehicle()) {
-        return getEdgeAngle(myWaitingEdge, myWaitingPos) + M_PI / 2. * (MSGlobals::gLefthand ? -1 : 1);
+        const double offset = myOriginStop == nullptr ? M_PI / 2 : myOriginStop->getAngle();
+        return getEdgeAngle(myWaitingEdge, myWaitingPos) + offset * (MSGlobals::gLefthand ? -1 : 1);
     } else if (myArrived >= 0) {
         return getEdgeAngle(myDestination, myArrivalPos) + M_PI / 2. * (MSGlobals::gLefthand ? -1 : 1);
     } else {
@@ -407,7 +408,10 @@ MSStageDriving::routeOutput(const bool isPerson, OutputDevice& os, const bool wi
     } else if (!unspecifiedArrivalPos()) {
         os.writeAttr(SUMO_ATTR_ARRIVALPOS, myArrivalPos);
     }
-    os.writeAttr(SUMO_ATTR_LINES, myLines);
+    if (myLines.size() > 1 || *myLines.begin() != LINE_ANY) {
+        // no need to write the default
+        os.writeAttr(SUMO_ATTR_LINES, myLines);
+    }
     if (myIntendedVehicleID != "") {
         os.writeAttr(SUMO_ATTR_INTENDED, myIntendedVehicleID);
     }
@@ -434,7 +438,7 @@ MSStageDriving::isWaitingFor(const SUMOVehicle* vehicle) const {
     assert(myLines.size() > 0);
     return (myLines.count(vehicle->getID()) > 0
             || ((myLines.count(vehicle->getParameter().line) > 0
-                 || myLines.count("ANY") > 0) &&
+                 || myLines.count(LINE_ANY) > 0) &&
                 // even if the line matches we still have to check for stops (#14526)
                 (myDestinationStop == nullptr
                  ? vehicle->stopsAtEdge(myDestination)
@@ -476,12 +480,6 @@ MSStageDriving::getArrivalPos() const {
 }
 
 
-bool
-MSStageDriving::unspecifiedArrivalPos() const {
-    return myArrivalPos == std::numeric_limits<double>::infinity();
-}
-
-
 const std::string
 MSStageDriving::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime now, const bool vehicleArrived) {
     MSStage::setArrived(net, transportable, now, vehicleArrived);
@@ -518,7 +516,8 @@ MSStageDriving::setArrived(MSNet* net, MSTransportable* transportable, SUMOTime 
                         // Jitter the position before projection because of possible train curvature.
                         Position direction = randomCarriage->front - randomCarriage->back;
                         direction.norm2D();
-                        randomDoor.add(direction * RandHelper::rand(-0.5 * MSTrainHelper::CARRIAGE_DOOR_WIDTH, 0.5 * MSTrainHelper::CARRIAGE_DOOR_WIDTH));
+                        const double doorWidth = train->getVehicleType().getParameter().carriageDoorWidth;
+                        randomDoor.add(direction * RandHelper::rand(-0.5 * doorWidth, 0.5 * doorWidth));
                         // Project onto the lane.
                         myArrivalPos = lane->getShape().nearest_offset_to_point2D(randomDoor);
                         myArrivalPos = lane->interpolateGeometryPosToLanePos(myArrivalPos);
@@ -576,6 +575,7 @@ MSStageDriving::abort(MSTransportable* t) {
         // jumping out of a moving vehicle!
         myVehicle->removeTransportable(t);
         myDestination = myVehicle->getLane() == nullptr ? myVehicle->getEdge() : &myVehicle->getLane()->getEdge();
+        myArrivalPos = myVehicle->getPositionOnLane();
         // myVehicleDistance and myTimeLoss are updated in subsequent call to setArrived
     } else {
         MSTransportableControl& tc = (t->isPerson() ?
@@ -585,6 +585,7 @@ MSStageDriving::abort(MSTransportable* t) {
         MSDevice_Taxi::removeReservation(t, getLines(), myWaitingEdge, myWaitingPos, myDestination, getArrivalPos(), myGroup);
         myDestination = myWaitingEdge;
         myDestinationStop = myOriginStop;
+        myArrivalPos = myWaitingPos;
     }
 }
 

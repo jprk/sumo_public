@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -157,7 +157,7 @@ private:
      *          temporarily stored in myMoveNotifications for each step.
     */
     struct MoveNotificationInfo {
-        MoveNotificationInfo(std::string _vehID, double _oldPos, double _newPos, double _speed, double _accel, double _distToDetectorEnd, double _timeOnDetector, double _lengthOnDetector, double _timeLoss, bool _onDetector) :
+        MoveNotificationInfo(std::string _vehID, double _oldPos, double _newPos, double _speed, double _accel, double _distToDetectorEnd, double _timeOnDetector, double _lengthOnDetector, double _timeLoss, double _waitingTime, bool _onDetector) :
             id(_vehID),
             oldPos(_oldPos),
             newPos(_newPos),
@@ -167,6 +167,7 @@ private:
             timeOnDetector(_timeOnDetector),
             lengthOnDetector(_lengthOnDetector),
             timeLoss(_timeLoss),
+            waitingTime(_waitingTime),
             onDetector(_onDetector) {}
 
         virtual ~MoveNotificationInfo() {};
@@ -189,6 +190,8 @@ private:
         double lengthOnDetector;
         /// timeloss during the last integration step
         double timeLoss;
+        /// the current (consecutive) waitingTime on the detector in s
+        double waitingTime;
         /// whether the vehicle is on the detector at the end of the current timestep
         bool onDetector;
     };
@@ -462,6 +465,11 @@ public:
         return myCurrentJamLengthInMeters;
     }
 
+    /** @brief Returns the length of the longest-duration jam in s */
+    double getCurrentJamDuration() const {
+        return myCurrentJamDuration;
+    }
+
     /** @brief Returns the length of all jams in meters */
     int getCurrentStartedHalts() const {
         return myCurrentStartedHalts;
@@ -515,6 +523,9 @@ public:
     double getIntervalMeanSpeed() const {
         return myVehicleSamples != 0 ? mySpeedSum / myVehicleSamples : -1;
     }
+    double getIntervalMeanTimeLoss() const {
+        return myNumberOfSeenVehicles != 0 ? myTotalTimeLoss / myNumberOfSeenVehicles : -1;
+    }
     double getIntervalMaxJamLengthInMeters() const {
         return myMaxJamInMeters;
     }
@@ -527,6 +538,9 @@ public:
     }
     double getLastIntervalMeanSpeed() const {
         return myPreviousMeanSpeed;
+    }
+    double getLastIntervalMeanTimeLoss() const {
+        return myPreviousMeanTimeLoss;
     }
     double getLastIntervalMaxJamLengthInMeters() const {
         return myPreviousMaxJamLengthInMeters;
@@ -801,6 +815,8 @@ private:
     double myCurrentOccupancy;
     /// @brief The current mean speed
     double myCurrentMeanSpeed;
+    /// @brief The current mean timeLoss
+    double myCurrentMeanTimeLoss;
     /// @brief The current mean length
     double myCurrentMeanLength;
     /// @brief The current jam number
@@ -813,6 +829,8 @@ private:
     double myCurrentJamLengthInMeters;
     /// @brief The overall jam length in vehicles
     int myCurrentJamLengthInVehicles;
+    /// @brief The overall jam duration in s
+    double myCurrentJamDuration;
     /// @brief The number of started halts in the last step
     int myCurrentStartedHalts;
     /// @brief The number of halted vehicles [#]
@@ -823,6 +841,7 @@ private:
     /// @{
     double myPreviousMeanOccupancy;
     double myPreviousMeanSpeed;
+    double myPreviousMeanTimeLoss;
     double myPreviousMaxJamLengthInMeters;
     int myPreviousNumberOfSeenVehicles;
     /// @}

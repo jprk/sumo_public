@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -88,7 +88,8 @@ public:
                     const std::string name = "",
                     int capacity = 0,
                     double parkingLength = 0,
-                    const RGBColor& color = RGBColor::INVISIBLE);
+                    const RGBColor& color = RGBColor::INVISIBLE,
+                    double angle = 90);
 
 
 
@@ -115,6 +116,10 @@ public:
      * @return The position the stop ends at
      */
     double getEndLanePosition() const;
+
+    double getAngle() const {
+        return myAngle;
+    }
 
     /// @brief the position in the middle of the stop shape
     Position getCenterPos() const;
@@ -151,7 +156,7 @@ public:
      * @param[in] brakePos the first position on the stop lane that the vehicle can stop at
      * @return The last free position of this bus stop
      */
-    double getLastFreePos(const SUMOVehicle& forVehicle, double brakePos = 0) const;
+    virtual double getLastFreePos(const SUMOVehicle& forVehicle, double brakePos = 0) const;
 
     /// @brief return whether the given vehicle fits at the given position
     bool fits(double pos, const SUMOVehicle& veh) const;
@@ -227,7 +232,7 @@ public:
 
     const RGBColor& getColor() const;
 
-    static int getTransportablesAbreast(double length, SumoXMLTag element);
+    static int getDefaultTransportablesAbreast(double length, SumoXMLTag element);
 
     /// @brief get list of vehicles waiting at this stop
     std::vector<const SUMOVehicle*> getStoppedVehicles() const;
@@ -242,8 +247,19 @@ public:
         return myTransportableCapacity;
     }
 
+    inline double getParkingLength() const {
+        return (myEndPos - myBegPos) / myParkingFactor;
+    }
+
     /// @brief get IDs of persons waiting at this stop
     void getWaitingPersonIDs(std::vector<std::string>& into) const;
+
+    bool checkPersonCapacity() const {
+        return myElement == SUMO_TAG_BUS_STOP || myElement == SUMO_TAG_TRAIN_STOP;;
+    }
+
+    /// @brief perform extra processing after element has been loaded
+    virtual void finishedLoading();
 
     /** @brief Remove all vehicles before quick-loading state */
     void clearState();
@@ -258,6 +274,8 @@ protected:
     void computeLastFreePos();
 
     int getTransportablesAbreast() const;
+
+    static double getDefaultTransportableWidth(SumoXMLTag element);
 
 protected:
     /// @brief the type of stopping place
@@ -295,8 +313,13 @@ protected:
     /// @brief The color of the stopping place
     const RGBColor myColor;
 
+    /// @brief The angle offset for waiting transportables
+    double myAngle;
+
     /// @brief row depth of waiting transportables
     const double myTransportableDepth;
+    /// @brief the with of waiting transportables
+    double myTransportableWidth;
 
     /// @brief Persons waiting at this stop (mapped to waiting position)
     std::map<const MSTransportable*, int> myWaitingTransportables;

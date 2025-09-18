@@ -31,7 +31,6 @@ emissions
 
 # emission tools, especially emissionDrivingCycleemissions
 emissionsMap
-
 routes
 
 # scenario generation
@@ -41,9 +40,8 @@ unit_tests
 # Testing the TraCI java and web service interface
 traas
 
-# Testing the libtraci/libsumo based java API 
-traci_java
-
 # FMI related tests
 fmi
 
+# tests involving sumo-gui
+sumo-gui

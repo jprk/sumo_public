@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -60,11 +60,11 @@
 MSMeanData::MeanDataValues::MeanDataValues(
     MSLane* const lane, const double length, const bool doAdd,
     const MSMeanData* const parent) :
-    MSMoveReminder("meandata_" + (lane == nullptr ? "NULL" :  lane->getID()), lane, doAdd),
+    MSMoveReminder("meandata_" + (parent == nullptr ? "" : parent->getID() + "|") + (lane == nullptr ? "NULL" :  lane->getID()), lane, doAdd),
     myParent(parent),
     myLaneLength(length),
     sampleSeconds(0),
-    travelledDistance(0) {}
+    travelledDistance(0) { }
 
 
 MSMeanData::MeanDataValues::~MeanDataValues() {
@@ -375,7 +375,7 @@ MSMeanData::MeanDataValueTracker::isEmpty() const {
 
 void
 MSMeanData::MeanDataValueTracker::write(OutputDevice& dev,
-                                        long long int attributeMask,
+                                        const SumoXMLAttrMask& attributeMask,
                                         const SUMOTime period,
                                         const int numLanes,
                                         const double speedLimit,
@@ -434,7 +434,7 @@ MSMeanData::MSMeanData(const std::string& id,
     myPrintDefaults(printDefaults),
     myDumpInternal(withInternal),
     myTrackVehicles(trackVehicles),
-    myWrittenAttributes(initWrittenAttributes(writeAttributes, id)),
+    myWrittenAttributes(OutputDevice::parseWrittenAttributes(StringTokenizer(writeAttributes).getVector(), "meandata '" + id + "'")),
     myAggregate(aggregate)
 { }
 
@@ -446,7 +446,7 @@ MSMeanData::init() {
         // use all edges by default
         for (MSEdge* const edge : MSNet::getInstance()->getEdgeControl().getEdges()) {
             if ((myDumpInternal || !edge->isInternal()) &&
-                    ((detectPersons() && myDumpInternal) || (!edge->isCrossing() && !edge->isWalkingArea()))) {
+                    ((detectsPersons() && myDumpInternal) || (!edge->isCrossing() && !edge->isWalkingArea()))) {
                 myEdges.push_back(edge);
             }
         }
@@ -477,7 +477,7 @@ MSMeanData::init() {
                 } else {
                     data = createValues(nullptr, lanes[0]->getLength(), false);
                 }
-                data->setDescription("meandata_" + edge->getID());
+                data->setDescription("meandata_" + getID() + "|" + edge->getID());
                 myMeasures.back().push_back(data);
                 MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
                 while (s != nullptr) {
@@ -758,21 +758,6 @@ MSMeanData::detectorUpdate(const SUMOTime step) {
 }
 
 
-long long int
-MSMeanData::initWrittenAttributes(const std::string writeAttributes, const std::string& id) {
-    long long int result = 0;
-    for (std::string attrName : StringTokenizer(writeAttributes).getVector()) {
-        if (!SUMOXMLDefinitions::Attrs.hasString(attrName)) {
-            WRITE_ERRORF(TL("Unknown attribute '%' to write in meanData '%'."), attrName, id);
-            continue;
-        }
-        int attr = SUMOXMLDefinitions::Attrs.get(attrName);
-        assert(attr < 63);
-        result |= ((long long int)1 << attr);
-    }
-    return result;
-}
-
 const std::vector<MSMeanData::MeanDataValues*>*
 MSMeanData::getEdgeValues(const MSEdge* edge) const {
     auto it = myEdgeIndex.find(edge);
@@ -782,5 +767,16 @@ MSMeanData::getEdgeValues(const MSEdge* edge) const {
         return nullptr;
     }
 }
+
+
+const std::vector<MSMoveReminder*>
+MSMeanData::getReminders() const {
+    std::vector<MSMoveReminder*> result;
+    for (auto vec : myMeasures) {
+        result.insert(result.end(), vec.begin(), vec.end());
+    }
+    return result;
+}
+
 
 /****************************************************************************/

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2014-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -149,9 +149,9 @@ def extract_lanes_width_data(rte, ):
 
 if __name__ == "__main__":
     op = sumolib.options.ArgumentParser()
-    op.add_argument("xodr_file", category="input", required=True,
+    op.add_argument("xodr_file", category="input",
                     help="file path of open drive file")
-    op.add_argument("net_file", category="input", required=True,
+    op.add_argument("net_file", category="input",
                     help="file path of net file")
     # op.add_argument("workLog", type=str, help="work log file")
     args = op.parse_args()

@@ -42,6 +42,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **-m** {{DT_FILE}}<br> **--meandata-files** {{DT_FILE}} | Load meanData descriptions from FILE(s) |
 | **--ignore-missing-inputs** {{DT_BOOL}} | Reset path values (additional, route, data...) after loading netedit config; *default:* **false** |
 | **--selection-file** {{DT_FILE}} | Load element selection |
+| **--test-file** {{DT_FILE}} | Test file |
 | **-s** {{DT_FILE}}<br> **--sumo-net-file** {{DT_FILE}} | Read SUMO-net from FILE |
 | **-n** {{DT_FILE}}<br> **--node-files** {{DT_FILE}} | Read XML-node defs from FILE |
 | **-e** {{DT_FILE}}<br> **--edge-files** {{DT_FILE}} | Read XML-edge defs from FILE |
@@ -55,7 +56,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--visum-file** {{DT_FILE}} | Read VISUM-net from FILE |
 | **--vissim-file** {{DT_FILE}} | Read VISSIM-net from FILE |
 | **--robocup-dir** {{DT_FILE}} | Read RoboCup-net from DIR |
-| **--matsim-files** {{DT_FILE}} | Read MATsim-net from FILE |
+| **--matsim-files** {{DT_FILE}} | Read MATSim-net from FILE |
 | **--itsumo-files** {{DT_FILE}} | Read ITSUMO-net from FILE |
 | **--heightmap.shapefiles** {{DT_FILE}} | Read heightmap from ArcGIS shapefile |
 | **--heightmap.geotiff** {{DT_FILE}} | Read heightmap from GeoTIFF |
@@ -69,14 +70,20 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--output-prefix** {{DT_STR}} | Prefix which is applied to all output files. The special string 'TIME' is replaced by the current time. |
 | **--precision** {{DT_INT}} | Defines the number of digits after the comma for floating point output; *default:* **2** |
 | **--precision.geo** {{DT_INT}} | Defines the number of digits after the comma for lon,lat output; *default:* **6** |
+| **--output.compression** {{DT_STR}} | Defines the standard compression algorithm (currently only for parquet output) |
+| **--output.format** {{DT_STR}} | Defines the standard output format if not derivable from the file name ('xml', 'csv', 'parquet'); *default:* **xml** |
+| **--output.column-header** {{DT_STR}} | How to derive column headers from attribute names ('none', 'tag', 'auto', 'plain'); *default:* **tag** |
+| **--output.column-separator** {{DT_STR}} | Separator in CSV output; *default:* **;** |
 | **-H** {{DT_BOOL}}<br> **--human-readable-time** {{DT_BOOL}} | Write time values as hour:minute:second or day:hour:minute:second rather than seconds; *default:* **false** |
 | **-o** {{DT_FILE}}<br> **--output-file** {{DT_FILE}} | The generated net will be written to FILE |
 | **-p** {{DT_FILE}}<br> **--plain-output-prefix** {{DT_FILE}} | Prefix of files to write plain xml nodes, edges and connections to |
 | **--plain-output.lanes** {{DT_BOOL}} | Write all lanes and their attributes even when they are not customized; *default:* **false** |
 | **--junctions.join-output** {{DT_FILE}} | Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins |
-| **--prefix** {{DT_STR}} | Defines a prefix for edge and junction names |
+| **--prefix** {{DT_STR}} | Defines a prefix for edge and junction IDs |
+| **--prefix.junction** {{DT_STR}} | Defines a prefix for unction IDs |
+| **--prefix.edge** {{DT_STR}} | Defines a prefix for edge IDs |
 | **--amitran-output** {{DT_FILE}} | The generated net will be written to FILE using Amitran format |
-| **--matsim-output** {{DT_FILE}} | The generated net will be written to FILE using MATsim format |
+| **--matsim-output** {{DT_FILE}} | The generated net will be written to FILE using MATSim format |
 | **--opendrive-output** {{DT_FILE}} | The generated net will be written to FILE using OpenDRIVE format |
 | **--dlr-navteq-output** {{DT_FILE}} | The generated net will be written to dlr-navteq files with the given PREFIX |
 | **--dlr-navteq.version** {{DT_STR}} | The dlr-navteq output format version to write; *default:* **6.5** |
@@ -120,6 +127,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--numerical-ids.node-start** {{DT_INT}} | Remaps IDs of nodes to integers starting at INT; *default:* **2147483647** |
 | **--numerical-ids.edge-start** {{DT_INT}} | Remaps IDs of edges to integers starting at INT; *default:* **2147483647** |
 | **--reserved-ids** {{DT_FILE}} | Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format) |
+| **--kept-ids** {{DT_FILE}} | Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed |
 | **--dismiss-vclasses** {{DT_BOOL}} | Removes vehicle class restrictions from imported edges; *default:* **false** |
 | **--geometry.split** {{DT_BOOL}} | Splits edges across geometry nodes; *default:* **false** |
 | **-R** {{DT_BOOL}}<br> **--geometry.remove** {{DT_BOOL}} | Replace nodes which only define edge geometry by geometry points (joins edges); *default:* **false** |
@@ -286,6 +294,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--no-left-connections** {{DT_BOOL}} | Disables building connections to left; *default:* **false** |
 | **--junctions.join** {{DT_BOOL}} | Joins junctions that are close to each other (recommended for OSM import); *default:* **false** |
 | **--junctions.join-dist** {{DT_FLOAT}} | Determines the maximal distance for joining junctions (defaults to 10); *default:* **10** |
+| **--junctions.join.parallel-threshold** {{DT_FLOAT}} | The angular threshold in degress for rejection of parallel edges when joining junctions; *default:* **30** |
 | **--junctions.join-exclude** {{DT_STR_LIST}} | Interprets STR[] as list of junctions to exclude from joining |
 | **--junctions.join-same** {{DT_BOOL}} | Joins junctions that have the same coordinates even if not connected; *default:* **false** |
 | **--max-join-ids** {{DT_INT}} | Abbreviate junction or TLS id if it joins more than INT junctions; *default:* **4** |
@@ -317,6 +326,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--sidewalks.guess.exclude** {{DT_STR_LIST}} | Do not guess sidewalks for the given list of edges |
 | **--crossings.guess** {{DT_BOOL}} | Guess pedestrian crossings based on the presence of sidewalks; *default:* **false** |
 | **--crossings.guess.speed-threshold** {{DT_FLOAT}} | At uncontrolled nodes, do not build crossings across edges with a speed above the threshold; *default:* **13.89** |
+| **--crossings.guess.roundabout-priority** {{DT_BOOL}} | Give priority to guessed crossings at roundabouts; *default:* **true** |
 | **--walkingareas** {{DT_BOOL}} | Always build walking areas even if there are no crossings; *default:* **false** |
 | **--walkingareas.join-dist** {{DT_FLOAT}} | Do not create a walkingarea between sidewalks that are connected by a pedestrian junction within FLOAT; *default:* **15** |
 
@@ -344,6 +354,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--railway.topology.extend-priority** {{DT_BOOL}} | Extend loaded edge priority values based on estimated main direction; *default:* **false** |
 | **--railway.geometry.straighten** {{DT_BOOL}} | Move junctions to straighten a sequence of rail edges; *default:* **false** |
 | **--railway.signal.guess.by-stops** {{DT_BOOL}} | Guess signals that guard public transport stops; *default:* **false** |
+| **--railway.signal.permit-unsignalized** {{DT_STR_LIST}} | List rail classes that may run without rail signals; *default:* **tram,cable_car** |
 | **--railway.access-distance** {{DT_FLOAT}} | The search radius for finding suitable road accesses for rail stops; *default:* **150** |
 | **--railway.max-accesses** {{DT_INT}} | The maximum road accesses registered per rail stops; *default:* **5** |
 | **--railway.access-factor** {{DT_FLOAT}} | The walking length of the access is computed as air-line distance multiplied by FLOAT; *default:* **1.5** |
@@ -362,6 +373,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--osm.lane-access** {{DT_BOOL}} | Import lane-specific access restrictions; *default:* **false** |
 | **--osm.bike-access** {{DT_BOOL}} | Import bike lanes and fix directions and permissions on bike paths; *default:* **false** |
 | **--osm.sidewalks** {{DT_BOOL}} | Import sidewalks; *default:* **false** |
+| **--osm.oneway-reverse-sidewalk** {{DT_BOOL}} | Default to building two sidewalks on oneway streets (may affect divided roads); *default:* **false** |
 | **--osm.crossings** {{DT_BOOL}} | Import crossings; *default:* **false** |
 | **--osm.turn-lanes** {{DT_BOOL}} | Import turning arrows from OSM to help with connection building; *default:* **false** |
 | **--osm.stop-output.length** {{DT_FLOAT}} | The default length of a public transport stop in FLOAT m; *default:* **25** |
@@ -372,7 +384,8 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--osm.all-attributes** {{DT_BOOL}} | Whether additional attributes shall be imported; *default:* **false** |
 | **--osm.extra-attributes** {{DT_STR_LIST}} | List of additional attributes that shall be imported from OSM via osm.all-attributes (set 'all' to import all); *default:* **all** |
 | **--osm.speedlimit-none** {{DT_FLOAT}} | The speed limit to be set when there is no actual speed limit in reality; *default:* **39.4444** |
-| **--matsim.keep-length** {{DT_BOOL}} | The edge lengths given in the MATSIM-file will be kept; *default:* **false** |
+| **--osm.annotate-defaults** {{DT_BOOL}} | Whether edges shoulds carry information on the usage of typemap defaults; *default:* **false** |
+| **--matsim.keep-length** {{DT_BOOL}} | The edge lengths given in the MATSim-file will be kept; *default:* **false** |
 | **--matsim.lanes-from-capacity** {{DT_BOOL}} | The lane number will be computed from the capacity; *default:* **false** |
 | **--shapefile.street-id** {{DT_STR}} | Read edge ids from column STR |
 | **--shapefile.from-id** {{DT_STR}} | Read from-node ids from column STR |
@@ -423,6 +436,8 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--ignore-supermode-question** {{DT_BOOL}} | Ignore question dialog during changing between supermodes in undo-redo; *default:* **false** |
 | **--ignore.additionalelements** {{DT_BOOL}} | Ignore additional elements during loading of sumo-configs; *default:* **false** |
 | **--ignore.routeelements** {{DT_BOOL}} | Ignore route elements during loading of sumo-configs; *default:* **false** |
+| **--e2.friendlyPos.automatic** {{DT_BOOL}} | If the lane is shorter than the additional, automatically enable friendlyPos; *default:* **true** |
+| **--force-saving** {{DT_BOOL}} | If enabled, elements will be saved regardless of whether they have been edited or not; *default:* **false** |
 | **--node-prefix** {{DT_STR}} | Prefix for node naming; *default:* **J** |
 | **--edge-prefix** {{DT_STR}} | Prefix for edge naming; *default:* **E** |
 | **--edge-infix** {{DT_STR}} | Enable edge-infix (<fromNodeID><infix><toNodeID>) |
@@ -456,6 +471,7 @@ configuration: [sumoConfiguration.xsd](https://sumo.dlr.de/xsd/neteditConfigurat
 | **--personflow-prefix** {{DT_STR}} | Prefix for personFlow naming; *default:* **pf** |
 | **--container-prefix** {{DT_STR}} | Prefix for container naming; *default:* **c** |
 | **--containerflow-prefix** {{DT_STR}} | Prefix for containerFlow naming; *default:* **cf** |
+| **--dataSet-prefix** {{DT_STR}} | Prefix for dataSet naming; *default:* **ds** |
 | **--meanDataEdge-prefix** {{DT_STR}} | Prefix for meanDataEdge naming; *default:* **ed** |
 | **--meanDataLane-prefix** {{DT_STR}} | Prefix for meanDataLane naming; *default:* **ld** |
 

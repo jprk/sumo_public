@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -156,6 +156,7 @@ public:
     SubscriptionHandler handle;
     virtual void setContext(const std::string* const /* refID */) {}
     virtual void clear() {}
+    virtual bool wrapConnectionVector(const std::string& objID, const int variable, const std::vector<TraCIConnection>& value) = 0;
     virtual bool wrapDouble(const std::string& objID, const int variable, const double value) = 0;
     virtual bool wrapInt(const std::string& objID, const int variable, const int value) = 0;
     virtual bool wrapString(const std::string& objID, const int variable, const std::string& value) = 0;
@@ -165,7 +166,19 @@ public:
     virtual bool wrapPositionVector(const std::string& objID, const int variable, const TraCIPositionVector& value) = 0;
     virtual bool wrapColor(const std::string& objID, const int variable, const TraCIColor& value) = 0;
     virtual bool wrapStringDoublePair(const std::string& objID, const int variable, const std::pair<std::string, double>& value) = 0;
+    virtual bool wrapStringDoublePairList(const std::string& objID, const int variable, const std::vector<std::pair<std::string, double> >& value) = 0;
     virtual bool wrapStringPair(const std::string& objID, const int variable, const std::pair<std::string, std::string>& value) = 0;
+    virtual bool wrapIntPair(const std::string& objID, const int variable, const std::pair<int, int>& value) = 0;
+    virtual bool wrapStage(const std::string& objID, const int variable, const TraCIStage& value) = 0;
+    virtual bool wrapReservationVector(const std::string& objID, const int variable, const std::vector<TraCIReservation>& value) = 0;
+    virtual bool wrapLogicVector(const std::string& objID, const int variable, const std::vector<TraCILogic>& value) = 0;
+    virtual bool wrapLinkVectorVector(const std::string& objID, const int variable, const std::vector<std::vector<TraCILink> >& value) = 0;
+    virtual bool wrapSignalConstraintVector(const std::string& objID, const int variable, const std::vector<TraCISignalConstraint>& value) = 0;
+    virtual bool wrapJunctionFoeVector(const std::string& objID, const int variable, const std::vector<TraCIJunctionFoe>& value) = 0;
+    virtual bool wrapNextStopDataVector(const std::string& objID, const int variable, const std::vector<TraCINextStopData>& value) = 0;
+    virtual bool wrapVehicleDataVector(const std::string& objID, const int variable, const std::vector<TraCIVehicleData>& value) = 0;
+    virtual bool wrapBestLanesDataVector(const std::string& objID, const int variable, const std::vector<TraCIBestLanesData>& value) = 0;
+    virtual bool wrapNextTLSDataVector(const std::string& objID, const int variable, const std::vector<TraCINextTLSData>& value) = 0;
     virtual void empty(const std::string& /* objID */) {}
 };
 

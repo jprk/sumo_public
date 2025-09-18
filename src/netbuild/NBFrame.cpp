@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -131,6 +131,9 @@ NBFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
     /// @todo not working for netgen
     oc.doRegister("reserved-ids", new Option_FileName());
     oc.addDescription("reserved-ids", "Processing", TL("Ensures that generated ids do not included any of the typed IDs from FILE (sumo-gui selection file format)"));
+
+    oc.doRegister("kept-ids", new Option_FileName());
+    oc.addDescription("kept-ids", "Processing", TL("Ensures that objects with typed IDs from FILE (sumo-gui selection file format) are not renamed"));
 
     if (!forNetgen) {
         oc.doRegister("dismiss-vclasses", new Option_Bool(false));
@@ -265,6 +268,9 @@ NBFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
         oc.doRegister("railway.signal.guess.by-stops", new Option_Bool(false));
         oc.addDescription("railway.signal.guess.by-stops", "Railway", TL("Guess signals that guard public transport stops"));
 
+        oc.doRegister("railway.signal.permit-unsignalized", new Option_StringVector({"tram", "cable_car"}));
+        oc.addDescription("railway.signal.permit-unsignalized", "Railway", TL("List rail classes that may run without rail signals"));
+
         oc.doRegister("railway.access-distance", new Option_Float(150.f));
         oc.addDescription("railway.access-distance", "Railway", TL("The search radius for finding suitable road accesses for rail stops"));
         oc.addSynonyme("railway.access-distance", "osm.stop-output.footway-access-distance", true);
@@ -343,6 +349,10 @@ NBFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
     oc.doRegister("junctions.join-dist", new Option_Float(10));
     oc.addDescription("junctions.join-dist", "Junctions",
                       "Determines the maximal distance for joining junctions (defaults to 10)");
+
+    oc.doRegister("junctions.join.parallel-threshold", new Option_Float(30));
+    oc.addDescription("junctions.join.parallel-threshold", "Junctions",
+                      "The angular threshold in degress for rejection of parallel edges when joining junctions");
 
     if (!forNetgen) {
         oc.doRegister("junctions.join-exclude", new Option_StringVector());
@@ -482,6 +492,10 @@ NBFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
     oc.doRegister("crossings.guess.speed-threshold", new Option_Float(13.89));
     oc.addDescription("crossings.guess.speed-threshold", "Pedestrian",
                       "At uncontrolled nodes, do not build crossings across edges with a speed above the threshold");
+
+    oc.doRegister("crossings.guess.roundabout-priority", new Option_Bool(true));
+    oc.addDescription("crossings.guess.roundabout-priority", "Pedestrian",
+                      "Give priority to guessed crossings at roundabouts");
 
     oc.doRegister("walkingareas", new Option_Bool(false));
     oc.addDescription("walkingareas", "Pedestrian", TL("Always build walking areas even if there are no crossings"));
@@ -762,6 +776,10 @@ NBFrame::checkOptions(OptionsCont& oc) {
     }
     if (!oc.isDefault("tls.green.time") && !oc.isDefault("tls.cycle.time")) {
         WRITE_ERROR(TL("only one of the options 'tls.green.time' or 'tls.cycle.time' may be given"));
+        ok = false;
+    }
+    if (oc.getInt("tls.green.time") <= 0) {
+        WRITE_ERROR(TL("'tls.green.time' must be positive"));
         ok = false;
     }
     if (oc.getInt("default.lanenumber") < 1) {

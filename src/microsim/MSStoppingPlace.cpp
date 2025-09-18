@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -25,6 +25,7 @@
 #include <map>
 #include <utils/vehicle/SUMOVehicle.h>
 #include <utils/geom/Position.h>
+#include <utils/geom/GeomHelper.h>
 #include <utils/common/RGBColor.h>
 #include <microsim/transportables/MSTransportable.h>
 #include <microsim/MSGlobals.h>
@@ -44,7 +45,8 @@ MSStoppingPlace::MSStoppingPlace(const std::string& id,
                                  double begPos, double endPos, const std::string name,
                                  int capacity,
                                  double parkingLength,
-                                 const RGBColor& color) :
+                                 const RGBColor& color,
+                                 double angle) :
     Named(id),
     myElement(element),
     myLines(lines), myLane(lane),
@@ -55,8 +57,10 @@ MSStoppingPlace::MSStoppingPlace(const std::string& id,
     myTransportableCapacity(capacity),
     myParkingFactor(parkingLength <= 0 ? 1 : (endPos - begPos) / parkingLength),
     myColor(color),
+    myAngle(DEG2RAD(angle)),
     // see MSVehicleControl defContainerType
-    myTransportableDepth(element == SUMO_TAG_CONTAINER_STOP ? SUMO_const_waitingContainerDepth : SUMO_const_waitingPersonDepth) {
+    myTransportableDepth(element == SUMO_TAG_CONTAINER_STOP ? SUMO_const_waitingContainerDepth : SUMO_const_waitingPersonDepth),
+    myTransportableWidth(getDefaultTransportableWidth(myElement)) {
     computeLastFreePos();
     for (int i = 0; i < capacity; i++) {
         myWaitingSpots.insert(i);
@@ -65,6 +69,27 @@ MSStoppingPlace::MSStoppingPlace(const std::string& id,
 
 
 MSStoppingPlace::~MSStoppingPlace() {}
+
+
+double
+MSStoppingPlace::getDefaultTransportableWidth(SumoXMLTag element) {
+    return element == SUMO_TAG_CONTAINER_STOP
+           ? SUMO_const_waitingContainerWidth
+           : SUMO_const_waitingPersonWidth;
+
+}
+
+void
+MSStoppingPlace::finishedLoading() {
+    const std::string waitingWidth = getParameter("waitingWidth");
+    if (waitingWidth != "") {
+        try {
+            myTransportableWidth = StringUtils::toDouble(waitingWidth);
+        } catch (ProcessError& e) {
+            WRITE_WARNINGF("Could not waitingWidth (m) '%' (%)", waitingWidth, e.what());
+        }
+    }
+}
 
 
 const MSLane&
@@ -93,7 +118,7 @@ MSStoppingPlace::getCenterPos() const {
 
 void
 MSStoppingPlace::enter(SUMOVehicle* veh, bool parking) {
-    double beg = veh->getPositionOnLane() + veh->getVehicleType().getMinGap();
+    double beg = veh->getPositionOnLane() + veh->getVehicleType().getMinGap() * (parking ? myParkingFactor : 1);
     double end = beg - veh->getVehicleType().getLengthWithGap() * (parking ? myParkingFactor : 1);
     myEndPositions[veh] = std::make_pair(beg, end);
     computeLastFreePos();
@@ -104,18 +129,16 @@ double
 MSStoppingPlace::getLastFreePos(const SUMOVehicle& forVehicle, double /*brakePos*/) const {
     if (getStoppedVehicleNumber() > 0) {
         const double vehGap = forVehicle.getVehicleType().getMinGap();
-        double pos = myLastFreePos - vehGap;
+        double pos = myLastFreePos - vehGap - NUMERICAL_EPS;
         if (myParkingFactor < 1 && myLastParking != nullptr && forVehicle.hasStops() && (forVehicle.getStops().front().pars.parking == ParkingType::ONROAD)
                 && myLastParking->remainingStopDuration() < forVehicle.getStops().front().getMinDuration(SIMSTEP)) {
-            // stop far back enough so that the previous vehicle can leave
-            pos = myLastParking->getPositionOnLane() - myLastParking->getLength() - vehGap - NUMERICAL_EPS;
-        }
-        if (forVehicle.getLane() == &myLane && forVehicle.getPositionOnLane() < myEndPos && forVehicle.getPositionOnLane() > myBegPos && forVehicle.getSpeed() <= SUMO_const_haltingSpeed) {
-            return forVehicle.getPositionOnLane();
+            // stop far back enough so that the previous parking vehicle can leave (even if this vehicle fits, it will
+            // be a blocker because it stops on the road)
+            pos = MIN2(pos, myLastParking->getPositionOnLane() - myLastParking->getLength() - vehGap - NUMERICAL_EPS);
         }
         if (!fits(pos, forVehicle)) {
             // try to find a place ahead of the waiting vehicles
-            const double vehLength = forVehicle.getVehicleType().getLength();
+            const double vehLength = forVehicle.getVehicleType().getLength() * myParkingFactor;
             std::vector<std::pair<double, std::pair<double, const SUMOVehicle*> > > spaces;
             for (auto it : myEndPositions) {
                 spaces.push_back(std::make_pair(it.second.first, std::make_pair(it.second.second, it.first)));
@@ -135,6 +158,10 @@ MSStoppingPlace::getLastFreePos(const SUMOVehicle& forVehicle, double /*brakePos
                 }
                 prev = it.second.first - vehGap;
             }
+            if (myParkingFactor < 1 && myLastParking != nullptr) {
+                // stop far back enough so that the previous vehicle can leave
+                pos = MIN2(pos, myLastParking->getPositionOnLane() - myLastParking->getLength() - vehGap - NUMERICAL_EPS);
+            }
         }
         return pos;
     }
@@ -151,11 +178,8 @@ MSStoppingPlace::fits(double pos, const SUMOVehicle& veh) const {
 double
 MSStoppingPlace::getWaitingPositionOnLane(MSTransportable* t) const {
     auto it = myWaitingTransportables.find(t);
-    const double waitingWidth = myElement == SUMO_TAG_CONTAINER_STOP
-                                ? SUMO_const_waitingContainerWidth
-                                : SUMO_const_waitingPersonWidth;
     if (it != myWaitingTransportables.end() && it->second >= 0) {
-        return myEndPos - (0.5 + (it->second) % getTransportablesAbreast()) * waitingWidth;
+        return myEndPos - (0.5 + (it->second) % getTransportablesAbreast()) * myTransportableWidth;
     } else {
         return (myEndPos + myBegPos) / 2;
     }
@@ -163,15 +187,13 @@ MSStoppingPlace::getWaitingPositionOnLane(MSTransportable* t) const {
 
 
 int
-MSStoppingPlace::getTransportablesAbreast(double length, SumoXMLTag element) {
-    return MAX2(1, (int)floor(length / (element == SUMO_TAG_CONTAINER_STOP
-                                        ? SUMO_const_waitingContainerWidth
-                                        : SUMO_const_waitingPersonWidth)));
+MSStoppingPlace::getDefaultTransportablesAbreast(double length, SumoXMLTag element) {
+    return MAX2(1, (int)floor(length / getDefaultTransportableWidth(element)));
 }
 
 int
 MSStoppingPlace::getTransportablesAbreast() const {
-    return getTransportablesAbreast(myEndPos - myBegPos, myElement);
+    return MAX2(1, (int)floor((myEndPos - myBegPos) / myTransportableWidth));
 }
 
 Position
@@ -189,7 +211,7 @@ MSStoppingPlace::getWaitPosition(MSTransportable* t) const {
     }
     const double lefthandSign = (MSGlobals::gLefthand ? -1 : 1);
     return myLane.getShape().positionAtOffset(myLane.interpolateLanePosToGeometryPos(lanePos),
-            lefthandSign * (myLane.getWidth() / 2 + row * myTransportableDepth));
+            lefthandSign * (myLane.getWidth() / 2 + row * myTransportableDepth + fabs(cos(myAngle)) * myTransportableWidth / 2));
 }
 
 

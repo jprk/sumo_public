@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -105,7 +105,7 @@ public:
     * @param[in] type The new vehicle type
     * @see MSTransportable::myVType
     */
-    virtual void replaceVehicleType(MSVehicleType* type) = 0;
+    virtual void replaceVehicleType(const MSVehicleType* type) = 0;
 
 
     /** @brief Returns the vehicle's parameter (including departure definition)
@@ -144,6 +144,13 @@ public:
      * @return The current lane or nullptr if the object is not on a lane
      */
     virtual const MSLane* getLane() const = 0;
+
+    /** @brief Returns the lane the where the rear of the object is currently at
+     *
+     * @return The current back lane or nullptr if the object is not on a lane
+     */
+    virtual const MSLane* getBackLane() const = 0;
+
 
     /// @brief return index of edge within route
     virtual int getRoutePosition() const = 0;
@@ -253,9 +260,10 @@ public:
      * @param paramName the parameter name
      * @param required whether it is an error if the parameter is not set
      * @param deflt the default value to take if the parameter is not set (the default in the OptionsCont takes precedence)
+     * @param checkDist whether the given value may be a distribution definition
      * @return the float value
      */
-    double getFloatParam(const std::string& paramName, const bool required = false, const double deflt = INVALID_DOUBLE) const;
+    double getFloatParam(const std::string& paramName, const bool required = false, const double deflt = INVALID_DOUBLE, bool checkDist = true) const;
 
     /** @brief Retrieve a boolean parameter for the traffic object.
      * @param paramName the parameter name

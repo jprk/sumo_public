@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2004-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2004-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -161,6 +161,8 @@ MSMeanData_Net::MSLaneMeanDataValues::notifyMoveInternal(
     if (!veh.isStopped()) {
         if (myParent != nullptr && meanSpeedVehicleOnLane < myParent->myHaltSpeed) {
             waitSeconds += timeOnLane;
+        } else if (MSGlobals::gUseMesoSim) {
+            waitSeconds += STEPS2TIME(veh.getWaitingTime());
         }
         const double vmax = veh.getLane() == nullptr ? veh.getEdge()->getVehicleMaxSpeed(&veh) : veh.getLane()->getVehicleMaxSpeed(&veh);
         if (vmax > 0) {
@@ -249,7 +251,7 @@ MSMeanData_Net::MSLaneMeanDataValues::getOccupancy(SUMOTime period, int numLanes
 }
 
 void
-MSMeanData_Net::MSLaneMeanDataValues::write(OutputDevice& dev, long long int attributeMask, const SUMOTime period,
+MSMeanData_Net::MSLaneMeanDataValues::write(OutputDevice& dev, const SumoXMLAttrMask& attributeMask, const SUMOTime period,
         const int numLanes, const double speedLimit, const double defaultTravelTime, const int numVehicles) const {
 
     double density = sampleSeconds / STEPS2TIME(period) * 1000. / myLaneLength;

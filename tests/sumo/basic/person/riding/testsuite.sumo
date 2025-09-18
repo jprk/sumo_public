@@ -91,8 +91,17 @@ three_trainStops_at_one_edge
 # person rides and then stops
 ride_and_stop
 
+# a person rides to an unspecified arrivalPos and this must be reflected in the position of the subsequent stop.
+ride_unspecifiedArrival_and_stop
+
 # person rides and exits the vehicle with some tolerance
 ride_and_stop_tolerance
 
 # If a vehicle leaves the simulation before delivering all passengers a warning should be triggered
 ride_wrong_destination
+
+# If a vehicle leaves the simulation on the passenger destination edge without stopping, no warning should be triggered
+ride_noDestStop
+
+# If a vehicle leaves the simulation on the passenger destination edge without stopping, no warning should be triggered
+ride_train_noDestStop

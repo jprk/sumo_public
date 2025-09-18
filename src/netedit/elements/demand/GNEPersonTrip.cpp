@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,34 +27,41 @@
 
 #include "GNEPersonTrip.h"
 
+
 // ===========================================================================
 // method definitions
 // ===========================================================================
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4355) // mask warning about "this" in initializers
+#endif
 GNEPersonTrip::GNEPersonTrip(SumoXMLTag tag, GNENet* net) :
-    GNEDemandElement("", net, GLO_PERSONTRIP, tag, GUIIconSubSys::getIcon(GUIIcon::PERSONTRIP_EDGE),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT, {}, {}, {}, {}, {}, {}),
-GNEDemandElementPlan(this, -1, -1) {
-    // reset default values
-    resetDefaultValues();
+    GNEDemandElement("", net, "", tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementPlan(this, -1, -1) {
 }
 
 
-GNEPersonTrip::GNEPersonTrip(GNENet* net, SumoXMLTag tag, GUIIcon icon, GNEDemandElement* personParent, const GNEPlanParents& planParameters,
+GNEPersonTrip::GNEPersonTrip(SumoXMLTag tag, GNEDemandElement* personParent, const GNEPlanParents& planParameters,
                              const double arrivalPosition, const std::vector<std::string>& types, const std::vector<std::string>& modes,
                              const std::vector<std::string>& lines, const double walkFactor, const std::string& group) :
-    GNEDemandElement(personParent, net, GLO_PERSONTRIP, tag, GUIIconSubSys::getIcon(icon),
-                     GNEPathManager::PathElement::Options::DEMAND_ELEMENT,
-                     planParameters.getJunctions(), planParameters.getEdges(), {},
-planParameters.getAdditionalElements(), planParameters.getDemandElements(personParent), {}),
-GNEDemandElementPlan(this, -1, arrivalPosition),
-myVTypes(types),
-myModes(modes),
-myLines(lines),
-myWalkFactor(walkFactor),
-myGroup(group) {
+    GNEDemandElement(personParent, tag, GNEPathElement::Options::DEMAND_ELEMENT),
+    GNEDemandElementPlan(this, -1, arrivalPosition),
+    myVTypes(types),
+    myModes(modes),
+    myLines(lines),
+    myWalkFactor(walkFactor),
+    myGroup(group) {
+    // set parents
+    setParents<GNEJunction*>(planParameters.getJunctions());
+    setParents<GNEEdge*>(planParameters.getEdges());
+    setParents<GNEAdditional*>(planParameters.getAdditionalElements());
+    setParents<GNEDemandElement*>(planParameters.getDemandElements(personParent));
+    // update centering boundary without updating grid
+    updatePlanCenteringBoundary(false);
 }
-
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 GNEPersonTrip::~GNEPersonTrip() {}
 
@@ -170,13 +177,13 @@ GNEPersonTrip::computePathElement() {
 
 
 void
-GNEPersonTrip::drawLanePartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNEPersonTrip::drawLanePartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     drawPlanLanePartial(checkDrawPersonPlan(), s, segment, offsetFront, s.widthSettings.personTripWidth, s.colorSettings.personTripColor, s.colorSettings.selectedPersonPlanColor);
 }
 
 
 void
-GNEPersonTrip::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNEPathManager::Segment* segment, const double offsetFront) const {
+GNEPersonTrip::drawJunctionPartialGL(const GUIVisualizationSettings& s, const GNESegment* segment, const double offsetFront) const {
     drawPlanJunctionPartial(checkDrawPersonPlan(), s, segment, offsetFront, s.widthSettings.personTripWidth, s.colorSettings.personTripColor, s.colorSettings.selectedPersonPlanColor);
 }
 
@@ -254,12 +261,11 @@ GNEPersonTrip::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_MODES: {
             SVCPermissions dummyModeSet;
             std::string dummyError;
-            return SUMOVehicleParameter::parsePersonModes(value, myTagProperty.getTagStr(), "", dummyModeSet, dummyError);
+            return SUMOVehicleParameter::parsePersonModes(value, myTagProperty->getTagStr(), "", dummyModeSet, dummyError);
         }
         case SUMO_ATTR_VTYPES:
-            return canParse<std::vector<std::string> >(value);
         case SUMO_ATTR_LINES:
-            return canParse<std::vector<std::string> >(value);
+            return true;
         case SUMO_ATTR_WALKFACTOR:
             return canParse<double>(value) && (parse<double>(value) >= 0);
         case SUMO_ATTR_GROUP:

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -18,14 +18,13 @@
 // Dialog used to fix network elements during saving
 /****************************************************************************/
 
-#include <utils/gui/windows/GUIAppEnum.h>
-#include <utils/gui/div/GUIDesigns.h>
+#include <netedit/GNEApplicationWindow.h>
 #include <netedit/GNENet.h>
-#include <netedit/GNEViewNet.h>
+#include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
+#include <utils/gui/div/GUIDesigns.h>
 
 #include "GNEFixNetworkElements.h"
-
 
 // ===========================================================================
 // FOX callback mapping
@@ -38,7 +37,7 @@ FXDEFMAP(GNEFixNetworkElements) GNEFixNetworkElementsMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEFixNetworkElements, FXDialogBox, GNEFixNetworkElementsMap, ARRAYNUMBER(GNEFixNetworkElementsMap))
+FXIMPLEMENT(GNEFixNetworkElements, GNEFixElementsDialog, GNEFixNetworkElementsMap, ARRAYNUMBER(GNEFixNetworkElementsMap))
 
 // ===========================================================================
 // member method definitions
@@ -48,13 +47,8 @@ FXIMPLEMENT(GNEFixNetworkElements, FXDialogBox, GNEFixNetworkElementsMap, ARRAYN
 // GNEFixNetworkElements - methods
 // ---------------------------------------------------------------------------
 
-GNEFixNetworkElements::GNEFixNetworkElements(GNEViewNet* viewNet, const std::vector<GNENetworkElement*>& invalidNetworkElements) :
-    FXDialogBox(viewNet->getApp(), TL("Fix network elements problems"), GUIDesignDialogBoxExplicitStretchable(600, 620)),
-    myViewNet(viewNet) {
-    // set busStop icon for this dialog
-    setIcon(GUIIconSubSys::getIcon(GUIIcon::SUPERMODEDEMAND));
-    // create main frame
-    myMainFrame = new FXVerticalFrame(this, GUIDesignAuxiliarFrame);
+GNEFixNetworkElements::GNEFixNetworkElements(GNEViewNet* viewNet) :
+    GNEFixElementsDialog(viewNet, TL("Fix network elements problems"), GUIIcon::SUPERMODEDEMAND, 600, 620) {
     // create frames for options
     FXHorizontalFrame* optionsFrame = new FXHorizontalFrame(myMainFrame, GUIDesignAuxiliarFrame);
     myLeftFrame = new FXVerticalFrame(optionsFrame, GUIDesignAuxiliarFrame);
@@ -65,23 +59,46 @@ GNEFixNetworkElements::GNEFixNetworkElements(GNEViewNet* viewNet, const std::vec
     myFixCrossingOptions = new FixCrossingOptions(this, viewNet);
     // create buttons
     myButtons = new Buttons(this);
+}
+
+
+GNEFixNetworkElements::~GNEFixNetworkElements() {}
+
+
+FXuint
+GNEFixNetworkElements::openDialog(const std::vector<GNENetworkElement*>& invalidNetworkElements) {
     // split invalidNetworkElements in four groups
     std::vector<GNENetworkElement*> invalidEdges, invalidCrossings;
     // fill groups
     for (const auto& invalidNetworkElement : invalidNetworkElements) {
-        if (invalidNetworkElement->getTagProperty().getTag() == SUMO_TAG_EDGE) {
+        if (invalidNetworkElement->getTagProperty()->getTag() == SUMO_TAG_EDGE) {
             invalidEdges.push_back(invalidNetworkElement);
-        } else if (invalidNetworkElement->getTagProperty().getTag() == SUMO_TAG_CROSSING) {
+        } else if (invalidNetworkElement->getTagProperty()->getTag() == SUMO_TAG_CROSSING) {
             invalidCrossings.push_back(invalidNetworkElement);
         }
     }
     // fill options
     myFixEdgeOptions->setInvalidElements(invalidEdges);
     myFixCrossingOptions->setInvalidElements(invalidCrossings);
+    // set focus in accept button
+    myButtons->myAcceptButton->setFocus();
+    // open modal dialog
+    return openFixDialog();
 }
 
 
-GNEFixNetworkElements::~GNEFixNetworkElements() {
+void
+GNEFixNetworkElements::runInternalTest(const InternalTestStep::DialogTest* dialogTest) {
+    // chooose solution
+    if (dialogTest->fixSolution == "removeInvalidCrossings") {
+        myFixCrossingOptions->removeInvalidCrossings->setCheck(TRUE, TRUE);
+    } else if (dialogTest->fixSolution == "saveInvalidCrossings") {
+        myFixCrossingOptions->saveInvalidCrossings->setCheck(TRUE, TRUE);
+    } else if (dialogTest->fixSolution == "selectInvalidCrossings") {
+        myFixCrossingOptions->selectInvalidCrossings->setCheck(TRUE, TRUE);
+    }
+    // accept changes
+    onCmdAccept(nullptr, 0, nullptr);
 }
 
 
@@ -100,23 +117,15 @@ GNEFixNetworkElements::onCmdAccept(FXObject*, FXSelector, void*) {
     // fix elements
     myFixEdgeOptions->fixElements(abortSaving);
     myFixCrossingOptions->fixElements(abortSaving);
-    // check if abort saving
-    if (abortSaving) {
-        // stop modal with TRUE (abort saving)
-        getApp()->stopModal(this, FALSE);
-    } else {
-        // stop modal with TRUE (continue saving)
-        getApp()->stopModal(this, TRUE);
-    }
-    return 1;
+    // stop dialog
+    return closeFixDialog(abortSaving);
 }
 
 
 long
 GNEFixNetworkElements::onCmdCancel(FXObject*, FXSelector, void*) {
-    // Stop Modal (abort saving)
-    getApp()->stopModal(this, FALSE);
-    return 1;
+    // stop dialog
+    return closeFixDialog(false);
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +195,8 @@ GNEFixNetworkElements::FixOptions::setInvalidElements(const std::vector<GNENetwo
 bool
 GNEFixNetworkElements::FixOptions::saveContents() const {
     const FXString file = MFXUtils::getFilename2Write(myTable,
-                          TL("Save list of conflicted items"), ".txt",
+                          TL("Save list of conflicted items"),
+                          SUMOXMLDefinitions::TXTFileExtensions.getMultilineString().c_str(),
                           GUIIconSubSys::getIcon(GUIIcon::SAVE), gCurrentFolder);
     if (file == "") {
         return false;
@@ -200,19 +210,11 @@ GNEFixNetworkElements::FixOptions::saveContents() const {
         }
         // close output device
         dev.close();
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Opening FXMessageBox 'Saving list of conflicted items successfully'");
         // open message box error
         FXMessageBox::information(myTable, MBOX_OK, TL("Saving successfully"), "%s", "List of conflicted items was successfully saved");
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Closed FXMessageBox 'Saving list of conflicted items successfully' with 'OK'");
     } catch (IOError& e) {
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Opening FXMessageBox 'error saving list of conflicted items'");
         // open message box error
         FXMessageBox::error(myTable, MBOX_OK, TL("Saving list of conflicted items failed"), "%s", e.what());
-        // write warning if netedit is running in testing mode
-        WRITE_DEBUG("Closed FXMessageBox 'error saving list of conflicted items' with 'OK'");
     }
     return true;
 }
@@ -311,7 +313,7 @@ GNEFixNetworkElements::FixCrossingOptions::FixCrossingOptions(GNEFixNetworkEleme
     saveInvalidCrossings = new FXRadioButton(myLeftFrame, TL("Save invalid crossings"),
             fixNetworkElementsParent, MID_CHOOSEN_OPERATION, GUIDesignRadioButtonFix);
     // Select invalid crossing
-    selectInvalidCrossingsAndCancel = new FXRadioButton(myRightFrame, TL("Select conflicted crossing"),
+    selectInvalidCrossings = new FXRadioButton(myRightFrame, TL("Select conflicted crossing"),
             fixNetworkElementsParent, MID_CHOOSEN_OPERATION, GUIDesignRadioButtonFix);
     // by default remove invalid crossings
     removeInvalidCrossings->setCheck(TRUE);
@@ -323,15 +325,15 @@ GNEFixNetworkElements::FixCrossingOptions::selectOption(FXObject* option) {
     if (option == removeInvalidCrossings) {
         removeInvalidCrossings->setCheck(true);
         saveInvalidCrossings->setCheck(false);
-        selectInvalidCrossingsAndCancel->setCheck(false);
+        selectInvalidCrossings->setCheck(false);
     } else if (option == saveInvalidCrossings) {
         removeInvalidCrossings->setCheck(false);
         saveInvalidCrossings->setCheck(true);
-        selectInvalidCrossingsAndCancel->setCheck(false);
-    } else if (option == selectInvalidCrossingsAndCancel) {
+        selectInvalidCrossings->setCheck(false);
+    } else if (option == selectInvalidCrossings) {
         removeInvalidCrossings->setCheck(false);
         saveInvalidCrossings->setCheck(false);
-        selectInvalidCrossingsAndCancel->setCheck(true);
+        selectInvalidCrossings->setCheck(true);
     }
 }
 
@@ -348,7 +350,7 @@ GNEFixNetworkElements::FixCrossingOptions::fixElements(bool& abortSaving) {
             }
             // end undo list
             myViewNet->getUndoList()->end();
-        } else if (selectInvalidCrossingsAndCancel->getCheck() == TRUE) {
+        } else if (selectInvalidCrossings->getCheck() == TRUE) {
             // begin undo list
             myViewNet->getUndoList()->begin(GUIIcon::CROSSING, TL("select invalid crossings"));
             // iterate over invalid single lane elements to select all elements
@@ -368,7 +370,7 @@ void
 GNEFixNetworkElements::FixCrossingOptions::enableOptions() {
     removeInvalidCrossings->enable();
     saveInvalidCrossings->enable();
-    selectInvalidCrossingsAndCancel->enable();
+    selectInvalidCrossings->enable();
 }
 
 
@@ -376,21 +378,7 @@ void
 GNEFixNetworkElements::FixCrossingOptions::disableOptions() {
     removeInvalidCrossings->disable();
     saveInvalidCrossings->disable();
-    selectInvalidCrossingsAndCancel->disable();
-}
-
-// ---------------------------------------------------------------------------
-// GNEFixNetworkElements::Buttons - methods
-// ---------------------------------------------------------------------------
-
-GNEFixNetworkElements::Buttons::Buttons(GNEFixNetworkElements* fixNetworkElementsParent) :
-    FXHorizontalFrame(fixNetworkElementsParent->myMainFrame, GUIDesignHorizontalFrame) {
-    new FXHorizontalFrame(this, GUIDesignAuxiliarHorizontalFrame);
-    myAcceptButton = GUIDesigns::buildFXButton(this, TL("&Accept"), "", "", GUIIconSubSys::getIcon(GUIIcon::ACCEPT), fixNetworkElementsParent, MID_GNE_BUTTON_ACCEPT, GUIDesignButtonAccept);
-    myCancelButton = GUIDesigns::buildFXButton(this, TL("&Cancel"), "", "", GUIIconSubSys::getIcon(GUIIcon::CANCEL), fixNetworkElementsParent, MID_GNE_BUTTON_CANCEL, GUIDesignButtonCancel);
-    new FXHorizontalFrame(this, GUIDesignAuxiliarHorizontalFrame);
-    // set focus in accept button
-    myAcceptButton->setFocus();
+    selectInvalidCrossings->disable();
 }
 
 /****************************************************************************/

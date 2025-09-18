@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -139,7 +139,6 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     myActualBatteryCapacity(0),   // [actualBatteryCapacity <= maximumBatteryCapacity]
     myMaximumBatteryCapacity(0),  // [maximumBatteryCapacity >= 0]t
     myOverheadWireChargingPower(0),
-    myLastAngle(NAN),
     myConsum(0),
     myBatteryDischargedLogic(false),
     myCharging(false),            // Initially vehicle don't charge
@@ -527,6 +526,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
     // myTotalEnergyWasted should be already updated by MSPowerManagement::distributePower in this simulation time step
     // myTotalEnergyWasted += energyWasted;
 
+    // RICE_TODO: Why this?
     myLastAngle = veh.getAngle();
     return true; // keep the device
 }
@@ -985,13 +985,11 @@ MSDevice_ElecHybrid::setActualBatteryCapacity(const double actualBatteryCapacity
 
 double
 MSDevice_ElecHybrid::acceleration(SUMOVehicle& veh, double power, double oldSpeed) {
-    myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_ANGLE, std::isnan(myLastAngle) ? 0. : GeomHelper::angleDiff(myLastAngle, veh.getAngle()));
     return PollutantsInterface::getEnergyHelper().acceleration(0, PollutantsInterface::ELEC, oldSpeed, power, veh.getSlope(), myHolder.getEmissionParameters());
 }
 
 double
 MSDevice_ElecHybrid::consumption(SUMOVehicle& veh, double a, double newSpeed) {
-    myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_ANGLE, std::isnan(myLastAngle) ? 0. : GeomHelper::angleDiff(myLastAngle, veh.getAngle()));
     return PollutantsInterface::getEnergyHelper().compute(0, PollutantsInterface::ELEC, newSpeed, a, veh.getSlope(), myHolder.getEmissionParameters()) * TS;
 }
 

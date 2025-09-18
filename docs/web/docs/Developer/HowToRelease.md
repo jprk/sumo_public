@@ -11,7 +11,10 @@ For an overview of created packages and contents see
 
 Below, a list of steps that should be done in order to publish a new
 release is given. All necessary commits which have no ticket of their
-own may refer to #563.
+own may refer to #563. All the steps assume you are using bash
+either natively (Linux, macOS), on WSL or the git bash (or some other mingw bash).
+Furthermore you should have either your passwords ready or even better ssh keys
+deployed on all the remote servers in question.
 
 ### Merge phase
 
@@ -25,7 +28,7 @@ software (Veins, VSimRTI, flow etc.) at this stage.
 
 - check the sources
   - compile, try to remove warnings and commit the patches
-  - run [checkStyle](../Developer/CodeStyle.md) and commit
+  - run [tools/build_config/checkStyle.py](../Developer/CodeStyle.md) and commit
     changed files
   - check the calendar to update copyright statements
   - check whether the TraCI version needs to be incremented
@@ -51,6 +54,7 @@ software (Veins, VSimRTI, flow etc.) at this stage.
   - update the [ChangeLog](../ChangeLog.md)
   - generate options documentation and xsd schemata for configuration files
     using `tools/build_config/rebuildConfigDocsAndXsd.py`
+- update `tools/build_config/templates.py` to include any tools that were added or had their compatibility fixed since the last release
 - check the internal tests (same procedure as above), especially the
   (to be) published scenarios
 - GitHub
@@ -76,26 +80,25 @@ assigned to a later milestone.
 All scenarios should be fixed by now.
 
 - start and save a new version draft [in Zenodo](https://zenodo.org/) (using the sumo@dlr.de user), in order to reserve a DOI. Don't Publish it yet, and don't upload a file to it!
-  - update the version doi in CITATION.cff and in the README badge to this new reserved one
-- patch the version information using `tools/build_config/updateReleaseInfo.py 0.13.7` and double check changes
+  - update the version doi in [CITATION.cff]({{Source}}CITATION.cff) and in the [README]({{Source}}README.md) badge to this new reserved one
+- update the [ChangeLog](../ChangeLog.md) again if necessary
+- check the correct email address and list of current ubuntu releases in `tools/build_config/ubuntu_release.sh`
+- patch the version information using `tools/build_config/updateReleaseInfo.py {{Version}}` and double check changes
   - in src/config.h.cmake, also the HAVE_VERSION_H macro should be disabled
   - in CMakeLists.txt
   - [in mkdocs.yml]({{Source}}docs/web/mkdocs.yml) in the **extra:** section at the end
     to update the [download links](../Downloads.md)
   - [in sumo.metainfo.xml]({{Source}}build_config/package/sumo.metainfo.xml)
     for correct flatpak info
-  - in CITATION.cff
+  - in [CITATION.cff]({{Source}}CITATION.cff)
+  - in the [ChangeLog](../ChangeLog.md)
   - commit the changes
-- recheck whether submodules changed by doing `git submodule update --remote`
-and committing the changes after careful inspection
+- recheck whether submodules changed by doing `git submodule update --remote` and commit the changes after careful inspection
+- check IP due diligence
+  - every library in [SUMOLibraries](https://github.com/DLR-TS/SUMOLibraries/), in src/foreign and in tools/contributed needs an entry in the [Libraries list](../Libraries_Licenses.md) and in <https://github.com/eclipse-sumo/sumo/blob/main/docs/dependencies.txt>
+  - the [iplab](https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab) should have a closed issue for each entry
 - check the documentation
-  - update the [ChangeLog](../ChangeLog.md) again and include
-    version and release date
-- If it is the first release of the year, create a new Eclipse release at https://projects.eclipse.org/projects/automotive.sumo (after login there should be a "Create Release" button)
-  - add an IP Log to the release
-  - send an email to the PMC at automotive-pmc@eclipse.org asking for review (include links to the release and the IP log)
-- check presence of RPMs on
-  <https://build.opensuse.org/package/show/science:dlr/sumo_nightly>
+- check presence of RPMs on <https://build.opensuse.org/package/show/science:dlr/sumo_nightly>
 - add a new version tag
 ```
 > git tag -a v0_13_7 -m "tagging release 0.13.7, refs #563"
@@ -107,20 +110,17 @@ and committing the changes after careful inspection
 The nightly build should have generated all releasable packages. If not,
 delay the release. (The complete documentation, tests and source
 distribution build can be achieved via "make dist".) The
-following things need to be there:
+following things need to be in the S:\daily directory:
 
 - the platform independent part of the distribution;
   - source and all inclusive distributions (.tar.gz, .zip) ("make dist")
 - the binary part of the distribution
   - windows binary distribution (zip, unzip the x64 file and run at least sumo-gui)
   - windows installer (msi, Win32 and x64, includes docs)
-- check the wheels on PyPI
-  - https://pypi.org/project/eclipse-sumo/
-  - https://pypi.org/project/libsumo/
-  - https://pypi.org/project/sumolib/
-  - https://pypi.org/project/traci/
-  - https://pypi.org/project/libtraci/
-- check the Maven build https://ci.eclipse.org/sumo/job/sumo-build/view/tags/ and ensure that the artifacts have been uploaded to:
+- check the wheels in S:\daily\wheels
+  - eclipse-sumo and libsumo for Windows, macOS, Linux x64 and Linux aarch64 (libsumo for all current python versions)
+  - sumolib, traci
+- check the Maven build https://ci.eclipse.org/sumo/job/maven-artifacts/ and ensure that the artifacts have been uploaded to:
   - https://repo.eclipse.org/content/repositories/sumo-releases/org/eclipse/sumo/libtraci and
   - https://repo.eclipse.org/content/repositories/sumo-releases/org/eclipse/sumo/libsumo/
 
@@ -129,15 +129,17 @@ If everything is fine:
 
 - make a new folder in S:\Releases
 - make new sumo.dlr.de-release
-  - copy the folder from S:\Releases to the releases dir `scp -r /media/S/Releases/x.y.z delphi@ts-sim-front-ba.intra.dlr.de:docs/releases`
+  - copy the folder from S:\Releases to the releases dir `scp -r /s/Releases/{{Version}} delphi@ts-sim-front-ba.intra.dlr.de:docs/releases`
 - update the eclipse.dev/sumo website
-  - modify the version number (Version) and the DOI number (DOI) [in config.yaml](https://github.com/eclipse-sumo/sumo.website/blob/main/src/config/_default/config.yaml) in the **Default Parameters** section
-  - generate the static files `cd src && hugo -d ../` and commit them
+  - modify the version number (Version) and the DOI number (DOI) [in config.yaml](https://github.com/eclipse-sumo/sumo.website/blob/source/config/_default/config.yaml) in the **Default Parameters** section
 - make new sourceforge-release
-  - make a new release within the sumo package (named "version x.y.z")
-  - add files to the release
-  - change default download attributes
-- finish the Zenodo version draft, by uploading the release `.tar.gz` source, and publishing it
+  - create a shell `ssh -t <user>,sumo@shell.sf.net create` and log off immediately
+  - copy the files `scp -O -r /s/Releases/{{Version}} <user>,sumo@shell.sf.net:`
+  - login again, delete the wheels and move the files into the right directory `mv {{Version}} /home/frs/project/sumo/sumo/"version {{Version}}"`
+  - change default download attributes by logging in on the web browser at https://sourceforge.net/projects/sumo/files/sumo/version%20{{Version}}/ and clicking on the circled "i" after each file
+    - the default for Windows is sumo-win64extra-{{Version}}.msi, for macOS sumo-{{Version}}.pkg and for all the others sumo-src-{{Version}}.tar.gz
+- finish the Zenodo version draft, by uploading the `sumo-src-{{Version}}.tar.gz`, adding the release info (can also be done later) and publishing it
+- Create a new Eclipse release at https://projects.eclipse.org/projects/automotive.sumo (after login there should be a "Create Release" button)
 - create a new entry in [elib](https://elib.dlr.de/)
   - the easiest way to do it, is by going to [Einträge verwalten](https://elib.dlr.de/cgi/users/home?screen=Items) and clicking on the magnifying-glass-icon for an old release, then going to the "Aktionen" tab and selecting "Als Vorlage verwenden"
   - take a look at the [Eintrag von Forschungssoftware-Publikationen - Tutorial](https://wiki.dlr.de/pages/viewpage.action?pageId=711888423), or the entry for a previous release: https://elib.dlr.de/205320/
@@ -147,15 +149,10 @@ If everything is fine:
 - update the ubuntu ppa (see
 <https://askubuntu.com/questions/642632/how-to-bump-the-version-of-a-package-available-in-another-users-ppa>)
   - this assumes you have the devscripts package as well as all sumo dependencies installed
-    - if you try this on Windows Linux Subsystem you will also need to do `sudo update-alternatives --set fakeroot /usr/bin/fakeroot-tcp`
-  - unzip the special source release `sumo_{{Version}}+dfsg1.orig.tar.gz`
-  - copy the debian dir one level up
-  - modify the changelog, using `dch` (enter an email address which has write access to the ppa and a valid gpg key)
-  - run `dpkg-buildpackage -S` in the sumo dir and `dput -f ppa:sumo/stable sumo_{{Version}}+dfsg1_source.changes` one level up
-- update the [flatpak](https://github.com/flathub/org.eclipse.sumo) (update version number and commit hash)
+  - unzip the special source release `tar xzf sumo_{{Version}}.orig.tar.gz`
+  - run `cd sumo-{{Version}} && tools/build_config/ubuntu_release.sh` and enter the release comment
 - start a pull request against [winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/e/EclipseFoundation/SUMO)
-- [update the Homebrew Formula](HowToUpdateHomebrewFormula.md)
-- do a remote login to the M1 Mac and upload the wheels to PyPI using `twine upload clangMacOS_M1/sumo/dist_native/* clangMacOS_M1/sumo/wheelhouse/*`
+- upload the wheels to PyPI using `twine upload /s/daily/wheels/*{{Version}}*.whl`
 - scenarios (optional)
   - add files to [the scenario folder](https://sourceforge.net/projects/sumo/files/traffic_data/scenarios/)
   - updated README.txt
@@ -164,7 +161,6 @@ If everything is fine:
     sumo-announce@eclipse.org
   - submit news about the release on the Eclipse Newsroom <https://newsroom.eclipse.org/node/add/news>
   - tweet about it, post on Facebook and Instagram stories
-  - trigger update of main website at <https://sumo.dlr.de>
 - close [the milestone](https://github.com/eclipse-sumo/sumo/milestones)
   (retargeting open tickets needs to be done manually for now)
 - add the latest version to the **"software version identifier"** statement in [Wikidata](https://www.wikidata.org/wiki/Q15847637) (this will update the Wikipedia articles about SUMO), making sure to select the latest version as **"preferred rank"** and setting the previous one to **"normal rank"**.
@@ -173,8 +169,9 @@ If everything is fine:
 
 The trunk is now open for changes again.
 
+- wait for the automated [flatpak](https://github.com/flathub/org.eclipse.sumo) pull request to appear and built, then accept it
 - re-enable HAVE_VERSION_H in src/config.h.cmake
 - rename version to "git" in CMakeLists.txt
 - insert a new empty "Git Main" section at the top of the [ChangeLog](../ChangeLog.md)
 - commit changes
-- drink your favorite beverage
+- drink your favorite beverage and/or eat cake

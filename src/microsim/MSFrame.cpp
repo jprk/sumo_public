@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -43,11 +43,13 @@
 #include <microsim/MSRoute.h>
 #include <microsim/MSNet.h>
 #include <microsim/MSLane.h>
+#include <microsim/MSEdge.h>
 #include <microsim/MSGlobals.h>
 #include <microsim/lcmodels/MSAbstractLaneChangeModel.h>
 #include <microsim/devices/MSDevice.h>
 #include <microsim/devices/MSDevice_Vehroutes.h>
 #include <microsim/output/MSStopOut.h>
+#include <microsim/traffic_lights/MSRailSignalControl.h>
 #include <utils/common/RandHelper.h>
 #include <utils/common/SystemFrame.h>
 #include "MSFrame.h"
@@ -123,14 +125,12 @@ MSFrame::fillOptions() {
     oc.addSynonyme("netstate-dump.precision", "dump-precision", true);
     oc.addDescription("netstate-dump.precision", "Output", TL("Write positions and speeds with the given precision (default 2)"));
 
-
     oc.doRegister("emission-output", new Option_FileName());
     oc.addDescription("emission-output", "Output", TL("Save the emission values of each vehicle"));
     oc.doRegister("emission-output.precision", new Option_Integer(2));
     oc.addDescription("emission-output.precision", "Output", TL("Write emission values with the given precision (default 2)"));
     oc.doRegister("emission-output.geo", new Option_Bool(false));
     oc.addDescription("emission-output.geo", "Output", TL("Save the positions in emission output using geo-coordinates (lon/lat)"));
-
     oc.doRegister("emission-output.step-scaled", new Option_Bool(false));
     oc.addDescription("emission-output.step-scaled", "Output", TL("Write emission values scaled to the step length rather than as per-second values"));
     oc.doRegister("emission-output.attributes", new Option_StringVector());
@@ -152,6 +152,8 @@ MSFrame::fillOptions() {
     oc.addDescription("chargingstations-output", "Output", TL("Write data of charging stations"));
     oc.doRegister("chargingstations-output.aggregated", new Option_Bool(false));
     oc.addDescription("chargingstations-output.aggregated", "Output", TL("Write aggregated charging event data instead of single time steps"));
+    oc.doRegister("chargingstations-output.aggregated.write-unfinished", new Option_Bool(false));
+    oc.addDescription("chargingstations-output.aggregated.write-unfinished", "Output", TL("Write aggregated charging event data for vehicles which have not arrived at simulation end"));
 
     oc.doRegister("overheadwiresegments-output", new Option_FileName());
     oc.addDescription("overheadwiresegments-output", "Output", TL("Write data of overhead wire segments"));
@@ -282,6 +284,9 @@ MSFrame::fillOptions() {
     oc.doRegister("railsignal-block-output", new Option_FileName());
     oc.addDescription("railsignal-block-output", "Output", TL("Save railsignal-blocks into FILE"));
 
+    oc.doRegister("railsignal-vehicle-output", new Option_FileName());
+    oc.addDescription("railsignal-vehicle-output", "Output", TL("Record entry and exit times of vehicles for railsignal blocks into FILE"));
+
     oc.doRegister("bt-output", new Option_FileName());
     oc.addDescription("bt-output", "Output", TL("Save bluetooth visibilities into FILE (in conjunction with device.btreceiver and device.btsender)"));
 
@@ -313,6 +318,9 @@ MSFrame::fillOptions() {
     oc.doRegister("statistic-output", new Option_FileName());
     oc.addSynonyme("statistic-output", "statistics-output");
     oc.addDescription("statistic-output", "Output", TL("Write overall statistics into FILE"));
+
+    oc.doRegister("deadlock-output", new Option_FileName());
+    oc.addDescription("deadlock-output", "Output", TL("Write reports on deadlocks FILE"));
 
 #ifdef _DEBUG
     oc.doRegister("movereminder-output", new Option_FileName());
@@ -434,11 +442,17 @@ MSFrame::fillOptions() {
     oc.doRegister("time-to-teleport.remove", new Option_Bool(false));
     oc.addDescription("time-to-teleport.remove", "Processing", TL("Whether vehicles shall be removed after waiting too long instead of being teleported"));
 
+    oc.doRegister("time-to-teleport.remove-constraint", new Option_Bool(false));
+    oc.addDescription("time-to-teleport.remove-constraint", "Processing", TL("Whether rail-signal-constraint based deadlocks shall be cleared by removing a constraint"));
+
     oc.doRegister("time-to-teleport.ride", new Option_String("-1", "TIME"));
     oc.addDescription("time-to-teleport.ride", "Processing", TL("The waiting time after which persons / containers waiting for a pickup are teleported. Negative values disable teleporting"));
 
     oc.doRegister("time-to-teleport.bidi", new Option_String("-1", "TIME"));
     oc.addDescription("time-to-teleport.bidi", "Processing", TL("The waiting time after which vehicles on bidirectional edges are teleported"));
+
+    oc.doRegister("time-to-teleport.railsignal-deadlock", new Option_String("-1", "TIME"));
+    oc.addDescription("time-to-teleport.railsignal-deadlock", "Processing", TL("The waiting time after which vehicles in a rail-signal based deadlock are teleported"));
 
     oc.doRegister("waiting-time-memory", new Option_String("100", "TIME"));
     oc.addDescription("waiting-time-memory", "Processing", TL("Length of time interval, over which accumulated waiting time is taken into account (default is 100s.)"));
@@ -457,6 +471,9 @@ MSFrame::fillOptions() {
 
     oc.doRegister("emergency-insert", new Option_Bool(false));
     oc.addDescription("emergency-insert", "Processing", TL("Allow inserting a vehicle in a situation which requires emergency braking"));
+
+    oc.doRegister("insertion-checks", new Option_String("all"));
+    oc.addDescription("insertion-checks", "Processing", TL("Override default value for vehicle attribute insertionChecks"));
 
     oc.doRegister("random-depart-offset", new Option_String("0", "TIME"));
     oc.addDescription("random-depart-offset", "Processing", TL("Each vehicle receives a random offset to its depart value drawn uniformly from [0, TIME]"));
@@ -488,8 +505,20 @@ MSFrame::fillOptions() {
     oc.doRegister("railsignal-moving-block", new Option_Bool(false));
     oc.addDescription("railsignal-moving-block", "Processing", TL("Let railsignals operate in moving-block mode by default"));
 
+    oc.doRegister("railsignal.max-block-length", new Option_Float(2e4));
+    oc.addDescription("railsignal.max-block-length", "Processing", TL("Do not build blocks longer than FLOAT and issue a warning instead"));
+
+    oc.doRegister("railsignal.default-classes", new Option_StringVector(StringVector({"rail", "rail_fast", "rail_electric", "rail_urban"})));
+    oc.addDescription("railsignal.default-classes", "Processing", TL("List vehicle classes that uses block-based insertion checks even when the network has no rail signals for them"));
+
     oc.doRegister("time-to-impatience", new Option_String("180", "TIME"));
     oc.addDescription("time-to-impatience", "Processing", TL("Specify how long a vehicle may wait until impatience grows from 0 to 1, defaults to 300, non-positive values disable impatience growth"));
+
+    oc.doRegister("default.departspeed", new Option_String("0"));
+    oc.addDescription("default.departspeed", "Processing", TL("Select default depart speed"));
+
+    oc.doRegister("default.departlane", new Option_String("first"));
+    oc.addDescription("default.departlane", "Processing", TL("Select default depart lane"));
 
     oc.doRegister("default.action-step-length", new Option_Float(0.0));
     oc.addDescription("default.action-step-length", "Processing", TL("Length of the default interval length between action points for the car-following and lane-change models (in seconds). If not specified, the simulation step-length is used per default. Vehicle- or VType-specific settings override the default. Must be a multiple of the simulation step-length."));
@@ -527,7 +556,7 @@ MSFrame::fillOptions() {
 
     // pedestrian model
     oc.doRegister("pedestrian.model", new Option_String("striping"));
-    oc.addDescription("pedestrian.model", "Processing", TL("Select among pedestrian models ['nonInteracting', 'striping', 'remote']"));
+    oc.addDescription("pedestrian.model", "Processing", TL("Select among pedestrian models ['nonInteracting', 'striping', 'jupedsim', 'remote']"));
 
     oc.doRegister("pedestrian.timegap-crossing", new Option_Float(2.));
     oc.addDescription("pedestrian.timegap-crossing", "Processing", TL("Minimal acceptable gap (in seconds) between two vehicles before starting to cross"));
@@ -547,6 +576,9 @@ MSFrame::fillOptions() {
     oc.addDescription("pedestrian.striping.jamtime.crossing", "Processing", TL("Time in seconds after which pedestrians start squeezing through a jam while on a pedestrian crossing when using model 'striping' (non-positive values disable squeezing)"));
     oc.doRegister("pedestrian.striping.jamtime.narrow", new Option_String("1", "TIME"));
     oc.addDescription("pedestrian.striping.jamtime.narrow", "Processing", TL("Time in seconds after which pedestrians start squeezing through a jam while on a narrow lane when using model 'striping'"));
+
+    oc.doRegister("pedestrian.striping.jamfactor", new Option_Float(0.25));
+    oc.addDescription("pedestrian.striping.jamfactor", "Processing", TL("Factor for reducing speed of pedestrian in jammed state"));
 
     oc.doRegister("pedestrian.striping.reserve-oncoming", new Option_Float(0.0));
     oc.addDescription("pedestrian.striping.reserve-oncoming", "Processing", TL("Fraction of stripes to reserve for oncoming pedestrians"));
@@ -595,6 +627,8 @@ MSFrame::fillOptions() {
     oc.doRegister("mapmatch.junctions", new Option_Bool(false));
     oc.addDescription("mapmatch.junctions", "Processing", TL("Match positions to junctions instead of edges"));
 
+    oc.doRegister("mapmatch.taz", new Option_Bool(false));
+    oc.addDescription("mapmatch.taz", "Processing", TL("Match positions to taz instead of edges"));
 
     // generic routing options
     oc.doRegister("routing-algorithm", new Option_String("dijkstra"));
@@ -646,6 +680,9 @@ MSFrame::fillOptions() {
 
     oc.doRegister("persontrip.taxi.waiting-time", new Option_String("300", "TIME"));
     oc.addDescription("persontrip.taxi.waiting-time", "Routing", TL("Estimated time for taxi pickup"));
+
+    oc.doRegister("persontrip.ride-public-line", new Option_Bool(false));
+    oc.addDescription("persontrip.ride-public-line", "Routing", TL("Only use the intended public transport line rather than any alternative line that stops at the destination"));
 
     oc.doRegister("railway.max-train-length", new Option_Float(1000.0));
     oc.addDescription("railway.max-train-length", "Routing", TL("Use FLOAT as a maximum train length when initializing the railway router"));
@@ -838,11 +875,13 @@ MSFrame::buildStreams() {
     //OutputDevice::createDeviceByOption("vtk-output", "vtk-export");
     OutputDevice::createDeviceByOption("link-output", "link-output");
     OutputDevice::createDeviceByOption("railsignal-block-output", "railsignal-block-output");
+    OutputDevice::createDeviceByOption("railsignal-vehicle-output", "railsignal-vehicle-output");
     OutputDevice::createDeviceByOption("bt-output", "bt-output");
     OutputDevice::createDeviceByOption("lanechange-output", "lanechanges");
     OutputDevice::createDeviceByOption("stop-output", "stops", "stopinfo_file.xsd");
     OutputDevice::createDeviceByOption("collision-output", "collisions", "collision_file.xsd");
     OutputDevice::createDeviceByOption("statistic-output", "statistics", "statistic_file.xsd");
+    OutputDevice::createDeviceByOption("deadlock-output", "additional", "additional_file.xsd");
 
 #ifdef _DEBUG
     OutputDevice::createDeviceByOption("movereminder-output", "movereminder-output");
@@ -1008,6 +1047,18 @@ MSFrame::checkOptions() {
             }
         }
     }
+
+    if (oc.isSet("time-to-teleport.railsignal-deadlock")) {
+        SUMOTime t1 = string2time(oc.getString("time-to-teleport"));
+        SUMOTime t2 = string2time(oc.getString("time-to-teleport.railsignal-deadlock"));
+        if (t1 > 0 && t2 > 0 && t1 <= t2) {
+            WRITE_WARNINGF(TL("Railsignal-deadlock will not be detected because time-to-teleport (%) is lower than time-to-teleport.railsignal-deadlock (%)."), time2string(t1), time2string(t2));
+        }
+    }
+
+    oc.doRegister("", new Option_String("-1", "TIME"));
+
+
     if (oc.getFloat("delay") < 0.0) {
         WRITE_ERROR(TL("You need a non-negative delay."));
         ok = false;
@@ -1046,6 +1097,9 @@ MSFrame::checkOptions() {
             }
         }
     }
+    if (!oc.isDefault("weights.random-factor") && (oc.isSet("astar.all-distances") || oc.isSet("astar.landmark-distances"))) {
+        WRITE_WARNING(TL("The option --weights.random-factor should not be used together with astar and precomputed distances."));
+    }
 
 #ifdef JPS_VERSION
     const std::string pedestrianJPSModel = oc.getString("pedestrian.jupedsim.model");
@@ -1079,6 +1133,7 @@ MSFrame::setMSGlobals(OptionsCont& oc) {
     MSGlobals::gGridlockHighwaysSpeed = oc.getFloat("time-to-teleport.highways.min-speed");
     MSGlobals::gTimeToTeleportDisconnected = string2time(oc.getString("time-to-teleport.disconnected"));
     MSGlobals::gTimeToTeleportBidi = string2time(oc.getString("time-to-teleport.bidi"));
+    MSGlobals::gTimeToTeleportRSDeadlock = string2time(oc.getString("time-to-teleport.railsignal-deadlock"));
     MSGlobals::gRemoveGridlocked = oc.getBool("time-to-teleport.remove");
     MSGlobals::gCheck4Accidents = !oc.getBool("ignore-accidents");
     MSGlobals::gCheckRoutes = !oc.getBool("ignore-route-errors");
@@ -1099,6 +1154,8 @@ MSFrame::setMSGlobals(OptionsCont& oc) {
     MSGlobals::gOverheadWireSolver = oc.getBool("overhead-wire.solver");
     MSGlobals::gOverheadWireRecuperation = oc.getBool("overhead-wire.recuperation");
     MSGlobals::gOverheadWireCurrentLimits = oc.getBool("overhead-wire.substation-current-limits");
+    MSGlobals::gInsertionChecks = SUMOVehicleParameter::parseInsertionChecks(oc.getString("insertion-checks"));
+    MSGlobals::gMaxRailSignalBlockLength = oc.getFloat("railsignal.max-block-length");
 
     MSLane::initCollisionOptions(oc);
 
@@ -1138,6 +1195,24 @@ MSFrame::setMSGlobals(OptionsCont& oc) {
     MSGlobals::gTLSYellowMinDecel = oc.getFloat("tls.yellow.min-decel");
     MSGlobals::gUseStopEnded = oc.getBool("use-stop-ended");
     MSGlobals::gUseStopStarted = oc.getBool("use-stop-started");
+
+    SVCPermissions defaultClasses = 0;
+    for (const std::string& vClassName : oc.getStringVector("railsignal.default-classes")) {
+        defaultClasses |= parseVehicleClasses(vClassName);
+    }
+    MSRailSignalControl::initSignalized(defaultClasses);
+
+    std::string error;
+    if (!SUMOVehicleParameter::parseDepartLane(oc.getString("default.departlane"), "options", "",
+            MSEdge::getDefaultDepartLane(),
+            MSEdge::getDefaultDepartLaneDefinition(), error)) {
+        WRITE_ERROR(error);
+    }
+    if (!SUMOVehicleParameter::parseDepartSpeed(oc.getString("default.departspeed"), "options", "",
+            MSLane::getDefaultDepartSpeed(),
+            MSLane::getDefaultDepartSpeedDefinition(), error)) {
+        WRITE_ERROR(error);
+    }
 
 #ifdef _DEBUG
     if (oc.isSet("movereminder-output")) {

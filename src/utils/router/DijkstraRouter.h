@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -157,7 +157,7 @@ public:
         // loop
         int num_visited = 0;
 #ifdef DijkstraRouter_DEBUG_QUERY_VISITED
-        DijkstraRouter_DEBUG_QUERY_VISITED_OUT << "<edgeData>\n <interval begin=\"" << time2string(msTime) << "\" end=\"" << toString(msTime + 1000) << "\">\n";
+        DijkstraRouter_DEBUG_QUERY_VISITED_OUT << "<edgeData>\n <interval begin=\"" << time2string(msTime) << "\" end=\"" << toString(msTime + 1000) << "\" id=\"" << Named::getIDSecure(vehicle) << "\">\n";
 #endif
         while (!this->myFrontierList.empty()) {
             num_visited += 1;

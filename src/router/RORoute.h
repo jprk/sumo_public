@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -63,7 +63,7 @@ public:
      */
     RORoute(const std::string& id, double costs, double prob,
             const ConstROEdgeVector& route, const RGBColor* const color,
-            const std::vector<SUMOVehicleParameter::Stop>& stops);
+            const StopParVector& stops);
 
 
     /** @brief Constructor
@@ -172,7 +172,7 @@ public:
 
     OutputDevice&
     writeXMLDefinition(OutputDevice& dev, const ROVehicle* const veh,
-                       const bool withCosts, const bool withProb,
+                       const bool withCosts, const bool asAlternatives,
                        const bool withExitTimes, const bool withLength,
                        const std::string& id = "") const;
 
@@ -184,14 +184,14 @@ public:
      *
      * @return list of stops
      */
-    const std::vector<SUMOVehicleParameter::Stop>& getStops() const {
+    const StopParVector& getStops() const {
         return myStops;
     }
 
     /** @brief Adapts the until time of all stops by the given offset
      */
     void addStopOffset(const SUMOTime offset) {
-        for (std::vector<SUMOVehicleParameter::Stop>::iterator stop = myStops.begin(); stop != myStops.end(); ++stop) {
+        for (StopParVector::iterator stop = myStops.begin(); stop != myStops.end(); ++stop) {
             if (stop->until >= 0) {
                 stop->until += offset;
             }
@@ -215,7 +215,7 @@ private:
     const RGBColor* myColor;
 
     /// @brief List of the stops on the parsed route
-    std::vector<SUMOVehicleParameter::Stop> myStops;
+    StopParVector myStops;
 
 
 private:

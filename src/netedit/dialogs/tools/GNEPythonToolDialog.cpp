@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -27,6 +27,10 @@
 
 #include "GNEPythonToolDialog.h"
 
+// ===========================================================================
+// Defines
+// ===========================================================================
+
 #define MARGIN 4
 #define MAXNUMCOLUMNS 4
 #define NUMROWSBYCOLUMN 20
@@ -49,14 +53,14 @@ FXDEFMAP(GNEPythonToolDialog) GNEPythonToolDialogMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEPythonToolDialog, FXDialogBox, GNEPythonToolDialogMap, ARRAYNUMBER(GNEPythonToolDialogMap))
+FXIMPLEMENT(GNEPythonToolDialog, MFXDialogBox, GNEPythonToolDialogMap, ARRAYNUMBER(GNEPythonToolDialogMap))
 
 // ============================================-===============================
 // member method definitions
 // ===========================================================================
 
 GNEPythonToolDialog::GNEPythonToolDialog(GNEApplicationWindow* GNEApp) :
-    FXDialogBox(GNEApp->getApp(), "Tool", GUIDesignAuxiliarDialogBoxResizable),
+    MFXDialogBox(GNEApp->getApp(), "Tool", GUIDesignAuxiliarDialogBoxResizable),
     myGNEApp(GNEApp) {
     // set icon
     setIcon(GUIIconSubSys::getIcon(GUIIcon::TOOL_PYTHON));
@@ -124,9 +128,15 @@ GNEPythonToolDialog::openDialog(GNEPythonTool* tool) {
     // resize
     resize(1024, maximumHeight <= 768 ? maximumHeight : 768);
     // show dialog
-    FXDialogBox::show(PLACEMENT_SCREEN);
+    MFXDialogBox::show(PLACEMENT_SCREEN);
     // refresh APP
     getApp()->refresh();
+}
+
+
+void
+GNEPythonToolDialog::runInternalTest(const InternalTestStep::DialogTest* /*dialogTest*/) {
+    // finish
 }
 
 

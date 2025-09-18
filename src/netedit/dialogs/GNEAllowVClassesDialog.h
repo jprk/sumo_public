@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -19,37 +19,41 @@
 /****************************************************************************/
 #pragma once
 #include <config.h>
-#include <utils/common/SUMOVehicleClass.h>
 
+#include <utils/common/SUMOVehicleClass.h>
+#include <utils/foxtools/MFXDialogBox.h>
 
 // ===========================================================================
 // class definitions
 // ===========================================================================
+
 class GNEAttributeCarrier;
+class GNEInternalTest;
 class GNEViewNet;
 
-
 // ===========================================================================
 // class definitions
 // ===========================================================================
 
-/**
- * @class GNEAllowVClassesDialog
- * @brief Dialog for edit rerouters
- */
-class GNEAllowVClassesDialog : public FXDialogBox {
+class GNEAllowVClassesDialog : public MFXDialogBox {
     /// @brief FOX-declaration
     FXDECLARE(GNEAllowVClassesDialog)
 
 public:
-    /// @brief Constructor (for AC)
-    GNEAllowVClassesDialog(GNEViewNet* viewNet, GNEAttributeCarrier* AC, SumoXMLAttr attr, bool* acceptChanges);
-
-    /// @brief Constructor (For
-    GNEAllowVClassesDialog(GNEViewNet* viewNet, std::string* allow, bool* acceptChanges);
+    /// @brief Constructor
+    GNEAllowVClassesDialog(GNEViewNet* viewNet);
 
     /// @brief destructor
     ~GNEAllowVClassesDialog();
+
+    /// @brief open dialog
+    int openDialog(SumoXMLAttr attr, const std::string originalVClasses, GNEInternalTest* internalTests);
+
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* modalArguments);
+
+    /// @brief get vClasses modified by this dialog
+    std::string getModifiedVClasses() const;
 
     /// @name FOX-callbacks
     /// @{
@@ -69,13 +73,14 @@ public:
     long onCmdSelectOnlyRail(FXObject*, FXSelector, void*);
 
     /// @brief event after press accept button
-    long onCmdAccept(FXObject*, FXSelector, void*);
+    long onCmdAccept(FXObject* sender, FXSelector sel, void* arg);
 
     /// @brief event after press cancel button
-    long onCmdCancel(FXObject*, FXSelector, void*);
+    long onCmdCancel(FXObject* sender, FXSelector sel, void* arg);
 
     /// @brief event after press reset button
     long onCmdReset(FXObject*, FXSelector, void*);
+
     /// @}
 
 protected:
@@ -85,20 +90,14 @@ protected:
     /// @pointer to viewNet
     GNEViewNet* myViewNet;
 
-    /// @brief edited AC
-    GNEAttributeCarrier* myAC;
+    /// @brief original vClasses
+    std::string myOriginalVClasses;
 
-    /// @brief the attribute being edited
-    SumoXMLAttr myEditedAttr;
-
-    /// @brief accept changes
-    bool* myAcceptChanges;
-
-    /// @brief allow vehicles
-    std::string* myAllow;
+    /// @brief edited vClasses
+    std::string myEditedVClasses;
 
     /// @brief accept button
-    FXButton* myAcceptButton;
+    FXButton* myKeepOldButton;
 
     /// @brief cancel button
     FXButton* myCancelButton;
@@ -110,9 +109,6 @@ protected:
     std::map<SUMOVehicleClass, std::pair<FXButton*, FXLabel*> > myVClassMap;
 
 private:
-    /// @brief constructor
-    void constructor();
-
     /// @brief build VClass
     void buildVClass(FXVerticalFrame* contentsFrame, SUMOVehicleClass vclass, GUIIcon vclassIcon, const std::string& description);
 

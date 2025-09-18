@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2004-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2004-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -70,6 +70,15 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
         return *myOutputDevices[name];
     }
     // build the device
+    const OptionsCont& oc = OptionsCont::getOptions();
+    const int len = (int)name.length();
+    bool isParquet = (oc.exists("output.format") && oc.getString("output.format") == "parquet") || (len > 8 && name.substr(len - 8) == ".parquet");
+#ifndef HAVE_PARQUET
+    if (isParquet) {
+        WRITE_WARNING("Compiled without Parquet support, falling back to XML.")
+        isParquet = false;
+    }
+#endif
     OutputDevice* dev = nullptr;
     // check whether the device shall print to stdout
     if (name == "stdout") {
@@ -89,8 +98,8 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
         }
     } else {
         std::string name2 = (name == "nul" || name == "NUL") ? "/dev/null" : name;
-        if (usePrefix && OptionsCont::getOptions().isSet("output-prefix") && name2 != "/dev/null") {
-            std::string prefix = OptionsCont::getOptions().getString("output-prefix");
+        if (usePrefix && oc.isSet("output-prefix") && name2 != "/dev/null") {
+            std::string prefix = oc.getString("output-prefix");
             const std::string::size_type metaTimeIndex = prefix.find("TIME");
             if (metaTimeIndex != std::string::npos) {
                 const time_t rawtime = std::chrono::system_clock::to_time_t(OptionsIO::getLoadTime());
@@ -102,9 +111,16 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
             name2 = FileHelpers::prependToLastPathComponent(prefix, name);
         }
         name2 = StringUtils::substituteEnvironment(name2, &OptionsIO::getLoadTime());
-        const int len = (int)name.length();
-        dev = new OutputDevice_File(name2, len > 3 && name.substr(len - 3) == ".gz");
+        dev = new OutputDevice_File(name2, isParquet);
     }
+    if ((oc.exists("output.format") && oc.getString("output.format") == "csv") || (len > 4 && name.substr(len - 4) == ".csv") || (len > 7 && name.substr(len - 7) == ".csv.gz")) {
+        dev->setFormatter(new CSVFormatter(oc.getString("output.column-header"), oc.getString("output.column-separator")[0]));
+    }
+#ifdef HAVE_PARQUET
+    if (isParquet) {
+        dev->setFormatter(new ParquetFormatter(oc.getString("output.column-header"), oc.getString("output.compression")));
+    }
+#endif
     dev->setPrecision();
     dev->getOStream() << std::setiosflags(std::ios::fixed);
     myOutputDevices[name] = dev;
@@ -182,24 +198,6 @@ OutputDevice::closeAll(bool keepErrorRetrievers) {
 }
 
 
-std::string
-OutputDevice::realString(const double v, const int precision) {
-    std::ostringstream oss;
-    if (v == 0) {
-        return "0";
-    }
-    if (fabs(v) < pow(10., -precision)) {
-        oss.setf(std::ios::scientific, std::ios::floatfield);
-    } else {
-        oss.setf(std::ios::fixed, std::ios::floatfield);     // use decimal format
-        oss.setf(std::ios::showpoint);    // print decimal point
-        oss << std::setprecision(precision);
-    }
-    oss << v;
-    return oss.str();
-}
-
-
 // ===========================================================================
 // member method definitions
 // ===========================================================================
@@ -241,12 +239,6 @@ OutputDevice::close() {
 void
 OutputDevice::setPrecision(int precision) {
     getOStream() << std::setprecision(precision);
-}
-
-
-int
-OutputDevice::precision() {
-    return (int)getOStream().precision();
 }
 
 
@@ -299,6 +291,26 @@ OutputDevice::inform(const std::string& msg, const bool progress) {
         getOStream() << msg << '\n';
     }
     postWriteHook();
+}
+
+
+const SumoXMLAttrMask
+OutputDevice::parseWrittenAttributes(const std::vector<std::string>& attrList, const std::string& desc, const std::map<std::string, SumoXMLAttrMask>& special) {
+    SumoXMLAttrMask result;
+    for (std::string attrName : attrList) {
+        if (attrName == "all") {
+            result.set();
+        } else if (special.count(attrName) > 0) {
+            result |= special.find(attrName)->second;
+        } else {
+            if (SUMOXMLDefinitions::Attrs.hasString(attrName)) {
+                result.set(SUMOXMLDefinitions::Attrs.get(attrName));
+            } else {
+                WRITE_ERRORF(TL("Unknown attribute '%' to write in %."), attrName, desc);
+            }
+        }
+    }
+    return result;
 }
 
 

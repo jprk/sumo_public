@@ -237,6 +237,16 @@ This script generates parking area rerouters from a parking area definition. Exa
 python tools/generateParkingAreaRerouters.py -n <net-file> -a <parkingArea-file> -o <output-file>
 ```
 
+
+# generateLandmarks.py
+
+This script generates a landmark file for use with duarouter options **--astar.landmark-distances FILE --astar.save-landmark-distances FILE2**. Example:
+
+```
+python tools/generateLandmarks.py -n <net-file> -o <output-file>
+```
+See [Routing algorithm ALT](../Simulation/Routing.md#alt).
+
 # averageTripStatistics.py
 
 This script runs a given sumo configuration multiple times with
@@ -271,6 +281,9 @@ ptlines-file will be used, rather than creating new shortest path routes between
 
 A *ptlines-file* is typically created by [netconvert](../netconvert.md) option **--ptline-output** when importing OSM data.
 However it can also be customized or created from scratch for a non OSM network.
+
+!!! note
+    A [tutorial](../Tutorials/PT_from_OpenStreetMap.md) for using this tool with OSM data is also availabe
 
 ## Example Input
 

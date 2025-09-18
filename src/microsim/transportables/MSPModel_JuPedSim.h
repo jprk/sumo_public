@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -95,7 +95,7 @@ private:
         inline Position getPosition(const MSStageMoving&, SUMOTime) const override {
             return myRemoteXYPos;
         }
-        void setPosition(double x, double y);
+        void setPosition(const double x, const double y, const double z = 0.);
 
         inline void setAngle(double angle) {
             myAngle = angle;
@@ -208,7 +208,6 @@ private:
     static const double GEOS_MITRE_LIMIT;
     static const double GEOS_MIN_AREA;
     static const double GEOS_BUFFERED_SEGMENT_WIDTH;
-    static const double CARRIAGE_RAMP_LENGTH;
     static const RGBColor PEDESTRIAN_NETWORK_COLOR;
     static const RGBColor PEDESTRIAN_NETWORK_CARRIAGES_AND_RAMPS_COLOR;
     static const std::string PEDESTRIAN_NETWORK_ID;

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -25,13 +25,15 @@
 #include <utils/vehicle/SUMOVTypeParameter.h>
 #include <utils/common/ToString.h>
 #include <utils/common/StringUtils.h>
+#include <utils/common/StringTokenizer.h>
 #include <utils/common/MsgHandler.h>
+#include <utils/common/FileHelpers.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/options/OptionsCont.h>
 #include <utils/xml/SUMOXMLDefinitions.h>
 #include <utils/emissions/PollutantsInterface.h>
 
-#define EMPREFIX std::string("HBEFA3/")
+#define EMPREFIX std::string("HBEFA4/")
 #define TTT_UNSET SUMOTime_MIN
 
 // ===========================================================================
@@ -48,7 +50,10 @@ std::set<SumoXMLAttr> SUMOVTypeParameter::AllowedJMAttrs({
     SUMO_ATTR_JM_IGNORE_JUNCTION_FOE_PROB,
     SUMO_ATTR_JM_SIGMA_MINOR,
     SUMO_ATTR_JM_STOPLINE_GAP,
+    SUMO_ATTR_JM_STOPLINE_GAP_MINOR,
     SUMO_ATTR_JM_TIMEGAP_MINOR,
+    SUMO_ATTR_JM_EXTRA_GAP,
+    SUMO_ATTR_JM_ADVANCE,
     SUMO_ATTR_JM_STOPSIGN_WAIT,
     SUMO_ATTR_JM_ALLWAYSTOP_WAIT,
 });
@@ -64,11 +69,11 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
     minGapLat(0.6),
     maxSpeed(200. / 3.6),
     desiredMaxSpeed(10000 / 3.6), // backward-compatibility: do not influence speeds by default
-    width(1.8),
-    height(1.5),
+    width(DEFAULT_VEH_WIDTH),
+    height(DEFAULT_VEH_HEIGHT),
     shape(SUMOVehicleShape::UNKNOWN),
-    emissionClass(PollutantsInterface::getClassByName(EMPREFIX + "PC_G_EU4", vclass)),
-    mass(1500.),
+    emissionClass(PollutantsInterface::getClassByName(EMPREFIX + "default", vclass)),
+    mass(DEFAULT_VEH_MASS),
     speedFactor("normc", 1.0, 0.0, 0.2, 2.0),
     personCapacity(4),
     containerCapacity(0),
@@ -76,6 +81,8 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
     carriageLength(-1),
     locomotiveLength(-1),
     carriageDoors(2),
+    carriageDoorWidth(1.5),
+    maxPlatformDistance(3.),
     latAlignmentProcedure(LatAlignmentDefinition::CENTER) {
     // update default values
     switch (vclass) {
@@ -89,7 +96,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             osgFile = "humanResting.obj";
             emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "zero", vclass);
             mass = 70.; // https://en.wikipedia.org/wiki/Human_body_weight for Europe
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_WHEELCHAIR:
             minGap = 0.5;
@@ -101,7 +108,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             osgFile = "humanResting.obj";
             emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "zero", vclass);
             mass = 90.; //
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_BICYCLE:
             minGap = 0.5;
@@ -114,7 +121,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             personCapacity = 1;
             emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "zero", vclass);
             mass = 10.;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             latAlignmentProcedure = LatAlignmentDefinition::RIGHT;
             break;
         case SVC_SCOOTER:
@@ -128,7 +135,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             personCapacity = 1;
             emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "zero", vclass);
             mass = 10.;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             latAlignmentProcedure = LatAlignmentDefinition::RIGHT;
             break;
         case SVC_MOPED:
@@ -137,18 +144,18 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             height = 1.7;
             shape = SUMOVehicleShape::MOPED;
             personCapacity = 1;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LDV_G_EU6", vclass);
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "Moped_le50cc_Euro-2", vclass);
             mass = 80.;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_MOTORCYCLE:
             width = 0.9;
             height = 1.5;
             shape = SUMOVehicleShape::MOTORCYCLE;
             personCapacity = 1;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LDV_G_EU6", vclass);
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "MC_4S_gt250cc_preEuro", vclass);
             mass = 200.;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_TRUCK:
             maxSpeed = 130. / 3.6;
@@ -158,9 +165,9 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             osgFile = "car-microcargo-citrus.obj";
             personCapacity = 2;
             containerCapacity = 1;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "HDV", vclass);
-            mass = 12000.;
-            speedFactor.getParameter()[1] = 0.05;
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "RT_le7.5t_Euro-VI_A-C", vclass);
+            mass = 4500.;
+            speedFactor.setParameter(1, 0.05);
             break;
         case SVC_TRAILER:
             maxSpeed = 130. / 3.6;
@@ -170,9 +177,9 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             osgFile = "car-microcargo-citrus.obj";
             personCapacity = 2;
             containerCapacity = 2;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "HDV", vclass);
-            mass = 15000.;
-            speedFactor.getParameter()[1] = 0.05;
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "TT_AT_gt34-40t_Euro-VI_A-C", vclass);
+            mass = 13000.;
+            speedFactor.setParameter(1, 0.05);
             break;
         case SVC_BUS:
             maxSpeed = 100. / 3.6;
@@ -181,8 +188,10 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             shape = SUMOVehicleShape::BUS;
             osgFile = "car-minibus-citrus.obj";
             personCapacity = 85;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "Bus", vclass);
-            mass = 7500.;
+            // the following values keep better consistency with the default bus length,
+            // although the most frequent city bus seems to have 3 axes and >18t according to the HBEFA4 data
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "UBus_Std_gt15-18t_Euro-VI_A-C", vclass);
+            mass = 12000.;
             break;
         case SVC_COACH:
             maxSpeed = 100. / 3.6;
@@ -191,9 +200,9 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             shape = SUMOVehicleShape::BUS_COACH;
             osgFile = "car-minibus-citrus.obj";
             personCapacity = 70;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "Coach", vclass);
-            mass = 12000.;
-            speedFactor.getParameter()[1] = 0.05;
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "Coach_3-Axes_gt18t_Euro-VI_A-C", vclass);
+            mass = 25000.;
+            speedFactor.setParameter(1, 0.05);
             break;
         case SVC_TRAM:
             maxSpeed = 80. / 3.6;
@@ -224,7 +233,7 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             shape = SUMOVehicleShape::RAIL;
             personCapacity = 434;
             // slight understatement (-:
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "HDV_D_EU0", vclass);
+            emissionClass = PollutantsInterface::getClassByName("HBEFA3/HDV_D_EU0", vclass);
             mass = 79500.; // only locomotive
             break;
         case SVC_RAIL_ELECTRIC:
@@ -252,16 +261,16 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             height = 2.86;
             shape = SUMOVehicleShape::DELIVERY;
             personCapacity = 2;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LDV", vclass);
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LCV_diesel_N1-III_Euro-6ab", vclass);
             mass = 5000.;
-            speedFactor.getParameter()[1] = 0.05;
+            speedFactor.setParameter(1, 0.05);
             break;
         case SVC_EMERGENCY:
             width = 2.16;
             height = 2.86;
             shape = SUMOVehicleShape::DELIVERY;
             personCapacity = 2;
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LDV", vclass);
+            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "LCV_diesel_N1-III_Euro-6ab", vclass);
             mass = 5000.;
             break;
         case SVC_PRIVATE:
@@ -271,19 +280,21 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
         case SVC_CUSTOM1:
         case SVC_CUSTOM2:
             shape = SUMOVehicleShape::PASSENGER;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_TAXI:
             shape = SUMOVehicleShape::TAXI;
-            speedFactor.getParameter()[1] = 0.05;
+            speedFactor.setParameter(1, 0.05);
             break;
         case SVC_E_VEHICLE:
             shape = SUMOVehicleShape::E_VEHICLE;
             emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "zero", vclass);
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         case SVC_CONTAINER:
-            width = 2.5908;
+            // ISO Container TEU
+            width = 2.438;
+            height = 2.591;
             break;
         case SVC_DRONE:
             width = 0.5;
@@ -299,9 +310,9 @@ SUMOVTypeParameter::VClassDefaultValues::VClassDefaultValues(SUMOVehicleClass vc
             height = 4;
             shape = SUMOVehicleShape::SHIP;
             // slight understatement (-:
-            emissionClass = PollutantsInterface::getClassByName(EMPREFIX + "HDV_D_EU0", vclass);
+            emissionClass = PollutantsInterface::getClassByName("HBEFA3/HDV_D_EU0", vclass);
             mass = 100000.;
-            speedFactor.getParameter()[1] = 0.1;
+            speedFactor.setParameter(1, 0.1);
             break;
         default:
             break;
@@ -317,7 +328,7 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
       actionStepLength(0),
       defaultProbability(DEFAULT_VEH_PROB),
       speedFactor("normc", 1.0, 0.0, 0.2, 2.0),
-      emissionClass(PollutantsInterface::getClassByName(EMPREFIX + "PC_G_EU4", vclass)),
+      emissionClass(PollutantsInterface::getClassByName(EMPREFIX + "default", vclass)),
       color(RGBColor::DEFAULT_COLOR),
       vehicleClass(vclass),
       impatience(0.0),
@@ -335,10 +346,13 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
       maxSpeedLat(1.0),
       latAlignmentOffset(0.0),
       latAlignmentProcedure(LatAlignmentDefinition::CENTER),
+      scaleVisual(1),
       carriageLength(-1),
       locomotiveLength(-1),
-      carriageGap(1),
+      carriageGap(1.),
       carriageDoors(2),
+      carriageDoorWidth(1.5),
+      maxPlatformDistance(3.),
       timeToTeleport(TTT_UNSET),
       timeToTeleportBidi(TTT_UNSET),
       speedFactorPremature(-1),
@@ -378,10 +392,10 @@ SUMOVTypeParameter::SUMOVTypeParameter(const std::string& vtid, const SUMOVehicl
     if (oc.exists("default.speeddev")) {
         const double defaultSpeedDev = oc.getFloat("default.speeddev");
         if (defaultSpeedDev >= 0) {
-            speedFactor.getParameter()[1] = defaultSpeedDev;
+            speedFactor.setParameter(1, defaultSpeedDev);
         }
     } else {
-        speedFactor.getParameter()[1] = -1;
+        speedFactor.setParameter(1, -1.);
     }
     setManoeuverAngleTimes(vclass);
 }
@@ -638,6 +652,41 @@ SUMOVTypeParameter::getCFParamString(const SumoXMLAttr attr, const std::string d
 }
 
 
+std::vector<double>
+SUMOVTypeParameter::getCFValueTable(SumoXMLAttr attr) const {
+    std::vector<double> result;
+    const std::string values = getCFParamString(attr, "");
+    if (!values.empty()) {
+        for (std::string value : StringTokenizer(values).getVector()) {
+            result.push_back(StringUtils::toDouble(value));
+        }
+    }
+    return result;
+}
+
+
+
+LinearApproxHelpers::LinearApproxMap
+SUMOVTypeParameter::getCFProfile(const SumoXMLAttr attr, const LinearApproxHelpers::LinearApproxMap& defaultProfile) const {
+    if (cfParameter.count(attr)) {
+        std::vector<double> speedTable = getCFValueTable(SUMO_ATTR_SPEED_TABLE);
+        std::vector<double> valueTable = getCFValueTable(attr);
+        if (valueTable.size() == 1) {
+            throw ProcessError(TLF("Invalid size of % table for vType '%' (at least 2 values are required).", toString(attr), id));
+        } else if (speedTable.size() != valueTable.size()) {
+            throw ProcessError(TLF("Mismatching size of speedTable (%) and % table (%) for vType '%'.", speedTable.size(), toString(attr), valueTable.size(), id));
+        }
+        LinearApproxHelpers::LinearApproxMap result;
+        for (int i = 0; i < (int)speedTable.size(); i++) {
+            result[speedTable[i]] = valueTable[i];
+        }
+        return result;
+    } else {
+        return defaultProfile;
+    }
+}
+
+
 double
 SUMOVTypeParameter::getLCParam(const SumoXMLAttr attr, const double defaultValue) const {
     if (lcParameter.count(attr)) {
@@ -735,7 +784,10 @@ SUMOVTypeParameter::cacheParamRestrictions(const std::vector<std::string>& restr
 
 
 void
-SUMOVTypeParameter::initRailVisualizationParameters() {
+SUMOVTypeParameter::initRailVisualizationParameters(const std::string fileName) {
+    if (hasParameter("scaleVisual")) {
+        scaleVisual = StringUtils::toDouble(getParameter("scaleVisual"));
+    }
     if (hasParameter("carriageLength")) {
         carriageLength = StringUtils::toDouble(getParameter("carriageLength"));
         parametersSet |= VTYPEPARS_CARRIAGE_LENGTH_SET;
@@ -799,6 +851,12 @@ SUMOVTypeParameter::initRailVisualizationParameters() {
         carriageDoors = StringUtils::toInt(getParameter("carriageDoors"));
         parametersSet |= VTYPEPARS_CARRIAGE_DOORS_SET;
     }
+    if (hasParameter("carriageDoorWidth")) {
+        carriageDoorWidth = StringUtils::toDouble(getParameter("carriageDoorWidth"));
+    }
+    if (hasParameter("maxPlatformDistance")) {
+        maxPlatformDistance = StringUtils::toDouble(getParameter("maxPlatformDistance"));
+    }
     if (hasParameter("frontSeatPos")) {
         frontSeatPos = StringUtils::toDouble(getParameter("frontSeatPos"));
         parametersSet |= VTYPEPARS_FRONT_SEAT_POS_SET;
@@ -836,6 +894,12 @@ SUMOVTypeParameter::initRailVisualizationParameters() {
     if (hasParameter("seatingWidth")) {
         seatingWidth = StringUtils::toDouble(getParameter("seatingWidth"));
         parametersSet |= VTYPEPARS_SEATING_WIDTH_SET;
+    }
+    if (hasParameter("carriageImages")) {
+        std::vector<std::string> rawFiles = StringTokenizer(getParameter("carriageImages"), ",").getVector();
+        for (const std::string& f : rawFiles) {
+            carriageImages.push_back(FileHelpers::checkForRelativity(f, fileName));
+        }
     }
 }
 
@@ -1015,6 +1079,55 @@ SUMOVTypeParameter::getTimeToTeleport(SUMOTime defaultValue) const {
 SUMOTime
 SUMOVTypeParameter::getTimeToTeleportBidi(SUMOTime defaultValue) const {
     return timeToTeleportBidi == TTT_UNSET ? defaultValue : timeToTeleportBidi;
+}
+
+LinearApproxHelpers::LinearApproxMap
+SUMOVTypeParameter::getDefaultMaxAccelProfile(const SUMOVehicleClass vc, double maxAccel) {
+    UNUSED_PARAMETER(maxAccel);
+    LinearApproxHelpers::LinearApproxMap result;
+    std::vector<std::pair<double, double> > MaxAccelProfile;
+    switch (vc) {
+        case SVC_PEDESTRIAN:
+        case SVC_BICYCLE:
+        case SVC_MOTORCYCLE:
+        case SVC_MOPED:
+        case SVC_TRUCK:
+        case SVC_TRAILER:
+        case SVC_BUS:
+        case SVC_COACH:
+        case SVC_TRAM:
+        case SVC_RAIL_URBAN:
+        case SVC_RAIL:
+        case SVC_RAIL_ELECTRIC:
+        case SVC_RAIL_FAST:
+        case SVC_SHIP:
+        default:
+            return result;
+    }
+}
+
+LinearApproxHelpers::LinearApproxMap
+SUMOVTypeParameter::getDefaultDesAccelProfile(const SUMOVehicleClass vc, double desAccel) {
+    UNUSED_PARAMETER(desAccel);
+    LinearApproxHelpers::LinearApproxMap result;
+    switch (vc) {
+        case SVC_PEDESTRIAN:
+        case SVC_BICYCLE:
+        case SVC_MOTORCYCLE:
+        case SVC_MOPED:
+        case SVC_TRUCK:
+        case SVC_TRAILER:
+        case SVC_BUS:
+        case SVC_COACH:
+        case SVC_TRAM:
+        case SVC_RAIL_URBAN:
+        case SVC_RAIL:
+        case SVC_RAIL_ELECTRIC:
+        case SVC_RAIL_FAST:
+        case SVC_SHIP:
+        default:
+            return result;
+    }
 }
 
 /****************************************************************************/

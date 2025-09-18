@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2024 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -19,33 +19,30 @@
 import os
 import sys
 
-testRoot = os.path.join(os.environ.get('SUMO_HOME', '.'), 'tests')
-neteditTestRoot = os.path.join(
-    os.environ.get('TEXTTEST_HOME', testRoot), 'netedit')
-sys.path.append(neteditTestRoot)
+sys.path.append(os.path.join(os.environ.get("SUMO_HOME", "."), "tools"))
 import neteditTestFunctions as netedit  # noqa
 
 # Open netedit
-neteditProcess, referencePosition = netedit.setupAndStart(neteditTestRoot)
+neteditProcess, referencePosition = netedit.setupAndStart()
 
 # go to additional mode
-netedit.additionalMode()
+netedit.changeMode("additional")
 
 # select BusStop
-netedit.changeElement("busStop")
+netedit.changeElement("additionalFrame", "busStop")
 
 # create BusStop with default parameters
 netedit.leftClick(referencePosition, netedit.positions.elements.edgeCenter1)
 
 # select Access
-netedit.changeElement("access")
+netedit.changeElement("additionalFrame", "access")
 
 # Create Access
 netedit.selectAdditionalChild(netedit.attrs.access.create.parent, 0)
 netedit.leftClick(referencePosition, netedit.positions.elements.edge0Ped)
 
 # go to delete mode
-netedit.deleteMode()
+netedit.changeMode("delete")
 
 # delete Access
 netedit.leftClick(referencePosition, netedit.positions.elements.edge0Ped)
@@ -54,7 +51,7 @@ netedit.leftClick(referencePosition, netedit.positions.elements.edge0Ped)
 netedit.undo(referencePosition, 1)
 
 # go to delete mode
-netedit.deleteMode()
+netedit.changeMode("delete")
 
 # delete busStop
 netedit.leftClick(referencePosition, netedit.positions.elements.additionals.busStop)
@@ -63,7 +60,7 @@ netedit.leftClick(referencePosition, netedit.positions.elements.additionals.busS
 netedit.undo(referencePosition, 1)
 
 # go to delete mode
-netedit.deleteMode()
+netedit.changeMode("delete")
 
 # delete Access
 netedit.leftClick(referencePosition, netedit.positions.elements.edge0)
@@ -71,8 +68,8 @@ netedit.leftClick(referencePosition, netedit.positions.elements.edge0)
 # wait warning
 netedit.waitDeleteWarning()
 
-# disable 'Automatically delete additionals'
-netedit.protectElements(referencePosition)
+# disable "Automatically delete additionals"
+netedit.protectElements()
 
 # delete Access
 netedit.leftClick(referencePosition, netedit.positions.elements.edge0)
@@ -81,7 +78,7 @@ netedit.leftClick(referencePosition, netedit.positions.elements.edge0)
 netedit.checkUndoRedo(referencePosition)
 
 # save netedit config
-netedit.saveNeteditConfig(referencePosition)
+netedit.saveExistentShortcut("neteditConfig")
 
 # quit netedit
 netedit.quit(neteditProcess)

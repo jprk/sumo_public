@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -21,25 +21,22 @@
 #include <config.h>
 
 #include <utils/common/SUMOVehicleClass.h>
+#include <utils/foxtools/MFXDialogBox.h>
 #include <utils/xml/SUMOSAXHandler.h>
-#include <netedit/frames/GNEFrameAttributeModules.h>
 
 // ===========================================================================
 // class definitions
 // ===========================================================================
 
 class GNEAttributeCarrier;
+class GNEAttributesEditorType;
 class GNEViewNet;
 
 // ===========================================================================
 // class definitions
 // ===========================================================================
 
-/**
- * @class GNEMultipleParametersDialog
- * @brief Dialog for edit  parameters
- */
-class GNEMultipleParametersDialog : public FXDialogBox {
+class GNEMultipleParametersDialog : public MFXDialogBox {
     /// @brief FOX-declaration
     FXDECLARE(GNEMultipleParametersDialog)
 
@@ -253,13 +250,17 @@ public:
     };
 
     /// @brief Constructor for parameter editor inspector
-    GNEMultipleParametersDialog(GNEFrameAttributeModules::ParametersEditor* parametersEditorInspector);
+    GNEMultipleParametersDialog(GNEAttributesEditorType* attributesEditor);
 
     /// @brief destructor
     ~GNEMultipleParametersDialog();
 
+    /// @brief run internal test
+    void runInternalTest(const InternalTestStep::DialogTest* modalArguments);
+
     /// @name FOX-callbacks
     /// @{
+
     /// @brief event after press accept button
     long onCmdAccept(FXObject*, FXSelector, void*);
 
@@ -268,14 +269,15 @@ public:
 
     /// @brief event after press reset button
     long onCmdReset(FXObject*, FXSelector, void*);
+
     /// @}
 
 protected:
     /// @brief FOX need this
     FOX_CONSTRUCTOR(GNEMultipleParametersDialog)
 
-    /// @brief pointer to ParametersEditor
-    GNEFrameAttributeModules::ParametersEditor* myParametersEditor;
+    /// @brief pointer to attributes editor
+    GNEAttributesEditorType* myAttributesEditor;
 
     /// @brief pointer to parameters values
     ParametersValues* myParametersValues;
@@ -287,7 +289,7 @@ protected:
     ParametersOptions* myParametersOptions;
 
     /// @brief accept button
-    FXButton* myAcceptButton;
+    FXButton* myKeepOldButton;
 
     /// @brief cancel button
     FXButton* myCancelButton;

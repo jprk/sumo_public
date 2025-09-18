@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2010-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -383,6 +383,11 @@ public:
         return INVALID_DOUBLE;
     }
 
+    /// @brief return time (s) and distance to the next stop
+    virtual std::pair<double, double> estimateTimeToNextStop() const {
+        return std::make_pair(-1, -1);
+    }
+
     /** @brief Returns this vehicle's real departure position
      * @return This vehicle's real departure position
      */
@@ -430,6 +435,10 @@ public:
 
     /// @brief return index of edge within route
     int getRoutePosition() const;
+
+    int getArrivalIndex() const {
+        return myParameter->arrivalEdge;
+    }
 
     /// @brief reset index of edge within route
     void resetRoutePosition(int index, DepartLaneDefinition departLaneProcedure);
@@ -519,12 +528,15 @@ public:
     /// @brief check for route validity at first insertion attempt
     int getRouteValidity(bool update = true, bool silent = false, std::string* msgReturn = nullptr);
 
+    /// @brief Checks whether the vehilce has the given MoveReminder
+    bool hasReminder(MSMoveReminder* rem) const;
+
     /** @brief Adds a MoveReminder dynamically
      *
      * @param[in] rem the reminder to add
      * @see MSMoveReminder
      */
-    void addReminder(MSMoveReminder* rem);
+    void addReminder(MSMoveReminder* rem, double pos = 0);
 
     /** @brief Removes a MoveReminder dynamically
      *
@@ -554,6 +566,9 @@ public:
         return myType->getLength();
     }
 
+    /* @brief Return whether this vehicle must be treated like a railway vehicle
+     * either due to its vClass or the vClass of it's edge */
+    bool isRail() const;
 
     /** @brief Returns the vehicle's width
      * @return vehicle's width
@@ -568,6 +583,10 @@ public:
      */
     inline double getChosenSpeedFactor() const {
         return myChosenSpeedFactor;
+    }
+
+    inline double getDesiredMaxSpeed() const {
+        return myType->getDesiredMaxSpeed() * myChosenSpeedFactor;
     }
 
     /** @brief Returns the precomputed factor by which the driver wants to be faster than the speed limit
@@ -589,7 +608,7 @@ public:
      * @param[in] type The new vehicle type
      * @see MSBaseVehicle::myType
      */
-    virtual void replaceVehicleType(MSVehicleType* type);
+    virtual void replaceVehicleType(const MSVehicleType* type);
 
 
     /** @brief Replaces the current vehicle type with a new one used by this vehicle only
@@ -692,11 +711,6 @@ public:
     /// @brief check whether all stop.edge MSRouteIterators are valid and in order
     bool haveValidStopEdges(bool silent = false) const;
 
-    /** @brief Returns the list of still pending stop edges
-     * also returns the first and last stop position
-     */
-    const ConstMSEdgeVector getStopEdges(double& firstPos, double& lastPos, std::set<int>& jumps) const;
-
     /// @brief return list of route indices for the remaining stops
     std::vector<std::pair<int, double> > getStopIndices() const;
 
@@ -708,7 +722,7 @@ public:
         return myStops;
     }
 
-    inline const std::vector<SUMOVehicleParameter::Stop>& getPastStops() const {
+    inline const StopParVector& getPastStops() const {
         return myPastStops;
     }
 
@@ -716,7 +730,13 @@ public:
     * returns the next imminent stop in the stop queue
     * @return the upcoming stop
     */
-    MSStop& getNextStop();
+    const MSStop& getNextStop() const;
+
+    /**
+    * returns the next imminent stop in the stop queue
+    * @return the upcoming stop
+    */
+    MSStop& getNextStopMutable();
 
     /// @brief get remaining stop duration or 0 if the vehicle isn't stopped
     SUMOTime getStopDuration() const;
@@ -950,10 +970,12 @@ public:
      * If the distance is not given it is calculated from the brake gap.
      * The gap returned does not include the minGap.
      * @param dist    up to which distance to look at least for a leader
+     * @param considerCrossingFoes Whether vehicles on crossing foe links should be considered
      * @return The leading vehicle together with the gap; (0, -1) if no leader was found.
      */
-    virtual std::pair<const MSVehicle* const, double> getLeader(double dist = 0) const {
+    virtual std::pair<const MSVehicle* const, double> getLeader(double dist = 0, bool considerCrossingFoes = true) const {
         UNUSED_PARAMETER(dist);
+        UNUSED_PARAMETER(considerCrossingFoes);
         WRITE_WARNING(TL("getLeader not yet implemented for meso"));
         return std::make_pair(nullptr, -1);
     }
@@ -978,6 +1000,10 @@ public:
 
     /// @brief apply departEdge and arrivalEdge attributes
     void setDepartAndArrivalEdge();
+
+    int getDepartEdge() const;
+
+    int getInsertionChecks() const;
 
     /// @brief interpret stop lane on opposite side of the road
     static MSLane* interpretOppositeStop(SUMOVehicleParameter::Stop& stop);
@@ -1012,6 +1038,49 @@ public:
     //@}
 
 protected:
+    /// @brief reset rail signal approach information
+    virtual void resetApproachOnReroute() {};
+
+    struct StopEdgeInfo {
+
+        StopEdgeInfo(const MSEdge* _edge, double _priority, SUMOTime _arrival, double _pos):
+            edge(_edge), pos(_pos),
+            priority(_priority), arrival(_arrival) {};
+        const MSEdge* edge;
+        double pos;
+        double priority;
+        SUMOTime arrival;
+        /// @brief values set during routing and used during optimization
+        int routeIndex = -1;
+        bool skipped = false;
+        bool backtracked = false;
+        SUMOTime delay = 0;
+
+        bool operator==(const StopEdgeInfo& o) const {
+            return edge == o.edge;
+        }
+        bool operator!=(const StopEdgeInfo& o) const {
+            return !(*this == o);
+        }
+    };
+
+    /** @brief Returns the list of still pending stop edges
+     * also returns the first and last stop position
+     */
+    std::vector<StopEdgeInfo> getStopEdges(double& firstPos, double& lastPos, std::set<int>& jumps) const;
+
+    static double addStopPriority(double p1, double p2);
+
+
+    ConstMSEdgeVector optimizeSkipped(SUMOTime t, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
+            const MSEdge* source, double sourcePos, std::vector<StopEdgeInfo>& stops, ConstMSEdgeVector edges, SUMOTime maxDelay) const;
+
+    ConstMSEdgeVector routeAlongStops(SUMOTime t, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
+        std::vector<StopEdgeInfo>& stops, ConstMSEdgeVector edges,
+        int originStop, SUMOTime maxDelay, double& skippedPrio2) const;
+
+
+protected:
     /// @brief This vehicle's parameter.
     const SUMOVehicleParameter* myParameter;
 
@@ -1019,7 +1088,7 @@ protected:
     ConstMSRoutePtr myRoute;
 
     /// @brief This vehicle's type.
-    MSVehicleType* myType;
+    const MSVehicleType* myType;
 
     /// @brief Iterator to current route-edge
     MSRouteIterator myCurrEdge;
@@ -1031,8 +1100,7 @@ protected:
     std::list<MSStop> myStops;
 
     /// @brief The list of stops that the vehicle has already reached
-    std::vector<SUMOVehicleParameter::Stop> myPastStops;
-
+    StopParVector myPastStops;
 
     /// @name Move reminder structures
     /// @{
@@ -1132,6 +1200,9 @@ private:
 
     /// @brief patch stop.pars.index to record the number of skipped candidate edges before stop.edge (in a looped route)
     void setSkips(MSStop& stop, int prevActiveStops);
+
+    /// @brief remove outdated driveways on reroute
+    SUMOTime activateRemindersOnReroute(SUMOTime currentTime);
 
 private:
     /// invalidated assignment operator

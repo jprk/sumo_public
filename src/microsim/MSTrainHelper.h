@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2014-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2014-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -48,9 +48,10 @@ public:
         std::vector<Position> unboardingPositions;
     };
 
-    MSTrainHelper(const MSVehicle* vehicle, bool reversed = false, bool secondaryShape = false, double exaggeration = 1.0, int vehicleQuality = 3)
+    MSTrainHelper(const MSVehicle* vehicle, double scaledLength = -1, bool reversed = false,
+                  bool secondaryShape = false, double exaggeration = 1.0, int vehicleQuality = 3)
         : myTrain(vehicle) {
-        computeTrainDimensions(exaggeration, vehicleQuality);
+        computeTrainDimensions(exaggeration, secondaryShape, scaledLength < 0 ? myTrain->getLength() : scaledLength, vehicleQuality);
         computeCarriages(reversed, secondaryShape);
     }
 
@@ -111,14 +112,11 @@ public:
     /// @brief return length exaggeration factor (special for long vehicles)
     static double getUpscaleLength(double upscale, double length, double width, int vehicleQuality);
 
-    /// @brief average door width used to compute doors positions
-    static const double CARRIAGE_DOOR_WIDTH;
-
     /// @brief small extra tolerance used to avoid constraint violations
     static const double PEDESTRIAN_RADIUS_EXTRA_TOLERANCE;
 
 private:
-    void computeTrainDimensions(double exaggeration, int vehicleQuality);
+    void computeTrainDimensions(double exaggeration, bool secondaryShape, double scaledLength, int vehicleQuality);
     void computeCarriages(bool reversed, bool secondaryShape);
 
     const MSVehicle* myTrain;
@@ -127,6 +125,7 @@ private:
     double myDefaultLength;
     double myCarriageGap;
     double myLength;
+    bool myUnscale;
     double myHalfWidth;
     int myNumCarriages;
     double myCarriageLengthWithGap;

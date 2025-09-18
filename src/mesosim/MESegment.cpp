@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -29,6 +29,7 @@
 #include <microsim/MSLane.h>
 #include <microsim/MSLink.h>
 #include <microsim/MSMoveReminder.h>
+#include <microsim/traffic_lights/MSTrafficLightLogic.h>
 #include <microsim/output/MSXMLRawOut.h>
 #include <microsim/output/MSDetectorFileOutput.h>
 #include <microsim/MSVehicleControl.h>
@@ -58,6 +59,7 @@
 MSEdge MESegment::myDummyParent("MESegmentDummyParent", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", -1, 0);
 MESegment MESegment::myVaporizationTarget("vaporizationTarget");
 const double MESegment::DO_NOT_PATCH_JAM_THRESHOLD(std::numeric_limits<double>::max());
+const std::string MESegment::OVERRIDE_TLS_PENALTIES("meso.tls.control");
 
 
 // ===========================================================================
@@ -173,7 +175,8 @@ MESegment::initSegment(const MesoEdgeType& edgeType, const MSEdge& parent, const
                     myNextSegment == nullptr && (
                         parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT ||
                         parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_NOJUNCTION ||
-                        parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED));
+                        parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED)
+                    && !tlsPenaltyOverride());
 
     // only apply to the last segment of an uncontrolled edge that has at least 1 minor link
     myCheckMinorPenalty = (edgeType.minorPenalty > 0 &&
@@ -316,7 +319,7 @@ MESegment::hasSpaceFor(const MEVehicle* const veh, const SUMOTime entryTime, int
     }
     const SUMOVehicleClass svc = veh->getVClass();
     int minSize = std::numeric_limits<int>::max();
-    const MSEdge* const succ = myNextSegment == nullptr ? veh->succEdge(1) : nullptr;
+    const MSEdge* const succ = myNextSegment == nullptr ? veh->succEdge(veh->getEdge() == &myEdge ? 1 : 2) : nullptr;
     for (int i = 0; i < (int)myQueues.size(); i++) {
         const Queue& q = myQueues[i];
         const double newOccupancy = q.size() == 0 ? 0. : q.getOccupancy() + veh->getVehicleType().getLengthWithGap();
@@ -328,7 +331,10 @@ MESegment::hasSpaceFor(const MEVehicle* const veh, const SUMOTime entryTime, int
                         // - regular insertions must respect entryBlockTime
                         // - initial insertions should not cause additional jamming
                         // - inserted vehicle should be able to continue at the current speed
-                        if (q.getOccupancy() <= myJamThreshold && !hasBlockedLeader() && !myTLSPenalty) {
+                        if (veh->getInsertionChecks() == (int)InsertionCheck::NONE) {
+                            qIdx = i;
+                            minSize = q.size();
+                        } else if (q.getOccupancy() <= myJamThreshold && !hasBlockedLeader() && !myTLSPenalty) {
                             if (newOccupancy <= myJamThreshold) {
                                 qIdx = i;
                                 minSize = q.size();
@@ -397,6 +403,11 @@ MESegment::getMeanSpeed(bool useCached) const {
     return myMeanSpeed;
 }
 
+
+void
+MESegment::resetCachedSpeeds() {
+    myLastMeanSpeedUpdate = SUMOTime_MIN;
+}
 
 void
 MESegment::writeVehicles(OutputDevice& of) const {
@@ -633,7 +644,8 @@ MESegment::receive(MEVehicle* veh, const int qIdx, SUMOTime time, const bool isD
         myEdge.addWaiting(veh);
     }
     if (veh->isParking()) {
-        veh->setEventTime(stopTime);
+        // parking stops should take at least 1ms
+        veh->setEventTime(MAX2(stopTime, veh->getEventTime() + 1));
         veh->setSegment(this, PARKING_QUEUE);
         myEdge.getLanes()[0]->addParking(veh);  // TODO for GUI only
     } else {
@@ -773,7 +785,9 @@ MESegment::saveState(OutputDevice& out) const {
     if (write) {
         out.openTag(SUMO_TAG_SEGMENT).writeAttr(SUMO_ATTR_ID, getID());
         for (const Queue& q : myQueues) {
-            out.openTag(SUMO_TAG_VIEWSETTINGS_VEHICLES).writeAttr(SUMO_ATTR_TIME, toString<SUMOTime>(q.getBlockTime()));
+            out.openTag(SUMO_TAG_VIEWSETTINGS_VEHICLES);
+            out.writeAttr(SUMO_ATTR_TIME, toString<SUMOTime>(q.getBlockTime()));
+            out.writeAttr(SUMO_ATTR_BLOCKTIME, toString<SUMOTime>(q.getEntryBlockTime()));
             out.writeAttr(SUMO_ATTR_VALUE, q.getVehicles());
             out.closeTag();
         }
@@ -790,17 +804,15 @@ MESegment::clearState() {
 }
 
 void
-MESegment::loadState(const std::vector<std::string>& vehIds, MSVehicleControl& vc, const SUMOTime block, const int queIdx) {
+MESegment::loadState(const std::vector<SUMOVehicle*>& vehs, const SUMOTime blockTime, const SUMOTime entryBlockTime, const int queIdx) {
     Queue& q = myQueues[queIdx];
-    for (const std::string& id : vehIds) {
-        MEVehicle* v = static_cast<MEVehicle*>(vc.getVehicle(id));
-        // vehicle could be removed due to options
-        if (v != nullptr) {
-            assert(v->getSegment() == this);
-            q.getModifiableVehicles().push_back(v);
-            myNumVehicles++;
-            q.setOccupancy(q.getOccupancy() + v->getVehicleType().getLengthWithGap());
-        }
+    for (SUMOVehicle* veh : vehs) {
+        MEVehicle* v = static_cast<MEVehicle*>(veh);
+        assert(v->getSegment() == this);
+        q.getModifiableVehicles().push_back(v);
+        myNumVehicles++;
+        q.setOccupancy(q.getOccupancy() + v->getVehicleType().getLengthWithGap());
+        addReminders(v);
     }
     if (q.size() != 0) {
         // add the last vehicle of this queue
@@ -808,7 +820,8 @@ MESegment::loadState(const std::vector<std::string>& vehIds, MSVehicleControl& v
         MEVehicle* veh = q.getVehicles().back();
         MSGlobals::gMesoNet->addLeaderCar(veh, getLink(veh));
     }
-    q.setBlockTime(block);
+    q.setBlockTime(blockTime);
+    q.setEntryBlockTime(entryBlockTime);
     q.setOccupancy(MIN2(q.getOccupancy(), myQueueCapacity));
 }
 
@@ -845,7 +858,7 @@ MESegment::getLinkPenalty(const MEVehicle* veh) const {
     const MSLink* link = getLink(veh, myTLSPenalty || myCheckMinorPenalty);
     if (link != nullptr) {
         SUMOTime result = 0;
-        if (link->isTLSControlled()) {
+        if (link->isTLSControlled() && myTLSPenalty) {
             result += link->getMesoTLSPenalty();
         }
         // minor tls links may get an additional penalty
@@ -860,6 +873,19 @@ MESegment::getLinkPenalty(const MEVehicle* veh) const {
     } else {
         return 0;
     }
+}
+
+
+bool
+MESegment::tlsPenaltyOverride() const {
+    for (const MSLane* lane : myEdge.getLanes()) {
+        for (const MSLink* link : lane->getLinkCont()) {
+            if (link->isTLSControlled() && StringUtils::toBool(link->getTLLogic()->getParameter(OVERRIDE_TLS_PENALTIES, "0"))) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -74,12 +74,13 @@ public:
                SumoXMLTag element,
                const std::vector<std::string>& lines, MSLane& lane,
                double frompos, double topos, const std::string name,
-               int personCapacity, double parkingLength, const RGBColor& color);
+               int personCapacity, double parkingLength, const RGBColor& color, double angle);
 
 
     /// @brief Destructor
     ~GUIBusStop();
 
+    void finishedLoading();
 
     /// @brief adds an access point to this stop
     bool addAccess(MSLane* const lane, const double startPos, const double endPos, double length, const MSStoppingPlace::AccessExit exit);
@@ -168,5 +169,5 @@ private:
     /// @brief The coordinates of access points
     PositionVector myAccessCoords;
 
-
+    RGBColor myEmptyColor;
 };

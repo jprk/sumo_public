@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2024 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2025 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -83,16 +83,9 @@ private:
         double resCoef_linear;  // kN / (km/h)
         double resCoef_quadratic; // kN / (km/h)^2
 
-        double getRotWeight() const {
-            return weight * mf;
-        }
-
         double getResistance(double speed) const;
         double getTraction(double speed) const;
     };
-
-    std::vector<double> getValueTable(const MSVehicleType* vtype, SumoXMLAttr attr);
-
 
 public:
     double stopSpeed(const MSVehicle* const veh, const double speed, double gap, double decel, const CalcReason usage = CalcReason::CURRENT) const;
@@ -119,6 +112,15 @@ public:
 //
 //
 //    };
+
+protected:
+
+    // @return rotational weight in tons
+    double getRotWeight(const MSVehicle* const veh) const;
+
+    // @brief return weight in tons
+    double getWeight(const MSVehicle* const veh) const;
+
 
 private:
 
