@@ -128,6 +128,8 @@ public:
     /// @brief try to retrieve the given parameter from this device. Throw exception for unsupported key
     std::string getParameter(const std::string& key) const;
 
+    double getParameterDouble(const std::string& key) const;
+
     /// @brief try to set the given parameter for this device. Throw exception for unsupported key
     void setParameter(const std::string& key, const std::string& value);
 
@@ -243,6 +245,9 @@ protected:
 
     /// @brief Parameter holding emission device
     MSDevice_Emissions* myEmissionDevice;
+
+    /// @brief Parameter, Vehicle's last angle
+    double myLastAngle;
 
     /// @brief Parameter, Vehicle consumption during a time step (by default is 0.)
     double myConsum;

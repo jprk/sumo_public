@@ -1381,7 +1381,7 @@ class VehicleDomain(VTypeDomain):
     def setChargingCurrent(self, vehID, current):
         """setChargingCurrent(string, double) -> None
 
-        Sets the charging current when ElecHybdir vehicle is stopped..
+        Sets the charging current when ElecHybrid vehicle is stopped..
         """
         self._setCmd(tc.VAR_BMS_MAXCURRENT_STOPPED, vehID, "d", current)
 

@@ -111,6 +111,12 @@ public:
      */
     double getDoubleOptional(SumoXMLAttr attr, const double def) const;
 
+    /**@brief Sets a parameter
+     * @param[in] key The parameter's name
+     * @param[in] value The parameter's value
+     */
+    void setDouble(SumoXMLAttr attr, double value);
+
     /**
      * @brief Return the CharacteristicMap that belongs to a given attribute.
      *

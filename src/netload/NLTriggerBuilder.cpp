@@ -306,6 +306,24 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         if (!ok) {
             throw InvalidArgument("Overhead wire element '" + id + "' requires either 'lanes' or 'segments' attribute.");
         }
+        for (const std::string& segmentID : segmentIDs) {
+
+            // Check for the existence of the overhead wire segment
+            MSOverheadWire* ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(segmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
+            if (ovrhdSegment == nullptr) {
+                throw InvalidArgument("The overhead wire segment '" + segmentID + "' referenced by <overheadWire> element '" + id + "' was not defined.");
+            }
+            // Check that the segment has not been already assigned to another substation
+            MSTractionSubstation* ts = ovrhdSegment->getTractionSubstation();
+            if (!(ts == substation || ts == nullptr)) {
+                std::string tsName = ts->getID();
+                throw InvalidArgument("The overhead wire segment '" + segmentID + "' referenced by <overheadWire> element '" + id + "' with substation '" + substationId + "' has been already assigned to substation '" + tsName + "'.");
+            }
+            // Add traction substation to this segment
+            ovrhdSegment->setTractionSubstation(substation);
+            // Add the overhead wire segment to the list of segment instances
+            segments.push_back(ovrhdSegment);
+        }
     }
     else {
         if (!new_style) {
@@ -351,8 +369,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
                 WRITE_MESSAGE("The overhead wire segment '" + segmentID + "' will not be created as it is attached to an internal lane and will be built automatically later.");
                 continue;
             }
-            // Handle frompos and topos, which are valid for the first and last lane of the lane
-            // list, respectively.
+            // Handle frompos and topos, which are valid for the first and last lane of the lane list, respectively.
             double frompos = (lit == laneIDs.begin()) ? attrs.getOpt<double>(SUMO_ATTR_STARTPOS, id.c_str(), ok, 0.0) : 0.0;
             double topos = (lit == lastlit) ? attrs.getOpt<double>(SUMO_ATTR_ENDPOS, id.c_str(), ok, lane->getLength()) : lane->getLength();
             // Handle friendlyPos ...
@@ -373,6 +390,12 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
             }
             // Build an overhead wire segment over the lane
             buildOverheadWireSegment(net, segmentID, lane, frompos, topos, owt, isVoltageSource);
+            // @todo: If buildOverheadWireSegment() returned the segment pointer, this could be eliminated
+            MSOverheadWire* ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(segmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
+            // Add traction substation to this segment
+            ovrhdSegment->setTractionSubstation(substation);
+            // Add the overhead wire segment to the list of segment instances
+            segments.push_back(ovrhdSegment);
         }
         // Check that the overhead wire section is connected at all referenced connection points
         if (!voltageSources.empty())
@@ -397,75 +420,98 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
      * of an overhead wire section element (the "new" definition).
      */ 
 
-    for (const std::string& segmentID : segmentIDs) {
+    for (const MSOverheadWire* segment : segments) {
         
-        // Check for the existence of the overhead wire segment
-        MSOverheadWire* ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(segmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        if (ovrhdSegment == nullptr) {
-            throw InvalidArgument("The overhead wire segment '" + segmentID + "' referenced by <overheadWire> element '" + id + "' was not defined.");
-        }
+        // Get the lane of this overhead wire segment
+        const MSLane* lane = &(segment->getLane());
 
-        // Check that the segment has not been already assigned to another substation
-        MSTractionSubstation* ts = ovrhdSegment->getTractionSubstation();
-        if (!(ts == substation || ts == nullptr)) {
-            std::string tsName = ts->getID();
-            throw InvalidArgument("The overhead wire segment '" + segmentID + "' referenced by <overheadWire> element '" + id + "' with substation '" + substationId + "' has been already assigned to substation '" + tsName + "'.");
-        }
-        ovrhdSegment->setTractionSubstation(substation);
-
-        const MSLane* lane = &(ovrhdSegment->getLane());
-
-        // Get the inner lanes that follow the current lane at an intersection
+        // Get the inner lanes that follow the current lane at an intersection. To get them we need a list of lanes connected via an intersection
+        std::vector<const MSLane*> viaLanes;
+        // Start with the outgoing lanes in case that this lane ends at an intersection
         const std::vector<std::pair<const MSLane*, const MSEdge*>> outgoingLanesAndEdges = lane->getOutgoingViaLanes();
-        std::vector<const MSLane*> neigboringInnerLanes;
-        neigboringInnerLanes.reserve(outgoingLanesAndEdges.size());
+        // Extract the lanes from the (lane, edge) pair
+        viaLanes.reserve(outgoingLanesAndEdges.size());
         for (auto& it : outgoingLanesAndEdges) {
-            neigboringInnerLanes.push_back(it.first);
+            viaLanes.push_back(it.first);
         }
 
         // Check if an outgoing lane has an overhead wire segment. If not, do nothing, otherwise find connnecting internal lanes and
         // add overhead wire segments over all detected internal lanes
-        for (auto it : neigboringInnerLanes) {
-            // If the overhead wire segment is over the outgoing (not internal) lane
+        for (auto it : viaLanes) {
+            // @todo: the viaLanes are normal lanes, not internal ones, hence the following is probably not necessary
+            if (it->isInternal()) {
+                WRITE_MESSAGEF("The via lane '%' is internal, ignoring the connection to '%' and not building internal overhead wire segment.", it->getID(), lane->getID());
+                continue;
+            }
+            // Is there an overhead wire segment over the outgoing (not internal) lane?
             std::string neigboringOWSID = MSNet::getInstance()->getStoppingPlaceID(it, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
             if (!neigboringOWSID.empty()) {
-                // There is an outgoing segment, get it
-                MSOverheadWire* neigboringOWS = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(neigboringOWSID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-                MSTractionSubstation* neigboringOWSSubstation = neigboringOWS->getTractionSubstation();
-                if (neigboringOWSSubstation == substation && ! it->isInternal()) {
-                    const MSLane* connection = lane->getInternalFollowingLane(it);
-                    if (connection != nullptr) {
-                        // Is connection forbidden?
-                        const MSLane* connFN = lane->getInternalFollowingLane(connection);
-                        const MSLane* connFC = connection->getInternalFollowingLane(it);
-                        if (!(substation->isForbidden(connection) || substation->isForbidden(connFN) || substation->isForbidden(connFC))) {
+                // We will ignore the substation - if there is a wire on the other side of an intersection, we will extend the wires to reach to it.
+                //
+                // // There is an outgoing segment, get it
+                // MSOverheadWire* neigboringOWS = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(neigboringOWSID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
+                // MSTractionSubstation* neigboringOWSSubstation = neigboringOWS->getTractionSubstation();
+                // if (neigboringOWSSubstation == substation && ! it->isInternal()) {
+                const MSLane* connection = lane->getInternalFollowingLane(it);
+                if (connection != nullptr) {
+                    // Is connection forbidden?
+                    const MSLane* connFN = lane->getInternalFollowingLane(connection);
+                    const MSLane* connFC = connection->getInternalFollowingLane(it);
+                    if (!(substation->isForbidden(connection) || substation->isForbidden(connFN) || substation->isForbidden(connFC))) {
+                        // Does an internal overhead wire already exist for this connection?
+                        // @todo: Probably incorrect logic
+                        std::string connectionOWSID = MSNet::getInstance()->getStoppingPlaceID(connection, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        std::string frontOWSID = MSNet::getInstance()->getStoppingPlaceID(connFN, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        std::string backOWSID = MSNet::getInstance()->getStoppingPlaceID(connFC, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        if (connectionOWSID.empty() && frontOWSID.empty() && backOWSID.empty()) {
                             buildInnerOverheadWireSegments(net, connection, connFN, connFC, owt);
                         }
                     }
                 }
+                else {
+                    WRITE_MESSAGEF("No connection between the via lane '%' and incoming lane '%' (this should not happen). Not building internal overhead wire segment.", it->getID(), lane->getID());
+                }
+                // }
             }
         }
 
         // Check if an incoming lane has an overhead wire segment. If not, do nothing, otherwise find connnecting internal lanes and
         // add overhead wire segments over all detected internal lanes
-        neigboringInnerLanes = lane->getNormalIncomingLanes();
-        for (auto it : neigboringInnerLanes) {
-            // If the overhead wire segment is over the incoming (not internal) lane
+        viaLanes = lane->getNormalIncomingLanes();
+        for (auto it : viaLanes) {
+            // @todo: the viaLanes are normal lanes, not internal ones, hence the following is probably not necessary
+            if (it->isInternal()) {
+                WRITE_MESSAGEF("The via lane '%' is internal, ignoring the connection to '%' and not building internal overhead wire segment.", it->getID(), lane->getID());
+                continue;
+            }
+            // Is there an overhead wire segment over the incoming (not internal) lane?
             std::string neigboringOWSID = MSNet::getInstance()->getStoppingPlaceID(it, it->getLength() - NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
             if (!neigboringOWSID.empty()) {
-                MSOverheadWire* neigboringOvrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(neigboringOWSID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-                MSTractionSubstation* neigboringOWSSubstation = neigboringOvrhdSegment->getTractionSubstation();
-                if (neigboringOWSSubstation == substation && !it->isInternal()) {
-                    const MSLane* connection = it->getInternalFollowingLane(lane);
-                    if (connection != nullptr) {
-                        //is connection forbidden?
-                        const MSLane* connFP = it->getInternalFollowingLane(connection);
-                        const MSLane* connFC = connection->getInternalFollowingLane(lane);
-                        if (!(substation->isForbidden(connection) || substation->isForbidden(connFP) || substation->isForbidden(connFC))) {
+                // We will ignore the substation - if there is a wire on the other side of an intersection, we will extend the wires to reach to it.
+                //
+                // MSOverheadWire* neigboringOvrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(neigboringOWSID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
+                // MSTractionSubstation* neigboringOWSSubstation = neigboringOvrhdSegment->getTractionSubstation();
+                // if (neigboringOWSSubstation == substation && !it->isInternal()) {
+                const MSLane* connection = it->getInternalFollowingLane(lane);
+                if (connection != nullptr) {
+                    //is connection forbidden?
+                    const MSLane* connFP = it->getInternalFollowingLane(connection);
+                    const MSLane* connFC = connection->getInternalFollowingLane(lane);
+                    if (!(substation->isForbidden(connection) || substation->isForbidden(connFP) || substation->isForbidden(connFC))) {
+                        // Does an internal overhead wire already exist for this connection?
+                        // @todo: Probably incorrect logic
+                        std::string connectionOWSID = MSNet::getInstance()->getStoppingPlaceID(connection, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        std::string frontOWSID = MSNet::getInstance()->getStoppingPlaceID(connFP, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        std::string backOWSID = MSNet::getInstance()->getStoppingPlaceID(connFC, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
+                        if (connectionOWSID.empty() && frontOWSID.empty() && backOWSID.empty()) {
                             buildInnerOverheadWireSegments(net, connection, connFP, connFC, owt);
                         }
                     }
                 }
+                else {
+                    WRITE_MESSAGEF("No connection between the via lane '%' and outgoing lane '%' (this should not happen). Not building internal overhead wire segment.", it->getID(), lane->getID());
+                }
+                // }
             }
         }
     }

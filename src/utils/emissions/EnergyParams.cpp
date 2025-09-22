@@ -180,6 +180,13 @@ EnergyParams::getDoubleOptional(SumoXMLAttr attr, const double def) const {
 }
 
 
+void
+EnergyParams::setDouble(SumoXMLAttr attr, double value) {
+    // TODO: Check the value of `attr`
+    myMap[attr] = value;
+}
+
+
 const CharacteristicMap&
 EnergyParams::getCharacteristicMap(SumoXMLAttr attr) const {
     auto it = myCharacteristicMapMap.find(attr);
