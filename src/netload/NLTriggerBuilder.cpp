@@ -464,7 +464,10 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
                         std::string frontOWSID = MSNet::getInstance()->getStoppingPlaceID(connFN, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
                         std::string backOWSID = MSNet::getInstance()->getStoppingPlaceID(connFC, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
                         if (connectionOWSID.empty() && frontOWSID.empty() && backOWSID.empty()) {
-                            buildInnerOverheadWireSegments(net, connection, connFN, connFC, owt);
+                            // Build inner wire segments, returns a list of overhead wire segmentIDs that were created 
+                            std::vector<std::string> innerSgmentIDs = buildInnerOverheadWireSegments(net, connection, connFN, connFC, owt);
+                            // Append the list of the new overhead wire segments to the list of segments that will be added to the circuit
+                            segmentIDs.insert(segmentIDs.end(), innerSgmentIDs.cbegin(), innerSgmentIDs.cend());
                         }
                     }
                 }
@@ -504,7 +507,10 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
                         std::string frontOWSID = MSNet::getInstance()->getStoppingPlaceID(connFP, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
                         std::string backOWSID = MSNet::getInstance()->getStoppingPlaceID(connFC, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
                         if (connectionOWSID.empty() && frontOWSID.empty() && backOWSID.empty()) {
-                            buildInnerOverheadWireSegments(net, connection, connFP, connFC, owt);
+                            // Build inner wire segments, returns a list of overhead wire segmentIDs that were created 
+                            std::vector<std::string> innerSgmentIDs = buildInnerOverheadWireSegments(net, connection, connFP, connFC, owt);
+                            // Append the list of the new overhead wire segments to the list of segments that will be added to the circuit
+                            segmentIDs.insert(segmentIDs.end(), innerSgmentIDs.cbegin(), innerSgmentIDs.cend());
                         }
                     }
                 }
@@ -1099,22 +1105,36 @@ NLTriggerBuilder::buildOverheadWireSegment(MSNet& net, const std::string& id, MS
     }
 }
 
-void
+std::vector<std::string>
 NLTriggerBuilder::buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection,
         OverheadWireType& owt) {
-    if (frontConnection == NULL && behindConnection == NULL) {
-        buildOverheadWireSegment(net, "ovrhd_inner_" + connection->getID(), const_cast<MSLane*>(connection), 0, connection->getLength(), owt, false);
-    } else if (frontConnection != NULL && behindConnection == NULL) {
-        buildOverheadWireSegment(net, "ovrhd_inner_" + frontConnection->getID(), const_cast<MSLane*>(frontConnection), 0, frontConnection->getLength(), owt, false);
-        buildOverheadWireSegment(net, "ovrhd_inner_" + connection->getID(), const_cast<MSLane*>(connection), 0, connection->getLength(), owt, false);
+    // Connection lane always exists
+    std::string segmentID = "ovrhd_inner_" + connection->getID();
+    buildOverheadWireSegment(net, segmentID, const_cast<MSLane*>(connection), 0, connection->getLength(), owt, false);
+    // The output list will always contain at least the connection lane segment
+    std::vector<std::string> segmentIDs = { segmentID };
+    // And now for the rest ...
+    if (frontConnection != NULL && behindConnection == NULL) {
+        // New overhead segment on the frontConnection lane
+        segmentID = "ovrhd_inner_" + frontConnection->getID();
+        buildOverheadWireSegment(net, segmentID, const_cast<MSLane*>(frontConnection), 0, frontConnection->getLength(), owt, false);
+        segmentIDs.push_back(segmentID);
     } else if (frontConnection == NULL && behindConnection != NULL) {
-        buildOverheadWireSegment(net, "ovrhd_inner_" + behindConnection->getID(), const_cast<MSLane*>(behindConnection), 0, behindConnection->getLength(), owt, false);
-        buildOverheadWireSegment(net, "ovrhd_inner_" + connection->getID(), const_cast<MSLane*>(connection), 0, connection->getLength(), owt, false);
+        // New overhead segment on the behindConnection lane
+        segmentID = "ovrhd_inner_" + behindConnection->getID();
+        buildOverheadWireSegment(net, segmentID, const_cast<MSLane*>(behindConnection), 0, behindConnection->getLength(), owt, false);
+        segmentIDs.push_back(segmentID);
     } else if (frontConnection != NULL && behindConnection != NULL) {
-        buildOverheadWireSegment(net, "ovrhd_inner_" + frontConnection->getID(), const_cast<MSLane*>(frontConnection), 0, frontConnection->getLength(), owt, false);
-        buildOverheadWireSegment(net, "ovrhd_inner_" + behindConnection->getID(), const_cast<MSLane*>(behindConnection), 0, behindConnection->getLength(), owt, false);
-        buildOverheadWireSegment(net, "ovrhd_inner_" + connection->getID(), const_cast<MSLane*>(connection), 0, connection->getLength(), owt, false);
+        // New overhead segment on the frontConnection lane
+        segmentID = "ovrhd_inner_" + frontConnection->getID();
+        buildOverheadWireSegment(net, segmentID, const_cast<MSLane*>(frontConnection), 0, frontConnection->getLength(), owt, false);
+        segmentIDs.push_back(segmentID);
+        // New overhead segment on the behindConnection lane
+        segmentID = "ovrhd_inner_" + behindConnection->getID();
+        buildOverheadWireSegment(net, segmentID, const_cast<MSLane*>(behindConnection), 0, behindConnection->getLength(), owt, false);
+        segmentIDs.push_back(segmentID);
     }
+    return segmentIDs;
 }
 
 void

@@ -366,7 +366,8 @@ protected:
 
     /** @brief Builds an overhead wire inner segments
     *
-    * Simply calls the buildOverheadWireSegment for inner edges connection, frontConnection and behindConnection if exists.
+    * Simply calls the buildOverheadWireSegment for inner edges connection, frontConnection and behindConnection if exists. 
+    * Returns a vector of overhead segment IDs that were created.
     *
     * @param[in] net The net the overhead wire inner segments belongs to
     * @param[in] connection The inner lane that connects two regular lanes, or a regular lane with the inner "behindConnection" lane,
@@ -376,7 +377,7 @@ protected:
     * @param[in] owt The write type object containing electic parameters of this overhead wire
     * @exception InvalidArgument If the over can not be added to the net (is duplicate according to the id)
     */
-    void buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection, OverheadWireType& owt);
+    std::vector<std::string> buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection, OverheadWireType& owt);
 
     /** @brief Builds a traction substation
     *
