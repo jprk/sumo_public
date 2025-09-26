@@ -240,9 +240,6 @@ protected:
     /// @brief Parameter, The total vehicles's Battery Capacity in Wh, [myMaximumBatteryCapacity >= 0]
     double myMaximumBatteryCapacity;
 
-    /// @brief Parameter, overhead wire charging power to battery, if the battery SoC is not full (in Watt)
-    double myOverheadWireChargingPower;
-
     /// @brief Parameter holding emission device
     MSDevice_Emissions* myEmissionDevice;
 
@@ -277,15 +274,6 @@ protected:
     /// and was wasted on resistors. This is approximate, we ignore the use of classical
     /// brakes in lower speeds.
     double myTotalEnergyWasted;
-    /// @}
-
-    /// @name Power management parameters
-    /// @{
-    /// @brief Minimal SOC of the battery pack, below this value the battery is assumed discharged
-    double mySOCMin;
-    /// @brief Maximal SOC of the battery pack, battery will not be charged above this level.
-    /// (But the buffer may still be used for regenerative braking).
-    double mySOCMax;
     /// @}
 
     MSPowerManagement* myPowerManagement;
@@ -337,25 +325,26 @@ private:
 */
 class MSPowerManagement {
 private:
+    /// @brief Maximal SOC of the battery pack, battery will not be charged above this level.
     double reducedSOC_ub;
+    /// @brief Minimal SOC of the battery pack, below this value the battery is assumed discharged
     double reducedSOC_lb;
     double maxLineCurrent_driving; // 400 A
     /// @brief Maximum current that can be drawn from the overhead line when stopped
     double maxLineCurrent_stopped; // 80 A
     double recupBatteryPLimit; // 150 KW
     double maxBatteryChargingPower_stopped; // 45 kW
+    bool   eco_mode;
     double eco_maxBatteryChargingPower_stopped; // 25 kW
+    double eco_socLimitCharging; // 0.9
     double eco_socThresholdForPeakShaving; // 40 %
     double eco_socHysteresisForPeakShaving; // 50 %
     double eco_minCurrentForPeakShaving; // 250 A
     double SUMO_ATTR_INPUTCHOKEEFFICIENCY;
     double SUMO_ATTR_CHARGINEFFICIENCY;
 
-    // old params
-
-    double mySOCMax;
+    // OLD
     double myMaximumBatteryCapacity;
-    double myOverheadWireChargingPower;
 
 public:
     MSPowerManagement(SUMOVehicle& v);  // Constructor
@@ -367,7 +356,7 @@ public:
     double calculateEngineRequest(double requiredPower);
     */
     
-    std::pair<double, double> computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery);
+    std::pair<double, double> computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery) const;
     void distributePower(double powerFromOverheadWire, bool hasOvrHdWire, bool charging, MSDevice_ElecHybrid* elecHybrid);
 
 	//@brief Set the maximum current drawn from the overhead line when the vehicle is stopped
@@ -376,7 +365,27 @@ public:
 	};
 
     //@brief Get the maximum current drawn from the overhead line when the vehicle is stopped
-    double getMaxLineCurrentStopped() {
+    double getMaxLineCurrentStopped() const {
         return maxLineCurrent_stopped;
+    };
+
+    //@brief Get the input choke efficiency for drawing current from overhead wire to trolleybus or vice versa
+    double getInputChokeEff() const {
+        return SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    };
+
+    //@brief Get the battery charging efficiency for charging power from vehicle's inner circuit to battery pack or vice versa
+    double getBatCharEff() const {
+        return SUMO_ATTR_CHARGINEFFICIENCY;
+    };
+
+    //@brief Get the limit for the maximal SOC of the battery pack
+    double getMaxSOCLim() const {
+        return reducedSOC_ub;
+    };
+
+    //@brief Get the limit for the minimal SOC of the battery pack
+    double getMinSOCLim() const {
+        return reducedSOC_lb;
     };
 };

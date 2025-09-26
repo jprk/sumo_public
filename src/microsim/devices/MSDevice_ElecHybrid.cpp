@@ -113,6 +113,7 @@ MSDevice_ElecHybrid::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDe
             const std::string ocp = typeParams.getParameter(attrName, "-1");
             try {
                 overheadWireChargingPower = StringUtils::toDouble(ocp);
+                WRITE_WARNING("Vehicle '" + v.getID() + "' is using the vType parameter '" + attrName + "'. This parameter if deprecated and not used. Use parametrization of a power management");
             } catch (...) {
                 WRITE_WARNINGF(TL("Invalid value '%'for vType parameter '%'"), ocp, attrName);
             }
@@ -138,7 +139,6 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     MSVehicleDevice(holder, id),
     myActualBatteryCapacity(0),   // [actualBatteryCapacity <= maximumBatteryCapacity]
     myMaximumBatteryCapacity(0),  // [maximumBatteryCapacity >= 0]t
-    myOverheadWireChargingPower(0),
     myConsum(0),
     myBatteryDischargedLogic(false),
     myCharging(false),            // Initially vehicle don't charge
@@ -150,9 +150,6 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     myTotalEnergyConsumed(0),     // No energy spent yet
     myTotalEnergyRegenerated(0),  // No energy regenerated
     myTotalEnergyWasted(0),       // No energy wasted on resistors
-    // RICE_TODO: make these two parameters user configurable
-    mySOCMin(0.005),              // Minimum SOC of the battery
-    mySOCMax(0.980),              // Maximum SOC of the battery
     myPowerManagement(nullptr),
     myActOverheadWireSegment(nullptr),         // Initially the vehicle isn't under any overhead wire segment
     myPreviousOverheadWireSegment(nullptr),    // Initially the vehicle wasn't under any overhead wire segment
@@ -182,7 +179,7 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     if (overheadWireChargingPower < 0) {
         WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER), toString(overheadWireChargingPower));
     } else {
-        myOverheadWireChargingPower = overheadWireChargingPower;
+        WRITE_WARNING(TL("SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER, i.e.  myOverheadWireChargingPower, is deprecated, NOT USED. Please use power management parameters"));
     }
 }
 
@@ -210,7 +207,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
     // is battery pack discharged (from previous timestep)
     // the elecHybrid vehicle is stopping due to low SOC when the soc is below (mySOCMin + 1 percentage point) of myMaximumBatteryCapacity
     // TODO_RICE parametrize (mySOCMin + 1 percentage point)
-    if (myActualBatteryCapacity < (mySOCMin+0.01) * myMaximumBatteryCapacity) {
+    if (myActualBatteryCapacity < (myPowerManagement->getMinSOCLim() + 0.01) * myMaximumBatteryCapacity) {
         myBatteryDischargedLogic = true;
     } else {
         myBatteryDischargedLogic = false;
@@ -777,7 +774,7 @@ MSDevice_ElecHybrid::setParameter(const std::string& key, const std::string& val
     } else if (key == toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY)) {
         myMaximumBatteryCapacity = doubleValue;
     } else if (key == toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER)) {
-        myOverheadWireChargingPower = doubleValue;
+        WRITE_WARNING(TL("SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER is deprecated, NOT USED. Please use power management parameters"));
     } else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
         WRITE_WARNING(TL("Setting the vehicle mass via parameters is deprecated, please use setMass for the vehicle or its type."));
         myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_MASS, doubleValue);
@@ -801,56 +798,21 @@ MSDevice_ElecHybrid::setParameterDouble(const std::string& key, const double val
         throw InvalidArgument("Setting parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
     }
 }
-/* OBSOLETE
-double MSDevice_ElecHybrid::computeChargedEnergy(double energyIn) {
-    double energyCharged = energyIn - myConsum;
-    
-    Apply recuperation or propulsion efficiency if necessary
-        1. if (energyIn > 0.0 && energyCharged > 0 && it->getConsum() >= 0) = > recuper eff for energyCharged
-        2. if (energyIn > 0.0 && energyCharged > 0 && it->getConsum() < 0)  => recuper eff only for energyIn
-        3. if (energyIn < 0.0 && it->getConsum() > 0) => 1/propulsion eff only for energyIn
-        4. if (energyIn < 0.0 && energyCharged < 0 && it->getConsum() < 0) => 1/propulsion eff only for energyCharged
-    
-    if (energyIn > 0.0 && energyCharged > 0.0) {
-        // the vehicle is charging battery from overhead wire
-        if (myConsum >= 0) {
-            energyCharged *= myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY);
-        } else {
-            // energyCharged = energyIn * eff_from_ovrhd_wire_to_battery - myConsum / eff_from_drive_to_ovrHdWire, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
-            energyCharged = myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_RECUPERATIONEFFICIENCY) * energyIn - myConsum;
-        }
-    } else if (energyIn < 0.0 && energyCharged < 0.0) {
-        // the vehicle is recuperating energy into the overhead wire and discharging batterypack at the same time
-        if (myConsum >= 0) {
-            // energyCharged = energyIn /  eff_from_battery_to_ovrhdwire - myConsum / eff_from_battery_to_drive, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
-            energyCharged = energyIn / myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY) - myConsum;
-        } else {
-            // energyCharged = energyIn / eff_from_battery_to_ovrhdwire - myConsum / eff_from_drive_to_ovrHdWire, but myConsum incorporates some propulsion eff - it is only motor + motor inverter eff
-            energyCharged = energyIn / myHolder.getEmissionParameters()->getDouble(SUMO_ATTR_PROPULSIONEFFICIENCY) - myConsum;
-        }
-    }
-    return energyCharged;
-}
-*/
 
 double MSDevice_ElecHybrid::computeChargedEnergy(double energyIn) {
-    //RICE_TODO parametrize SUMO_ATTR_INPUTCHOKEEFFICIENCY and SUMO_ATTR_CHARGINEFFICIENCY
-    double SUMO_ATTR_INPUTCHOKEEFFICIENCY = 0.98;
-    double SUMO_ATTR_CHARGINEFFICIENCY = 0.93;
-
     if (energyIn >= 0.0) {
-        energyIn *= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+        energyIn *= myPowerManagement->getInputChokeEff();
     }
     else {
-        energyIn /= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+        energyIn /= myPowerManagement->getInputChokeEff();
     }
     double energyCharged = energyIn - myConsum;
 
     if (energyCharged >= 0) {
-        energyCharged *= SUMO_ATTR_CHARGINEFFICIENCY;
+        energyCharged *= myPowerManagement->getBatCharEff();
     }
     else {
-        energyCharged /= SUMO_ATTR_CHARGINEFFICIENCY;
+        energyCharged /= myPowerManagement->getBatCharEff();
     }
     return energyCharged;
 }
@@ -973,11 +935,10 @@ void
 MSDevice_ElecHybrid::setActualBatteryCapacity(const double actualBatteryCapacity) {
     // Use the SOC limits to cap the actual battery capacity
     // RICE_TODO I cannot discharge but it implies stopping the vehicle
-    if (actualBatteryCapacity < mySOCMin * myMaximumBatteryCapacity && actualBatteryCapacity < myActualBatteryCapacity) {
-        //WRITE_WARNINGF(TL("The Battery of vehicle '%' has been exhausted."), getID());
-        myActualBatteryCapacity = MIN2(mySOCMin * myMaximumBatteryCapacity, myActualBatteryCapacity);
-    } else if (actualBatteryCapacity > mySOCMax * myMaximumBatteryCapacity && actualBatteryCapacity > myActualBatteryCapacity) {
-        myActualBatteryCapacity = MAX2(mySOCMax * myMaximumBatteryCapacity, myActualBatteryCapacity);
+    if (actualBatteryCapacity < myPowerManagement->getMinSOCLim() * myMaximumBatteryCapacity && actualBatteryCapacity < myActualBatteryCapacity) {
+        myActualBatteryCapacity = MIN2(myPowerManagement->getMinSOCLim() * myMaximumBatteryCapacity, myActualBatteryCapacity);
+    } else if (actualBatteryCapacity > myPowerManagement->getMaxSOCLim() * myMaximumBatteryCapacity && actualBatteryCapacity > myActualBatteryCapacity) {
+        myActualBatteryCapacity = MAX2(myPowerManagement->getMaxSOCLim() * myMaximumBatteryCapacity, myActualBatteryCapacity);
     } else {
         myActualBatteryCapacity = actualBatteryCapacity;
     }
@@ -999,24 +960,24 @@ MSDevice_ElecHybrid::consumption(SUMOVehicle& veh, double a, double newSpeed) {
 // ===========================================================================
 
 MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
-    : reducedSOC_ub(0.9),
-        reducedSOC_lb(0.001),
+      : reducedSOC_ub(1.00),
+        reducedSOC_lb(0.00),
         maxLineCurrent_driving(400.0), // 400 A
         maxLineCurrent_stopped(80.0), // 80 A
         recupBatteryPLimit(150000.0), // 150 KW
         maxBatteryChargingPower_stopped(45000.0), // 45 kW
+        eco_mode(false),
         eco_maxBatteryChargingPower_stopped(25000.0), // 25 kW
+        eco_socLimitCharging(0.9),
         eco_socThresholdForPeakShaving(0.4), // 40 %
         eco_socHysteresisForPeakShaving(0.5), // 50 %
         eco_minCurrentForPeakShaving(250), // 250 A
 
-    SUMO_ATTR_INPUTCHOKEEFFICIENCY(1.0),
-    SUMO_ATTR_CHARGINEFFICIENCY(1.0),
+        SUMO_ATTR_INPUTCHOKEEFFICIENCY(1.0),
+        SUMO_ATTR_CHARGINEFFICIENCY(1.0),
 
         // old params
-        mySOCMax(reducedSOC_ub),
-        myMaximumBatteryCapacity(46000),
-        myOverheadWireChargingPower(40000) 
+        myMaximumBatteryCapacity(46000)
         {
     reducedSOC_ub = v.getFloatParam("device.elecHybrid.powerManagement.reducedSOC_ub", false, reducedSOC_ub);
     reducedSOC_lb = v.getFloatParam("device.elecHybrid.powerManagement.reducedSOC_lb", false, reducedSOC_lb);
@@ -1025,54 +986,81 @@ MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
     recupBatteryPLimit = v.getFloatParam("device.elecHybrid.powerManagement.recupBatteryPLimit", false, recupBatteryPLimit);
     maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxBatteryChargingPower_stopped", false, maxBatteryChargingPower_stopped);
     eco_maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_stopped", false, eco_maxBatteryChargingPower_stopped);
+    eco_socLimitCharging = v.getFloatParam("device.elecHybrid.powerManagement.eco_socLimitCharging", false, eco_maxBatteryChargingPower_stopped);
     eco_socThresholdForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socThresholdForPeakShaving", false, eco_socThresholdForPeakShaving);
     eco_socHysteresisForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socHysteresisForPeakShaving", false, eco_socHysteresisForPeakShaving);
     eco_minCurrentForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_minCurrentForPeakShaving", false, eco_minCurrentForPeakShaving);
 
+    eco_mode = v.getBoolParam("device.elecHybrid.powerManagement.eco_mode", false, eco_mode);
     SUMO_ATTR_INPUTCHOKEEFFICIENCY = v.getFloatParam("device.elecHybrid.powerManagement.SUMO_ATTR_INPUTCHOKEEFFICIENCY", false, 1.0);
     SUMO_ATTR_CHARGINEFFICIENCY    = v.getFloatParam("device.elecHybrid.powerManagement.SUMO_ATTR_CHARGINEFFICIENCY", false, 1.0);
-    mySOCMax = reducedSOC_ub;
     myMaximumBatteryCapacity = 46000.0;
-    myOverheadWireChargingPower = 46000.0;
-
 
 }
 
-std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery) {
+std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, double soc, double speed, double voltage, bool hasOvrHdWire, bool hasBattery) const {
     consum = WATTHR2WATT(consum);
-    double powerDemandOvrHdWire = consum;
+    double powerDemandOvrHdWire = 0.0;
     double powerDemandBattery = 0.0;
     double powerCharging = 0.0;
     double current = 0.0;
         
     if (!hasOvrHdWire || voltage < 100.0) {
         powerDemandOvrHdWire = 0.0;
-        powerDemandBattery = consum / SUMO_ATTR_CHARGINEFFICIENCY;
+        powerDemandBattery = consum;
     }
     else {
         //under the overhead wire
+        powerDemandOvrHdWire = consum;
+        powerDemandBattery = 0.0;
         if (speed >= 1) {
             // driving
-            powerDemandOvrHdWire = consum;
-            // RICE_TODO chybi limit 250 A
+            // doplnovani DC z baterky v ekomodu pokud It > EcoItMax
+            current = powerDemandOvrHdWire / voltage;
+            if (current > eco_minCurrentForPeakShaving && eco_mode) { // && EcoDcEnabled
+                powerDemandBattery = voltage * (current - eco_minCurrentForPeakShaving);
+                powerDemandOvrHdWire -= powerDemandBattery;
+            }
+            // RICE_TODO Rekuperace do baterky má taky nìjaké limity (150kW na mìnièi) 
+            // MJ dodelan limit 150 kW, chybi limit 250 A
             if (powerDemandOvrHdWire < 0.0 && soc < myMaximumBatteryCapacity) {
                 // regenerating energy into the battery
                 powerDemandBattery = powerDemandOvrHdWire;
-				// RICE_TODO: What is the meaning of this limit?
-                if (powerDemandBattery < -150000.0) {
-                    powerDemandBattery = -150000.0;
+                // the amount of regenerating energy is limited by recupBatteryPLimit
+                if (powerDemandBattery < -recupBatteryPLimit) {
+                    powerDemandBattery = -recupBatteryPLimit;
                 }
-                powerDemandOvrHdWire = powerDemandOvrHdWire - powerDemandBattery;
+                // energy which is not possible to regenerate into battery due to recupBatteryPLimit is still regenerating into the overhead wire
+                powerDemandOvrHdWire -= powerDemandBattery;
             }
-            if (soc < reducedSOC_ub * myMaximumBatteryCapacity && -powerDemandBattery < maxBatteryChargingPower_stopped) {
+            // RICE_TODO:  -powerDemandBattery < maxBatteryChargingPower_stopped should be something like maxBatteryChargingPower_driving
+            // and, moreover, maybe it is only additional charged to recuperation - still a charging constant + regenretrating
+            // 
+            //% dobijeni z troleje NeEko
+            if (soc < myMaximumBatteryCapacity && -powerDemandBattery < maxBatteryChargingPower_stopped && !eco_mode) {
                 // charging battery from overhead wire
                 current = powerDemandOvrHdWire / voltage;
                 powerCharging = -(current - maxLineCurrent_driving) * voltage * ((current - maxLineCurrent_driving) < 0.0);
                 if (powerCharging > maxBatteryChargingPower_stopped) {
                     powerCharging = maxBatteryChargingPower_stopped;
                 }
-                powerDemandBattery = powerDemandBattery - powerCharging;
-                if (-powerDemandBattery > recupBatteryPLimit) {
+                powerDemandBattery -= powerCharging;
+                if (powerDemandBattery < -recupBatteryPLimit) {
+                    powerCharging -= (-powerDemandBattery - recupBatteryPLimit);
+                    powerDemandBattery = -recupBatteryPLimit;
+                }
+                powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;
+            }
+            //% dobijeni z troleje Eko
+            if (soc < eco_socLimitCharging*myMaximumBatteryCapacity && -powerDemandBattery < eco_maxBatteryChargingPower_stopped && eco_mode) {
+                // charging battery from overhead wire
+                current = powerDemandOvrHdWire / voltage;
+                powerCharging = -(current - eco_minCurrentForPeakShaving) * voltage * ((current - eco_minCurrentForPeakShaving) < 0.0);
+                if (powerCharging > eco_maxBatteryChargingPower_stopped) {
+                    powerCharging = eco_maxBatteryChargingPower_stopped;
+                }
+                powerDemandBattery -= powerCharging;
+                if (powerDemandBattery < -recupBatteryPLimit) {
                     powerCharging -= (-powerDemandBattery - recupBatteryPLimit);
                     powerDemandBattery = -recupBatteryPLimit;
                 }
@@ -1081,36 +1069,38 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
         }
         else {
             // stopped
-            powerDemandOvrHdWire = consum;
-            if (soc < reducedSOC_ub * myMaximumBatteryCapacity) {
+            if ((soc < myMaximumBatteryCapacity && !eco_mode) || (soc < eco_socLimitCharging*myMaximumBatteryCapacity && eco_mode)) {
                 //charging
                 current = powerDemandOvrHdWire / voltage;
                 powerCharging = -(current - maxLineCurrent_stopped) * voltage * ((current - maxLineCurrent_stopped) < 0.0);
                 if (powerCharging > maxBatteryChargingPower_stopped) {
                     powerCharging = maxBatteryChargingPower_stopped;
                 }
+                if (powerCharging > eco_maxBatteryChargingPower_stopped && eco_mode) {
+                    powerCharging = eco_maxBatteryChargingPower_stopped;
+                }
                 powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;
                 powerDemandBattery = powerDemandBattery - powerCharging;
             }
         }
+    }
 
-        if (powerDemandOvrHdWire >= 0.0) {
-            powerDemandOvrHdWire /= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
-        }
-        else {
-            powerDemandOvrHdWire *= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
-        }
+    if (powerDemandOvrHdWire >= 0.0) {
+        powerDemandOvrHdWire /= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    }
+    else {
+        powerDemandOvrHdWire *= SUMO_ATTR_INPUTCHOKEEFFICIENCY;
+    }
 
-        if (powerDemandBattery >= 0.0) {
-            powerDemandBattery /= SUMO_ATTR_CHARGINEFFICIENCY;
-        }
-        else {
-            powerDemandBattery *= SUMO_ATTR_CHARGINEFFICIENCY;
-        }
+    if (powerDemandBattery >= 0.0) {
+        powerDemandBattery /= SUMO_ATTR_CHARGINEFFICIENCY;
+    }
+    else {
+        powerDemandBattery *= SUMO_ATTR_CHARGINEFFICIENCY;
     }
 
     /*
-    if (soc < mySOCMax * myMaximumBatteryCapacity) {
+    if (soc < reducedSOC_lb * myMaximumBatteryCapacity) {
         powerDemand += myOverheadWireChargingPower;
     }
 
