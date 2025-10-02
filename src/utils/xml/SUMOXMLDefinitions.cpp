@@ -897,6 +897,7 @@ SequentialStringBijection::Entry SUMOXMLDefinitions::attrs[] = {
     // maybe maxLineCurrent_stopped is used for const value of generall setting of vehicle while maxCurrentStopped ca be used for dynamical modifiing of this limit???
     { "maxCurrentStopped",      SUMO_ATTR_MAXCURRENT_STOPPED },
     { "maxLineCurrent_stopped", SUMO_ATTR_MAXLINECURRENTSTOPPED },
+    { "ecoMode", SUMO_ATTR_POWERMANAGEMENT_ECOMODE },
     // MSBatteryExport
     { "energyConsumed",         SUMO_ATTR_ENERGYCONSUMED },
     { "totalEnergyConsumed",    SUMO_ATTR_TOTALENERGYCONSUMED },

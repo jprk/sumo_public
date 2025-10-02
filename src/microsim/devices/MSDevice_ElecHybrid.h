@@ -369,6 +369,16 @@ public:
         return maxLineCurrent_stopped;
     };
 
+    //@brief Set if the power managemnt eco mode is activated or not
+    void setEcoMode(bool activated) {
+        eco_mode = activated;
+    };
+
+    //@brief Get info if the power managemnt eco mode is activated or not
+    bool getEcoMode() const {
+        return eco_mode;
+    };
+
     //@brief Get the input choke efficiency for drawing current from overhead wire to trolleybus or vice versa
     double getInputChokeEff() const {
         return SUMO_ATTR_INPUTCHOKEEFFICIENCY;

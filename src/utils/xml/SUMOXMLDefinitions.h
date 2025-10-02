@@ -1169,6 +1169,8 @@ enum SumoXMLAttr {
     SUMO_ATTR_RECUPERATIONENABLE,
     // @brief Limit on electric current from overheadwire while the vehicle is stopped
     SUMO_ATTR_MAXLINECURRENTSTOPPED,
+    // @brief Activation (true/false) of eco mode in power management of elechybrid
+    SUMO_ATTR_POWERMANAGEMENT_ECOMODE,
     /// @}
 
     /// @name battery export parameters

@@ -736,6 +736,8 @@ MSDevice_ElecHybrid::getParameter(const std::string& key) const {
         return toString(myEnergyCharged);
     } else if (key == toString(SUMO_ATTR_MAXIMUMBATTERYCAPACITY)) {
         return toString(myMaximumBatteryCapacity);
+    } else if (key == toString(SUMO_ATTR_POWERMANAGEMENT_ECOMODE)) {
+        return toString(myPowerManagement->getEcoMode());
     } else if (key == toString(SUMO_ATTR_OVERHEADWIREID)) {
         return getOverheadWireSegmentID();
     } else if (key == toString(SUMO_ATTR_SUBSTATIONID)) {
@@ -775,7 +777,12 @@ MSDevice_ElecHybrid::setParameter(const std::string& key, const std::string& val
         myMaximumBatteryCapacity = doubleValue;
     } else if (key == toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER)) {
         WRITE_WARNING(TL("SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER is deprecated, NOT USED. Please use power management parameters"));
-    } else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
+    }
+    else if (key == toString(SUMO_ATTR_POWERMANAGEMENT_ECOMODE)) {
+        const bool boolValue = StringUtils::toBool(value);
+        myPowerManagement->setEcoMode(boolValue);
+    }
+    else if (key == toString(SUMO_ATTR_VEHICLEMASS)) {
         WRITE_WARNING(TL("Setting the vehicle mass via parameters is deprecated, please use setMass for the vehicle or its type."));
         myHolder.getEmissionParameters()->setDouble(SUMO_ATTR_MASS, doubleValue);
     } else {
