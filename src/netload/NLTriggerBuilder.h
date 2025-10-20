@@ -349,9 +349,9 @@ protected:
                                       double chargingPower, double efficiency, bool chargeInTransit, SUMOTime chargeDelay, std::string chargeType,
                                       SUMOTime waitingTime, MSParkingArea* parkingArea);
 
-    /** @brief Builds an overhead wire segment
+    /** @brief Builds a bare overhead wire segment
     *
-    * Simply calls the MSOverheadWire constructor and adds the result to the network.
+    * Calls the MSOverheadWire constructor, adds the result to the network, and returns the overhead wire instance.
     *
     * @param[in] net The net the overhead wire segment belongs to
     * @param[in] id The id of the overhead wire segment
@@ -362,22 +362,7 @@ protected:
     * @param[in] voltageSource Default voltage of overhead wire segment (unused) TODORICE
     * @exception InvalidArgument If the overhead wire segment can not be added to the net (is duplicate according to the id)
     */
-    virtual void buildOverheadWireSegment(MSNet& net, const std::string& id, MSLane* lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource);
-
-    /** @brief Builds an overhead wire inner segments
-    *
-    * Simply calls the buildOverheadWireSegment for inner edges connection, frontConnection and behindConnection if exists. 
-    * Returns a vector of overhead segment IDs that were created.
-    *
-    * @param[in] net The net the overhead wire inner segments belongs to
-    * @param[in] connection The inner lane that connects two regular lanes, or a regular lane with the inner "behindConnection" lane,
-                 or the inner "frontConnection" lane with a regular lane, or the inner "frontConnection" lane with the inner "behindConnection" lane
-    * @param[in] frontConnection The inner lane that connects a regular lane with the inner "connection" lane
-    * @param[in] behindConnection The inner lane that connects the inner "connection" lane with a regular lane
-    * @param[in] owt The write type object containing electic parameters of this overhead wire
-    * @exception InvalidArgument If the over can not be added to the net (is duplicate according to the id)
-    */
-    std::vector<std::string> buildInnerOverheadWireSegments(MSNet& net, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection, OverheadWireType& owt);
+    virtual MSOverheadWire* buildOverheadWireSegment(MSNet& net, const std::string& id, const MSLane* lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource);
 
     /** @brief Builds a traction substation
     *
