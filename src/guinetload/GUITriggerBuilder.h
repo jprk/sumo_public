@@ -175,8 +175,8 @@ protected:
     * @param[in] voltageSource If the segment is the place of the connection of a traction substation
     * @exception InvalidArgument If the overhead wire segment can not be added to the net (is duplicate according to the id)
     */
-    void buildOverheadWireSegment(MSNet& net, const std::string& id, MSLane* lane,
-                                  double frompos, double topos, OverheadWireType& owt, bool voltageSource) override;
+    MSOverheadWire* buildOverheadWireSegment(MSNet& net, const std::string& id, const MSLane* lane,
+                                             double frompos, double topos, OverheadWireType& owt, bool voltageSource) override;
 
     /** @brief Builds an overhead wire clamp
     *
