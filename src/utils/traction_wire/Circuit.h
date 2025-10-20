@@ -47,6 +47,21 @@
 #include "Element.h"
 
 // ===========================================================================
+// prefixes and names for elements and nodes
+// ===========================================================================
+// Full nodes
+inline const std::string CIRCUIT_NODE_NEG_GROUND = "negNode_ground";
+inline const std::string CIRCUIT_NODE_VOLTAGE_SRC = "v_src_node";
+inline const std::string CIRCUIT_NODE_VOLTAGE_RES = "v_src_r_node";
+// Node name prefixes
+inline const std::string CIRCUIT_NODE_PLUS_P_PFX = "pNode_pos_";
+inline const std::string CIRCUIT_NODE_PLUS_N_PFX = "nNode_pos_";
+// Element name prefixes
+inline const std::string CIRCUIT_ELEMENT_PLUS_PFX = "pos_";
+inline const std::string CIRCUIT_ELEMENT_VOLTAGE_RES_PFX = "v_src_r_elem_";
+
+
+// ===========================================================================
 // class declarations
 // ===========================================================================
 class Node;
