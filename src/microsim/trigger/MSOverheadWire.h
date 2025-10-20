@@ -106,6 +106,9 @@ public:
     /// @brief destructor
     ~MSOverheadWire();
 
+    /// @brief Overhead wire segment name generator
+    static std::string getOWSIDforLane(const MSLane& lane);
+
     /// @brief Get the resistance of this overhead wire
     double getResistance();
 
@@ -166,11 +169,11 @@ public:
 
     Circuit* getCircuit() const;
 
-    void setCircuitStartNodePos(Node* node) {
+    void setCircuitStartNodePos(std::shared_ptr<Node> node) {
         myCircuitStartNodePos = node;
     }
 
-    void setCircuitEndNodePos(Node* node) {
+    void setCircuitEndNodePos(std::shared_ptr<Node> node) {
         myCircuitEndNodePos = node;
     }
 
@@ -178,13 +181,13 @@ public:
         myCircuitElementPos = element;
     }
 
-    Node* getCircuitStartNodePos() const {
-        return myCircuitStartNodePos;
-    }
+    /// @brief Returns a pointer to the shared `pNode` for the current segment.
+    /// Crerates one in case that the pointer does not yet exist.
+    Node* getCircuitStartNodePos() const;
 
-    Node* getCircuitEndNodePos() const {
-        return myCircuitEndNodePos;
-    }
+    /// @brief Returns a pointer to the shared `pNode` for the current segment.
+    /// Crerates one in case that the pointer does not yet exist.
+    Node* getCircuitEndNodePos() const;
 
     Element* getCircuitElementPos() const {
         return myCircuitElementPos;
@@ -196,6 +199,18 @@ public:
 
     void lock() const;
     void unlock() const;
+
+    void addIncomingSegment(MSOverheadWire* segment) {
+        myIncomingSegments.push_back(segment);
+    }
+
+    void addOutgoingSegment(MSOverheadWire* segment) {
+        myOutgoingSegments.push_back(segment);
+    }
+
+    std::string getJoinedIncomingSegmentIDs() const;
+    std::string getJoinedOutgoingSegmentIDs() const;
+
 
 protected:
 
@@ -275,9 +290,18 @@ protected:
 
     bool myVoltageSource;
 
-    Element* myCircuitElementPos;
-    Node* myCircuitStartNodePos;
-    Node* myCircuitEndNodePos;
+    /// @brief Pointers to all previous overhead wire segments
+    std::vector<MSOverheadWire*> myIncomingSegments;
+
+    /// @brief Pointers to all following overhead wire segments
+    std::vector<MSOverheadWire*> myOutgoingSegments;
+
+    /* These are used by GUIOverheadWire class that inherits from MSOverheadWire. */
+
+    /// @brief Shared pointer to the `pNode` of the segment
+    mutable std::shared_ptr<Node> myCircuitStartNodePos;
+    /// @brief Shared pointer to the `nNode` of the segment
+    mutable std::shared_ptr<Node> myCircuitEndNodePos;
 
 private:
     /// @brief Invalidated copy constructor.
@@ -285,6 +309,8 @@ private:
 
     /// @brief Invalidated assignment operator.
     MSOverheadWire& operator=(const MSOverheadWire&);
+
+    Element* myCircuitElementPos;
 };
 
 

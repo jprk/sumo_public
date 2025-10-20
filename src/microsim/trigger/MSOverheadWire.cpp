@@ -46,6 +46,9 @@
 #include <utils/traction_wire/Node.h>
 #include "MSOverheadWire.h"
 
+// Prefixes for overhead wire names
+inline const std::string OWSID_PREFIX_EXT = "ows_";
+inline const std::string OWSID_PREFIX_INT = "ows.in_";
 
 Command* MSTractionSubstation::myCommandForSolvingCircuit = nullptr;
 static std::mutex ow_mutex;
@@ -75,16 +78,19 @@ MSOverheadWire::MSOverheadWire(const std::string& overheadWireSegmentID, MSLane&
 MSOverheadWire::~MSOverheadWire() {
     if (myTractionSubstation != nullptr) {
         Circuit* circuit = myTractionSubstation->getCircuit();
-        if (circuit != nullptr && myCircuitElementPos != nullptr && myCircuitElementPos->getPosNode() == myCircuitStartNodePos && myCircuitElementPos->getNegNode() == myCircuitEndNodePos) {
+        if (circuit != nullptr && myCircuitElementPos != nullptr && myCircuitElementPos->getPosNode() == myCircuitStartNodePos.get() && myCircuitElementPos->getNegNode() == myCircuitEndNodePos.get()) {
             circuit->eraseElement(myCircuitElementPos);
             delete myCircuitElementPos;
+            // RICE_TODO: Shared pointers should be able to look after themselves.
             if (myCircuitEndNodePos->getElements()->size() == 0) {
-                circuit->eraseNode(myCircuitEndNodePos);
-                delete myCircuitEndNodePos;
+                Node* nNode = myCircuitEndNodePos.get();
+                circuit->eraseNode(nNode);
+                delete nNode;
             }
             if (myCircuitStartNodePos->getElements()->size() == 0) {
-                circuit->eraseNode(myCircuitStartNodePos);
-                delete myCircuitStartNodePos;
+                Node* pNode = myCircuitStartNodePos.get();
+                circuit->eraseNode(pNode);
+                delete pNode;
             }
         }
 
@@ -97,6 +103,11 @@ MSOverheadWire::~MSOverheadWire() {
     }
 }
 
+
+std::string
+MSOverheadWire::getOWSIDforLane(const MSLane& lane) {
+    return OWSID_PREFIX_EXT + lane.getID();
+}
 
 void
 MSOverheadWire::addVehicle(SUMOVehicle& veh) {
@@ -136,6 +147,71 @@ MSOverheadWire::getCircuit() const {
         return getTractionSubstation()->getCircuit();
     }
     return nullptr;
+}
+
+Node*
+MSOverheadWire::getCircuitStartNodePos() const {
+    if (!myCircuitStartNodePos) {
+        // Get the circuit
+        Circuit* circuit = getCircuit();
+        assert(circuit != nullptr);
+
+        // Create the shared representation of a `pNode`
+        Node* rawNode = circuit->addNode(CIRCUIT_NODE_PLUS_P_PFX + myID);
+        // RICE_TODO: Might need a custom deleter
+        // Something like std::shared_ptr<Node>(rawNode, [circuit](Node* n) {circuit->eraseNode(n); delete n;})
+        myCircuitStartNodePos = std::shared_ptr<Node>(rawNode);
+
+        // Register it with all neighbours
+        for (MSOverheadWire* neighbour : myIncomingSegments) {
+            neighbour->setCircuitEndNodePos(myCircuitStartNodePos);
+        }
+    }
+    return myCircuitStartNodePos.get();
+}
+
+Node*
+MSOverheadWire::getCircuitEndNodePos() const {
+    if (!myCircuitEndNodePos) {
+        // Get the circuit
+        Circuit* circuit = getCircuit();
+        assert(circuit != nullptr);
+
+        // Create the shared representation of a `nNode`
+        Node* rawNode = circuit->addNode(CIRCUIT_NODE_PLUS_N_PFX + myID);
+        // RICE_TODO: Might need a custom deleter
+        // Something like std::shared_ptr<Node>(rawNode, [circuit](Node* n) {circuit->eraseNode(n); delete n;})
+        myCircuitEndNodePos = std::shared_ptr<Node>(rawNode);
+
+        // Register it with all neighbours
+        for (MSOverheadWire* neighbour : myOutgoingSegments) {
+            neighbour->setCircuitStartNodePos(myCircuitEndNodePos);
+        }
+    }
+    return myCircuitEndNodePos.get();
+}
+
+std::string
+MSOverheadWire::getJoinedIncomingSegmentIDs() const {
+    // Returned sequence of segment IDs
+    std::string ids = myID;
+    // Loop over incoming segments and concatenate their names
+    for (MSOverheadWire* neighbour : myIncomingSegments) {
+        ids += '/' + neighbour->getID();
+    }
+    return ids;
+}
+
+std::string
+MSOverheadWire::getJoinedOutgoingSegmentIDs() const {
+    // Returned sequence of segment IDs
+    std::string ids = myID;
+    // Loop over incoming segments and concatenate their names
+    for (MSOverheadWire* neighbour : myOutgoingSegments) {
+        if (!ids.empty()) ids += '/';
+        ids += neighbour->getID();
+    }
+    return ids;
 }
 
 double
@@ -324,358 +400,94 @@ MSTractionSubstation::writeOut() {
 
 void
 MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverheadWireSegment) {
-    // RICE_TODO: Why to we skip internal lanes here?
-    MSLane& lane = const_cast<MSLane&>(newOverheadWireSegment->getLane());
-    if (lane.isInternal()) {
-        return;
-    }
+
+    // Sanity check: The `newOverheadWireSegment` should reference this traction substation
+    assert(newOverheadWireSegment->getTractionSubstation() == this);
 
     // RICE_TODO: consider the possibility of having more segments that belong to one lane.
     // The rationale behind this is the possibility to have a wire section split placed
     // on certain position over the lane. Currently we have to split the underlying edge to
     // get an appropriate split placement.
 
-    // Add this segment to the traction substation
+    // Add the segment to the segments powered by this traction substation.
     myOverheadWireSegments.push_back(newOverheadWireSegment);
-    // Let the segment reference this substation
-    newOverheadWireSegment->setTractionSubstation(this);
 
     if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
-		// RICE_TODO: This shall return this substation's circuit
-        Circuit* circuit = newOverheadWireSegment->getCircuit();
+        // Remember the segment ID
         const std::string segmentID = newOverheadWireSegment->getID();
 
-        if (circuit->getNode("negNode_ground") == nullptr) {
-            circuit->addNode("negNode_ground");
+        // Make sure that the cicuit has a negative node connected to ground.
+        // RICE_TODO: Creation of a nonexisting node may be made part of a custom getter for `Circuit`Make sure that the cicuit has a negative node connected to ground.
+        Node* gndNode = myCircuit->getNode(CIRCUIT_NODE_NEG_GROUND);
+        if (gndNode == nullptr) {
+            gndNode = myCircuit->addNode(CIRCUIT_NODE_NEG_GROUND);
         }
 
-        // Convention: `pNode` is at the beginning of the wire segment, `nNode` is at the end of the wire segment
-        newOverheadWireSegment->setCircuitStartNodePos(circuit->addNode("pNode_pos_" + segmentID));
-        newOverheadWireSegment->setCircuitEndNodePos(circuit->addNode("nNode_pos_" + segmentID));
-        // RICE_TODO: to use startPos and endPos of ovhdsegment: set the length of wire here properly
+        /*
+         * Get the nodes of the electric circuit that mark the beginning and end of the element
+         * representing this overhead wire segment. If the nodes do not exist, try to create them,
+         * insert them into the circuit and propagate information about their existence to all
+         * incoming or outgoing segments of this segment.
+         * Convention: `pNode` is the node at the beginning of the wire segment, `nNode` is the node at the end
+         */
+         // This is the beginning of the segment
+        Node* pNode = newOverheadWireSegment->getCircuitStartNodePos();
+        // Now the same with the end of the segment
+        Node* nNode = newOverheadWireSegment->getCircuitEndNodePos();
+
+        // Historically we had fixed wire parameters for the whole network ...
+        // Replaced with `getResistance()`: newOverheadWireSegment->getLane().getLength() * WIRE_RESISTIVITY,
+        // RICE_TODO: Check that the `getResistance()` takes `startPos` and `endPos` of the overhead wire segment
+        // into account.
         newOverheadWireSegment->setCircuitElementPos(
-            circuit->addElement("pos_" + segmentID,
-                                // fixed wire parameters for the whole network ... newOverheadWireSegment->getLane().getLength() * WIRE_RESISTIVITY,
-                                newOverheadWireSegment->getResistance(),
-                                newOverheadWireSegment->getCircuitStartNodePos(),
-                                newOverheadWireSegment->getCircuitEndNodePos(),
-                                Element::ElementType::RESISTOR_traction_wire));
+            myCircuit->addElement(
+                CIRCUIT_ELEMENT_PLUS_PFX + segmentID,
+                newOverheadWireSegment->getResistance(),
+                pNode, nNode,
+                Element::ElementType::RESISTOR_traction_wire));
 #else
         WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
-    }
 
-    const MSLane* connection = nullptr;
-    std::string ovrhdSegmentID = ""; //ID of outgoing or incoming overhead wire segment
-    MSOverheadWire* ovrhdSegment = nullptr; //pointer to outgoing or incoming overhead wire segment
+        if (newOverheadWireSegment->isThereVoltageSource()) {
+            // Add the segment to the list of segments powering the circuit
+            if (!myVoltageSources.empty()) myVoltageSources += " ";
+            myVoltageSources += newOverheadWireSegment->getID();
 
-    // RICE_TODO: simplify the code, two similar code-blocks below
-    // RICE_TODO: to use startPos and endPos of ovhdsegment: if endPos+EPS > newOverheadWireSegment->getLane().getLength(),
-    //            and the outgoing lanes will be skipped as there is no wire at the end of the lane
-
-    /* in version before SUMO 1.0.1 the function getOutgoingLanes() returning MSLane* exists,
-       in new version of SUMO the funciton getOutgoingViaLanes() returning MSLane* and MSEdge* pair exists */
-    // std::vector<const MSLane*> outgoing = lane.getOutgoingLanes();
-    const std::vector<std::pair<const MSLane*, const MSEdge*> > outgoingLanesAndEdges = lane.getOutgoingViaLanes();
-    std::vector<const MSLane*> neigboringInnerLanes;
-    neigboringInnerLanes.reserve(outgoingLanesAndEdges.size());
-    for (size_t it = 0; it < outgoingLanesAndEdges.size(); ++it) {
-        neigboringInnerLanes.push_back(outgoingLanesAndEdges[it].first);
-    }
-
-    // Check if there is an overhead wire segment on the outgoing lane. If not, do nothing, otherwise find connnecting internal lanes and
-    // add all lanes (this and inner) to circuit
-    for (std::vector<const MSLane*>::iterator it = neigboringInnerLanes.begin(); it != neigboringInnerLanes.end(); ++it) {
-        ovrhdSegmentID = MSNet::getInstance()->getStoppingPlaceID(*it, NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-        // If the overhead wire segment is over the outgoing (not internal) lane
-        if (ovrhdSegmentID != "" && !(*it)->isInternal()) {
-            ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(ovrhdSegmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-            // If the outgoing overhead wire segment belongs to the same substation as newOverheadWireSegment
-            // RICE_TODO: define what happens if the traction stations are different (overhead wire should continue over inner segments but it is unclear to which traction substation or even circuit it should be connected)
-            if (ovrhdSegment->getTractionSubstation() == newOverheadWireSegment->getTractionSubstation()) {
-                connection = lane.getInternalFollowingLane(*it);
-                if (connection != nullptr) {
-                    //is connection a forbidden lane?
-                    if (!(ovrhdSegment->getTractionSubstation()->isForbidden(connection) ||
-                            ovrhdSegment->getTractionSubstation()->isForbidden(lane.getInternalFollowingLane(connection)) ||
-                            ovrhdSegment->getTractionSubstation()->isForbidden(connection->getInternalFollowingLane(*it)))) {
-                        addOverheadWireInnerSegmentToCircuit(newOverheadWireSegment, ovrhdSegment, connection, lane.getInternalFollowingLane(connection), connection->getInternalFollowingLane(*it));
-                    }
-
-                } else {
-                    if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
-                        Node* const unusedNode = newOverheadWireSegment->getCircuitEndNodePos();
-                        for (MSOverheadWire* const ows : myOverheadWireSegments) {
-                            if (ows->getCircuitStartNodePos() == unusedNode) {
-                                ows->setCircuitStartNodePos(ovrhdSegment->getCircuitStartNodePos());
-                            }
-                            if (ows->getCircuitEndNodePos() == unusedNode) {
-                                ows->setCircuitEndNodePos(ovrhdSegment->getCircuitStartNodePos());
-                            }
-                        }
-                        newOverheadWireSegment->getCircuit()->replaceAndDeleteNode(unusedNode, ovrhdSegment->getCircuitStartNodePos());
-#else
-                        WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-                    }
-                }
+            // if node "voltage_source_node" does not exist (i.e. there is no voltage source in the circuit yet),
+            // we create the node and we "connect" it to the traction substation, that is modelled as one voltage source and serial resistor
+            Node* vSrcNode = myCircuit->getNode(CIRCUIT_NODE_VOLTAGE_SRC);
+            if (vSrcNode == nullptr) {
+                // No voltage source in the circuir, add ít
+                vSrcNode = myCircuit->addNode(CIRCUIT_NODE_VOLTAGE_SRC);
+                // And another node representing a connection to a small resistor element
+                Node* vResNode = myCircuit->addNode(CIRCUIT_NODE_VOLTAGE_RES);
+                myCircuit->addElement(
+                    "voltage_source",
+                    mySubstationVoltage,
+                    vResNode, gndNode,
+                    Element::ElementType::VOLTAGE_SOURCE_traction_wire);
+
+                myCircuit->addElement(
+                    "voltage_source_resistance",
+                    0.001,  // RICE_TODO: Used to have 0.12 Ohm here for trolleybuses
+                    vSrcNode, vResNode,
+                    Element::ElementType::RESISTOR_traction_wire);
             }
-        }
-    }
-
-    // RICE_TODO: to use startPos and endPos of ovhdsegment: if startPos-EPS < 0,
-    //            and the incoming lanes will be skipped as there is no wire at the beginning of the lane
-
-    // This is the same as above, only this time checking the wires on some incoming lanes. If some of them
-    // has an overhead wire segment, find the connnecting internal lanes and add all lanes (the internal
-    // and this) to the circuit, otherwise do nothing.
-    neigboringInnerLanes = lane.getNormalIncomingLanes();
-    for (std::vector<const MSLane*>::iterator it = neigboringInnerLanes.begin(); it != neigboringInnerLanes.end(); ++it) {
-        ovrhdSegmentID = MSNet::getInstance()->getStoppingPlaceID(*it, (*it)->getLength() - NUMERICAL_EPS, SUMO_TAG_OVERHEAD_WIRE_SEGMENT);
-        // If the overhead wire segment is over the incoming (not internal) lane
-        if (ovrhdSegmentID != "" && !(*it)->isInternal()) {
-            ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(ovrhdSegmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-            // If the incoming overhead wire segment belongs to the same substation as newOverheadWireSegment
-            // RICE_TODO: define what happens if the traction stations are different (overhead wire should continue over inner segments but it is unclear to which traction substation or even circuit it should be connected)
-            if (ovrhdSegment->getTractionSubstation() == newOverheadWireSegment->getTractionSubstation()) {
-                connection = (*it)->getInternalFollowingLane(&lane);
-                if (connection != nullptr) {
-                    //is connection a forbidden lane?
-                    if (!(ovrhdSegment->getTractionSubstation()->isForbidden(connection) ||
-                            ovrhdSegment->getTractionSubstation()->isForbidden((*it)->getInternalFollowingLane(connection)) ||
-                            ovrhdSegment->getTractionSubstation()->isForbidden(connection->getInternalFollowingLane(&lane)))) {
-                        addOverheadWireInnerSegmentToCircuit(ovrhdSegment, newOverheadWireSegment, connection, (*it)->getInternalFollowingLane(connection), connection->getInternalFollowingLane(&lane));
-                    }
-                } else {
-                    if (MSGlobals::gOverheadWireSolver) {
-#ifdef HAVE_EIGEN
-                        Node* const unusedNode = newOverheadWireSegment->getCircuitStartNodePos();
-                        for (MSOverheadWire* const ows : myOverheadWireSegments) {
-                            if (ows->getCircuitStartNodePos() == unusedNode) {
-                                ows->setCircuitStartNodePos(ovrhdSegment->getCircuitEndNodePos());
-                            }
-                            if (ows->getCircuitEndNodePos() == unusedNode) {
-                                ows->setCircuitEndNodePos(ovrhdSegment->getCircuitEndNodePos());
-                            }
-                        }
-                        newOverheadWireSegment->getCircuit()->replaceAndDeleteNode(unusedNode, ovrhdSegment->getCircuitEndNodePos());
-#else
-                        WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-                    }
-                }
-            }
-        }
-    }
-
-    if (MSGlobals::gOverheadWireSolver && newOverheadWireSegment->isThereVoltageSource()) {
-        // Add the segment to the list of segments powering the circuit
-        if (!myVoltageSources.empty()) myVoltageSources += " ";
-        myVoltageSources += newOverheadWireSegment->getID();
-
-#ifdef HAVE_EIGEN
-        Circuit* circuit = newOverheadWireSegment->getCircuit();
-
-        // if node "voltage_source_node" does not exist (i.e. there is no voltage source in the circuit yet),
-        // we create the node and we "connect" it to the traction substation, that is modelled as one voltage source and serial resistor
-        if (circuit->getNode("voltage_source_node") == nullptr) {
-            circuit->addNode("voltage_source_node");
-            circuit->addNode("voltage_source_resistor_node");
-            circuit->addElement(
-                "voltage_source",
-                mySubstationVoltage,
-                circuit->getNode("voltage_source_resistor_node"),
-                circuit->getNode("negNode_ground"),
-                Element::ElementType::VOLTAGE_SOURCE_traction_wire);
-
-            circuit->addElement(
-                "voltage_source_resistance",
-                0.001,  // RICE_TODO: Used to have 0.12 Ohm here for trolleybuses
-                circuit->getNode("voltage_source_node"),
-                circuit->getNode("voltage_source_resistor_node"),
+            // connect the start of overhead wire segment with the voltage source using a small resistor element (for simple computation of the circuit) 
+            myCircuit->addElement(
+                CIRCUIT_ELEMENT_VOLTAGE_RES_PFX + segmentID,
+                0.001,
+                pNode, vSrcNode,
                 Element::ElementType::RESISTOR_traction_wire);
-        }
-        // connect the start of overhead wire segment with the voltage source using a small resistor element (for simple computation of the circuit) 
-        circuit->addElement(
-            "voltage_source_node" + newOverheadWireSegment->getID(),
-            0.001,
-            newOverheadWireSegment->getCircuitStartNodePos(),
-            circuit->getNode("voltage_source_node"),
-            Element::ElementType::RESISTOR_traction_wire);
-
-#else
-        WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-    }
-}
-
-
-void
-MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incomingSegment, MSOverheadWire* outgoingSegment, const MSLane* connection, const MSLane* frontConnection, const MSLane* behindConnection) {
-    /*
-     * RICE_TODO ... what type of wire shall be used in the following cases?
-     * Possible cases:
-     * a) no frontConnection, no behindConnection
-     *    RICE_TODO: Add explanation
-     * b) frontConnection exists, but no behindConnection
-     *    RICE_TODO: Add explanation
-     * c) no frontConnection, but behindConnection exists
-     *    RICE_TODO: Add explanation
-     * d) no frontConnection, but behindConnection exists
-     *    RICE_TODO: Add explanation
-     */
-    if (frontConnection == nullptr && behindConnection == nullptr) {
-        // addOverheadWire from nNode of newOverheadWireSegment to pNode
-        MSOverheadWire* innerSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + connection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        myOverheadWireSegments.push_back(innerSegment);
-        innerSegment->setTractionSubstation(incomingSegment->getTractionSubstation());
-        if (MSGlobals::gOverheadWireSolver) {
-#ifdef HAVE_EIGEN
-            // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
-            Element* elem = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + connection->getID(),
-                connection->getLength() * incomingSegment->getResistancePerLength(),
-                incomingSegment->getCircuitEndNodePos(),
-                outgoingSegment->getCircuitStartNodePos(),
-                Element::ElementType::RESISTOR_traction_wire);
-            innerSegment->setCircuitElementPos(elem);
-            innerSegment->setCircuitStartNodePos(incomingSegment->getCircuitEndNodePos());
-            innerSegment->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
-#else
-            UNUSED_PARAMETER(outgoingSegment);
-            WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-        }
-    } else if (frontConnection != nullptr && behindConnection == nullptr) {
-        MSOverheadWire* innerSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + frontConnection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        MSOverheadWire* innerSegment2 = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + connection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-
-        innerSegment->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment);
-        innerSegment2->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment2);
-
-        if (MSGlobals::gOverheadWireSolver) {
-#ifdef HAVE_EIGEN
-            // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
-            Node* betweenFrontNode_pos = incomingSegment->getCircuit()->addNode("betweenFrontNode_pos_" + connection->getID());
-            Element* elem = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + frontConnection->getID(),
-                frontConnection->getLength() * incomingSegment->getResistancePerLength(),
-                incomingSegment->getCircuitEndNodePos(),
-                betweenFrontNode_pos,
-                Element::ElementType::RESISTOR_traction_wire);
-            Element* elem2 = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + connection->getID(),
-                connection->getLength() * incomingSegment->getResistancePerLength(),
-                betweenFrontNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
-                Element::ElementType::RESISTOR_traction_wire);
-
-            innerSegment->setCircuitElementPos(elem);
-            innerSegment->setCircuitStartNodePos(incomingSegment->getCircuitEndNodePos());
-            innerSegment->setCircuitEndNodePos(betweenFrontNode_pos);
-
-            innerSegment2->setCircuitElementPos(elem2);
-            innerSegment2->setCircuitStartNodePos(betweenFrontNode_pos);
-            innerSegment2->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
 #else
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-        }
-    } else if (frontConnection == nullptr && behindConnection != nullptr) {
-        MSOverheadWire* innerSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + connection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        MSOverheadWire* innerSegment2 = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + behindConnection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-
-        innerSegment->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment);
-        innerSegment2->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment2);
-
-        if (MSGlobals::gOverheadWireSolver) {
-#ifdef HAVE_EIGEN
-            // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
-            Node* betweenBehindNode_pos = incomingSegment->getCircuit()->addNode("betweenBehindNode_pos_" + connection->getID());
-            Element* elem = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + connection->getID(),
-                (connection->getLength()) * incomingSegment->getResistancePerLength(),
-                incomingSegment->getCircuitEndNodePos(),
-                betweenBehindNode_pos,
-                Element::ElementType::RESISTOR_traction_wire);
-            Element* elem2 = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + behindConnection->getID(),
-                (behindConnection->getLength()) * incomingSegment->getResistancePerLength(),
-                betweenBehindNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
-                Element::ElementType::RESISTOR_traction_wire);
-
-            innerSegment->setCircuitElementPos(elem);
-            innerSegment->setCircuitStartNodePos(incomingSegment->getCircuitEndNodePos());
-            innerSegment->setCircuitEndNodePos(betweenBehindNode_pos);
-
-            innerSegment2->setCircuitElementPos(elem2);
-            innerSegment2->setCircuitStartNodePos(betweenBehindNode_pos);
-            innerSegment2->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
-#else
-            WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
-#endif
-        }
-    } else if (frontConnection != nullptr && behindConnection != nullptr) {
-        MSOverheadWire* innerSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + frontConnection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        MSOverheadWire* innerSegment2 = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + connection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-        MSOverheadWire* innerSegment3 = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace("ovrhd_inner_" + behindConnection->getID(), SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-
-        innerSegment->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment);
-        innerSegment2->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment2);
-        innerSegment3->setTractionSubstation(incomingSegment->getTractionSubstation());
-        myOverheadWireSegments.push_back(innerSegment3);
-
-        if (MSGlobals::gOverheadWireSolver) {
-#ifdef HAVE_EIGEN
-            // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
-            Node* betweenFrontNode_pos = incomingSegment->getCircuit()->addNode("betweenFrontNode_pos_" + connection->getID());
-            Node* betweenBehindNode_pos = incomingSegment->getCircuit()->addNode("betweenBehindNode_pos_" + connection->getID());
-            Element* elem = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + frontConnection->getID(),
-                frontConnection->getLength() * incomingSegment->getResistancePerLength(),
-                incomingSegment->getCircuitEndNodePos(),
-                betweenFrontNode_pos,
-                Element::ElementType::RESISTOR_traction_wire);
-            Element* elem2 = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + connection->getID(),
-                (connection->getLength()) * incomingSegment->getResistancePerLength(),
-                betweenFrontNode_pos,
-                betweenBehindNode_pos,
-                Element::ElementType::RESISTOR_traction_wire);
-            Element* elem3 = incomingSegment->getCircuit()->addElement(
-                "pos_ovrhd_inner_" + behindConnection->getID(),
-                (behindConnection->getLength()) * incomingSegment->getResistancePerLength(),
-                betweenBehindNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
-                Element::ElementType::RESISTOR_traction_wire);
-
-            innerSegment->setCircuitElementPos(elem);
-            innerSegment->setCircuitStartNodePos(incomingSegment->getCircuitEndNodePos());
-            innerSegment->setCircuitEndNodePos(betweenFrontNode_pos);
-
-            innerSegment2->setCircuitElementPos(elem2);
-            innerSegment2->setCircuitStartNodePos(betweenFrontNode_pos);
-            innerSegment2->setCircuitEndNodePos(betweenBehindNode_pos);
-
-            innerSegment3->setCircuitElementPos(elem3);
-            innerSegment3->setCircuitStartNodePos(betweenBehindNode_pos);
-            innerSegment3->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
-#else
-            WRITE_WARNING(TL("Overhead circuit solver requested, but solver support not compiled in."));
 #endif
         }
     }
 }
-
 
 void MSTractionSubstation::addOverheadWireClampToCircuit(const std::string id, MSOverheadWire* startSegment, MSOverheadWire* endSegment) {
     PositionVector pos_start = startSegment->getLane().getShape();
