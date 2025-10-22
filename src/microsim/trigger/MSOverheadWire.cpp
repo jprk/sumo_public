@@ -57,8 +57,11 @@ static std::mutex ow_mutex;
 //                                                              MSOverheadWire
 // ===========================================================================
 
-MSOverheadWire::MSOverheadWire(const std::string& overheadWireSegmentID, MSLane& lane, double startPos, double endPos, OverheadWireType& owt, bool voltageSource) :
+MSOverheadWire::MSOverheadWire(const std::string& overheadWireSegmentID, const std::string& overheadWireSectionID, 
+                               MSLane& lane, double startPos, double endPos, 
+                               OverheadWireType& owt, bool voltageSource) :
     MSStoppingPlace(overheadWireSegmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT, std::vector<std::string>(), lane, startPos, endPos),
+    myOverheadWireSectionID(overheadWireSectionID),
     myVoltage(0),
     myChargingVehicle(false),
     myTotalCharge(0),
@@ -218,6 +221,13 @@ double
 MSOverheadWire::getResistance() {
     double wireResistancePerLength = myWireType.getResistancePerLength();
     double wireLength = myLane.getLength();
+    // The wire may be shorter than the lane
+    if (myBegPos > 0) {
+        wireLength -= myBegPos;
+    }
+    if (myEndPos < myLane.getLength()) {
+        wireLength -= (myLane.getLength() - myEndPos);
+    }
     return wireResistancePerLength * wireLength;
 }
 
@@ -431,7 +441,7 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
          * incoming or outgoing segments of this segment.
          * Convention: `pNode` is the node at the beginning of the wire segment, `nNode` is the node at the end
          */
-         // This is the beginning of the segment
+        // This is the beginning of the segment
         Node* pNode = newOverheadWireSegment->getCircuitStartNodePos();
         // Now the same with the end of the segment
         Node* nNode = newOverheadWireSegment->getCircuitEndNodePos();
@@ -465,23 +475,32 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
                 // And another node representing a connection to a small resistor element
                 Node* vResNode = myCircuit->addNode(CIRCUIT_NODE_VOLTAGE_RES);
                 myCircuit->addElement(
-                    "voltage_source",
+                    CIRCUIT_ELEMENT_VOLTAGE_SRC,
                     mySubstationVoltage,
                     vResNode, gndNode,
                     Element::ElementType::VOLTAGE_SOURCE_traction_wire);
 
                 myCircuit->addElement(
-                    "voltage_source_resistance",
-                    0.001,  // RICE_TODO: Used to have 0.12 Ohm here for trolleybuses
+                    CIRCUIT_ELEMENT_VOLTAGE_SRC_RES,
+                    0.001,  // RICE_TODO: Used to have 0.12 Ohm here for trolleybuses, make configurable!
                     vSrcNode, vResNode,
                     Element::ElementType::RESISTOR_traction_wire);
             }
             // connect the start of overhead wire segment with the voltage source using a small resistor element (for simple computation of the circuit) 
             myCircuit->addElement(
                 CIRCUIT_ELEMENT_VOLTAGE_RES_PFX + segmentID,
-                0.001,
+                0.001, // RICE_TODO: Make configurable!
                 pNode, vSrcNode,
                 Element::ElementType::RESISTOR_traction_wire);
+            /*
+             * The circuit contains:
+             * 
+             *   vResNode --[small resistor]-- vSrcNode --[small resistor]-- pNode --[ow segment]-- nNode/pNode --[ow segment]-- ... -- nNode
+             *       |                               |                                                                                    |
+             * (voltage source)                      +--[possibly another resistor]-- pNode --[ow segment]-- ...                ... -- gndNode
+             *       |
+             *    gndNode
+             */
 #else
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
@@ -540,12 +559,7 @@ void MSTractionSubstation::addForbiddenLane(MSLane* lane) {
 
 
 bool MSTractionSubstation::isForbidden(const MSLane* lane) {
-    for (std::vector<MSLane*>::iterator it = myForbiddenLanes.begin(); it != myForbiddenLanes.end(); ++it) {
-        if (lane == (*it)) {
-            return true;
-        }
-    }
-    return false;
+    return std::find(myForbiddenLanes.begin(), myForbiddenLanes.end(), lane) != myForbiddenLanes.end();
 }
 
 
@@ -599,6 +613,15 @@ MSTractionSubstation::solveCircuit(SUMOTime /*currentTime*/) {
 
     // Solve the electrical circuit
     myCircuit->solve();
+
+    if (myCircuit->getAlphaReason() > 0 && myCircuit->getAlphaBest() < 0.5) {
+        SUMOTime ts = MSNet::getInstance()->getCurrentTimeStep();
+        myCircuit->exportToDOTFile(fmt::format("circuit.{}.{}.dot", myID, int(ts/1000)));
+        WRITE_WARNINGF(TL("Suspiciously low alpha=% for substation `%` at time %. Circuit graph saved to .dot file for further analysis."),
+            toString(myCircuit->getAlphaBest()),
+            myID,
+            time2string(ts));
+    }
 
     if (myCircuit->getAlphaBest() != 1.0) {
         WRITE_WARNINGF(TL("The requested total power could not be delivered by the overhead wire at `%`. Only % of originally requested power was provided."), 

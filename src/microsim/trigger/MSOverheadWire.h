@@ -100,7 +100,8 @@ class MSOverheadWire : public MSStoppingPlace {
 public:
 
     /// @brief constructor
-    MSOverheadWire(const std::string& overheadWireSegmentID, MSLane& lane, double startPos, double endPos,
+    MSOverheadWire(const std::string& overheadWireSegmentID, const std::string& overheadWireSectionID, 
+                   MSLane& lane, double startPos, double endPos,
                    OverheadWireType& owt, bool voltageSource);
 
     /// @brief destructor
@@ -158,6 +159,11 @@ public:
     void writeOverheadWireSegmentOutput(OutputDevice& output);
 
     std::string getOverheadWireSegmentName();
+
+    /// @brief Return the name of the overhead wire section this segment belongs to
+    std::string getOverheadWireSectionID() const& {
+        return myOverheadWireSectionID;
+    }
 
     MSTractionSubstation* getTractionSubstation() const {
         return myTractionSubstation;
@@ -310,7 +316,11 @@ private:
     /// @brief Invalidated assignment operator.
     MSOverheadWire& operator=(const MSOverheadWire&);
 
+    /// @bries RICE_TODO: Missing
     Element* myCircuitElementPos;
+
+    /// @brief Name of the overhead wire section this segment belongs to
+    std::string myOverheadWireSectionID;
 };
 
 

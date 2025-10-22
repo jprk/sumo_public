@@ -222,7 +222,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSegment(MSNet& net, const SUMOSAXAttr
     // This code is deprecated but until we remove it, we need a working overhead wire type here.
     // We will use the default type here.
 
-    buildOverheadWireSegment(net, id, lane, frompos, topos, (OverheadWireType&) WIRE_DEFAULTTYPE, voltageSource);
+    buildOverheadWireSegment(net, id, "unknown_yet", lane, frompos, topos, (OverheadWireType&)WIRE_DEFAULTTYPE, voltageSource);
 #ifndef HAVE_EIGEN
     if (MSGlobals::gOverheadWireSolver && !myHaveWarnedAboutEigen) {
         myHaveWarnedAboutEigen = true;
@@ -234,7 +234,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSegment(MSNet& net, const SUMOSAXAttr
 void
 NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttributes& attrs) {
     bool ok = true;
-    std::string id = attrs.getOpt<std::string>(SUMO_ATTR_ID, 0, ok);
+    std::string sectionID = attrs.getOpt<std::string>(SUMO_ATTR_ID, 0, ok);
     if (!ok) {
         throw ProcessError();
     }
@@ -243,29 +243,29 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     }
 
     // Get the ID of a substation that this section is connected to
-    std::string substationId = attrs.get<std::string>(SUMO_ATTR_SUBSTATIONID, 0, ok);
+    std::string substationID = attrs.get<std::string>(SUMO_ATTR_SUBSTATIONID, 0, ok);
     if (!ok) {
         throw ProcessError();
     }
 
     // The substation has to exist
-    MSTractionSubstation* substation = MSNet::getInstance()->findTractionSubstation(substationId);
+    MSTractionSubstation* substation = MSNet::getInstance()->findTractionSubstation(substationID);
     if (substation == nullptr) {
-        throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
+        throw InvalidArgument("Traction substation '" + substationID + "' referenced by an <overheadWire> element '" + sectionID + "' is not defined.");
     }
     else if (substation->isAnySectionPreviouslyDefined()) {
         /// @todo if substation->isAnySectionPreviouslyDefined() && the old syntax of input xml is used, then error
-        WRITE_MESSAGEF("Traction substation '%' referenced by an <overheadWire> element '%' is probably referenced multiple times. This is allowed to enable constructing an overheadwire segment with not strictly consecutive lanes.", substationId, id);
+        WRITE_MESSAGEF("Traction substation '%' referenced by an <overheadWire> element '%' is probably referenced multiple times. This is allowed to enable constructing an overheadwire segment with not strictly consecutive lanes.", substationID, sectionID);
         /// throw InvalidArgument("Traction substation '" + substationId + "' referenced by an <overheadWire> element '" + id + "' is probably referenced twice (a known limitation of the actual version of overhead wire simulation).");
     }
 
     // The lanes where the substation is connected to the overhead wire are listed using voltageSource="..." attribute
-    const std::vector<std::string>& constVoltageSources = attrs.getOpt<std::vector<std::string>>(SUMO_ATTR_VOLTAGESOURCE, id.c_str(), ok);
+    const std::vector<std::string>& constVoltageSources = attrs.getOpt<std::vector<std::string>>(SUMO_ATTR_VOLTAGESOURCE, sectionID.c_str(), ok);
     // RICE_TODO: We need an editable version, is this an appropriate approach?
     std::vector<std::string> voltageSources(constVoltageSources);
 
     // Process forbidden internal lanes
-    const std::vector<std::string>& forbiddenInnerLanesIDs = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_OVERHEAD_WIRE_FORBIDDEN, substationId.c_str(), ok);
+    const std::vector<std::string>& forbiddenInnerLanesIDs = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_OVERHEAD_WIRE_FORBIDDEN, substationID.c_str(), ok);
     /// @todo for cycle abbreviation?
     for (const std::string& laneID : forbiddenInnerLanesIDs) {
         MSLane* lane = MSLane::dictionary(laneID);
@@ -274,7 +274,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
             /// @todo: if isAnySectionPreviouslyDefined(), there could be a overheadwire segment over a newly added forbiddenInnerLane. Such the segment should be deleted.
         }
         else {
-            throw InvalidArgument("Unknown forbidden lane '" + laneID + "' for <overheadWire> element '" + id + "' (traction substation '" + substationId + "')lk.");
+            throw InvalidArgument("Unknown forbidden lane '" + laneID + "' for <overheadWire> element '" + sectionID + "' (traction substation '" + substationID + "')lk.");
         }
     }
 
@@ -286,15 +286,15 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     OverheadWireType& owt = (OverheadWireType&)WIRE_DEFAULTTYPE;  // Overhead wire type with the default parameters
     if (attrs.hasAttribute(SUMO_ATTR_OVERHEAD_WIRE_TYPEID)) {
         // We have a reference to some overhead wire type
-        std::string typeId = attrs.get<std::string>(SUMO_ATTR_OVERHEAD_WIRE_TYPEID, 0, ok);
+        std::string typeID = attrs.get<std::string>(SUMO_ATTR_OVERHEAD_WIRE_TYPEID, 0, ok);
         if (!ok) {
             throw InvalidArgument("Malformed <overheadWire wireid=...> attribute.");
         }
         // Find the referenced OverheadWireType in the map
-        auto it = myOverheadWireTypeMap.find(typeId);
+        auto it = myOverheadWireTypeMap.find(typeID);
         // And handle the case when it has not been found
         if (it == myOverheadWireTypeMap.end()) {
-            throw InvalidArgument("Overhead wire type '" + typeId + "' referenced by an <overheadWire> element '" + id + "' is not defined.");
+            throw InvalidArgument("Overhead wire type '" + typeID + "' referenced by an <overheadWire> element '" + sectionID + "' is not defined.");
         }
         // Replace the default `owt` with the overhead wire type stored in the map
         owt = it->second;
@@ -303,10 +303,10 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     // Ignore the old-style definition completely, the `lanes` attribute has to be present.
     // RICE_TODO: This migth be the job of a XSD schema and we do not need to check it here.
     if (!attrs.hasAttribute(SUMO_ATTR_LANES)) {
-        throw InvalidArgument(fmt::format("Overhead wire element '{}' does not have 'lanes' attribute. If this is the old style definition, please update it.", id));
+        throw InvalidArgument(fmt::format("Overhead wire element '{}' does not have 'lanes' attribute. If this is the old style definition, please update it.", sectionID));
     }
     // Get the list of lanes over which the overhead wire segments shall be built
-    const std::vector<std::string>& laneIDs = attrs.get<std::vector<std::string>>(SUMO_ATTR_LANES, id.c_str(), ok);
+    const std::vector<std::string>& laneIDs = attrs.get<std::vector<std::string>>(SUMO_ATTR_LANES, sectionID.c_str(), ok);
 
     // Check that the first and the last segments of the overhead wire section really do not have
     // any incoming or outgoing lanes that would be a part of this 
@@ -320,7 +320,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         // Make sure the lane is not part of `laneIDs`
         if (std::find(laneIDs.begin(), laneIDs.end(), incomingLane->getID()) != laneIDs.end())
         {
-            throw InvalidArgument(fmt::format("First lane '{}' of <overheadWire> element '{}' has predecessor '{}' referenced by the same element. This is not allowed.", firstLane->getID(), id, incomingLane->getID()));
+            throw InvalidArgument(fmt::format("First lane '{}' of <overheadWire> element '{}' has predecessor '{}' referenced by the same element. This is not allowed.", firstLane->getID(), sectionID, incomingLane->getID()));
         }
     }
     // Check the lastLane for outgoing lanes
@@ -330,7 +330,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         // Make sure the lane is not part of `laneIDs`
         if (std::find(laneIDs.begin(), laneIDs.end(), outgoingLane->getID()) != laneIDs.end())
         {
-            throw InvalidArgument(fmt::format("Last lane '{}' of <overheadWire> element '{}' has successor '{}' referenced by the same element. This is not allowed.", lastLane->getID(), id, outgoingLane->getID()));
+            throw InvalidArgument(fmt::format("Last lane '{}' of <overheadWire> element '{}' has successor '{}' referenced by the same element. This is not allowed.", lastLane->getID(), sectionID, outgoingLane->getID()));
         }
     }
 
@@ -348,7 +348,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     for (auto laneID : laneIDs) {
         MSLane* lane = MSLane::dictionary(laneID);
         if (lane == nullptr) {
-            throw InvalidArgument(fmt::format("The lane '{}' referenced by <overheadWire> element '{}' does not exist or is broken.", laneID, id));
+            throw InvalidArgument(fmt::format("The lane '{}' referenced by <overheadWire> element '{}' does not exist or is broken.", laneID, sectionID));
         }
         // Add the lane to the map and initialise the connections as empty sets
         laneConnectionMap[lane] = { {}, {} };
@@ -596,7 +596,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
 
 #ifdef OVERHEAD_WIRE_DEBUG
     // Debug output of the lane connection map
-    std::cout << "--------------------" << std::endl << "OWS ID " + id << std::endl << "--------------------" << std::endl;
+    std::cout << "--------------------" << std::endl << "OWS ID " + sectionID << std::endl << "--------------------" << std::endl;
     for (const auto& [lane, connections] : laneConnectionMap) {
         const auto& [incomingLanes, outgoingLanes] = connections;
 
@@ -628,7 +628,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
 
     // Shall we automatically update the beginning / end of the overhead wire in case that the
     // positions written in the section definitions are outside the fist or last segment?
-    const bool friendlyPos = attrs.getOpt<bool>(SUMO_ATTR_FRIENDLY_POS, id.c_str(), ok, false);
+    const bool friendlyPos = attrs.getOpt<bool>(SUMO_ATTR_FRIENDLY_POS, sectionID.c_str(), ok, false);
 
     // Need to create segments over the given lanes and assign segment ids derived from lane ids.
     std::unordered_map<const MSLane*, MSOverheadWire*> segments;
@@ -636,8 +636,8 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
         // Derive the overhead wire segment ID from the lane ID
         std::string segmentID = MSOverheadWire::getOWSIDforLane(*lane);
         // Handle `startPos` and `endPos` attributes, which are used for the first and last lane of the section.
-        double frompos = (lane == firstLane) ? attrs.getOpt<double>(SUMO_ATTR_STARTPOS, id.c_str(), ok, 0.0) : 0.0;
-        double topos = (lane == lastLane) ? attrs.getOpt<double>(SUMO_ATTR_ENDPOS, id.c_str(), ok, lane->getLength()) : lane->getLength();
+        double frompos = (lane == firstLane) ? attrs.getOpt<double>(SUMO_ATTR_STARTPOS, sectionID.c_str(), ok, 0.0) : 0.0;
+        double topos = (lane == lastLane) ? attrs.getOpt<double>(SUMO_ATTR_ENDPOS, sectionID.c_str(), ok, lane->getLength()) : lane->getLength();
         // RICE_TODO: This is not necessary for intermediate lanes
         // Handle friendlyPos ...
         if (myHandler->checkStopPos(frompos, topos, lane->getLength(), POSITION_EPS, friendlyPos) != SUMORouteHandler::StopPos::STOPPOS_VALID) {
@@ -656,7 +656,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
             voltageSources.erase(it);
         }
         // Build a bare overhead wire segment over the lane
-        MSOverheadWire* ovrhdSegment = buildOverheadWireSegment(net, segmentID, lane, frompos, topos, owt, isVoltageSource);
+        MSOverheadWire* ovrhdSegment = buildOverheadWireSegment(net, segmentID, sectionID, lane, frompos, topos, owt, isVoltageSource);
         // Add traction substation to this segment
         ovrhdSegment->setTractionSubstation(substation);
         // Add the overhead wire segment to the map of segment instances
@@ -674,7 +674,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
             s += "'" + *it + "'";
             if (it != lastIt) s += ", ";
         }
-        throw InvalidArgument(fmt::format("The <overheadWire> element '{}' does not contain lane(s) {} where the substation shall be connected.", id, s));
+        throw InvalidArgument(fmt::format("The <overheadWire> element '{}' does not contain lane(s) {} where the substation shall be connected.", sectionID, s));
     }
 
     /*
@@ -724,15 +724,15 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
                 }
                 else {
                     if (clamp->start->getTractionSubstation() != substation) {
-                        WRITE_WARNINGF(TL("A connecting overhead wire start segment '%' defined for overhead wire clamp '%' is not assigned to the traction substation '%'."), clamp->start->getID(), clampID, substationId);
+                        WRITE_WARNINGF(TL("A connecting overhead wire start segment '%' defined for overhead wire clamp '%' is not assigned to the traction substation '%'."), clamp->start->getID(), clampID, substationID);
                     }
                     else {
-                        WRITE_WARNINGF(TL("A connecting overhead wire end segment '%' defined for overhead wire clamp '%' is not assigned to the traction substation '%'."), clamp->end->getID(), clampID, substationId);
+                        WRITE_WARNINGF(TL("A connecting overhead wire end segment '%' defined for overhead wire clamp '%' is not assigned to the traction substation '%'."), clamp->end->getID(), clampID, substationID);
                     }
                 }
             }
             else {
-                WRITE_WARNINGF(TL("The overhead wire clamp '%' defined in an overhead wire section was not assigned to the substation '%'. Please define proper <overheadWireClamp .../> in additional files before defining overhead wire section."), clampID, substationId);
+                WRITE_WARNINGF(TL("The overhead wire clamp '%' defined in an overhead wire section was not assigned to the substation '%'. Please define proper <overheadWireClamp .../> in additional files before defining overhead wire section."), clampID, substationID);
             }
         }
 #else
@@ -741,7 +741,7 @@ NLTriggerBuilder::parseAndBuildOverheadWireSection(MSNet& net, const SUMOSAXAttr
     }
 
     if (segments.size() == 0) {
-        throw InvalidArgument("No segments found for overHeadWireSection '" + substationId + "'.");
+        throw InvalidArgument(fmt::format("No segments found for overHeadWireSection '{}'.", substationID));
     }
     else if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
@@ -1269,8 +1269,9 @@ NLTriggerBuilder::buildChargingStation(MSNet& net, const std::string& id, MSLane
 MSOverheadWire*
 NLTriggerBuilder::buildOverheadWireSegment(
     MSNet& net, 
-    const std::string& id, 
-    const MSLane* lane, 
+    const std::string& id,
+    const std::string& sectionID,
+    const MSLane* lane,
     double frompos, 
     double topos,
     OverheadWireType& owt, 
@@ -1279,7 +1280,7 @@ NLTriggerBuilder::buildOverheadWireSegment(
     // RICE_TODO: `MSOverheadWire` requires `MSLane&` as a paremter, i.e. a reference to a mutable 
     // lane object. We are working with const, unumtable lane obects. Hence the dangerous const_cast<MSLane*>
     // that is used here.
-    MSOverheadWire* overheadWireSegment = new MSOverheadWire(id, *const_cast<MSLane*>(lane), frompos, topos, owt, voltageSource);
+    MSOverheadWire* overheadWireSegment = new MSOverheadWire(id, sectionID, *const_cast<MSLane*>(lane), frompos, topos, owt, voltageSource);
     if (!net.addStoppingPlace(SUMO_TAG_OVERHEAD_WIRE_SEGMENT, overheadWireSegment)) {
         delete overheadWireSegment;
         throw InvalidArgument(fmt::format("Could not build overheadWireSegment '{}'; probably declared twice.", id));
