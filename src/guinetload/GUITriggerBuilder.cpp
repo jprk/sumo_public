@@ -121,16 +121,17 @@ MSOverheadWire*
 GUITriggerBuilder::buildOverheadWireSegment(
     MSNet& net,
     const std::string& id,
+    const std::string& sectionID,
     const MSLane* lane,
     double frompos,
     double topos,
     OverheadWireType& owt, 
     bool voltageSource) 
 {
-    // RICE_TODO: In analogy witg `MSOverheadWire`, also `GUIOverheadWire` requires `MSLane&` as a paremter, 
+    // RICE_TODO: In analogy witg `MSOverheadWire`, also `GUIOverheadWire` requires `MSLane&` as a parameter, 
     // i.e. a reference to a mutable lane object. We are working with const, unumtable lane obects. Hence 
     // the dangerous const_cast<MSLane*> that is used here.
-    GUIOverheadWire* overheadWire = new GUIOverheadWire(id, *const_cast<MSLane*>(lane), frompos, topos, owt, voltageSource);
+    GUIOverheadWire* overheadWire = new GUIOverheadWire(id, sectionID, *const_cast<MSLane*>(lane), frompos, topos, owt, voltageSource);
     if (!net.addStoppingPlace(SUMO_TAG_OVERHEAD_WIRE_SEGMENT, overheadWire)) {
         delete overheadWire;
         throw InvalidArgument("Could not build overheadWireSegment '" + id + "'; probably declared twice.");

@@ -168,6 +168,7 @@ protected:
     *
     * @param[in] net The net the overhead wire segment belongs to
     * @param[in] id The id of the overhead wire segment
+    * @param[in] sectionID The id of the overhead wire section this segment belongs to (informative, may be empty)
     * @param[in] lane The lane the overhead wire segment is placed on
     * @param[in] frompos Begin position of the overhead wire segment on the lane
     * @param[in] topos End position of the overhead wire segment  on the lane
@@ -175,7 +176,7 @@ protected:
     * @param[in] voltageSource If the segment is the place of the connection of a traction substation
     * @exception InvalidArgument If the overhead wire segment can not be added to the net (is duplicate according to the id)
     */
-    MSOverheadWire* buildOverheadWireSegment(MSNet& net, const std::string& id, const MSLane* lane,
+    MSOverheadWire* buildOverheadWireSegment(MSNet& net, const std::string& id, const std::string& sectionID, const MSLane* lane,
                                              double frompos, double topos, OverheadWireType& owt, bool voltageSource) override;
 
     /** @brief Builds an overhead wire clamp

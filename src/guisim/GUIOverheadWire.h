@@ -64,17 +64,21 @@ class GUIOverheadWire : public MSOverheadWire, public GUIGlObject_AbstractAdd {
 public:
     /** @brief Constructor
     * @param[in] id The id of the overhead wire segment
+    * @param[in] sectionID The id of the overhead wire section this segment belongs to
     * @param[in] lane The lane the overhead wire segment is placed on
     * @param[in] frompos Begin position of the overhead wire segment on the lane
     * @param[in] topos End position of the overhead wire segment on the lane
     * @param[in] owt The wire type object containing electic parameters of this overhead wire
     * @param[in] voltageSource If the segment is the place of the connection of a traction substation
     */
-    GUIOverheadWire(const std::string& id, MSLane& lane, double frompos, double topos,
+    GUIOverheadWire(const std::string& id, const std::string& sectionID, MSLane& lane, double frompos, double topos,
                     OverheadWireType& owt, bool voltageSource);
 
     /// @brief Destructor
     ~GUIOverheadWire();
+
+    /// @brief Return the string representation of the charging flag
+    std::string getChargingString() const;
 
     /// @name inherited from GUIGlObject
     //@{

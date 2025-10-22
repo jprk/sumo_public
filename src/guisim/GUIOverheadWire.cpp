@@ -53,9 +53,10 @@
 // ===========================================================================
 // method definitions
 // ===========================================================================
-GUIOverheadWire::GUIOverheadWire(const std::string& id, MSLane& lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource) :
-    MSOverheadWire(id, lane, frompos, topos, owt, voltageSource),
-    GUIGlObject_AbstractAdd(GLO_OVERHEAD_WIRE_SEGMENT, id, GUIIconSubSys::getIcon(GUIIcon::OVERHEADWIRE)) {
+GUIOverheadWire::GUIOverheadWire(const std::string& id, const std::string& sectionID, MSLane& lane, double frompos, double topos, OverheadWireType& owt, bool voltageSource) :
+    MSOverheadWire(id, sectionID, lane, frompos, topos, owt, voltageSource),
+    GUIGlObject_AbstractAdd(GLO_OVERHEAD_WIRE_SEGMENT, id, GUIIconSubSys::getIcon(GUIIcon::OVERHEADWIRE))
+{
     myFGShape = lane.getShape();
     myFGShape = myFGShape.getSubpart(
                     lane.interpolateLanePosToGeometryPos(frompos),
@@ -140,15 +141,27 @@ GUIOverheadWireClamp::GUIOverheadWireClamp(const std::string& id, MSLane& lane_s
 GUIOverheadWireClamp::~GUIOverheadWireClamp() {
 }
 
+std::string
+GUIOverheadWire::getChargingString() const {
+    return isCharging() ? TL("yes") : TL("no");
+}
+
 GUIParameterTableWindow*
 GUIOverheadWire::getParameterWindow(GUIMainWindow& app, GUISUMOAbstractView&) {
     // Create table items
     GUIParameterTableWindow* ret = new GUIParameterTableWindow(app, *this);
 
     // add items
+    ret->mkItem(TL("section id"), false, getOverheadWireSectionID());
+    ret->mkItem(TL("wire type id"), false, myWireType.getID());
+    ret->mkItem(TL("traction substation"), false, myTractionSubstation->getID());
     ret->mkItem(TL("begin position [m]"), false, myBegPos);
     ret->mkItem(TL("end position [m]"), false, myEndPos);
-    //ret->mkItem(TL("voltage [V]"), false, myVoltage);
+    ret->mkItem(TL("has voltage source"), false, myVoltageSource);
+    ret->mkItem(TL("is charging"), true, new FunctionBindingString<GUIOverheadWire>(this, &GUIOverheadWire::getChargingString));
+    ret->mkItem(TL("charged vehicles [#]"), true, new FunctionBinding<GUIOverheadWire, int>(this, &GUIOverheadWire::getElecHybridCount));
+    ret->mkItem(TL("voltage [V]"), true, new FunctionBinding<GUIOverheadWire, double>(this, &GUIOverheadWire::getVoltage));
+    ret->mkItem(TL("total charge [kWh]"), true, new FunctionBinding<GUIOverheadWire, double>(this, &GUIOverheadWire::getTotalCharged));
 
     // close building
     ret->closeBuilding();
@@ -235,7 +248,7 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
         wire_offset = 0.5;
     }
 
-    if (myCircuitStartNodePos != NULL) {
+    if (myCircuitStartNodePos) {
         voltage = myCircuitStartNodePos->getVoltage();
         GLHelper::setColor(scheme.getColor(MAX2(0.0, voltage - 400)));
     }
@@ -244,9 +257,9 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
     // loop over charging vehicles under the overhead wire segment to color the wire segment parts according to the voltage level
     // lock access to myChargingVehicles
     lock();
-    for (auto it = myChargingVehicles.begin(); it != myChargingVehicles.end(); ++it) {
+    for (const auto vehicle : myChargingVehicles) {
         // position of the vehicle on the lane
-        fromPos = (*it)->getPositionOnLane() - ((*it)->getVehicleType().getLength() / 2);
+        fromPos = vehicle->getPositionOnLane() - (vehicle->getVehicleType().getLength() / 2);
         if (fromPos < 0) {
             fromPos = 0;
         };
@@ -276,7 +289,7 @@ GUIOverheadWire::drawGL(const GUIVisualizationSettings& s) const {
             // vector "_STL_VERIFY(_Mycont->_Myfirst <= _Ptr && _Ptr < _Mycont->_Mylast,
             // "can't dereference out of range vector iterator"); "
             circuit->lock();
-            node = circuit->getNode("pos_" + (*it)->getID());
+            node = circuit->getNode("pos_" + vehicle->getID());
             if (node != nullptr) {
                 voltage = node->getVoltage();
             }
