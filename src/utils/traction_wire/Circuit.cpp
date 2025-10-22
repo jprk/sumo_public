@@ -945,7 +945,7 @@ bool Circuit::checkCircuit(std::string substationId) {
     // int id = -1;
     if (!getNode(-1)->isGround()) {
         //cout << "ERROR: Node id -1 is not the ground \n";
-        WRITE_ERRORF(TL("Circuit Node with id '-1' is not the grounded, please adjust the definition of the section (with substation '%')."), substationId);
+        WRITE_ERRORF(TL("Circuit Node with id '-1' is not the ground, please adjust the definition of the section (with substation '%')."), substationId);
     }
     std::vector<Node*>* queue = new std::vector<Node*>(0);
     Node* node = nullptr;
@@ -999,4 +999,240 @@ std::string Circuit::getVoltageSourcesNames() {
     }
 
     return oss.str();
+}
+
+/**
+ * @brief Export circuit graph to DOT format string
+ *
+ * Creates a DOT language representation of the circuit that can be
+ * visualized with Graphviz or other compatible tools.
+ *
+ * @param circuit Pointer to the Circuit object to export
+ * @param includeValues If true, include resistance/voltage/current values in labels
+ * @return std::string containing the DOT format graph description
+ */
+std::string 
+Circuit::exportToDOT(bool includeValues)
+{
+    std::ostringstream dot;
+
+    // Start the graph definition
+    dot << "graph Circuit {\n";
+    dot << "    rankdir=LR;\n";  // Left-to-right layout
+    dot << "    node [shape=circle];\n\n";
+
+    // Export nodes with attributes
+    dot << "    // Nodes\n";
+    for (Node* node : *nodes) {
+        dot << "    \"" << node->getName() << "\" [";
+
+        if (node->isGround()) {
+            dot << "shape=rectangle, color=green, penwidth=4, label=\"" << node->getName() << "\\nGND\"";
+        }
+        else if (node->isRemovable()) {
+            dot << "color=gray, penwidth=2, label=\"" << node->getName() << "\"";
+        }
+        else {
+            dot << "label=\"" << node->getName() << "\"";
+        }
+
+        if (node->getName().rfind("pos_", 0) == 0) {
+            // Vehicle nodes start with `pos_`, this is just a hack.
+            dot << ", style=filled, fillcolor=azure1";
+        }
+
+        if (includeValues && !node->isGround()) {
+            dot << ", xlabel=\"" << node->getVoltage() << "V\"";
+        }
+
+        dot << "];\n";
+    }
+
+    dot << "\n    // Elements\n";
+
+    // Helper lambda to create element label
+    auto createElementLabel = [&](Element* el) -> std::string {
+        std::ostringstream label;
+        label << el->getName();
+
+        if (includeValues) {
+            switch (el->getType()) {
+            case Element::ElementType::RESISTOR_traction_wire:
+                label << "\\nR=" << el->getResistance() << "Ohm";
+                if (el->getCurrent() != DBL_MAX) {
+                    label << "\\nI=" << el->getCurrent() << "A";
+                }
+                break;
+            case Element::ElementType::VOLTAGE_SOURCE_traction_wire:
+                label << "\\nV=" << el->getVoltage() << "V";
+                if (el->getCurrent() != DBL_MAX) {
+                    label << "\\nI=" << el->getCurrent() << "A";
+                }
+                break;
+            case Element::ElementType::CURRENT_SOURCE_traction_wire:
+                if (el->getCurrent() != DBL_MAX) {
+                    label << "\\nI=" << el->getCurrent() << "A";
+                }
+                if (!std::isnan(el->getPowerWanted())) {
+                    label << "\\nP=" << el->getPowerWanted() << "W";
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
+        return label.str();
+        };
+
+    // Export regular elements
+    for (Element* el : *elements) {
+        if (el->getPosNode() == nullptr || el->getNegNode() == nullptr) {
+            continue;  // Skip incomplete elements
+        }
+
+        std::string style;
+        std::string color;
+
+        switch (el->getType()) {
+        case Element::ElementType::RESISTOR_traction_wire:
+            style = "solid";
+            color = "black";
+            break;
+        case Element::ElementType::CURRENT_SOURCE_traction_wire:
+            style = "dashed";
+            color = "blue";
+            break;
+        default:
+            style = "solid";
+            color = "gray";
+            break;
+        }
+
+        dot << "    \"" << el->getPosNode()->getName() << "\" -- \""
+            << el->getNegNode()->getName() << "\" [";
+        dot << "label=\"" << createElementLabel(el) << "\", ";
+        dot << "style=" << style << ", color=" << color;
+
+        if (!el->isEnabled()) {
+            dot << ", constraint=false, color=lightgray";
+        }
+
+        dot << "];\n";
+    }
+
+    // Export voltage sources
+    for (Element* vs : *voltageSources) {
+        if (vs->getPosNode() == nullptr || vs->getNegNode() == nullptr) {
+            continue;
+        }
+
+        dot << "    \"" << vs->getPosNode()->getName() << "\" -- \""
+            << vs->getNegNode()->getName() << "\" [";
+        dot << "label=\"" << createElementLabel(vs) << "\", ";
+        dot << "style=bold, color=red, penwidth=2";
+
+        if (!vs->isEnabled()) {
+            dot << ", constraint=false, color=lightgray";
+        }
+
+        dot << "];\n";
+    }
+
+    // Add legend
+    dot << "\n    // Legend\n";
+    dot << "    subgraph cluster_legend {\n";
+    dot << "        label=\"Legend\";\n";
+    dot << "        style=dashed;\n";
+    dot << "        \"L1\" [shape=point, style=invis];\n";
+    dot << "        \"L2\" [shape=point, style=invis];\n";
+    dot << "        \"L3\" [shape=point, style=invis];\n";
+    dot << "        \"L4\" [shape=point, style=invis];\n";
+    dot << "        \"L5\" [shape=point, style=invis];\n";
+    dot << "        \"L6\" [shape=point, style=invis];\n";
+    dot << "        \"L1\" -- \"L2\" [label=\"Resistor\", color=black];\n";
+    dot << "        \"L3\" -- \"L4\" [label=\"Voltage Source\", color=red, style=bold];\n";
+    dot << "        \"L5\" -- \"L6\" [label=\"Vehicle to ground\", color=blue, style=dashed];\n";
+    dot << "    }\n";
+
+    dot << "}\n";
+
+    return dot.str();
+}
+
+/**
+ * @brief Export circuit graph to DOT file
+ *
+ * @param circuit Pointer to the Circuit object to export
+ * @param filename Path to the output file
+ * @param includeValues If true, include resistance/voltage/current values in labels
+ * @return true if export was successful, false otherwise
+ */
+bool 
+Circuit::exportToDOTFile(
+    const std::string& filename, 
+    bool includeValues
+) {
+    std::ofstream outFile(filename);
+
+    if (!outFile.is_open()) {
+        return false;
+    }
+
+    outFile << exportToDOT(includeValues);
+    outFile.close();
+
+    return true;
+}
+
+/**
+ * @brief Export circuit to simple adjacency list format
+ *
+ * Creates a simple text representation of the circuit graph
+ *
+ * @param circuit Pointer to the Circuit object to export
+ * @return std::string containing the adjacency list
+ */
+std::string 
+Circuit::exportToAdjacencyList()
+{
+    std::ostringstream output;
+
+    output << "Circuit Graph - Adjacency List\n";
+    output << "================================\n\n";
+
+    for (Node* node : *nodes) {
+        output << node->getName();
+        if (node->isGround()) {
+            output << " [GROUND]";
+        }
+        output << " (" << node->getVoltage() << "V):\n";
+
+        for (Element* el : *(node->getElements())) {
+            Node* otherNode = el->getTheOtherNode(node);
+            if (otherNode) {
+                output << "  -> " << otherNode->getName();
+                output << " via " << el->getName();
+
+                switch (el->getType()) {
+                case Element::ElementType::RESISTOR_traction_wire:
+                    output << " [R=" << el->getResistance() << "?]";
+                    break;
+                case Element::ElementType::VOLTAGE_SOURCE_traction_wire:
+                    output << " [V=" << el->getVoltage() << "V]";
+                    break;
+                case Element::ElementType::CURRENT_SOURCE_traction_wire:
+                    output << " [I=" << el->getCurrent() << "A]";
+                    break;
+                default:
+                    break;
+                }
+
+                output << "\n";
+            }
+        }
+        output << "\n";
+    }
+
+    return output.str();
 }

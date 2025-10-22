@@ -53,6 +53,9 @@
 inline const std::string CIRCUIT_NODE_NEG_GROUND = "negNode_ground";
 inline const std::string CIRCUIT_NODE_VOLTAGE_SRC = "v_src_node";
 inline const std::string CIRCUIT_NODE_VOLTAGE_RES = "v_src_r_node";
+// Full elements
+inline const std::string CIRCUIT_ELEMENT_VOLTAGE_SRC = "voltage_source";
+inline const std::string CIRCUIT_ELEMENT_VOLTAGE_SRC_RES = "voltage_source_r";
 // Node name prefixes
 inline const std::string CIRCUIT_NODE_PLUS_P_PFX = "pNode_pos_";
 inline const std::string CIRCUIT_NODE_PLUS_N_PFX = "nNode_pos_";
@@ -76,29 +79,6 @@ class Node;
  */
 class Circuit {
 
-private:
-
-    std::vector<Node*>* nodes;
-    std::vector<Element*>* elements;
-    std::vector<Element*>* voltageSources;
-
-    int lastId;
-    bool iscleaned;
-
-    /// @brief The electric current limit of the voltage sources.
-    double circuitCurrentLimit;
-
-    /**
-    * @brief Best alpha scaling value.
-    *
-    * This parameter is used to scale down the power demands of current sources (vehicles
-    * that draw power from the circuit) so that a solution of the system can be found.
-    * Note: the system is nonlinear (quadratic), hence in some cases (typically too high
-    * power demands) a solution cannot be found. In that moment we decrease all power
-    * requirements by `alpha` and try to solve again, until we find alpha that ensures
-    * stable solution. This is then reported as alphaBest.
-    */
-    double alphaBest;
 public:
     /**
      * @brief Flag of alpha scaling parameter
@@ -118,20 +98,47 @@ public:
         /// @brief The Newton-Rhapson method has reached maximum iterations and no solution of circuit has been found with actual value of alpha
         ALPHA_NOT_CONVERGING
     };
-private:
-    alphaFlag alphaReason;
 
-public:
+    /**
+     * @brief Get node of the circuit by its name
+     * @param name The name of the node
+     * @return Pointer to the node if found, nullptr otherwise
+     */
     Node* getNode(std::string name);
+
+    /**
+     * @brief Get element of the circuit by its name
+     * @param name The name of the element
+     * @return Pointer to the element if found, nullptr otherwise
+     */
     Element* getElement(std::string name);
+
+    /**
+     * @brief Get node of the circuit by its numerical ID
+     * @param id The ID of the node
+     * @return Pointer to the node if found, nullptr otherwise
+     */
     Node* getNode(int id);
+
+    /**
+     * @brief Get element of the circuit by its numerical ID
+     * @param name The ID of the element
+     * @return Pointer to the element if found, nullptr otherwise
+     */
     Element* getVoltageSource(int id);
+
+    /**
+     * @brief Get all voltage sources in the circuit
+     * @return Vector of pointers to voltage source elements
+     */
     std::vector<Element*>* getCurrentSources();
 
     /// @brief The sum of voltage source powers in the circuit
     double getTotalPowerOfCircuitSources();
+
     /// @brief The sum of voltage source currents in the circuit
     double getTotalCurrentOfCircuitSources();
+
     /// @brief List of currents of voltage sources as a string
     std::string& getCurrentsOfCircuitSource(std::string& currents);
 
@@ -147,6 +154,36 @@ public:
     alphaFlag getAlphaReason() {
         return alphaReason;
     }
+
+    /**
+     * @brief Export circuit graph to DOT format string
+     *
+     * Creates a DOT language representation of the circuit that can be
+     * visualized with Graphviz or other compatible tools.
+     *
+     * @param includeValues If true, include resistance/voltage/current values in labels
+     * @return std::string containing the DOT format graph description
+     */
+    std::string exportToDOT(bool includeValues = true);
+
+    /**
+     * @brief Export circuit graph to DOT file
+     *
+     * @param filename Path to the output file
+     * @param includeValues If true, include resistance/voltage/current values in labels
+     * @return true if export was successful, false otherwise
+     */
+    bool exportToDOTFile(const std::string& filename, bool includeValues = true);
+
+    /**
+     * @brief Export circuit to simple adjacency list format
+     *
+     * Creates a simple text representation of the circuit graph
+     *
+     * @param circuit Pointer to the Circuit object to export
+     * @return std::string containing the adjacency list
+     */
+    std::string exportToAdjacencyList();
 
 private:
 
@@ -274,4 +311,30 @@ public:
     double getCurrentLimit() {
         return circuitCurrentLimit;
     };
+
+private:
+
+    std::vector<Node*>* nodes;
+    std::vector<Element*>* elements;
+    std::vector<Element*>* voltageSources;
+
+    int lastId;
+    bool iscleaned;
+
+    /// @brief The electric current limit of the voltage sources.
+    double circuitCurrentLimit;
+
+    /**
+    * @brief Best alpha scaling value.
+    *
+    * This parameter is used to scale down the power demands of current sources (vehicles
+    * that draw power from the circuit) so that a solution of the system can be found.
+    * Note: the system is nonlinear (quadratic), hence in some cases (typically too high
+    * power demands) a solution cannot be found. In that moment we decrease all power
+    * requirements by `alpha` and try to solve again, until we find alpha that ensures
+    * stable solution. This is then reported as alphaBest.
+    */
+    double alphaBest;
+
+    alphaFlag alphaReason;
 };
