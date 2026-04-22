@@ -45,16 +45,28 @@ class OutputDevice;
  */
 class MSBatteryExport {
 public:
-    /** @brief Writes the complete network state of the given edges into the given device
+    /** @brief Writes the complete states of all Battery devices into the given output device.
      *
-     *  Opens the current time step and export the Battery factors of all availabel vehicles
+     *  Opens the current time step and export the Battery factors of all available vehicles
      *
      * @param[in] of The output device to use
      * @param[in] timestep The current time step
      * @param[in] precision The output precision
      * @exception IOError If an error on writing occurs (!!! not yet implemented)
      */
-    static void write(OutputDevice& of, SUMOTime timestep, int precision);
+    static void writeAggregated(OutputDevice& of, SUMOTime timestep, int precision);
+
+    /** @brief Writes the states of the Battery device in the given vehicle into the given output device.
+     *
+     *  Opens the current time step and exports the Battery factors of one specific vehicle.
+     *
+     * @param[in] of The output device to use
+     * @param[in] veh The vehicle that carries a Battery device
+     * @param[in] timestep The current time step
+     * @param[in] precision The output precision
+     * @exception IOError If an error on writing occurs (!!! not yet implemented)
+     */
+    static void write(OutputDevice& of, const SUMOVehicle* veh, SUMOTime timestep, int precision);
 
 
 private:
