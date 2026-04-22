@@ -32,6 +32,10 @@
 #include <utils/common/WrappingCommand.h>
 #include <utils/traction_wire/Circuit.h>
 
+// Print out debug information about overhead wire parsing and processing
+// Save overhead wire circuit information in .dot format
+#define OVERHEAD_WIRE_DEBUG
+
 // Resistivity of Cu is 1.69*10^-8 Ohm*m. A cross-section S of the overhead wire is assumed to be 150 mm^2.  So the "resistivity/S" is 0.000113 Ohm/m.
 // Resistivity of Cu is 1.83*10^-8 Ohm*m (pesimistic est). A cross-section S of the overhead wire used in Pilsen is 100 mm^2. So the "resistivity/S" is 0.000183 Ohm/m.
 // const double WIRE_RESISTIVITY = (double)2 * 0.000183;
@@ -175,11 +179,12 @@ public:
 
     Circuit* getCircuit() const;
 
-    void setCircuitStartNodePos(std::shared_ptr<Node> node) {
+    // RICE_TODO Think about using references instead of pointers below
+    void setCircuitStartNodePos(Node* node) {
         myCircuitStartNodePos = node;
     }
 
-    void setCircuitEndNodePos(std::shared_ptr<Node> node) {
+    void setCircuitEndNodePos(Node* node) {
         myCircuitEndNodePos = node;
     }
 
@@ -188,7 +193,8 @@ public:
     }
 
     /// @brief Returns a pointer to the shared `pNode` for the current segment.
-    /// Crerates one in case that the pointer does not yet exist.
+    /// Nodes are owned by the circuit.
+    /// Asks the circuit to create the node in case that the `pNode` does not yet exist.
     Node* getCircuitStartNodePos() const;
 
     /// @brief Returns a pointer to the shared `pNode` for the current segment.
@@ -304,10 +310,22 @@ protected:
 
     /* These are used by GUIOverheadWire class that inherits from MSOverheadWire. */
 
-    /// @brief Shared pointer to the `pNode` of the segment
-    mutable std::shared_ptr<Node> myCircuitStartNodePos;
-    /// @brief Shared pointer to the `nNode` of the segment
-    mutable std::shared_ptr<Node> myCircuitEndNodePos;
+    /**
+     * @brief Non - owning pointer to the `pNode` of the segment.
+     * The pointer is valid as long as the underlying Circuit object exists 
+     * and the node is not removed.
+     * Do not delete.
+     * The pointer lazy initialization requires that it may be modified even in const (getter) methods.
+     */ 
+    mutable Node* myCircuitStartNodePos = nullptr;
+    /**
+     * @brief Non - owning pointer to the `nNode` of the segment.
+     * The pointer is valid as long as the underlying Circuit object exists
+     * and the node is not removed.
+     * Do not delete.
+     * The pointer lazy initialization requires that it may be modified even in const (getter) methods.
+     */
+    mutable Node* myCircuitEndNodePos = nullptr;
 
 private:
     /// @brief Invalidated copy constructor.

@@ -318,10 +318,12 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                 Circuit* owc = myActOverheadWireSegment->getCircuit();
                 pos_veh_node = owc->addNode("pos_" + veh.getID());
                 assert(pos_veh_node != nullptr);
+
                 // adding current source element representing elecHybrid vehicle. The value of current is computed from wantedPower later by circuit solver. Thus NAN is used as an initial value.
                 veh_elem = owc->addElement("currentSrc" + veh.getID(), NAN,
                                            pos_veh_node, owc->getNode("negNode_ground"),
                                            Element::ElementType::CURRENT_SOURCE_traction_wire);
+                assert(veh_elem != nullptr);
 
                 // Connect vehicle to an existing overhead wire segment = add elecHybridVehicle to the myActOverheadWireSegment circuit
                 // Find pos resistor element of the actual overhead line section and their end nodes
@@ -345,7 +347,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
 
                 while (resistance < vehPosMappedOnSegment * myActOverheadWireSegment->getResistancePerLength()) {
                     node_pos = element_pos->getPosNode();
-                    element_pos = node_pos->getElements()->at(2);
+                    element_pos = node_pos->getElements().at(2);
                     resistance += element_pos->getResistance();
                     if (strncmp(element_pos->getName().c_str(), "pos_tail_", 9) != 0) {
                         WRITE_WARNING("splitting element is not 'pos_tail_XXX'")
@@ -396,7 +398,6 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                 auto powerDemands = myPowerManagement->computePowerDemand(myConsum, myActualBatteryCapacity, veh.getSpeed(), voltage, true, true);
                 double powerDemandFromOvereadWire = powerDemands.first;
                 veh_elem->setPowerWanted(powerDemandFromOvereadWire);
-
 
                 // Initial value of the electric current flowing into the vehicle that will be used by the solver
                 double current = -(veh_elem->getPowerWanted() / voltage);
@@ -553,47 +554,84 @@ void
 MSDevice_ElecHybrid::deleteVehicleFromCircuit(SUMOVehicle& veh) {
     if (myPreviousOverheadWireSegment != nullptr) {
         if (myPreviousOverheadWireSegment->getTractionSubstation() != nullptr) {
-            //check if all pointers to vehicle elements and nodes are not nullptr
+            /*
+             * Circuit shape around the vehicle. Vehicle position in the circuit is representing by the
+             * `pos_veh_node` node that splits the respective overhead wire segment into two smaller pieces:
+             * 
+             * (pNode) -- [veh_pos_tail_elem] -- (pos_veh_node) -- [ahead part of ow segment elem] -- (nNode)
+             *                                         |
+             *                             ====>   [veh_elem]   ====>  
+             *                                         |
+             *                                         +-------------------------------------------- (gndNode)
+            */
+            Circuit* veh_circuit = myPreviousOverheadWireSegment->getCircuit();
+
+            // Check that all pointers to vehicle elements and nodes are not nullptr
+            // RICE_TODO: These checks should be active only in DEBUG mode.
             if (veh_elem == nullptr || veh_pos_tail_elem == nullptr || pos_veh_node == nullptr) {
-                WRITE_ERRORF("During deleting vehicle '%' from circuit some init previous Nodes or Elements was not assigned.", veh.getID());
+                if (veh_elem == nullptr) {
+                    WRITE_ERROR(fmt::format("MSDevice_ElecHybrid::deleteVehicleFromCircuit(id='{}'): `veh_elem` cannot be NULL, check the circuit.", veh.getID()));
+                }
+                if (veh_pos_tail_elem == nullptr) {
+                    WRITE_ERROR(fmt::format("MSDevice_ElecHybrid::deleteVehicleFromCircuit(id='{}'): `veh_pos_tail_elem` cannot be NULL, check the circuit.", veh.getID()));
+                }
+                if (pos_veh_node == nullptr) {
+                    WRITE_ERROR(fmt::format("MSDevice_ElecHybrid::deleteVehicleFromCircuit(id='{}'): `pos_veh_node` cannot be NULL, check the circuit.", veh.getID()));
+                }
+                throw EmptyData();
             }
-            //check if pos_veh_node has 3 elements - they should be: veh_elem, veh_pos_tail_elem and an overhead line resistor element "ahead" of vehicle.
-            if (pos_veh_node->getElements()->size() != 3) {
-                WRITE_ERRORF("During deleting vehicle '%' from circuit the size of element-vector of pNode or nNode was not 3. It should be 3 by Jakub's opinion.", veh.getID());
+
+            // Check that `pos_veh_node` has 3 elements connected -- see the drawing above. The connected elements
+            // should be: `veh_elem` representing current source and the vehicle, `veh_pos_tail_elem` representing the
+            // resistance of wire "behind" the vehicle, and an overhead wire resistor element "ahead" of vehicle 
+            // represented by the modified original element of the circuit.
+            if (pos_veh_node->getNumOfElements() != 3) {
+                WRITE_ERRORF("During deleting vehicle '%' from circuit the number of elements connected to the vehicle-node is not 3 as expected.", veh.getID());
             }
-            //delete vehicle resistor element "veh_elem" in the previous circuit,
+
+            // Disconnect the vehicle from the current source element `veh_elem` used to represent the vehicle in 
+            // the previous instance of the circuit, where element connedted to `pos_veh_node` correspond to the 
+            // previous position of the vehicle under the overhead wire.
+            // Note: This just deletes the reference from the node to the element. The `veh_elem` still holds a 
+            // reference to the `pos_veh_node`.
             pos_veh_node->eraseElement(veh_elem);
-            myPreviousOverheadWireSegment->getCircuit()->eraseElement(veh_elem);
-            delete veh_elem;
+            // Disconnect the vehicle from the tail element. 
+            // Note: This just deletes the reference from the node to the element. The `veh_pos_tail_elem` still
+            // holds a reference to the `pos_veh_node`.
+            pos_veh_node->eraseElement(veh_pos_tail_elem);
+            // The `pos_veh_node` is now connected only to the "ahead" part of the overhead wire segment element
+            // which is represented by a resistor.
+
+            // Completely remove the element `veh_elem` from the circuit of `myPreviousOverheadWireSegment`. The 
+            // element is managed by the circuit, and calling `eraseElement()` completely obliterates it.
+            veh_circuit->eraseElement(veh_elem);
+            // Mark the `veh_elem` pointer as deleted.
             veh_elem = nullptr;
 
-            //erasing of tail elements (the element connected to the veh_node is after then only the ahead overhead line resistor element)
-            pos_veh_node->eraseElement(veh_pos_tail_elem);
-
-            if (pos_veh_node->getElements()->size() != 1) {
-                WRITE_ERRORF("During deleting vehicle '%' from circuit the size of element-vector of pNode or nNode was not 1. It should be 1 by Jakub's opinion.", veh.getID());
+            // Check that the `pos_veh_node` now has only one element, representing the overhead wire resistor 
+            // element ahead of the vehicle.
+            if (pos_veh_node->getNumOfElements() != 1) {
+                WRITE_ERRORF("During deleting vehicle '%' from circuit the number of elements connected to the vehicle-node is not 1 as expected.", veh.getID());
             }
 
-            // add the resistance value of veh_tail element to the resistance value of the ahead overhead line element
-            pos_veh_node->getElements()->front()->setResistance(pos_veh_node->getElements()->front()->getResistance() + veh_pos_tail_elem->getResistance());
-            //set PosNode of the ahead overhead line element to the posNode value of tail element
-            Element* aux = pos_veh_node->getElements()->front();
-            //set node = 3 operations
-            aux->setPosNode(veh_pos_tail_elem->getPosNode());
-            aux->getPosNode()->eraseElement(aux);
-            veh_pos_tail_elem->getPosNode()->addElement(aux);
+            // Reconstruct the resistance value of the whole overhead wire segment element by adding `veh_pos_tail_elem`
+            // resistance to the resistance of the "ahead" overhead line element.
+            // RICE_TODO: We are repetitively subtracting and adding back the small resistance value for the wire,
+            // not sure if this is sound from the point of numerics.
+            Element* ahead_elem = pos_veh_node->getElements().front();
+            ahead_elem->setResistance(ahead_elem->getResistance() + veh_pos_tail_elem->getResistance());
+            // Replace the pNode of the ahead overhead wire element (which is now still set to `pos_veh_node`) with 
+            // the pNode value of `veh_pos_tail` element
+            ahead_elem->setPosNode(veh_pos_tail_elem->getPosNode());
+            ahead_elem->getPosNode()->eraseElement(ahead_elem);
+            veh_pos_tail_elem->getPosNode()->addElement(ahead_elem);
 
-            // erase tail element from its PosNode
-            veh_pos_tail_elem->getPosNode()->eraseElement(veh_pos_tail_elem);
-            // delete veh_pos_tail_elem
+            // Erase the vehicle tail element from the circuit. This will also erase the references to both of its nodes. 
             myPreviousOverheadWireSegment->getCircuit()->eraseElement(veh_pos_tail_elem);
-            delete veh_pos_tail_elem;
             veh_pos_tail_elem = nullptr;
 
-            //erase pos_veh_node
-            myPreviousOverheadWireSegment->getCircuit()->eraseNode(pos_veh_node);
-            //modify id of other elements (the id of erasing element should be the greatest)
-            int lastId = myPreviousOverheadWireSegment->getCircuit()->getLastId() - 1;
+            // Get the last column id modify id of other elements (the id of erasing element should be the greatest)
+            int lastId = veh_circuit->getLastId() - 1;
             if (pos_veh_node->getId() != lastId) {
                 Node* node_last = myPreviousOverheadWireSegment->getCircuit()->getNode(lastId);
                 if (node_last != nullptr) {
@@ -608,7 +646,9 @@ MSDevice_ElecHybrid::deleteVehicleFromCircuit(SUMOVehicle& veh) {
                 }
             }
             myPreviousOverheadWireSegment->getCircuit()->decreaseLastId();
-            delete pos_veh_node;
+
+            // Erase pos_veh_node from the circuit, this also deletes the node instance
+            myPreviousOverheadWireSegment->getCircuit()->eraseNode(pos_veh_node);
             pos_veh_node = nullptr;
         }
     }

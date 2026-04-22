@@ -27,6 +27,7 @@
 
 #include <utils/vehicle/SUMOVehicle.h>
 #include <utils/common/ToString.h>
+#include <utils/common/FileHelpers.h>
 #include <microsim/MSVehicleType.h>
 #include <microsim/MSStoppingPlace.h>
 #include <microsim/MSJunction.h>
@@ -81,25 +82,18 @@ MSOverheadWire::MSOverheadWire(const std::string& overheadWireSegmentID, const s
 MSOverheadWire::~MSOverheadWire() {
     if (myTractionSubstation != nullptr) {
         Circuit* circuit = myTractionSubstation->getCircuit();
-        if (circuit != nullptr && myCircuitElementPos != nullptr && myCircuitElementPos->getPosNode() == myCircuitStartNodePos.get() && myCircuitElementPos->getNegNode() == myCircuitEndNodePos.get()) {
+        if (circuit != nullptr 
+            && myCircuitElementPos != nullptr 
+            && myCircuitElementPos->getPosNode() == myCircuitStartNodePos
+            && myCircuitElementPos->getNegNode() == myCircuitEndNodePos)
+        {
+            // Ask Circuit object to remove circuit element and possibly also its nodes
             circuit->eraseElement(myCircuitElementPos);
-            delete myCircuitElementPos;
-            // RICE_TODO: Shared pointers should be able to look after themselves.
-            if (myCircuitEndNodePos->getElements()->size() == 0) {
-                Node* nNode = myCircuitEndNodePos.get();
-                circuit->eraseNode(nNode);
-                delete nNode;
-            }
-            if (myCircuitStartNodePos->getElements()->size() == 0) {
-                Node* pNode = myCircuitStartNodePos.get();
-                circuit->eraseNode(pNode);
-                delete pNode;
-            }
         }
 
         if (myTractionSubstation->numberOfOverheadSegments() <= 1) {
             myTractionSubstation->eraseOverheadWireSegmentFromCircuit(this);
-            //RICE_TODO We should "delete myTractionSubstation;" here ...
+            //RICE_TODO We should "delete myTractionSubstation;" here ... or somewhere else?
         } else {
             myTractionSubstation->eraseOverheadWireSegmentFromCircuit(this);
         }
@@ -153,45 +147,45 @@ MSOverheadWire::getCircuit() const {
 }
 
 Node*
-MSOverheadWire::getCircuitStartNodePos() const {
+MSOverheadWire::getCircuitStartNodePos() const
+{
+    // Check if the start node has already been created
     if (!myCircuitStartNodePos) {
-        // Get the circuit
+        // No start node yet.
+        // Get the circuit, as the circuit is responsible for node memory management
         Circuit* circuit = getCircuit();
         assert(circuit != nullptr);
 
-        // Create the shared representation of a `pNode`
-        Node* rawNode = circuit->addNode(CIRCUIT_NODE_PLUS_P_PFX + myID);
-        // RICE_TODO: Might need a custom deleter
-        // Something like std::shared_ptr<Node>(rawNode, [circuit](Node* n) {circuit->eraseNode(n); delete n;})
-        myCircuitStartNodePos = std::shared_ptr<Node>(rawNode);
+        // Create the `pNode` (non-owning reference, pointer managed by the circuit)
+        myCircuitStartNodePos = circuit->addNode(CIRCUIT_NODE_PLUS_P_PFX + myID);
 
         // Register it with all neighbours
         for (MSOverheadWire* neighbour : myIncomingSegments) {
             neighbour->setCircuitEndNodePos(myCircuitStartNodePos);
         }
     }
-    return myCircuitStartNodePos.get();
+    return myCircuitStartNodePos;
 }
 
 Node*
-MSOverheadWire::getCircuitEndNodePos() const {
+MSOverheadWire::getCircuitEndNodePos() const
+{
+    // Check if the end node has already been created
     if (!myCircuitEndNodePos) {
-        // Get the circuit
+        // No end node yet.
+        // Get the circuit, as the circuit is responsible for node memory management
         Circuit* circuit = getCircuit();
         assert(circuit != nullptr);
 
-        // Create the shared representation of a `nNode`
-        Node* rawNode = circuit->addNode(CIRCUIT_NODE_PLUS_N_PFX + myID);
-        // RICE_TODO: Might need a custom deleter
-        // Something like std::shared_ptr<Node>(rawNode, [circuit](Node* n) {circuit->eraseNode(n); delete n;})
-        myCircuitEndNodePos = std::shared_ptr<Node>(rawNode);
+        // Create the `nNode` (non-owning reference, pointer managed by the circuit)
+        myCircuitEndNodePos = circuit->addNode(CIRCUIT_NODE_PLUS_N_PFX + myID);
 
         // Register it with all neighbours
         for (MSOverheadWire* neighbour : myOutgoingSegments) {
             neighbour->setCircuitStartNodePos(myCircuitEndNodePos);
         }
     }
-    return myCircuitEndNodePos.get();
+    return myCircuitEndNodePos;
 }
 
 std::string
@@ -505,7 +499,31 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
         }
-    }
+
+#ifdef OVERHEAD_WIRE_DEBUG
+        /* ------------------------------------------------------------
+         * Save the current circuit in the form of DOT / GraphViz graph
+         * ------------------------------------------------------------ */
+         // Build output filename
+        std::string& fileName = fmt::format("circuit_init.{}.p{:02d}.dot", myID, myOverheadWireSegments.size());
+        // Get the SUMO options (command line + config file)
+        OptionsCont& oc = OptionsCont::getOptions();
+        // Determine config directory (empty if current dir if not set)
+        std::string configDir;
+        if (oc.isSet("configuration-file")) {
+            std::string configPath = oc.getString("configuration-file");
+            configDir = FileHelpers::getFilePath(configPath); // includes trailing slash if non-empty
+            fileName = configDir + fileName;
+        }
+        // Prepend output-prefix if set
+        if (oc.isSet("output-prefix")) {
+            std::string prefix = oc.getString("output-prefix");
+            // Preprends the prefix before the last path component of fileName
+            fileName = FileHelpers::prependToLastPathComponent(prefix, fileName);
+        }
+        myCircuit->exportToDOTFile(fileName);
+#endif
+   }
 }
 
 void MSTractionSubstation::addOverheadWireClampToCircuit(const std::string id, MSOverheadWire* startSegment, MSOverheadWire* endSegment) {
@@ -614,14 +632,40 @@ MSTractionSubstation::solveCircuit(SUMOTime /*currentTime*/) {
     // Solve the electrical circuit
     myCircuit->solve();
 
-    if (myCircuit->getAlphaReason() > 0 && myCircuit->getAlphaBest() < 0.5) {
+#ifdef OVERHEAD_WIRE_DEBUG
+    if (myID == "hydro.sumavska.3" || (myCircuit->getAlphaReason() > 0 && myCircuit->getAlphaBest() < 0.5)) {
+        /* ------------------------------------------------------------
+         * Save the current circuit in the form of DOT / GraphViz graph
+         * ------------------------------------------------------------ */
+        // Build output filename
         SUMOTime ts = MSNet::getInstance()->getCurrentTimeStep();
-        myCircuit->exportToDOTFile(fmt::format("circuit.{}.{}.dot", myID, int(ts/1000)));
-        WRITE_WARNINGF(TL("Suspiciously low alpha=% for substation `%` at time %. Circuit graph saved to .dot file for further analysis."),
-            toString(myCircuit->getAlphaBest()),
-            myID,
-            time2string(ts));
+        std::string& fileName = fmt::format("circuit.{}.{:05d}.dot", myID, int(ts / 1000));
+        // Get the SUMO options (command line + config file)
+        OptionsCont& oc = OptionsCont::getOptions();
+        // Determine config directory (empty if current dir if not set)
+        std::string configDir;
+        if (oc.isSet("configuration-file")) {
+            std::string configPath = oc.getString("configuration-file");
+            configDir = FileHelpers::getFilePath(configPath); // includes trailing slash if non-empty
+            fileName = configDir + fileName;
+        }
+        // Prepend output-prefix if set
+        if (oc.isSet("output-prefix")) {
+            std::string prefix = oc.getString("output-prefix");
+            // Preprends the prefix before the last path component of fileName
+            fileName = FileHelpers::prependToLastPathComponent(prefix, fileName);
+        }
+        myCircuit->exportToDOTFile(fileName);
+
+        if (myCircuit->getAlphaReason() > 0 && myCircuit->getAlphaBest() < 0.5) {
+            WRITE_WARNINGF(TL("Suspiciously low alpha=% for substation `%` at time %. Circuit graph saved to `{}` for further analysis."),
+                toString(myCircuit->getAlphaBest()),
+                myID,
+                time2string(ts),
+                fileName);
+        }
     }
+#endif
 
     if (myCircuit->getAlphaBest() != 1.0) {
         WRITE_WARNINGF(TL("The requested total power could not be delivered by the overhead wire at `%`. Only % of originally requested power was provided."), 

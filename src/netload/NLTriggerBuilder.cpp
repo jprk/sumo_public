@@ -54,9 +54,6 @@
 #include "NLHandler.h"
 #include "NLTriggerBuilder.h"
 
-// Print out debug information about overhead wire parsing and processing
-#define OVERHEAD_WIRE_DEBUG
-
 // ===========================================================================
 // method definitions
 // ===========================================================================
