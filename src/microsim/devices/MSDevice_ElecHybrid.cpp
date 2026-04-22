@@ -107,23 +107,14 @@ MSDevice_ElecHybrid::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDe
         }
 
         // obtain overheadWireChargingPower
-        double overheadWireChargingPower = 0;
         attrName = toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER);
         if (typeParams.hasParameter(attrName)) {
-            const std::string ocp = typeParams.getParameter(attrName, "-1");
-            try {
-                overheadWireChargingPower = StringUtils::toDouble(ocp);
-                WRITE_WARNING("Vehicle '" + v.getID() + "' is using the vType parameter '" + attrName + "'. This parameter if deprecated and not used. Use parametrization of a power management");
-            } catch (...) {
-                WRITE_WARNINGF(TL("Invalid value '%'for vType parameter '%'"), ocp, attrName);
-            }
-        } else {
-            WRITE_WARNING("Vehicle '" + v.getID() + "' is missing the vType parameter '" + attrName + "'. Using the default of " + std::to_string(overheadWireChargingPower));
+            WRITE_WARNING("Vehicle '" + v.getID() + "' is using the vType parameter '" + attrName + "'. This parameter if deprecated and not used. Use the power management parametrization instead.");
         }
 
         // elecHybrid constructor
         MSDevice_ElecHybrid* device = new MSDevice_ElecHybrid(v, "elecHybrid_" + v.getID(),
-                actualBatteryCapacity, maximumBatteryCapacity, overheadWireChargingPower);
+                actualBatteryCapacity, maximumBatteryCapacity);
 
         // Add device to vehicle
         into.push_back(device);
@@ -135,7 +126,7 @@ MSDevice_ElecHybrid::buildVehicleDevices(SUMOVehicle& v, std::vector<MSVehicleDe
 // MSDevice_ElecHybrid-methods
 // ---------------------------------------------------------------------------
 MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string& id,
-        const double actualBatteryCapacity, const double maximumBatteryCapacity, const double overheadWireChargingPower) :
+        const double actualBatteryCapacity, const double maximumBatteryCapacity) :
     MSVehicleDevice(holder, id),
     myActualBatteryCapacity(0),   // [actualBatteryCapacity <= maximumBatteryCapacity]
     myMaximumBatteryCapacity(0),  // [maximumBatteryCapacity >= 0]t
@@ -174,12 +165,6 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
         myActualBatteryCapacity = myMaximumBatteryCapacity;
     } else {
         myActualBatteryCapacity = actualBatteryCapacity;
-    }
-
-    if (overheadWireChargingPower < 0) {
-        WRITE_WARNINGF(TL("ElecHybrid builder: Vehicle '%' doesn't have a valid value for parameter % (%)."), getID(), toString(SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER), toString(overheadWireChargingPower));
-    } else {
-        WRITE_WARNING(TL("SUMO_ATTR_OVERHEAD_WIRE_CHARGINGPOWER, i.e.  myOverheadWireChargingPower, is deprecated, NOT USED. Please use power management parameters"));
     }
 }
 
@@ -1107,10 +1092,6 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
     }
 
     /*
-    if (soc < reducedSOC_lb * myMaximumBatteryCapacity) {
-        powerDemand += myOverheadWireChargingPower;
-    }
-
     // No recuperation to overheadwire (only to the batterypack)
     // RICE_TODO: How to recuperate into the circuit without solver? (energy balance?)
     //            - solution: assume, that any power is possible to recuperate

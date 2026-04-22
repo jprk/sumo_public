@@ -231,7 +231,7 @@ private:
     * @param[in] id The ID of the device
     */
     MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string& id,
-                        const double actualBatteryCapacity, const double maximumBatteryCapacity, const double overheadWireChargingPower);
+                        const double actualBatteryCapacity, const double maximumBatteryCapacity);
 
 protected:
     /// @brief Parameter, The actual vehicles's Battery Capacity in Wh, [myActualBatteryCapacity <= myMaximumBatteryCapacity]
