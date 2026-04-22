@@ -131,7 +131,7 @@ public:
      * @brief Get all voltage sources in the circuit
      * @return Vector of pointers to voltage source elements
      */
-    std::vector<Element*>* getCurrentSources();
+    std::vector<Element*> getCurrentSources() const;
 
     /// @brief The sum of voltage source powers in the circuit
     double getTotalPowerOfCircuitSources();
@@ -245,11 +245,8 @@ private:
 #endif
 public:
 
-    // a Constructor, same functionality as "init" functions
-    Circuit();
-    // RICE_CHECK: Is this a traction substation current limit, global for all substations?
-    /// @brief Constructor with user-specified current limit parameter.
-    Circuit(double currentLimit);
+    /// @brief Constructor with possibly user-specified current limit parameter.
+    Circuit(double currentLimit = INFINITY);
 
     // adds an element with name "name", type "type" and value "value" to positive node "pNode" and negative node "nNode""
     Element* addElement(std::string name, double value, Node* pNode, Node* nNode, Element::ElementType et);
@@ -314,9 +311,22 @@ public:
 
 private:
 
-    std::vector<Node*>* nodes;
-    std::vector<Element*>* elements;
-    std::vector<Element*>* voltageSources;
+    /// Owning containers of nodes and elements in the circuit
+    /// @note Using `std::unique_ptr` to manage memory automatically
+    /// @brief Vector of unique pointers to nodes in the circuit
+    std::vector<std::unique_ptr<Node>> nodes;
+    /// @brief Vector of unique pointers to elements in the circuit
+    std::vector<std::unique_ptr<Element>> elements;
+    /// @brief Vector of unique pointers to voltage source elements in the circuit
+    std::vector<std::unique_ptr<Element>> voltageSources;
+
+    /// Fast lookup of nodes and elements by their names (non-owning pointers)
+    std::unordered_map<std::string, Node*> nodeNameMap;
+    std::unordered_map<std::string, Element*> elementNameMap;
+
+    /// Fast lookup of nodes and elements by their integer ids (non-owning pointers)
+    std::unordered_map<int, Node*> nodeIdMap;
+    std::unordered_map<int, Element*> elementIdMap;
 
     int lastId;
     bool iscleaned;

@@ -46,8 +46,10 @@ private:
     int num_matrixRow;    // number of matrix row during solving the equations
     int num_matrixCol;    // number of matrix column during solving the equations
     double voltage;
-    std::vector<Element*>* elements; // too lazy to implement a linked list
+
+    // @brief List of elements connected to this node
     // each node is connected to one or more element, an element is a resistor or voltage/current source
+    std::vector<Element*> elements;
 
 public:
     // A constructor, same functionality as "init" functions
@@ -58,12 +60,14 @@ public:
     // disconnects an element to the node
     void eraseElement(Element* element);
     // getters and setters
+    std::string& getName();
     double getVoltage();
     void setVoltage(double volt);
     int getNumOfElements();
-    // iterates through the vector of the node's elements and returns the first, which is not equal to "element" in the argument of the function
+
+    // @brief Iterates through the vector of the node's elements and return the first which is not equal to "element" in the argument of the function
     Element* getAnOtherElement(Element* element);
-    std::string& getName();
+
     bool isGround();
     bool isRemovable() const {
         return isremovable;
@@ -75,6 +79,6 @@ public:
     void setNumMatrixCol(int num);
     int getNumMatrixCol();
     void setId(int id);
-    std::vector<Element*>* getElements();
+    std::vector<Element*> getElements();
     void setRemovability(bool isremovable);
 };

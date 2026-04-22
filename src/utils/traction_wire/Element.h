@@ -74,16 +74,16 @@ public:
     Element(std::string name, ElementType type, double value);
 
     //getters and setters
-    double getVoltage();        // get the voltage across the element
-    double getCurrent();        // get the current running through the element
-    double getResistance();
-    double getPowerWanted();
-    double getPower();
-    int getId();
+    double getVoltage() const;        // get the voltage across the element
+    double getCurrent() const;        // get the current running through the element
+    double getResistance() const;
+    double getPowerWanted() const;
+    double getPower() const;
+    int getId() const;
     Node* getPosNode();
     Node* getNegNode();
-    ElementType getType();
-    std::string getName();
+    ElementType getType() const;
+    std::string getName() const;
     bool isEnabled();
 
     void setPosNode(Node* node);

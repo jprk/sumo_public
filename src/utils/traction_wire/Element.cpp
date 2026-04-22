@@ -30,63 +30,68 @@
 // ===========================================================================
 // method definitions
 // ===========================================================================
-Element::Element(std::string name, ElementType type, double value) {
-    this->id = -2;
-    this->name = name;
-    this->type = type;
-    this->isenabled = true;
-    this->resistance = 0;
-    this->current = 0;
-    this->voltage = 0;
-    this->powerWanted = NAN;
+Element::Element(
+    std::string name, 
+    ElementType type, 
+    double value
+) :
+    id(-2),  // RICE_TODO: Why -2?
+    name(name),
+    type(type),
+    isenabled(true),
+    powerWanted(NAN),
+    pNode(nullptr),
+    nNode(nullptr)
+{
+    resistance = 0.0;
+    current = 0.0;
+    voltage = 0.0;
     switch (type) {
         case CURRENT_SOURCE_traction_wire:
-            this->current = value;
+            current = value;
             break;
         case VOLTAGE_SOURCE_traction_wire:
-            this->voltage = value;
+            voltage = value;
             break;
         case RESISTOR_traction_wire:
-            this->resistance = value;
+            resistance = value;
             break;
         default:
             WRITE_ERRORF(TL("Undefined element type for '%'."), name);
             break;
     }
-    this->pNode = nullptr;
-    this->nNode = nullptr;
 }
 
 void Element::setVoltage(double voltageIn) {
-    this->voltage = voltageIn;
+    voltage = voltageIn;
 }
 void Element::setCurrent(double currentIn) {
-    this->current = currentIn;
+    current = currentIn;
 }
 void Element::setResistance(double resistanceIn) {
     if (resistanceIn <= 1e-6) {
-        this->resistance = 1e-6;
+        resistance = 1e-6;
     } else {
-        this->resistance = resistanceIn;
+        resistance = resistanceIn;
     }
 }
 void Element::setPowerWanted(double powerWantedIn) {
-    this->powerWanted = powerWantedIn;
+    powerWanted = powerWantedIn;
 }
-double Element::getVoltage() {
-    if (!this->isenabled) {
+double Element::getVoltage() const {
+    if (!isenabled) {
         return DBL_MAX;
     }
     if (getType() == Element::ElementType::VOLTAGE_SOURCE_traction_wire) {
         return voltage;
     }
-    return this->pNode->getVoltage() - this->nNode->getVoltage();
+    return pNode->getVoltage() - nNode->getVoltage();
 }
-double Element::getCurrent() {
-    if (!this->isenabled) {
+double Element::getCurrent() const {
+    if (!isenabled) {
         return DBL_MAX;
     }
-    switch (this->type) {
+    switch (type) {
         case Element::ElementType::RESISTOR_traction_wire:
             return -1 * getVoltage() / resistance;
         case Element::ElementType::CURRENT_SOURCE_traction_wire:
@@ -96,42 +101,41 @@ double Element::getCurrent() {
             return 0;
     }
 }
-double Element::getResistance() {
-    return this->resistance;
+double Element::getResistance() const {
+    return resistance;
 }
-double Element::getPowerWanted() {
-    return 	this->powerWanted;
+double Element::getPowerWanted() const {
+    return 	powerWanted;
 }
-double Element::getPower() {
+double Element::getPower() const {
     return 	-1 * getCurrent() * getVoltage();
 }
-int Element::getId() {
-
-    return this->id;
+int Element::getId() const {
+    return id;
 }
 Node* Element::getPosNode() {
-    return this->pNode;
+    return pNode;
 }
 Node* Element::getNegNode() {
-    return this->nNode;
+    return nNode;
 }
 
-Element::ElementType Element::getType() {
-    return this->type;
+Element::ElementType Element::getType() const {
+    return type;
 }
-std::string Element::getName() {
-    return this->name;
+std::string Element::getName() const {
+    return name;
 }
 
 void Element::setPosNode(Node* node) {
-    this->pNode = node;
+    pNode = node;
 
 }
 void Element::setNegNode(Node* node) {
-    this->nNode = node;
+    nNode = node;
 }
 void Element::setId(int newId) {
-    this->id = newId;
+    id = newId;
 }
 
 // if node == pNode, return nNode, else if node == nNode return pNode, else return nullptr
@@ -150,9 +154,9 @@ bool Element::isEnabled() {
 }
 
 void Element::setEnabled(bool newIsEnabled) {
-    this->isenabled = newIsEnabled;
+    isenabled = newIsEnabled;
 }
 
 void Element::setType(ElementType ET) {
-    this->type = ET;
+    type = ET;
 }

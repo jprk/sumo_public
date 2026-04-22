@@ -24,92 +24,103 @@
 
 #include <string>
 #include <algorithm>
+#include <utils/common/MsgHandler.h>
 #include "Node.h"
 #include "Element.h"
 
 
 // A constructor, same functionality as "init" functions
-Node::Node(std::string name, int id) {
-    isground = false;
-    this->name = name;		// unique property, each object has distinctive and unique name
-    this->id = id;				// a sequential ID number, might be useful when making the equation
-    this->num_matrixRow = -1;
-    this->num_matrixCol = -1;
-    this->voltage = 0;
-    this->elements = new std::vector<Element*>(0);
-    isremovable = false;
+Node::Node(std::string name, int id) : 
+    isground(false), 
+    isremovable(false),
+    name(name), // unique property, each object in circuit should have distinctive and unique name
+    id(id), // a sequential ID number, might be useful when making the equation
+    num_matrixRow(-1), 
+    num_matrixCol(-1),
+    voltage(0),
+    elements({})
+{
+    // Just initialization of class variables done in initializer list
 }
 
 // connects an element to the node
 void Node::addElement(Element* element) {
-    elements->push_back(element);
+    elements.push_back(element);
 }
 
 void Node::eraseElement(Element* element) {
-    elements->erase(std::remove(elements->begin(), elements->end(), element), elements->end());
+    elements.erase(std::remove(elements.begin(), elements.end(), element), elements.end());
 }
 
 // getters and setters
 double Node::getVoltage() {
-    return this->voltage;
+    return voltage;
 }
 
 void Node::setVoltage(double volt) {
-    this->voltage = volt;
+    voltage = volt;
 }
 
 int Node::getNumOfElements() {
-    return (int) elements->size();
+    return (int) elements.size();
 }
 
 std::string& Node::getName() {
-    return this->name;
+    return name;
 }
 
 bool Node::isGround() {
-    return this->isground;
+    return isground;
 }
 
 void Node::setGround(bool newIsGround) {
-    this->isground = newIsGround;
+    isground = newIsGround;
 }
 
 int Node::getId() {
-    return this->id;
+    return id;
 }
 
 void Node::setId(int newId) {
-    this->id = newId;
+    id = newId;
 }
 
 void Node::setNumMatrixRow(int num) {
-    this->num_matrixRow = num;
+    num_matrixRow = num;
 }
 
 int Node::getNumMatrixRow() {
-    return this->num_matrixRow;
+    return num_matrixRow;
 }
 
 void Node::setNumMatrixCol(int num) {
-    this->num_matrixCol = num;
+    num_matrixCol = num;
 }
 
 int Node::getNumMatrixCol() {
-    return this->num_matrixCol;
+    return num_matrixCol;
 }
 
-std::vector<Element*>* Node::getElements() {
+std::vector<Element*> Node::getElements() {
     return elements;
 }
 
 void Node::setRemovability(bool newIsRemovable) {
-    this->isremovable = newIsRemovable;
+    isremovable = newIsRemovable;
 }
 
-Element* Node::getAnOtherElement(Element* element) {
-    for (Element* it : *this->getElements()) {
-        if (it != element) {
-            return it;
+Element* 
+Node::getAnOtherElement(Element* element)
+{
+    // RICE_TODO: This returns the first element that is not `element`, is this intended?
+    // What if there are multiple elements connected to the node?
+    if (elements.size() >= 3) {
+        WRITE_WARNINGF(TL("Node '%' has more than two connected elements, getAnOtherElement() may not return expected result."), name);
+    }
+
+    for (auto el : elements) {
+        if (el != element) {
+            return el;
         }
     }
     return nullptr;
