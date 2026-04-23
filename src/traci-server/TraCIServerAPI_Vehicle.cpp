@@ -355,11 +355,7 @@ TraCIServerAPI_Vehicle::processSet(TraCIServer& server, tcpip::Storage& inputSto
             }
             break;
             case libsumo::VAR_BMS_MAXCURRENT_STOPPED: {
-                double current = 0;
-                if (!server.readTypeCheckingDouble(inputStorage, current)) {
-                    return server.writeErrorStatusCmd(libsumo::CMD_SET_VEHICLE_VARIABLE, "Setting charging current (stopped) requires a double.", outputStorage);
-                }
-                libsumo::Vehicle::setBatteryManagement(id, current);
+                libsumo::Vehicle::setBatteryManagement(id, StoHelp::readTypedDouble(inputStorage, "Setting charging current (stopped) requires a double."));
             }
             break;
             case libsumo::VAR_ACCELERATION: {
