@@ -113,11 +113,15 @@ def get_merged_data(options):
         stops_merged['start_char'] = ''
 
     trips_routes_merged = pd.merge(trips_on_day, routes, on='route_id')
-    merged = pd.merge(stops_merged, trips_routes_merged,
-                      on='trip_id')[['trip_id', 'block_id', 'route_id', 'route_short_name', 'route_type',
-                                     'stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'stop_sequence',
-                                     'fare_zone', 'fare_token', 'start_char', 'trip_headsign',
-                                     'arrival_time', 'departure_time']].drop_duplicates()
+    merged = pd.merge(stops_merged, trips_routes_merged, on='trip_id').drop_duplicates()
+    cols = ['trip_id', 'block_id', 'route_id', 'route_short_name', 'route_type',
+            'stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'stop_sequence',
+            'fare_zone', 'fare_token', 'start_char', 'trip_headsign',
+            'arrival_time', 'departure_time']
+    # 'block_id' is optional
+    if 'block_id' not in merged.columns:
+        cols.remove('block_id')
+    merged = merged[cols]
     return merged
 
 
@@ -131,9 +135,17 @@ def dataAvailable(options):
 def main(options):
     ft = humanReadableTime if options.hrtime else lambda x: x
     if options.mergedCSV:
+        # Need everything except few columns as strings. The exceptions are:
+        # - `arrival_time` and `departure_time` have to be integers,
+        # - `stop_lat`, `stop_lon`, and `stop_sequence` have to be floats
         full_data_merged = pd.read_csv(options.mergedCSV, sep=";",
                                        keep_default_na=False,
-                                       dtype={"route_type": str})
+                                       dtype=str)
+        full_data_merged['arrival_time'] = full_data_merged['arrival_time'].astype(int)
+        full_data_merged['departure_time'] = full_data_merged['departure_time'].astype(int)
+        full_data_merged['stop_lat'] = full_data_merged['stop_lat'].astype(float)
+        full_data_merged['stop_lon'] = full_data_merged['stop_lon'].astype(float)
+        full_data_merged['stop_sequence'] = full_data_merged['stop_sequence'].astype(float)
     else:
         full_data_merged = get_merged_data(options)
     if options.mergedCSVOutput:
@@ -204,8 +216,11 @@ def main(options):
                     seqs[s] = trip_id
                     fcdFile[mode].write(buf)
                     timeIndex = arrivalSec
+                # The `line` attribute shall hold the line short name that can be used to determine person rides
+                # as per https://sumo.dlr.de/docs/Specification/Persons.html#rides
+                # The spaces in the route name are replaced by underscores to allow for space-separated lists of lines.
                 tripFile[mode].write(u'    <vehicle id="%s" route="%s" type="%s" depart="%s" line="%s">\n' %
-                                     (trip_id, seqs[s], mode, firstDep, seqs[s]))
+                                     (trip_id, seqs[s], mode, firstDep, d.route_short_name.replace(" ", "_")))
                 params = [("gtfs.route_name", d.route_short_name)]
                 if d.trip_headsign:
                     params.append(("gtfs.trip_headsign", d.trip_headsign))

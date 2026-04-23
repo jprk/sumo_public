@@ -26,6 +26,7 @@ from __future__ import absolute_import
 from __future__ import division
 import os
 import sys
+import random
 import glob
 import subprocess
 import collections
@@ -57,7 +58,7 @@ def get_options(args=None):
                     help="file to write the generated public transport stops and routes to")
     ap.add_argument("--duration", default=10, category="input",
                     type=int, help="minimum time to wait on a stop")
-    ap.add_argument("--bus-parking", action="store_true", default=False, category="processing", dest="busParking",
+    ap.add_argument("--bus-parking", action="store_true", default=False, dest="busParking",
                     help="set parking to true for bus mode")
     ap.add_argument("--bus-stop-length", default=13, category="input", type=float,
                     help="length for a bus stop")
@@ -65,29 +66,37 @@ def get_options(args=None):
                     help="length for a train stop")
     ap.add_argument("--tram-stop-length", default=60, category="input", type=float,
                     help="length for a tram stop")
-    ap.add_argument("--center-stops", action="store_true", default=False, category="processing",
+    ap.add_argument("--center-stops", action="store_true", default=False,
                     help="use stop position as center not as front")
-    ap.add_argument("--skip-access", action="store_true", default=False, category="processing",
+    ap.add_argument("--skip-access", action="store_true", default=False,
                     help="do not create access links")
-    ap.add_argument("--sort", action="store_true", default=False, category="processing",
+    ap.add_argument("--access-radius", default=100, category="input", type=float,
+                    help="maximum radius for finding pedestrian access")
+    ap.add_argument("--sort", action="store_true", default=False,
                     help="sorting the output-file")
     ap.add_argument("--stops", category="input", type=ap.file_list,
                     help="files with candidate stops (selected by proxmity)")
     ap.add_argument("--patched-stops", category="input", dest="patchedStops", type=ap.file,
                     help="file with replacement stops (based on stop ids)")
+    ap.add_argument("--rail-priority-factor", type=float, dest="rpFactor",
+                    help="Take into account edge routingType values scaled by FLOAT (routingTypes must correspond to integers in [0,4])")  # noqa
     ap.add_argument("--radius", default=150, category="input", type=float,
                     help="maximum matching radius for candidate edges and stops")
+    ap.add_argument("--distance-penalty", default=None, category="input", type=float, dest="distPenalty",
+                    help=("Raise the distance between mapped location and input location to FLOAT power and add as penalty when comparing path costs." +  # noqa
+                          "Defaults to '1' when setting option --stops and '2' otherwise."))
     ap.add_argument("--warn-detour-factor", default=5, type=float, dest="detourWarnFactor",
                     help="Warn about detours where path distance exceeds airline distance by factor FLOAT")
+    ap.add_argument("--remove-detour-factor", default=0, type=float, dest="detourRemoveFactor",
+                    help="Disable trips with implausible routes (path distance exceeds airline distance by factor FLOAT)")  # noqa
     ap.add_argument("--use-gtfs-stopids", action="store_true", default=False, category="input", 
                     help="use stop identifiers from GTFS for readability")
-
     # ----------------------- fcd options -------------------------------------
     ap.add_argument("--network-split", category="input",
                     help="directory to write generated networks to")
-    ap.add_argument("--network-split-vclass", action="store_true", default=False, category="processing",
-                    help="use the allowed vclass instead of the edge type to split the network")
-    ap.add_argument("--warn-unmapped", action="store_true", default=False, category="processing",
+    ap.add_argument("--network-split-vclass", action="store_true", default=True,
+                    help="use the allowed vclass instead of the edge type to split the network (always active, option kept for backward compatibility")  # noqa
+    ap.add_argument("--warn-unmapped", action="store_true", default=False,
                     help="warn about unmapped routes")
     ap.add_argument("--mapperlib", default="lib/fcd-process-chain-2.2.2.jar", category="input",
                     help="mapping library to use")
@@ -101,11 +110,13 @@ def get_options(args=None):
                     help="parameter template for the mapper library")
     ap.add_argument("--poly-output", category="output", type=ap.file,
                     help="file to write the generated polygon files to")
+    ap.add_argument("--poi-output", category="output", type=ap.file, dest="poiOut",
+                    help="file to write the input stop coordinates to")
     ap.add_argument("--fill-gaps", default=5000, type=float, category="input",
                     help="maximum distance between stops")
-    ap.add_argument("--skip-fcd", action="store_true", default=False, category="processing",
+    ap.add_argument("--skip-fcd", action="store_true", default=False,
                     help="skip generating fcd data")
-    ap.add_argument("--skip-map", action="store_true", default=False, category="processing",
+    ap.add_argument("--skip-map", action="store_true", default=False,
                     help="skip network mapping")
 
     # ----------------------- osm options -------------------------------------
@@ -117,6 +128,10 @@ def get_options(args=None):
     ap.add_argument("--repair", help="repair osm routes", action='store_true', category="processing")
     ap.add_argument("--min-stops", default=1, type=int, category="input",
                     help="minimum number of stops a public transport line must have to be imported")
+    ap.add_argument("--maxcache", default=1000, type=int,
+                    help="Set maximum cache size for route computation")
+    ap.add_argument("-s", "--seed", default=42, type=int,
+                    help="random seed for coloring of pois and polygons")
 
     options = ap.parse_args(args)
 
@@ -134,7 +149,12 @@ def get_options(args=None):
         options.map_output = os.path.join('output', options.region)
     if options.network_split is None:
         options.network_split = os.path.join('resources', options.region)
+    if options.detourRemoveFactor > 0 and options.detourRemoveFactor < options.detourWarnFactor:
+        options.detourWarnFactor = options.detourRemoveFactor
+    if options.distPenalty is None:
+        options.distPenalty = 1 if options.stops else 2
 
+    random.seed(options.seed)
     return options
 
 
@@ -169,19 +189,8 @@ def splitNet(options):
         mode = os.path.basename(inp)[:-8]
         if not options.modes or mode in options.modes.split(","):
             netPrefix = os.path.join(options.network_split, mode)
-            if options.network_split_vclass:
-                vclass = gtfs2osm.OSM2SUMO_MODES.get(mode)
-                edgeFilter = ["--keep-edges.by-vclass", vclass] if vclass else None
-            else:
-                edgeFilter = ["--keep-edges.by-type", mode] if mode in seenTypes else None
-                if "rail" in mode or mode == "subway":
-                    if "railway." + mode in seenTypes:
-                        edgeFilter = ["--keep-edges.by-type", "railway." + mode]
-                elif mode == "train":
-                    if "railway.rail" in seenTypes or "railway.light_rail" in seenTypes:
-                        edgeFilter = ["--keep-edges.by-type", "railway.rail,railway.light_rail"]
-                elif mode in ("tram", "bus"):
-                    edgeFilter = ["--keep-edges.by-vclass", mode]
+            vclass = gtfs2osm.OSM2SUMO_MODES.get(mode)
+            edgeFilter = ["--keep-edges.by-vclass", vclass] if vclass else None
             if edgeFilter:
                 if (os.path.exists(netPrefix + ".net.xml") and
                         os.path.getmtime(netPrefix + ".net.xml") > os.path.getmtime(numIdNet)):
@@ -225,7 +234,7 @@ def traceMap(options, veh2mode, typedNets, fixedStops, stopLookup, invEdgeMap, r
         vclass = gtfs2osm.OSM2SUMO_MODES.get(mode)
         if options.verbose:
             print("mapping", mode)
-        net = sumolib.net.readNet(os.path.join(options.network_split, mode + ".net.xml"))
+        net = sumolib.net.readNet(os.path.join(options.network_split, mode + ".net.xml"), maxcache=options.maxcache)
         mode_edges = set([e.getID() for e in net.getEdges()])
         netBox = net.getBBoxXY()
         numTraces = 0
@@ -235,9 +244,24 @@ def traceMap(options, veh2mode, typedNets, fixedStops, stopLookup, invEdgeMap, r
         if not os.path.exists(filePath):
             return []
         traces = tracemapper.readFCD(filePath, net, True)
+        if options.poiOut is not None:
+            colorgen = sumolib.miscutils.Colorgen(('random', 1, 1))
+            outf = open(options.poiOut, 'w')
+            sumolib.writeXMLHeader(outf, "$Id$", "additional", options=options)
+
         traceCache = {}
+        preferences = {}
+        if mode in ['train', 'light_rail', 'subway', 'tram'] and options.rpFactor is not None:
+            for i in range(5):
+                alpha = (4 - i) / 4
+                preferences[str(i)] = alpha * 1 / (1 + options.rpFactor) + (1 - alpha)
+
         for tid, trace in traces:
             trace = tuple(trace)
+            if options.poiOut is not None:
+                for idx, pos in enumerate(trace):
+                    outf.write('    <poi id="%s:%s" x="%.2f" y="%.2f" color="%s"/>\n' % (
+                        tid, idx, pos[0], pos[1], colorgen()))
             numTraces += 1
             minX, minY, maxX, maxY = sumolib.geomhelper.addToBoundingBox(trace)
             if (minX < netBox[1][0] + radius and minY < netBox[1][1] + radius and
@@ -263,7 +287,9 @@ def traceMap(options, veh2mode, typedNets, fixedStops, stopLookup, invEdgeMap, r
                                                          vClass=vclass, vias=vias,
                                                          fastest=True,
                                                          reversalPenalty=1000.,
-                                                         resultDetours=detours)
+                                                         resultDetours=detours,
+                                                         preferences=preferences,
+                                                         distPenalty=options.distPenalty)
                     assert len(detours) == len(trace)
                     for i in range(1, len(trace)):
                         detour = detours[i]
@@ -271,8 +297,12 @@ def traceMap(options, veh2mode, typedNets, fixedStops, stopLookup, invEdgeMap, r
                             airLine = euclidean(trace[i - 1], trace[i])
                             fx, fy = trace[i - 1]
                             tx, ty = trace[i]
-                            print("Trip %s (%s): detour (factor %.2f) to stop index %s, fromPos=%.2f,%.2f toPos=%.2f,%.2f (airLine=%.2f path=%.2f)" %  # noqa
-                                  (tid, mode, detour, i, fx, fy, tx, ty, airLine, detour * airLine), file=sys.stderr)
+                            msgStart = "Trip"
+                            if options.detourRemoveFactor > 0 and detour > options.detourRemoveFactor:
+                                msgStart = "Removing trip"
+                                mappedRoute = ()
+                            print("%s %s (%s): detour (factor %.2f) to stop index %s, fromPos=%.2f,%.2f toPos=%.2f,%.2f (airLine=%.2f path=%.2f)" %  # noqa
+                                  (msgStart, tid, mode, detour, i, fx, fy, tx, ty, airLine, detour * airLine), file=sys.stderr)  # noqa
 
                     traceCache[trace] = mappedRoute
 
@@ -283,6 +313,10 @@ def traceMap(options, veh2mode, typedNets, fixedStops, stopLookup, invEdgeMap, r
         if options.verbose:
             print("mapped %s traces to %s routes (%s cacheHits)" % (
                 numTraces, numRoutes, cacheHits))
+
+        if options.poiOut is not None:
+            outf.write('</additional>\n')
+            outf.close()
     return routes
 
 
@@ -304,7 +338,7 @@ def generate_polygons(net, routes, outfile):
 
 def map_stops(options, net, routes, rout, edgeMap, fixedStops, stopLookup):
     stops = collections.defaultdict(list)
-    stopEnds = collections.defaultdict(list)
+    stopDesc = collections.defaultdict(list)  # laneID -> [(typ, id, start, end, stopName, childs)]
     rid = None
     for inp in sorted(glob.glob(os.path.join(options.fcd, "*.fcd.xml"))):
         mode = os.path.basename(inp)[:-8]
@@ -318,16 +352,15 @@ def map_stops(options, net, routes, rout, edgeMap, fixedStops, stopLookup):
         typedNet = sumolib.net.readNet(typedNetFile)
         seen = set()
         fixed = {}
-        # Parse the FCD output that has been extended with `gtfsid` attribute specifying the concrete stopping place.
-        for veh in sumolib.xml.parse_fast(inp, "vehicle", ("id", "x", "y", "until", "name",
-                                                           "gtfsid", "fareZone", "fareSymbol", "startFare")):
+        # Read the extended FCD format that includes the GTFS ID of the stop that the vehicle called in
+        for veh in sumolib.xml.parse_fast(inp, "vehicle", ("id", "x", "y", "until", "name", "gtfsid",
+                                                           "fareZone", "fareSymbol", "startFare")):
             stopName = veh.attr_name
-            addAttrs = ' friendlyPos="true" name="%s"' % stopName
-            params = ""
+            childs = []
             if veh.fareZone:
-                params = "".join(['        <param key="%s" value="%s"/>\n' %
-                                  p for p in (('fareZone', veh.fareZone), ('fareSymbol', veh.fareSymbol),
-                                              ('startFare', veh.startFare))])
+                childs += ['        <param key="fareZone" value="%s"/>\n' % veh.fareZone,
+                           '        <param key="fareSymbol" value="%s"/>\n' % veh.fareSymbol,
+                           '        <param key="startFare" value="%s"/>\n' % veh.startFare]
             if rid != veh.id:
                 lastIndex = 0
                 lastPos = -1
@@ -362,7 +395,7 @@ def map_stops(options, net, routes, rout, edgeMap, fixedStops, stopLookup):
                 routes[rid] = routeFixed
                 fixed[rid] = [edgeMap[e] for e in routeFixed]
             route = fixed[rid]
-            if mode == "bus":
+            if mode in ("bus", "trolleybus"):
                 stopLength = options.bus_stop_length
             elif mode == "tram":
                 stopLength = options.tram_stop_length
@@ -417,24 +450,30 @@ def map_stops(options, net, routes, rout, edgeMap, fixedStops, stopLookup):
             lastIndex = route.index(edgeID, lastIndex)
             lastPos = end
             keep = True
-            for otherStop, otherStart, otherEnd in stopEnds[laneID]:
-                if (otherEnd > start and otherEnd <= end) or (end > otherStart and end <= otherEnd):
+            typ = "busStop" if mode in ("bus", "trolleybus") else "trainStop"
+            for stopItem in stopDesc[laneID]:
+                otherStop, otherStart, otherEnd = stopItem[1:4]
+                if start < otherEnd <= end or otherStart < end <= otherEnd:  # stops overlap
+                    if end - start > otherEnd - otherStart:  # keep type and dimensions of the longer one
+                        stopItem[0] = typ
+                        stopItem[2] = start
+                        stopItem[3] = end
                     keep = False
                     stop = otherStop
                     break
             if keep:
-                stopEnds[laneID].append((stop, start, end))
-                access = None if options.skip_access else gtfs2osm.getAccess(net, veh.x, veh.y, 100, laneID)
-                if not access and not params:
-                    addAttrs += "/"
-                typ = "busStop" if mode == "bus" else "trainStop"
-                rout.write(u'    <%s id="%s" lane="%s" startPos="%.2f" endPos="%.2f"%s>\n%s' %
-                           (typ, stop, laneID, start, end, addAttrs, params))
-                if access or params:
-                    for a in sorted(access):
-                        rout.write(a)
-                    rout.write(u'    </%s>\n' % typ)
+                if not options.skip_access:
+                    childs += gtfs2osm.getAccess(net, veh.x, veh.y, options.access_radius, laneID)
+                stopDesc[laneID].append([typ, stop, start, end, stopName, childs])
             stops[rid].append((stop, int(veh.until), stopName))
+    for laneID, stopList in stopDesc.items():
+        for typ, stop, start, end, stopName, childs in stopList:
+            rout.write(u'    <%s id="%s" lane="%s" startPos="%.2f" endPos="%.2f" friendlyPos="true" name="%s"%s>\n' %
+                       (typ, stop, laneID, start, end, stopName, "" if childs else "/"))
+            for a in sorted(childs):
+                rout.write(a)
+            if childs:
+                rout.write(u'    </%s>\n' % typ)
     return stops
 
 
@@ -499,6 +538,12 @@ class StopLookup:
             return stops
         else:
             return []
+
+
+def removeDoubleHypen(string):
+    while '--' in string:
+        string = string.replace('--', '- -')
+    return string
 
 
 def main(options):
@@ -590,7 +635,8 @@ def main(options):
                         if offset is None:
                             offset = stop[1]
                         rout.write(u'        <stop busStop="%s" duration="%s" until="%s"%s/> <!-- %s -->\n' %
-                                   (stop[0], ft(options.duration), ft(stop[1] - offset), parking, stop[2]))
+                                   (stop[0], ft(options.duration), ft(stop[1] - offset), parking,
+                                    removeDoubleHypen(stop[2])))
                     rout.write(u'    </route>\n')
                 else:
                     print("Warning! Empty route for %s." % vehID, file=sys.stderr)
