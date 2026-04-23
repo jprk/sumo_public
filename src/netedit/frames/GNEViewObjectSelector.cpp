@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -38,14 +38,14 @@ FXDEFMAP(GNEViewObjectSelector) SelectorParentNetworkElementsMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEViewObjectSelector, MFXGroupBoxModule, SelectorParentNetworkElementsMap, ARRAYNUMBER(SelectorParentNetworkElementsMap))
+FXIMPLEMENT(GNEViewObjectSelector, GNEGroupBoxModule, SelectorParentNetworkElementsMap, ARRAYNUMBER(SelectorParentNetworkElementsMap))
 
 // ---------------------------------------------------------------------------
 // GNEViewObjectSelector - methods
 // ---------------------------------------------------------------------------
 
 GNEViewObjectSelector::GNEViewObjectSelector(GNEFrame* frameParent) :
-    MFXGroupBoxModule(frameParent, TL("NetworkElements")),
+    GNEGroupBoxModule(frameParent, TL("NetworkElements")),
     myFrameParent(frameParent) {
     // Create buttons
     myClearSelection = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Clear selection"), "", "", nullptr, this, MID_GNE_CLEARSELECTION, GUIDesignButton);

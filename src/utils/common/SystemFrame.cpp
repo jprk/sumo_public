@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -121,8 +121,14 @@ SystemFrame::addReportOptions(OptionsCont& oc) {
     oc.doRegister("write-license", new Option_Bool(false));
     oc.addDescription("write-license", "Output", TL("Include license info into every output file"));
 
+    oc.doRegister("write-metadata", new Option_Bool(false));
+    oc.addDescription("write-metadata", "Output", TL("Write parsable metadata (configuration etc.) instead of comments"));
+
     oc.doRegister("output-prefix", new Option_String());
     oc.addDescription("output-prefix", "Output", TL("Prefix which is applied to all output files. The special string 'TIME' is replaced by the current time."));
+
+    oc.doRegister("output-suffix", new Option_String());
+    oc.addDescription("output-suffix", "Output", TL("Suffix which is applied to all output files. The special string 'TIME' is replaced by the current time."));
 
     oc.doRegister("precision", new Option_Integer(2));
     oc.addDescription("precision", "Output", TL("Defines the number of digits after the comma for floating point output"));

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -72,6 +72,9 @@ public:
     /** @brief Adds an alternative loaded from the file */
     void addAlternativeDef(const RORouteDef* alternative);
 
+    /** @brief removes invalid alternatives and raise an error or warning **/
+    void validateAlternatives(const ROVehicle* veh, MsgHandler* errorHandler);
+
     /** @brief Triggers building of the complete route (via
      * preComputeCurrentRoute) or returns precomputed route */
     RORoute* buildCurrentRoute(SUMOAbstractRouter<ROEdge, ROVehicle>& router, SUMOTime begin,
@@ -92,7 +95,8 @@ public:
     *
      * (This may be the new route) */
     void addAlternative(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
-                        const ROVehicle* const, RORoute* current, SUMOTime begin);
+                        const ROVehicle* const, RORoute* current, SUMOTime begin,
+                        MsgHandler* errorHandler);
 
     const ROEdge* getOrigin() const;
     const ROEdge* getDestination() const;
@@ -145,10 +149,14 @@ public:
         myUsingJTRR = true;
     }
 
+    static void setSkipNew() {
+        mySkipNewRoutes = true;
+    }
+
 protected:
     /// @brief backtrack to last mandatory edge and route to next mandatory
     static bool backTrack(SUMOAbstractRouter<ROEdge, ROVehicle>& router,
-                          ConstROEdgeVector::const_iterator& i, int lastMandatory, ConstROEdgeVector::iterator nextMandatory,
+                          ConstROEdgeVector::const_iterator& i, int lastMandatory, const ROEdge* nextMandatory,
                           ConstROEdgeVector& newEdges, const ROVehicle& veh, SUMOTime begin);
 
 protected:
@@ -174,6 +182,7 @@ protected:
     mutable bool myDiscardSilent;
 
     static bool myUsingJTRR;
+    static bool mySkipNewRoutes;
 
 private:
     /// @brief Invalidated copy constructor

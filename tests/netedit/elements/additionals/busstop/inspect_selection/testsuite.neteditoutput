@@ -1,23 +1,25 @@
-name
+additionalfile
 
-friendlypos
-
-lines
-
-personcapacity
-
-parkinglength
+angle
 
 color
 
-parameters
+forcesize
+
+friendlypos
 
 front
 
-size
+lines
 
-forcesize
+name
+
+parameters
+
+parkinglength
+
+personcapacity
 
 reference
 
-additionalfile
+size

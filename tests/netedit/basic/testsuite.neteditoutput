@@ -1,11 +1,11 @@
-configs
+about_dialog
+
+files
 
 modes
 
-quit
-
 overlapping
 
-about_dialog
-
 pyautogui_error
+
+quit

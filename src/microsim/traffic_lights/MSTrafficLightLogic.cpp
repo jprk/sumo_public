@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -262,7 +262,7 @@ MSTrafficLightLogic::init(NLDetectorBuilder&) {
     if (unsafeGreenPhases > 0) {
         const std::string furtherAffected = unsafeGreen.size() > 1 || unsafeGreenPhases > 1 ? TLF(" Overall % lanes in % phases are unsafe.", unsafeGreen.size(), unsafeGreenPhases) : "";
         WRITE_WARNINGF(TL("Unsafe green phase % in tlLogic '%', program '%'. Lane '%' is targeted by % 'G'-links. (use 'g' instead)%"),
-                firstUnsafePhase, getID(), getProgramID(), firstUnsafeLane->getID(), firstUnsafeOrigins, furtherAffected);
+                       firstUnsafePhase, getID(), getProgramID(), firstUnsafeLane->getID(), firstUnsafeOrigins, furtherAffected);
     }
 
     // check incompatible junction logic
@@ -641,10 +641,13 @@ MSTrafficLightLogic::getLatestEnd(int step) const {
 
 
 void
-MSTrafficLightLogic::loadState(MSTLLogicControl& tlcontrol, SUMOTime t, int step, SUMOTime spentDuration) {
+MSTrafficLightLogic::loadState(MSTLLogicControl& tlcontrol, SUMOTime t, int step, SUMOTime spentDuration, bool active) {
+    myAmActive = active;
     const SUMOTime remaining = getPhase(step).duration - spentDuration;
     changeStepAndDuration(tlcontrol, t, step, remaining);
-    setTrafficLightSignals(t - spentDuration);
+    if (myAmActive) {
+        setTrafficLightSignals(t - spentDuration);
+    }
 }
 
 

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2004-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2004-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -87,7 +87,7 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
         dev = OutputDevice_CERR::getDevice();
     } else if (FileHelpers::isSocket(name)) {
         try {
-            const bool ipv6 = name[0] == '[';  // IPv6 adresses may be written like '[::1]:8000'
+            const bool ipv6 = name[0] == '[';  // IPv6 addresses may be written like '[::1]:8000'
             const size_t sepIndex = name.find(":", ipv6 ? name.find("]") : 0);
             const int port = StringUtils::toInt(name.substr(sepIndex + 1));
             dev = new OutputDevice_Network(ipv6 ? name.substr(1, sepIndex - 2) : name.substr(0, sepIndex), port);
@@ -110,6 +110,18 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
             }
             name2 = FileHelpers::prependToLastPathComponent(prefix, name);
         }
+        if (usePrefix && oc.isSet("output-suffix") && name2 != "/dev/null") {
+            std::string suffix = oc.getString("output-suffix");
+            const std::string::size_type metaTimeIndex = suffix.find("TIME");
+            if (metaTimeIndex != std::string::npos) {
+                const time_t rawtime = std::chrono::system_clock::to_time_t(OptionsIO::getLoadTime());
+                char buffer [80];
+                struct tm* timeinfo = localtime(&rawtime);
+                strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
+                suffix.replace(metaTimeIndex, 4, buffer);
+            }
+            name2 = FileHelpers::appendBeforeExtension(name2, suffix);
+        }
         name2 = StringUtils::substituteEnvironment(name2, &OptionsIO::getLoadTime());
         dev = new OutputDevice_File(name2, isParquet);
     }
@@ -123,6 +135,7 @@ OutputDevice::getDevice(const std::string& name, bool usePrefix) {
 #endif
     dev->setPrecision();
     dev->getOStream() << std::setiosflags(std::ios::fixed);
+    dev->myWriteMetadata = oc.exists("write-metadata") && oc.getBool("write-metadata");
     myOutputDevices[name] = dev;
     return *dev;
 }
@@ -251,7 +264,7 @@ OutputDevice::writeXMLHeader(const std::string& rootElement,
         attrs[SUMO_ATTR_XMLNS] = "http://www.w3.org/2001/XMLSchema-instance";
         attrs[SUMO_ATTR_SCHEMA_LOCATION] = "http://sumo.dlr.de/xsd/" + schemaFile;
     }
-    return myFormatter->writeXMLHeader(getOStream(), rootElement, attrs, includeConfig);
+    return myFormatter->writeXMLHeader(getOStream(), rootElement, attrs, myWriteMetadata, includeConfig);
 }
 
 
@@ -304,7 +317,12 @@ OutputDevice::parseWrittenAttributes(const std::vector<std::string>& attrList, c
             result |= special.find(attrName)->second;
         } else {
             if (SUMOXMLDefinitions::Attrs.hasString(attrName)) {
-                result.set(SUMOXMLDefinitions::Attrs.get(attrName));
+                int attrNr = SUMOXMLDefinitions::Attrs.get(attrName);
+                if (attrNr < (int)result.size()) {
+                    result.set(attrNr);
+                } else {
+                    WRITE_ERRORF(TL("Attribute '%' is not support for filtering written attributes in %."), attrName, desc);
+                }
             } else {
                 WRITE_ERRORF(TL("Unknown attribute '%' to write in %."), attrName, desc);
             }

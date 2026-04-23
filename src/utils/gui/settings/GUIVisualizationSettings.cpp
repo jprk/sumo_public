@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -585,7 +585,7 @@ GUIVisualizationSettings::GUIVisualizationSettings(const std::string& _name, boo
     showLaneDirection(false),
     showSublanes(true),
     spreadSuperposed(false),
-    disableHideByZoom(false),
+    disableHideByZoom(true),
     edgeParam("EDGE_KEY"),
     laneParam("LANE_KEY"),
     vehicleParam("PARAM_NUMERICAL"),
@@ -652,6 +652,7 @@ GUIVisualizationSettings::GUIVisualizationSettings(const std::string& _name, boo
     tazRelWidthExaggeration(1),
     edgeRelWidthExaggeration(1),
     relDataAttr("count"),
+    relDataScaleAttr("count"),
     dataValueRainBow(false, -100, false, 100, false, 0, false, 1),
     ignoreColorSchemeFor3DVehicles(false),
     show3DTLSLinkMarkers(true),
@@ -1163,10 +1164,10 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
     laneColorer.addScheme(scheme);
     scheme = GUIColorScheme("by TAZ (streetwise)", TL("by TAZ (streetwise)"), RGBColor(204, 204, 204), "no TAZ", true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_LANE_PARAM_NUMERICAL, TL(SCHEME_NAME_LANE_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_LANE_PARAM_NUMERICAL, TL(SCHEME_NAME_LANE_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
     scheme = GUIColorScheme(SCHEME_NAME_EDGEDATA_NUMERICAL, TL(SCHEME_NAME_EDGEDATA_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
@@ -1402,7 +1403,7 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
     scheme.addColor(RGBColor(0,   0, 255, 255),  3,  "1.5");
     scheme.setAllowsNegativeValues(true);
     vehicleColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_PARAM_NUMERICAL, TL(SCHEME_NAME_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_PARAM_NUMERICAL, TL(SCHEME_NAME_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     vehicleColorer.addScheme(scheme);
     vehicleColorer.addScheme(GUIColorScheme("random", TL("random"), RGBColor::YELLOW, "", true));
@@ -1690,7 +1691,7 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
     edgeColorer.addScheme(scheme);
     scheme = GUIColorScheme("by TAZ (streetwise)", TL("by TAZ (streetwise)"), RGBColor(204, 204, 204), TL("no TAZ"), true);
     edgeColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     edgeColorer.addScheme(scheme);
     scheme = GUIColorScheme(SCHEME_NAME_EDGEDATA_NUMERICAL, TL(SCHEME_NAME_EDGEDATA_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
@@ -1818,10 +1819,12 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
         vehScheme.addColor(10, 900.);
         vehScheme.setAllowsNegativeValues(true);
         vehicleScaler.addScheme(vehScheme);
-        vehScheme = GUIScaleScheme(SCHEME_NAME_PARAM_NUMERICAL, TL(SCHEME_NAME_PARAM_NUMERICAL.c_str()), 1);
+        vehScheme = GUIScaleScheme(SCHEME_NAME_PARAM_NUMERICAL, TL(SCHEME_NAME_PARAM_NUMERICAL.c_str()), 1, TL("missing data"), false, MISSING_DATA);
         vehScheme.setAllowsNegativeValues(true);
         vehicleScaler.addScheme(vehScheme);
     }
+    // dummy schemes
+    dataScaler.addScheme(GUIScaleScheme(TL("uniform"), 1, "", true));
 }
 
 
@@ -1859,7 +1862,7 @@ GUIVisualizationSettings::initNeteditDefaults() {
     scheme.addColor(RGBColor::GREEN, (double)SVCAll, "all");
     laneColorer.addScheme(scheme);
 
-    scheme = GUIColorScheme("by allowed speed (lanewise)", RGBColor::RED);
+    scheme = GUIColorScheme("by allowed speed (lanewise)", TL("by allowed speed (lanewise)"), RGBColor::RED);
     scheme.addColor(RGBColor::YELLOW, 30. / 3.6);
     scheme.addColor(RGBColor::GREEN, 55. / 3.6);
     scheme.addColor(RGBColor::CYAN, 80. / 3.6);
@@ -1867,11 +1870,11 @@ GUIVisualizationSettings::initNeteditDefaults() {
     scheme.addColor(RGBColor::MAGENTA, 150. / 3.6);
     laneColorer.addScheme(scheme);
 
-    scheme = GUIColorScheme("by lane number (streetwise)", RGBColor::RED);
+    scheme = GUIColorScheme("by lane number (streetwise)", TL("by lane number (streetwise)"), RGBColor::RED);
     scheme.addColor(RGBColor::BLUE, 5.);
     laneColorer.addScheme(scheme);
 
-    scheme = GUIColorScheme("by given length/geometrical length", RGBColor::RED);
+    scheme = GUIColorScheme("by given length/geometrical length", TL("by given length/geometrical length"), RGBColor::RED);
     scheme.addColor(RGBColor::ORANGE, 0.25);
     scheme.addColor(RGBColor::YELLOW, 0.5);
     scheme.addColor(RGBColor(179, 179, 179, 255), 1.);
@@ -1914,18 +1917,18 @@ GUIVisualizationSettings::initNeteditDefaults() {
     scheme.addColor(RGBColor::BLUE, -0.3);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_EDGE_PARAM_NUMERICAL, TL(SCHEME_NAME_EDGE_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme(SCHEME_NAME_LANE_PARAM_NUMERICAL, TL(SCHEME_NAME_LANE_PARAM_NUMERICAL.c_str()), RGBColor(204, 204, 204));
+    scheme = GUIColorScheme(SCHEME_NAME_LANE_PARAM_NUMERICAL, TL(SCHEME_NAME_LANE_PARAM_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme("by distance (kilometrage)", RGBColor(204, 204, 204));
+    scheme = GUIColorScheme("by distance (kilometrage)", TL("by distance (kilometrage)"), RGBColor(204, 204, 204));
     scheme.addColor(RGBColor::RED, 1.);
     scheme.addColor(RGBColor::RED, -1.);
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
-    scheme = GUIColorScheme("by abs distance (kilometrage)", RGBColor(204, 204, 204));
+    scheme = GUIColorScheme("by abs distance (kilometrage)", TL("by abs distance (kilometrage)"), RGBColor(204, 204, 204));
     scheme.addColor(RGBColor::RED, 1.);
     scheme.setAllowsNegativeValues(false);
     laneColorer.addScheme(scheme);
@@ -1933,6 +1936,7 @@ GUIVisualizationSettings::initNeteditDefaults() {
     scheme.setAllowsNegativeValues(true);
     laneColorer.addScheme(scheme);
 
+    /// add junction coloring schemes
     scheme = GUIColorScheme("uniform", TL("uniform"), RGBColor(102, 0, 0), "", true);
     scheme.addColor(RGBColor(204, 0, 0), 1, TL("junction bubble"));
     scheme.addColor(RGBColor(230, 100, 115), 2, TL("geometry points"));
@@ -1998,6 +2002,20 @@ GUIVisualizationSettings::initNeteditDefaults() {
     scheme = GUIColorScheme(SCHEME_NAME_DATA_ATTRIBUTE_NUMERICAL, TL(SCHEME_NAME_DATA_ATTRIBUTE_NUMERICAL.c_str()), COL_MISSING_DATA, TL("missing data"), false, MISSING_DATA);
     scheme.setAllowsNegativeValues(true);
     dataColorer.addScheme(scheme);
+
+    /// add data scaling schemes
+    dataScaler.addScheme(GUIScaleScheme(TL("uniform"), 1, "", true));
+    GUIScaleScheme dataScheme = GUIScaleScheme(SCHEME_NAME_SELECTION, TL(SCHEME_NAME_SELECTION.c_str()), 1, TL("unselected"), true, 0, COL_SCHEME_MISC);
+    dataScheme.addColor(5, 1., TL("selected"));
+    dataScaler.addScheme(dataScheme);
+    dataScheme = GUIScaleScheme(SCHEME_NAME_DATA_ATTRIBUTE_NUMERICAL, TL(SCHEME_NAME_DATA_ATTRIBUTE_NUMERICAL.c_str()), 1, TL("missing data"), false, MISSING_DATA);
+    dataScheme.setAllowsNegativeValues(true);
+    dataScheme.addColor(1, 1);
+    dataScheme.addColor(5, 100);
+    dataScheme.addColor(10, 1000);
+    dataScheme.addColor(20, 10000);
+    dataScheme.addColor(30, 100000);
+    dataScaler.addScheme(dataScheme);
 
     // dummy schemes
     vehicleColorer.addScheme(GUIColorScheme("uniform", TL("uniform"), RGBColor::YELLOW, "", true));
@@ -2113,7 +2131,7 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("vehicleScaleMode", vehicleScaler.getActive());
     dev.writeAttr("vehicleQuality", vehicleQuality);
     vehicleSize.print(dev, "vehicle");
-    vehicleValueRainBow.print(dev, "vehicleValue");
+    vehicleValueRainBow.print(dev, "vehicleValueRainbow");
     dev.writeAttr("showBlinker", showBlinker);
     dev.writeAttr("drawMinGap", drawMinGap);
     dev.writeAttr("drawBrakeGap", drawBrakeGap);
@@ -2269,6 +2287,25 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("polyCustomLayer", polyCustomLayer);
     polyColorer.save(dev);
     dev.closeTag();
+    // data
+    if (netedit) {
+        dev.openTag(SUMO_TAG_VIEWSETTINGS_DATA);
+        dev.writeAttr("dataMode", dataColorer.getActive());
+        dev.lf();
+        dev << "                  ";
+        dev.writeAttr("dataScaleMode", dataScaler.getActive());
+        dev.lf();
+        dev << "                  ";
+        dataValueRainBow.print(dev, "dataValueRainbow");
+        dataValue.print(dev, "dataValue");
+        dev.writeAttr("tazRelExaggeration", tazRelWidthExaggeration);
+        dev.writeAttr("edgeRelExaggeration", edgeRelWidthExaggeration);
+        dev.writeAttr("relDataAttr", relDataAttr);
+        dev.writeAttr("relDataScaleAttr", relDataScaleAttr);
+        dataColorer.save(dev);
+        dataScaler.save(dev);
+        dev.closeTag();
+    }
     // 3D
     dev.openTag(SUMO_TAG_VIEWSETTINGS_3D);
     dev.writeAttr("ignoreColorSchemeFor3DVehicles", ignoreColorSchemeFor3DVehicles);
@@ -2655,6 +2692,9 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
     if (!(dataColorer == v2.dataColorer)) {
         return false;
     }
+    if (!(dataScaler == v2.dataScaler)) {
+        return false;
+    }
     if (!(dataValue == v2.dataValue)) {
         return false;
     }
@@ -2665,6 +2705,9 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
         return false;
     }
     if (!(relDataAttr == v2.relDataAttr)) {
+        return false;
+    }
+    if (!(relDataScaleAttr == v2.relDataScaleAttr)) {
         return false;
     }
     if (!(dataValueRainBow == v2.dataValueRainBow)) {

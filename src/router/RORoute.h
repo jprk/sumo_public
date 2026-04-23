@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -167,8 +167,11 @@ public:
     void recheckForLoops(const ConstROEdgeVector& mandatory);
 
 
-    /// @brief check whether the route is valid for the given vehicle
-    bool isValid(const ROVehicle& veh, bool ignoreErrors) const;
+    /// @brief check whether the route is connected for the given vehicle
+    bool isValid(const ROVehicle& veh, bool ignoreErrors, MsgHandler* mh = nullptr) const;
+
+    /// @brief check whether the route is permitted for the given vehicle
+    bool isPermitted(const ROVehicle* veh, MsgHandler* mh) const;
 
     OutputDevice&
     writeXMLDefinition(OutputDevice& dev, const ROVehicle* const veh,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -25,24 +25,36 @@ from ...frames.edit.basicAttribute import modifyAttribute, modifyAttributeOverla
 from ...input.keyboard import typeKey, typeTwoKeys, updateText
 
 
-def modifyAdditionalFile(attributeIndex):
+def modifyFile(type: str, attributeIndex):
     """
-    @brief modify default additional file
+    @brief modify additional file
     """
-    modifyAttribute(attributeIndex, TEXTTEST_SANDBOX + "/additional.thirdFile.add.xml")
+    if (type == "additional"):
+        file = "additionals2.add.xml"
+    elif (type == "demand"):
+        file = "routes2.rou.xml"
+    modifyAttribute(attributeIndex, TEXTTEST_SANDBOX + "/" + file)
 
 
-def modifyAdditionalFileOverlapped(attributeIndex):
+def modifyFileOverlapped(type: str, attributeIndex):
     """
-    @brief modify default additional file
+    @brief modify additional file overlapped
     """
-    modifyAttributeOverlapped(attributeIndex, TEXTTEST_SANDBOX + "/additional.thirdFile.add.xml")
+    if (type == "additional"):
+        file = "additionals2.add.xml"
+    elif (type == "demand"):
+        file = "routes2.rou.xml"
+    modifyAttributeOverlapped(attributeIndex, TEXTTEST_SANDBOX + "/" + file)
 
 
-def modifyAdditionalFileDialog(attributeIndex, waitTime=2):
+def modifyFileDialog(type: str, attributeIndex, waitTime=2):
     """
-    @brief modify default additional file using dialog
+    @brief modify default file using dialog
     """
+    if (type == "additional"):
+        file = "additionals2.add.xml"
+    elif (type == "demand"):
+        file = "routes2.rou.xml"
     # focus current frame
     focusOnFrame()
     # jump to attribute
@@ -56,14 +68,18 @@ def modifyAdditionalFileDialog(attributeIndex, waitTime=2):
     typeTwoKeys('alt', 'f')
     updateText(TEXTTEST_SANDBOX)
     typeKey('enter')
-    updateText("additional.secondFile.add.xml")
+    updateText(file)
     typeKey('enter')
 
 
-def modifyAdditionalFileDialogOverlapped(attributeIndex, waitTime=2):
+def modifyFileDialogOverlapped(type: str, attributeIndex, waitTime=2):
     """
     @brief modify default additional file using dialog
     """
+    if (type == "additional"):
+        file = "additionals2.add.xml"
+    elif (type == "demand"):
+        file = "routes2.rou.xml"
     # focus current frame
     focusOnFrame()
     # jump to attribute
@@ -77,5 +93,5 @@ def modifyAdditionalFileDialogOverlapped(attributeIndex, waitTime=2):
     typeTwoKeys('alt', 'f')
     updateText(TEXTTEST_SANDBOX)
     typeKey('enter')
-    updateText("additional.secondFile.add.xml")
+    updateText(file)
     typeKey('enter')

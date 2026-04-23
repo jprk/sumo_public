@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -187,7 +187,7 @@ def leftClickMultiElement(referencePosition, position, underElement, offsetX=0, 
           clickedPosition[0], '-', clickedPosition[1], "under element", underElement)
 
 
-def moveMouse(referencePosition, position, offsetX=0, offsetY=0):
+def moveMouse(referencePosition, position, offsetX=0, offsetY=0, report=True):
     """
     @brief move mouse to the given position
     """
@@ -198,7 +198,8 @@ def moveMouse(referencePosition, position, offsetX=0, offsetY=0):
     # wait after move
     time.sleep(DELAY_MOUSE_MOVE)
     # show debug
-    print("TestFunctions: Moved to position", movePosition[0], '-', movePosition[1])
+    if (report):
+        print("TestFunctions: Moved to position", movePosition[0], '-', movePosition[1])
 
 
 def dragDrop(referencePosition, x1, y1, x2, y2):

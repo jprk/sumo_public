@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -23,6 +23,7 @@
 #include <netedit/frames/GNEFrame.h>
 #include <netedit/GNEViewNetHelper.h>
 #include <netbuild/NBTrafficLightLogic.h>
+#include <netedit/frames/common/GNEGroupBoxModule.h>
 
 // ===========================================================================
 // class declarations
@@ -31,10 +32,9 @@
 class GNEOverlappedInspection;
 class GNETLSTable;
 class MFXComboBoxIcon;
-class MFXTextFieldTooltip;
+class MFXTextFieldIcon;
 class MFXToggleButtonTooltip;
 class NBLoadedSUMOTLDef;
-class NBOwnTLDef;
 class NBTrafficLightDefinition;
 
 // ===========================================================================
@@ -48,7 +48,7 @@ public:
     // class TLSJunction
     // ===========================================================================
 
-    class TLSJunction : public MFXGroupBoxModule {
+    class TLSJunction : public GNEGroupBoxModule {
         /// @brief FOX-declaration
         FXDECLARE(GNETLSEditorFrame::TLSJunction)
 
@@ -117,10 +117,10 @@ public:
         FXLabel* myJunctionIDLabel = nullptr;
 
         /// @brief text field for junction ID
-        MFXTextFieldTooltip* myJunctionIDTextField = nullptr;
+        MFXTextFieldIcon* myJunctionIDTextField = nullptr;
 
         /// @brief text field for junction ID
-        MFXTextFieldTooltip* myTLSIDTextField = nullptr;
+        MFXTextFieldIcon* myTLSIDTextField = nullptr;
 
         /// @brief ComboBox for TLS Types
         MFXComboBoxIcon* myTLSTypeComboBox = nullptr;
@@ -154,7 +154,7 @@ public:
     // class TLSPrograms
     // ===========================================================================
 
-    class TLSPrograms : public MFXGroupBoxModule {
+    class TLSPrograms : public GNEGroupBoxModule {
         /// @brief FOX-declaration
         FXDECLARE(GNETLSEditorFrame::TLSPrograms)
 
@@ -275,7 +275,7 @@ public:
     // class TLSAttributes
     // ===========================================================================
 
-    class TLSAttributes : public MFXGroupBoxModule {
+    class TLSAttributes : public GNEGroupBoxModule {
         /// @brief FOX-declaration
         FXDECLARE(GNETLSEditorFrame::TLSAttributes)
 
@@ -384,7 +384,7 @@ public:
     // class TLSPhases
     // ===========================================================================
 
-    class TLSPhases : public MFXGroupBoxModule {
+    class TLSPhases : public GNEGroupBoxModule {
         /// @brief FOX-declaration
         FXDECLARE(GNETLSEditorFrame::TLSPhases)
 
@@ -546,7 +546,7 @@ public:
     // class TLSFile
     // ===========================================================================
 
-    class TLSFile : public MFXGroupBoxModule {
+    class TLSFile : public GNEGroupBoxModule {
         /// @brief FOX-declaration
         FXDECLARE(GNETLSEditorFrame::TLSFile)
 

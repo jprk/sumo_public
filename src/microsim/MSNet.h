@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -104,7 +104,7 @@ public:
         SIMSTATE_CONNECTION_CLOSED,
         /// @brief An error occurred during the simulation step
         SIMSTATE_ERROR_IN_SIM,
-        /// @brief An external interrupt occured
+        /// @brief An external interrupt occurred
         SIMSTATE_INTERRUPTED,
         /// @brief The simulation had too many teleports
         SIMSTATE_TOO_MANY_TELEPORTS
@@ -129,7 +129,7 @@ public:
     };
 
     typedef std::map<std::string, std::vector<Collision> > CollisionMap;
-    typedef std::map<const MSEdge*, double> Prohibitions;
+    typedef std::map<const MSEdge*, RouterProhibition> Prohibitions;
 
 public:
     /** @brief Returns the pointer to the unique instance of MSNet (singleton).
@@ -236,6 +236,14 @@ public:
      */
     const std::map<SUMOVehicleClass, double>* getRestrictions(const std::string& id) const;
 
+    /// @brief retriefe edge type specific routing preference
+    double getPreference(const std::string& routingType, const SUMOVTypeParameter& pars) const;
+
+    /// @brief add edge type specific routing preference
+    void addPreference(const std::string& routingType, SUMOVehicleClass svc, double prio);
+    /// @brief add edge type specific routing preference
+    void addPreference(const std::string& routingType, std::string vType, double prio);
+
     /** @brief Adds edge type specific meso parameters
      * @param[in] id The id of the type
      * @param[in] edgeType The parameter object
@@ -287,7 +295,7 @@ public:
     void writeStatistics(const SUMOTime start, const long now) const;
 
     /// @brief write summary-output to (xml) file
-    void writeSummaryOutput();
+    void writeSummaryOutput(bool finalStep = false);
 
     /** @brief Closes the simulation (all files, connections, etc.)
      *
@@ -541,7 +549,7 @@ public:
      * @param[in] stop The stop to add
      * @return Whether the stop could be added
      */
-    bool addStoppingPlace(const SumoXMLTag category, MSStoppingPlace* stop);
+    bool addStoppingPlace(SumoXMLTag category, MSStoppingPlace* stop);
 
 
     /** @brief Adds a traction substation
@@ -575,6 +583,10 @@ public:
      * @return The stop id on the location, or "" if no such stop exists
      */
     std::string getStoppingPlaceID(const MSLane* lane, const double pos, const SumoXMLTag category) const;
+
+    /* @brief returns all stopping places of that category with the same (non-empty) name attribute
+     */
+    const std::vector<MSStoppingPlace*>& getStoppingPlaceAlternatives(const std::string& name, SumoXMLTag category) const;
     /// @}
 
     const NamedObjectCont<MSStoppingPlace*>& getStoppingPlaces(SumoXMLTag category) const;
@@ -880,7 +892,7 @@ protected:
     /// @brief Maximum number of teleports.
     int myMaxTeleports;
 
-    /// @brief whether an interrupt occured
+    /// @brief whether an interrupt occurred
     bool myAmInterrupted;
 
 
@@ -969,6 +981,10 @@ protected:
     /// @brief The vehicle class specific speed restrictions
     std::map<std::string, std::map<SUMOVehicleClass, double> > myRestrictions;
 
+    /// @brief Preferences for routing
+    std::map<SUMOVehicleClass, std::map<std::string, double> > myVClassPreferences;
+    std::map<std::string, std::map<std::string, double> > myVTypePreferences;
+
     /// @brief The edge type specific meso parameters
     std::map<std::string, MESegment::MesoEdgeType> myMesoEdgeTypes;
 
@@ -987,9 +1003,6 @@ protected:
     /// @brief Whether the network contains bidirectional rail edges
     bool myHasBidiEdges;
 
-    /// @brief Whether the network was built for left-hand traffic
-    bool myLefthand;
-
     /// @brief the network version
     MMVersion myVersion;
 
@@ -998,6 +1011,9 @@ protected:
 
     /// @brief Dictionary of bus / container stops
     std::map<SumoXMLTag, NamedObjectCont<MSStoppingPlace*> > myStoppingPlaces;
+
+    /// @brief dictionary of named stopping places
+    std::map<SumoXMLTag, std::map<std::string, std::vector<MSStoppingPlace*> > > myNamedStoppingPlaces;
 
     /// @brief Dictionary of traction substations
     std::vector<MSTractionSubstation*> myTractionSubstations;
@@ -1019,6 +1035,7 @@ protected:
     FXMutex myTransportableStateListenerMutex;
 #endif
     static const NamedObjectCont<MSStoppingPlace*> myEmptyStoppingPlaceCont;
+    static const std::vector<MSStoppingPlace*> myEmptyStoppingPlaceVector;
 
     /// @brief container to record warnings that shall only be issued once
     std::map<std::string, bool> myWarnedOnce;

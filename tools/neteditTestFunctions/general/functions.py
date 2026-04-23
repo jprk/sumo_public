@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -30,18 +30,20 @@ def computeJunctions():
     time.sleep(DELAY_RECOMPUTE)
 
 
-def computeJunctionsVolatileOptions(question=True):
+def computeJunctionsVolatileOptions(question):
     """
     @brief rebuild network with volatile options
     """
     typeTwoKeys('shift', 'F5')
     # confirm recompute
-    if question is True:
+    if question == "yes":
         waitQuestion('y')
-    # wait for output
+        # wait for output
         time.sleep(DELAY_RECOMPUTE_VOLATILE)
-    else:
+    elif question == "no":
         waitQuestion('n')
+    else:
+        waitQuestion('esc')
 
 
 def joinSelectedJunctions():
@@ -65,9 +67,17 @@ def waitQuestion(answer):
     """
     # wait some second to question dialog
     time.sleep(DELAY_QUESTION)
-    if (answer == 'n'):
-        typeKey('tab')
-    typeKey('space')
+    # continue depending on answer
+    if (answer == 'esc'):
+        typeKey('esc')
+    else:
+        if (answer == 'n'):
+            typeKey('tab')
+        elif (answer == 'a'):
+            for _ in range(2):
+                typeKey('tab')
+        # press space to answer question
+        typeKey('space')
 
 
 def overwritte(value):

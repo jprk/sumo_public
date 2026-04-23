@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -86,7 +86,15 @@ MSStoppingPlace::finishedLoading() {
         try {
             myTransportableWidth = StringUtils::toDouble(waitingWidth);
         } catch (ProcessError& e) {
-            WRITE_WARNINGF("Could not waitingWidth (m) '%' (%)", waitingWidth, e.what());
+            WRITE_WARNINGF("Could not load waitingWidth (m) '%' (%)", waitingWidth, e.what());
+        }
+    }
+    const std::string waitingDepth = getParameter("waitingDepth");
+    if (waitingDepth != "") {
+        try {
+            myTransportableDepth = StringUtils::toDouble(waitingDepth);
+        } catch (ProcessError& e) {
+            WRITE_WARNINGF("Could not load waitingDepth (m) '%' (%)", waitingWidth, e.what());
         }
     }
 }
@@ -117,9 +125,9 @@ MSStoppingPlace::getCenterPos() const {
 
 
 void
-MSStoppingPlace::enter(SUMOVehicle* veh, bool parking) {
-    double beg = veh->getPositionOnLane() + veh->getVehicleType().getMinGap() * (parking ? myParkingFactor : 1);
-    double end = beg - veh->getVehicleType().getLengthWithGap() * (parking ? myParkingFactor : 1);
+MSStoppingPlace::enter(SUMOVehicle* veh, const bool parking) {
+    const double beg = veh->getPositionOnLane() + veh->getVehicleType().getMinGap() * (parking ? myParkingFactor : 1);
+    const double end = beg - veh->getVehicleType().getLengthWithGap() * (parking ? myParkingFactor : 1);
     myEndPositions[veh] = std::make_pair(beg, end);
     computeLastFreePos();
 }

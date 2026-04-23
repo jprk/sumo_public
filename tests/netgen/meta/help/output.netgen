@@ -1,5 +1,5 @@
-Eclipse SUMO netgenerate Version v1_23_1+1107-78f51b0269e
- Copyright (C) 2001-2025 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO netgenerate v1_25_0+0045-28a3daf62ee
+ Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Synthetic network generator for the microscopic, multi-modal traffic simulation
  SUMO.
 
@@ -85,7 +85,12 @@ Input Options:
 Output Options:
   --write-license                      Include license info into every output
                                         file
+  --write-metadata                     Write parsable metadata (configuration
+                                        etc.) instead of comments
   --output-prefix STR                  Prefix which is applied to all output
+                                        files. The special string 'TIME' is
+                                        replaced by the current time.
+  --output-suffix STR                  Suffix which is applied to all output
                                         files. The special string 'TIME' is
                                         replaced by the current time.
   --precision INT                      Defines the number of digits after the
@@ -119,7 +124,7 @@ Output Options:
                                         additional node-file to reproduce joins
   --prefix STR                         Defines a prefix for edge and junction
                                         IDs
-  --prefix.junction STR                Defines a prefix for unction IDs
+  --prefix.junction STR                Defines a prefix for junction IDs
   --prefix.edge STR                    Defines a prefix for edge IDs
   --amitran-output FILE                The generated net will be written to
                                         FILE using Amitran format
@@ -137,6 +142,8 @@ Output Options:
                                         output (if available)
   --output.original-names              Writes original names, if given, as
                                         parameter
+  --output.removed-nodes               Writes IDs of nodes remove with
+                                        --geometry.remove into edge param
   --street-sign-output FILE            Writes street signs as POIs to FILE
   --opendrive-output.straight-threshold FLOAT  Builds parameterized curves
                                         whenever the angular change between
@@ -401,7 +408,7 @@ Junctions Options:
   --junctions.join.parallel-threshold FLOAT  The angular threshold in degress
                                         for rejection of parallel edges when
                                         joining junctions
-  --junctions.join-same                Joins junctions that have the same
+  --junctions.join-same FLOAT          Joins junctions that have similar
                                         coordinates even if not connected
   --max-join-ids INT                   Abbreviate junction or TLS id if it
                                         joins more than INT junctions

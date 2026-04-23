@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -149,8 +149,7 @@ MSAbstractLaneChangeModel::MSAbstractLaneChangeModel(MSVehicle& v, const LaneCha
     myLastLaneChangeOffset(0),
     myAmOpposite(false),
     myManeuverDist(0.),
-    myPreviousManeuverDist(0.)
-{
+    myPreviousManeuverDist(0.) {
     saveLCState(-1, LCA_UNKNOWN, LCA_UNKNOWN);
     saveLCState(0, LCA_UNKNOWN, LCA_UNKNOWN);
     saveLCState(1, LCA_UNKNOWN, LCA_UNKNOWN);
@@ -1152,11 +1151,22 @@ MSAbstractLaneChangeModel::getCooperativeHelpSpeed(const MSLane* lane, double di
     if (myCooperativeHelpTime >= 0) {
         std::pair<double, SUMOTime> backAndWaiting = lane->getEdge().getLastBlocked(lane->getIndex());
         if (backAndWaiting.second >= myCooperativeHelpTime) {
-            const double gap = distToLaneEnd - lane->getLength() + backAndWaiting.first - myVehicle.getVehicleType().getMinGap() - NUMERICAL_EPS;
+            double gap = distToLaneEnd - lane->getLength() + backAndWaiting.first - myVehicle.getVehicleType().getMinGap() - NUMERICAL_EPS;
+            if (backAndWaiting.first < 0) {
+                if (myVehicle.getLane()->getToJunction() == lane->getFromJunction()) {
+                    if (myVehicle.getLane()->isInternal()) {
+                        // already on the junction, potentially blocking lane change, do not stop
+                        gap = -1;
+                    } else {
+                        // stop before entering the junction
+                        gap = myVehicle.getLane()->getLength() - myVehicle.getPositionOnLane();
+                    }
+                }
+            }
             if (gap > 0) {
                 double stopSpeed = myVehicle.getCarFollowModel().stopSpeed(&myVehicle, myVehicle.getSpeed(), gap);
                 //if (myVehicle.isSelected() && stopSpeed < myVehicle.getSpeed()) {
-                //    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " lane=" << lane->getID() << " dte=" << distToLaneEnd << " gap=" << gap << " waiting=" << backAndWaiting.second << " helpTime=" << myCooperativeHelpTime << " stopSpeed=" << stopSpeed << " minNext=" << myVehicle.getCarFollowModel().minNextSpeed(myVehicle.getSpeed(), &myVehicle) << "\n";
+                //    std::cout << SIMTIME << " veh=" << myVehicle.getID() << " lane=" << lane->getID() << " dte=" << distToLaneEnd << " gap=" << gap << " backPos=" << backAndWaiting.first << " waiting=" << backAndWaiting.second << " helpTime=" << myCooperativeHelpTime << " stopSpeed=" << stopSpeed << " minNext=" << myVehicle.getCarFollowModel().minNextSpeed(myVehicle.getSpeed(), &myVehicle) << "\n";
                 //}
                 if (stopSpeed >= myVehicle.getCarFollowModel().minNextSpeed(myVehicle.getSpeed(), &myVehicle)) {
                     // regular braking is helpful

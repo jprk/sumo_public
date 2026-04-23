@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -26,32 +26,23 @@
 // class declarations
 // ===========================================================================
 
-class GNEInternalTest;
-class GNELoadThread;
-class GNETagPropertiesDatabase;
-class GNEUndoList;
-class GNEUndoListDialog;
 class GUIEvent;
+class GNEUndoListDialog;
+class GNEUndoList;
+class GNETagPropertiesDatabase;
+class GNELoadThread;
+class GNEInternalTest;
+class GNEExternalRunner;
 
 // ===========================================================================
 // class definition
 // ===========================================================================
-/**
- * @class GNEApplicationWindow
- * @brief The main window of Netedit.
- *
- * Contains the file opening support and a canvas to display the network in.
- *
- * Beside views on the simulation, shown within a MDI-window, the main window
- * may also have some further views (children) assigned which are stored
- * within a separate list.
- */
+
 class GNEApplicationWindow : public GUIMainWindow, public MFXInterThreadEventClient {
     /// @brief FOX-declaration
     FXDECLARE(GNEApplicationWindow)
 
 public:
-
     /**@brief Constructor
      * @param[in] app The FOX application
      * @param[in] tagPropertiesDatabase pointer to tag properties database
@@ -87,10 +78,24 @@ public:
     void setStatusBarText(const std::string& statusBarText);
 
     /// @brief called if the user selects Processing->compute junctions with volatile options
-    long computeJunctionWithVolatileOptions(const InternalTestStep::DialogTest* modalArguments);
+    long computeJunctionWithVolatileOptions(FXObject* sender, FXSelector sel, void* ptr);
 
     /// @brief check if console options was already loaded
     bool consoleOptionsLoaded();
+
+    /// @brief get file bucket handler
+    GNEApplicationWindowHelper::FileBucketHandler* getFileBucketHandler() const;
+
+    /// @name functions related with external runner
+    /// @{
+
+    /// @brief get external runner
+    GNEExternalRunner* getExternalRunner() const;
+
+    /// @brief set external runner
+    void setExternalRunner(GNEExternalRunner* externalRunner);
+
+    /// @}
 
     /// @name Inter-thread event handling
     /// @{
@@ -98,10 +103,11 @@ public:
     void eventOccurred();
 
     /// @brief handle event of type Network loaded
-    void handleEvent_NetworkLoaded(GUIEvent* e);
+    void handleEvent_FileLoaded(GUIEvent* e);
 
     /// @brief handle event of type message
     void handleEvent_Message(GUIEvent* e);
+
     /// @}
 
     /// @name FOX-callbacks
@@ -202,6 +208,9 @@ public:
     /// @brief called when the command/FXCall save network as is executed
     long onCmdSaveNetworkAs(FXObject*, FXSelector, void*);
 
+    /// @brief called when the command/FXCall save plain xml is executed
+    long onCmdSavePlainXML(FXObject*, FXSelector, void*);
+
     /// @brief called when the command/FXCall save as plain xml is executed
     long onCmdSavePlainXMLAs(FXObject*, FXSelector, void*);
 
@@ -244,9 +253,6 @@ public:
     /// @brief called when the command/FXCall save edgeTypes as is executed
     long onCmdSaveEdgeTypesAs(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save edgeTypes as is updated
-    long onUpdSaveEdgeTypesAs(FXObject*, FXSelector, void*);
-
     /// @brief called when the command/FXCall open additionals is executed
     long onCmdOpenAdditionalElements(FXObject*, FXSelector, void*);
 
@@ -258,6 +264,9 @@ public:
 
     /// @brief called when the command/FXCall save additionals is executed
     long onCmdSaveAdditionalElements(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save additionals as
+    long onCmdSaveAdditionalElementsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save additionals unified is executed
     long onCmdSaveAdditionalElementsUnified(FXObject*, FXSelector, void*);
@@ -286,11 +295,17 @@ public:
     /// @brief called when the command/FXCall reload data elements is updated
     long onUpdReloadDataElements(FXObject*, FXSelector, void*);
 
+    /// @brief called when the command/FXCall save demand elements as is executed
+    long onCmdSaveDemandElementsAs(FXObject*, FXSelector, void*);
+
     /// @brief called when the command/FXCall save demand elements unified is executed
     long onCmdSaveDemandElementsUnified(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save data elements is executed
     long onCmdSaveDataElements(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save data elements as is executed
+    long onCmdSaveDataElementsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save data elements unified is executed
     long onCmdSaveDataElementsUnified(FXObject*, FXSelector, void*);
@@ -306,6 +321,9 @@ public:
 
     /// @brief called when the command/FXCall save meanDatas is executed
     long onCmdSaveMeanDataElements(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save meanDatas as is executed
+    long onCmdSaveMeanDataElementsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save meanDatas unified is executed
     long onCmdSaveMeanDataElementsUnified(FXObject*, FXSelector, void*);
@@ -419,7 +437,7 @@ public:
     long onUpdLockMenuTitle(FXObject*, FXSelector sel, void*);
 
     /// @brief called when user press a process button (or a shortcut)
-    long onCmdProcessButton(FXObject* sender, FXSelector sel, void* arg);
+    long onCmdProcessButton(FXObject* sender, FXSelector sel, void*);
 
     /// @brief called if the user hints ctrl + T
     long onCmdOpenSUMOGUI(FXObject* sender, FXSelector sel, void* ptr);
@@ -469,8 +487,8 @@ public:
     /// @brief called if the user press key combination Ctrl + J to toggle draw junction shape
     long onCmdToggleDrawJunctionShape(FXObject*, FXSelector, void*);
 
-    /// @brief called if the user call set front element
-    long onCmdSetFrontElement(FXObject*, FXSelector, void*);
+    /// @brief called if the user call toggle front element
+    long onCmdToggleFrontElement(FXObject*, FXSelector, void*);
 
     /// @brief called if the user press key combination Alt + <0-9>
     long onCmdToggleEditOptions(FXObject*, FXSelector, void*);
@@ -567,9 +585,6 @@ public:
     /// @brief get pointer to undoList
     GNEUndoList* getUndoList();
 
-    /// @brief get pointer to undoList dialog
-    GNEUndoListDialog* getUndoListDialog();
-
     /// @brief get pointer to viewNet
     GNEViewNet* getViewNet();
 
@@ -625,17 +640,23 @@ public:
     /// @brief get netgenerate options container
     OptionsCont& getNetgenerateOptions();
 
-    /// @brief load additional elements
-    void loadAdditionalElements();
+    /// @brief load additional elements from netedit options
+    void loadAdditionalElements(const std::string operation);
 
-    /// @brief load demand elements
-    void loadDemandElements();
+    /// @brief load demand elements from netedit options
+    void loadDemandElements(const std::string operation);
 
-    /// @brief load data elements
-    void loadDataElements();
+    /// @brief load data elements from netedit options
+    void loadDataElements(const std::string operation);
+
+    /// @brief load meanData elements from netedit options
+    void loadMeanDataElements(const std::string operation);
+
+    /// @brief load traffic lights
+    void loadTrafficLights(const std::string operation);
 
     /// @brief load meanData elements
-    void loadMeanDataElements();
+    void loadEdgeTypes(const std::string operation);
 
     /// @name functions related with test system
     /// @{
@@ -652,12 +673,16 @@ protected:
     /// @brief FOX needs this for static members
     GNEApplicationWindow();
 
+    /// @brief external runner for running external tools
+    GNEExternalRunner* myExternalRunner = nullptr;
+
     /// @brief the thread that loads the network
     GNELoadThread* myLoadThread = nullptr;
 
     /// @brief internal test system
+public:
     GNEInternalTest* myInternalTest = nullptr;
-
+private:
     /// @brief information whether the gui is currently loading and the load-options shall be greyed out
     bool myAmLoading = false;
 
@@ -737,9 +762,6 @@ protected:
     /// @brief the one and only undo list
     GNEUndoList* myUndoList = nullptr;
 
-    /// @brief undoList dialog
-    GNEUndoListDialog* myUndoListDialog = nullptr;
-
     /// @brief Input file pattern
     std::string myConfigPattern;
 
@@ -751,6 +773,9 @@ protected:
 
     /// @brief sumo options container
     OptionsCont mySumoOptions;
+
+    /// @brief netconvert options container
+    OptionsCont myNetconvertOptions;
 
     /// @brief original sumo options container
     OptionsCont myOriginalSumoOptions;
@@ -801,6 +826,9 @@ private:
     /// @brief Supermode Commands
     GNEApplicationWindowHelper::SupermodeCommands mySupermodeCommands;
 
+    /// @brief saving files handler
+    GNEApplicationWindowHelper::FileBucketHandler* myFileBucketHandler = nullptr;
+
     /// @brief pointer to current view net
     GNEViewNet* myViewNet = nullptr;
 
@@ -819,17 +847,11 @@ private:
     /// @brief Builds the menu bar
     void fillMenuBar();
 
-    /// @brief this method closes all windows and deletes the current simulation */
-    void closeAllWindows();
+    /// @brief this method closes all windows and deletes the current simulation
+    void closeAllWindows(const bool resetFilenames);
 
     /// @brief warns about unsaved changes and gives the user the option to abort
-    bool askSaveElements();
-
-    /// @brief set input files in sumo options
-    void setInputInSumoOptions(const bool ignoreAdditionals, const bool ignoreRoutes);
-
-    /// @brief extract folder
-    FXString getFolder(const std::string& folder) const;
+    bool askSaveElements(FXObject* sender, FXSelector sel, void* ptr);
 
     /// @brief Invalidated copy constructor.
     GNEApplicationWindow(const GNEApplicationWindow&) = delete;

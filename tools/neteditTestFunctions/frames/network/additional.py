@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -16,38 +16,8 @@
 # @date    28-05-25
 
 # imports
-import time
-from ...constants import TEXTTEST_SANDBOX
 from ...general.functions import focusOnFrame
-from ...frames.edit.basicAttribute import modifyAttribute
-from ...input.keyboard import typeKey, typeTwoKeys, updateText
-
-
-def changeAdditionalFileDialog(attributeIndex, waitTime=2):
-    """
-    @brief modify default additional file using dialog
-    """
-    # focus current frame
-    focusOnFrame()
-    for _ in range(attributeIndex):
-        typeKey('tab')
-    # Change current value
-    typeKey('space')
-    # wait for saving
-    time.sleep(waitTime)
-    # jump to filename TextField
-    typeTwoKeys('alt', 'f')
-    updateText(TEXTTEST_SANDBOX)
-    typeKey('enter')
-    updateText("additional.secondFile.add.xml")
-    typeKey('enter')
-
-
-def changeAdditionalFile(attributeIndex):
-    """
-    @brief modify default additional file
-    """
-    modifyAttribute(attributeIndex, TEXTTEST_SANDBOX + "/additional.thirdFile.add.xml")
+from ...input.keyboard import typeKey
 
 
 def selectAdditionalChild(attributeIndex, childNumber):

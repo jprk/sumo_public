@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -24,6 +24,7 @@
 #include <netedit/GNEViewParent.h>
 #include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
+#include <netedit/dialogs/basic/GNEWarningBasicDialog.h>
 #include <netedit/elements/additional/GNEPoly.h>
 #include <netedit/elements/additional/GNETAZ.h>
 #include <netedit/elements/network/GNEConnection.h>
@@ -48,15 +49,15 @@ FXDEFMAP(GNEDeleteFrame::ProtectElements) ProtectElementsMap[] = {
 };
 
 // Object implementation
-FXIMPLEMENT(GNEDeleteFrame::DeleteOptions,      MFXGroupBoxModule, DeleteOptionsMap,    ARRAYNUMBER(DeleteOptionsMap))
-FXIMPLEMENT(GNEDeleteFrame::ProtectElements,    MFXGroupBoxModule, ProtectElementsMap,  ARRAYNUMBER(ProtectElementsMap))
+FXIMPLEMENT(GNEDeleteFrame::DeleteOptions,      GNEGroupBoxModule, DeleteOptionsMap,    ARRAYNUMBER(DeleteOptionsMap))
+FXIMPLEMENT(GNEDeleteFrame::ProtectElements,    GNEGroupBoxModule, ProtectElementsMap,  ARRAYNUMBER(ProtectElementsMap))
 
 // ---------------------------------------------------------------------------
 // GNEDeleteFrame::DeleteOptions - methods
 // ---------------------------------------------------------------------------
 
 GNEDeleteFrame::DeleteOptions::DeleteOptions(GNEDeleteFrame* deleteFrameParent) :
-    MFXGroupBoxModule(deleteFrameParent, TL("Options")),
+    GNEGroupBoxModule(deleteFrameParent, TL("Options")),
     myDeleteFrameParent(deleteFrameParent) {
     // Create checkbox for enable/disable delete only geomtery point(by default, disabled)
     myDeleteOnlyGeometryPoints = new FXCheckButton(getCollapsableFrame(), TL("Delete geometry points"), this, MID_GNE_SET_ATTRIBUTE, GUIDesignCheckButton);
@@ -225,7 +226,7 @@ GNEDeleteFrame::SubordinatedElements::openWarningDialog(const std::string& type,
     }
     // open message box only if we're not running internal tests
     if (!runningInternalTests) {
-        FXMessageBox::warning(myViewNet->getApp(), MBOX_OK, header.c_str(), "%s", msg.c_str());
+        GNEWarningBasicDialog(myViewNet->getViewParent()->getGNEAppWindows(), header, msg);
     }
 }
 
@@ -234,7 +235,7 @@ GNEDeleteFrame::SubordinatedElements::openWarningDialog(const std::string& type,
 // ---------------------------------------------------------------------------
 
 GNEDeleteFrame::ProtectElements::ProtectElements(GNEDeleteFrame* deleteFrameParent) :
-    MFXGroupBoxModule(deleteFrameParent, TL("Protect Elements")),
+    GNEGroupBoxModule(deleteFrameParent, TL("Protect Elements")),
     myDeleteFrameParent(deleteFrameParent) {
     // Create "Protect all" Button
     myProtectAllButton = GUIDesigns::buildFXButton(getCollapsableFrame(), TL("Protect all"), "", TL("Protect all elements"), nullptr, this, MID_GNE_PROTECT_ALL, GUIDesignButton);
@@ -462,13 +463,13 @@ GNEDeleteFrame::removeGeometryPoint(const GNEViewNetHelper::ViewObjectsSelector&
     // filter elements with geometry points
     for (const auto& AC : viewObjects.getAttributeCarriers()) {
         if (AC->getTagProperty()->getTag() == SUMO_TAG_EDGE) {
-            viewObjects.getEdgeFront()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
+            viewObjects.getEdgeFront()->getMoveElement()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
             return true;
         } else if (AC->getTagProperty()->getTag() == SUMO_TAG_POLY) {
-            viewObjects.getPolyFront()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
+            viewObjects.getPolyFront()->getMoveElement()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
             return true;
         } else if (AC->getTagProperty()->getTag() == SUMO_TAG_TAZ) {
-            viewObjects.getTAZFront()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
+            viewObjects.getTAZFront()->getMoveElement()->removeGeometryPoint(clickedPosition, myViewNet->getUndoList());
             return true;
         }
     }

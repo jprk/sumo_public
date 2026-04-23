@@ -1,5 +1,5 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -136,7 +136,7 @@ def import_gtfs(options, gtfsZip):
         routes['route_short_name'] = routes['route_long_name']
 
     # for some obscure reason there are GTFS files which have the sequence index as a float
-    stop_times['stop_sequence'] = stop_times['stop_sequence'].astype(float, copy=False)
+    stop_times['stop_sequence'] = stop_times['stop_sequence'].astype(float)
 
     # filter trips within given begin and end time
     # first adapt stop times to a single day (from 00:00:00 to 23:59:59)
@@ -569,10 +569,14 @@ def map_gtfs_osm(options, net, osm_routes, gtfs_data, shapes, shapes_dict, filte
 
             # get shape definition and define pt direction
             aux_shapes = shapes[shapes['shape_id'] == row.shape_id]
-            pt_orig = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.min()]
-            pt_dest = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.max()]
-            line_dir = get_line_dir((pt_orig.shape_pt_lon.iloc[0], pt_orig.shape_pt_lat.iloc[0]),
-                                    (pt_dest.shape_pt_lon.iloc[0], pt_dest.shape_pt_lat.iloc[0]))
+            if len(aux_shapes) == 0:
+                print("Warning! Missing shape data for shape_id '%s'" % row.shape_id, file=sys.stderr)
+                line_dir = 90
+            else:
+                pt_orig = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.min()]
+                pt_dest = aux_shapes[aux_shapes.shape_pt_sequence == aux_shapes.shape_pt_sequence.max()]
+                line_dir = get_line_dir((pt_orig.shape_pt_lon.iloc[0], pt_orig.shape_pt_lat.iloc[0]),
+                                        (pt_dest.shape_pt_lon.iloc[0], pt_dest.shape_pt_lat.iloc[0]))
 
             # get osm lines with same route name and pt type,
             # and if they have at least one matching stop name in osm and gtfs routes

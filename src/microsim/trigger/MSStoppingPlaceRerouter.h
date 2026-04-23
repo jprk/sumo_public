@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -131,7 +131,7 @@ public:
     typedef std::map<std::string, bool> StoppingPlaceParamSwitchMap_t;
     typedef std::map<MSStoppingPlace*, StoppingPlaceParamMap_t, ComparatorIdLess> StoppingPlaceMap_t;
     typedef std::pair<MSStoppingPlace*, bool> StoppingPlaceVisible;
-    typedef std::map<const MSEdge*, double> Prohibitions;
+    typedef std::map<const MSEdge*, RouterProhibition> Prohibitions;
 
     ///@brief Constructor
     MSStoppingPlaceRerouter(std::string paramPrefix = "", bool checkValidity = false, StoppingPlaceParamMap_t addEvalParams = {}, StoppingPlaceParamSwitchMap_t addInvertParams = {});

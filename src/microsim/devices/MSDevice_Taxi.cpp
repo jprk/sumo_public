@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -93,6 +93,9 @@ MSDevice_Taxi::insertOptions(OptionsCont& oc) {
 
     oc.doRegister("device.taxi.dispatch-period", new Option_String("60", "TIME"));
     oc.addDescription("device.taxi.dispatch-period", "Taxi Device", TL("The period between successive calls to the dispatcher"));
+
+    oc.doRegister("device.taxi.dispatch-keep-unreachable", new Option_String("3600", "TIME"));
+    oc.addDescription("device.taxi.dispatch-keep-unreachable", "Taxi Device", TL("The time before aborting unreachable reservations"));
 
     oc.doRegister("device.taxi.idle-algorithm", new Option_String("stop"));
     oc.addDescription("device.taxi.idle-algorithm", "Taxi Device", TL("The behavior of idle taxis [stop|randomCircling|taxistand]"));
@@ -297,13 +300,9 @@ MSDevice_Taxi::~MSDevice_Taxi() {
 }
 
 
-SUMOVehicle*
-MSDevice_Taxi::getTaxi() {
-    if (myFleet.size() > 0) {
-        return &myFleet[0]->getHolder();
-    } else {
-        return nullptr;
-    }
+bool
+MSDevice_Taxi::hasFleet() {
+    return myFleet.size() > 0;;
 }
 
 

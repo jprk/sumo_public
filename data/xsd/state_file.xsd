@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
 
-    <xsd:include schemaLocation="routeTypes.xsd"/>
+    <xsd:include schemaLocation="types/route.xsd"/>
     <xsd:include schemaLocation="additional_file.xsd"/>
 
     <xsd:element name="snapshot">
@@ -224,8 +224,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="queueType">
-        <xsd:attribute name="time" type="xsd:int" use="required"/>
-        <xsd:attribute name="blockTime" type="xsd:string" use="required"/>
+        <xsd:attribute name="time" type="xsd:long" use="required"/>
+        <xsd:attribute name="blockTime" type="xsd:long" use="required"/>
         <xsd:attribute name="value" type="xsd:string" use="required"/>
     </xsd:complexType>
 
@@ -247,6 +247,7 @@
         <xsd:attribute name="programID" type="xsd:string" use="required"/>
         <xsd:attribute name="phase" type="xsd:int" use="required"/>
         <xsd:attribute name="duration" type="xsd:integer" use="required"/>
+        <xsd:attribute name="active" type="boolType"/>
     </xsd:complexType>
 
     <xsd:complexType name="driveWayStateType">

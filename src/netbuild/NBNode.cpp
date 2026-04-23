@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -303,6 +303,7 @@ NBNode::NBNode(const std::string& id, const Position& position,
     myKeepClear(OptionsCont::getOptions().getBool("default.junctions.keep-clear")),
     myRightOfWay(SUMOXMLDefinitions::RightOfWayValues.get(OptionsCont::getOptions().getString("default.right-of-way"))),
     myFringeType(FringeType::DEFAULT),
+    myRoundaboutType(RoundaboutType::DEFAULT),
     myDiscardAllCrossings(false),
     myCrossingsLoadedFromSumoNet(0),
     myDisplacementError(0),
@@ -310,6 +311,9 @@ NBNode::NBNode(const std::string& id, const Position& position,
     myTypeWasGuessed(false) {
     if (!SUMOXMLDefinitions::isValidNetID(myID)) {
         throw ProcessError(TLF("Invalid node id '%'.", myID));
+    }
+    if (myPosition.isNAN()) {
+        throw ProcessError(TLF("Invalid position '%' for node '%'", myPosition, myID));
     }
 }
 
@@ -325,6 +329,7 @@ NBNode::NBNode(const std::string& id, const Position& position, NBDistrict* dist
     myKeepClear(OptionsCont::getOptions().getBool("default.junctions.keep-clear")),
     myRightOfWay(SUMOXMLDefinitions::RightOfWayValues.get(OptionsCont::getOptions().getString("default.right-of-way"))),
     myFringeType(FringeType::DEFAULT),
+    myRoundaboutType(RoundaboutType::DEFAULT),
     myDiscardAllCrossings(false),
     myCrossingsLoadedFromSumoNet(0),
     myDisplacementError(0),
@@ -332,6 +337,9 @@ NBNode::NBNode(const std::string& id, const Position& position, NBDistrict* dist
     myTypeWasGuessed(false) {
     if (!SUMOXMLDefinitions::isValidNetID(myID)) {
         throw ProcessError(TLF("Invalid node id '%'.", myID));
+    }
+    if (myPosition.isNAN()) {
+        throw ProcessError(TLF("Invalid position '%' for node '%'", myPosition, myID));
     }
 }
 
@@ -345,6 +353,9 @@ void
 NBNode::reinit(const Position& position, SumoXMLNodeType type,
                bool updateEdgeGeometries) {
     myPosition = position;
+    if (myPosition.isNAN()) {
+        throw ProcessError(TLF("Invalid position '%' for node '%'", myPosition, myID));
+    }
     // patch type
     myType = type;
     if (!isTrafficLight(myType)) {
@@ -376,6 +387,21 @@ NBNode::reshiftPosition(double xoff, double yoff) {
     }
     for (auto& c : myCrossings) {
         c->customShape.add(xoff, yoff, 0);
+    }
+}
+
+
+void
+NBNode::roundGeometry() {
+    myPosition.round(gPrecision);
+    if (myHaveCustomPoly) {
+        myPoly.round(gPrecision);
+    }
+    for (auto& wacs : myWalkingAreaCustomShapes) {
+        wacs.shape.round(gPrecision);
+    }
+    for (auto& c : myCrossings) {
+        c->customShape.round(gPrecision);
     }
 }
 
@@ -1002,8 +1028,8 @@ NBNode::needsCont(const NBEdge* fromE, const NBEdge* otherFromE,
 }
 
 bool
-NBNode::tlsContConflict(const NBEdge* from, const NBEdge::Connection& c,
-                        const NBEdge* foeFrom, const NBEdge::Connection& foe) const {
+NBNode::tlsStrandedConflict(const NBEdge* from, const NBEdge::Connection& c,
+                            const NBEdge* foeFrom, const NBEdge::Connection& foe) const {
     return (foe.haveVia && isTLControlled() && c.tlLinkIndex >= 0 && foe.tlLinkIndex >= 0
             && !foeFrom->isTurningDirectionAt(foe.toEdge)
             && foes(from, c.toEdge, foeFrom, foe.toEdge)
@@ -3267,60 +3293,49 @@ NBNode::patchOffset_pathAcrossStreet(double& offset) {
         }
         if (geometryLike(nonPedIncoming, nonPedOutgoing) && (pedIncoming.size() > 0 || pedOutgoing.size() > 0)) {
             double maxAngle = 0;
-            double inWidth = 0;
-            double outWidth = 0;
-            NBEdge* in = nonPedIncoming.front();
-            NBEdge* out = nonPedOutgoing.front();
+            const NBEdge* in = nonPedIncoming.front();
+            const NBEdge* out = nonPedOutgoing.front();
             if (nonPedIncoming.size() == 1) {
                 maxAngle = fabs(NBHelpers::relAngle(in->getAngleAtNode(this), out->getAngleAtNode(this)));
-                inWidth = in->getTotalWidth();
-                outWidth = out->getTotalWidth();
-
             } else {
-                for (NBEdge* in2 : nonPedIncoming) {
+                for (const NBEdge* const in2 : nonPedIncoming) {
                     double minAngle = 180;
-                    for (NBEdge* out2 : nonPedOutgoing) {
+                    for (const NBEdge* const out2 : nonPedOutgoing) {
                         double angle = fabs(NBHelpers::relAngle(in2->getAngleAtNode(this), out2->getAngleAtNode(this)));
                         if (angle < minAngle) {
                             minAngle = angle;
                             in = in2;
                             out = out2;
-                            inWidth += in->getTotalWidth();
-                            outWidth += out->getTotalWidth();
                         }
                     }
                     maxAngle = MAX2(maxAngle, minAngle);
                 }
             }
-            // changing the offset only handles the simple case where the road stays straight and keeps its width
-            if (maxAngle < 15 && inWidth == outWidth) {
-                int inLane = in->getFirstNonPedestrianLaneIndex(FORWARD);
-                int outLane = out->getFirstNonPedestrianLaneIndex(FORWARD);
+            // changing the offset only handles the simple case where the road stays straight
+            if (maxAngle < 15) {
+                const int inLane = in->getFirstNonPedestrianLaneIndex(FORWARD);
+                const int outLane = out->getFirstNonPedestrianLaneIndex(FORWARD);
                 if (inLane >= 0 && outLane >= 0) {
-                    Position p0 = in->getLaneShape(inLane).back();
-                    Position p1 = out->getLaneShape(outLane).front();
+                    const Position& p0 = in->getLaneShape(inLane).back();
+                    const Position& p1 = out->getLaneShape(outLane).front();
                     PositionVector road;
                     road.push_back(p0);
                     road.push_back(p1);
                     Position mid = (p0 + p1) / 2;
                     double maxPathDist = 0;
                     for (NBEdge* e : pedIncoming) {
-                        Position roadPos = road.positionAtOffset2D(road.nearest_offset_to_point2D(e->getLaneShape(0).back()));
+                        const Position roadPos = road.positionAtOffset2D(road.nearest_offset_to_point2D(e->getLaneShape(0).back()));
                         maxPathDist = MAX2(maxPathDist, mid.distanceTo2D(roadPos));
                     }
                     for (NBEdge* e : pedOutgoing) {
-                        Position roadPos = road.positionAtOffset2D(road.nearest_offset_to_point2D(e->getLaneShape(0).front()));
+                        const Position roadPos = road.positionAtOffset2D(road.nearest_offset_to_point2D(e->getLaneShape(0).front()));
                         maxPathDist = MAX2(maxPathDist, mid.distanceTo2D(roadPos));
                     }
                     // if the junction is stretched, the crossing should stay close to the paths
-                    if (maxPathDist < myCrossings.front()->width) {
+                    if (maxPathDist < MAX2(myCrossings.front()->width, 4.0)) {
                         offset = p0.distanceTo2D(p1) / 2;
-                    } else {
-                        //std::cout << getID() << " maxPathDist=" << maxPathDist << "\n";
                     }
                 }
-            } else {
-                //std::cout << getID() << " maxAngle=" << maxAngle << " inWidth=" << inWidth << " outWidth=" << outWidth << "\n";
             }
         }
     }
@@ -4234,13 +4249,17 @@ NBNode::getEdgesSortedByAngleAtNodeCenter() const {
 void
 NBNode::avoidOverlap() {
     // simple case: edges with LaneSpreadFunction::CENTER and a (possible) turndirection at the same node
+    bool haveModifications = false;
     for (EdgeVector::iterator it = myIncomingEdges.begin(); it != myIncomingEdges.end(); it++) {
         NBEdge* edge = *it;
         NBEdge* turnDest = edge->getTurnDestination(true);
         if (turnDest != nullptr) {
-            edge->shiftPositionAtNode(this, turnDest);
-            turnDest->shiftPositionAtNode(this, edge);
+            haveModifications |= edge->shiftPositionAtNode(this, turnDest);
+            haveModifications |= turnDest->shiftPositionAtNode(this, edge);
         }
+    }
+    if (haveModifications) {
+        NBTurningDirectionsComputer::computeTurnDirectionsForNode(this, false);
     }
     // @todo: edges in the same direction with sharp angles starting/ending at the same position
 }

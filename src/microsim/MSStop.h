@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2005-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2005-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -100,7 +100,10 @@ public:
     double getReachedThreshold() const;
 
     /// @brief get a short description for showing in the gui
-    std::string getDescription() const;
+    std::string getDescription(bool nameOnly = false) const;
+
+    /// @brief return the name of the stopping place or an empty string
+    std::pair<std::string, SumoXMLTag> getStoppingPlaceName() const;
 
     /// @brief initialize attributes from the given stop parameters
     void initPars(const SUMOVehicleParameter::Stop& stopPar);
@@ -130,4 +133,7 @@ public:
 
     /// @brief return all stoppingPlaces associated with this stop
     std::vector<MSStoppingPlace*> getPlaces() const;
+
+    /// @brief modify all properties so the stop happens at sp instead
+    void replaceStoppingPlace(MSStoppingPlace* sp);
 };

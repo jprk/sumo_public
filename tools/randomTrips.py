@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -168,8 +168,10 @@ def get_options(args=None):
                     "by a random factor drawn uniformly from [1,FLOAT)")
     op.add_argument("--marouter", default=False, action="store_true",
                     help="Compute routes with marouter instead of duarouter")
-    op.add_argument("--validate", default=True, action="store_true",
+    op.add_argument("--validate", action="store_true",
                     help="Whether to produce trip output that is already checked for connectivity")
+    op.add_argument("--no-validate", dest="validate", action="store_false")
+    op.set_defaults(validate=True)
     op.add_argument("--min-success-rate", dest="minSuccessRate", default=0.1, type=float,
                     help="Minimum ratio of valid trips to retry sampling if some trips are invalid")
     op.add_argument("-v", "--verbose", action="store_true", default=False,
@@ -518,7 +520,7 @@ def get_prob_fun(options, fringe_bonus, fringe_forbidden, max_length):
                 prob *= (angleDiff * (options.angle_weight - 1) + 1)
             else:
                 prob *= ((180 - angleDiff) * (options.angle_weight - 1) + 1)
-        prob *= options.typeFactors[edge.getType()]
+        prob *= options.typeFactors[edge.getRoutingType()]
 
         return prob
     return edge_probability
@@ -941,6 +943,7 @@ def createTrips(options, trip_generator, rerunFactor=None, skipValidation=False)
                                         print(exc, file=sys.stderr)
                             time += 1.0
             else:
+                # generate flows
                 try:
                     origins_destinations = [generate_origin_destination(
                         trip_generator, options) for _ in range(options.flows)]
@@ -955,6 +958,7 @@ def createTrips(options, trip_generator, rerunFactor=None, skipValidation=False)
                                 continue
                             origin, destination, intermediate = origins_destinations[j]
                             generate_one(j, departureTime, arrivalTime, period, origin, destination, intermediate, i)
+                            idx += 1
                 except Exception as exc:
                     print(exc, file=sys.stderr)
 
@@ -989,6 +993,8 @@ def createTrips(options, trip_generator, rerunFactor=None, skipValidation=False)
         duargs += ['--persontrip.walk-opposite-factor', str(options.walkoppositefactor)]
     if options.randomRoutingFactor != 1:
         duargs += ['--weights.random-factor', str(options.randomRoutingFactor)]
+    if options.flows > 0:
+        duargs += ['--keep-flows']
 
     options_to_forward = sumolib.options.get_prefixed_options(options)
     for router, routerargs in [('duarouter', duargs), ('marouter', maargs)]:

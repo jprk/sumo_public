@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -19,16 +19,15 @@
 /****************************************************************************/
 
 #include <netbuild/NBLoadedSUMOTLDef.h>
+#include <netedit/changes/GNEChange_Attribute.h>
+#include <netedit/changes/GNEChange_TLS.h>
+#include <netedit/elements/moving/GNEMoveElementConnection.h>
 #include <netedit/GNENet.h>
 #include <netedit/GNETagProperties.h>
 #include <netedit/GNEUndoList.h>
-#include <netedit/GNEViewNet.h>
-#include <netedit/changes/GNEChange_Attribute.h>
-#include <netedit/changes/GNEChange_TLS.h>
+#include <utils/common/MsgHandler.h>
 #include <utils/gui/div/GLHelper.h>
 #include <utils/gui/div/GUIDesigns.h>
-#include <utils/gui/div/GUIGlobalViewObjectsHandler.h>
-#include <utils/gui/globjects/GLIncludes.h>
 #include <utils/gui/globjects/GUIGLObjectPopupMenu.h>
 #include <utils/gui/windows/GUIAppEnum.h>
 #include <utils/options/OptionsCont.h>
@@ -42,6 +41,7 @@
 
 GNEConnection::GNEConnection(GNELane* from, GNELane* to) :
     GNENetworkElement(from->getNet(), "from" + from->getID() + "to" + to->getID(), SUMO_TAG_CONNECTION),
+    myMoveElementConnection(new GNEMoveElementConnection(this)),
     myLinkState(LINKSTATE_TL_OFF_NOSIGNAL),
     mySpecialColor(nullptr),
     myShapeDeprecated(true) {
@@ -52,6 +52,25 @@ GNEConnection::GNEConnection(GNELane* from, GNELane* to) :
 
 
 GNEConnection::~GNEConnection() {
+}
+
+
+GNEMoveElement*
+GNEConnection::getMoveElement() const {
+    return myMoveElementConnection;
+}
+
+
+Parameterised*
+GNEConnection::getParameters() {
+    return &getNBEdgeConnection();
+}
+
+
+const Parameterised*
+GNEConnection::getParameters() const {
+    return &getNBEdgeConnection();
+
 }
 
 
@@ -72,21 +91,51 @@ GNEConnection::updateGeometry() {
         // Get shape of from and to lanes
         const NBEdge::Connection& nbCon = getNBEdgeConnection();
         // obtain lane shapes
-        const auto& laneShapeFrom = getParentLanes().front()->getLaneShape();
-        const auto& laneShapeTo = getParentLanes().back()->getLaneShape();
+        PositionVector laneShapeFrom = getParentLanes().front()->getLaneShape();
+        PositionVector laneShapeTo = getParentLanes().back()->getLaneShape();
         // Calculate shape of connection depending of the size of Junction shape
         if (nbCon.customShape.size() > 0) {
             myConnectionGeometry.updateGeometry(nbCon.customShape);
         } else if (nbCon.shape.size() > 1) {
             PositionVector connectionShape;
             if ((nbCon.shape.length() < 3) && !nbCon.haveVia) {
-                if (laneShapeFrom.length() > 1) {
-                    connectionShape.push_back(laneShapeFrom.positionAtOffset(laneShapeFrom.length() - 1));
+                // apply offset to lane shape if we're in lane spread function center
+                if (getParentLanes().front()->getParentEdge()->getNBEdge()->getLaneSpreadFunction() == LaneSpreadFunction::CENTER) {
+                    laneShapeFrom.move2side(0.3);
                 }
+                if (getParentLanes().back()->getParentEdge()->getNBEdge()->getLaneSpreadFunction() == LaneSpreadFunction::CENTER) {
+                    laneShapeTo.move2side(0.3);
+                }
+                // check if this connetion is a turn around
+                bool turnAround = false;
+                const auto fromOppositeEdges = getParentLanes().front()->getParentEdge()->getOppositeEdges();
+                for (const auto& edge : fromOppositeEdges) {
+                    if (edge == getParentLanes().back()->getParentEdge()) {
+                        turnAround = true;
+                        break;
+                    }
+                }
+                // add from lane shape one step before
+                if (laneShapeFrom.length() > 1) {
+                    // set length depending of turn arounds
+                    if (turnAround) {
+                        connectionShape.push_back(laneShapeFrom.positionAtOffset(laneShapeFrom.length() - 0.5));
+                    } else {
+                        connectionShape.push_back(laneShapeFrom.positionAtOffset(laneShapeFrom.length() - 1));
+                    }
+                }
+                // add from lane shape
                 connectionShape.push_back(laneShapeFrom.back());
+                // add to lane shape
                 connectionShape.push_back(laneShapeTo.front());
+                // add to lane shape one step after
                 if (laneShapeTo.length() > 1) {
-                    connectionShape.push_back(laneShapeTo.positionAtOffset(1));
+                    // set length depending of turn arounds
+                    if (turnAround) {
+                        connectionShape.push_back(laneShapeTo.positionAtOffset(0.5));
+                    } else {
+                        connectionShape.push_back(laneShapeTo.positionAtOffset(1));
+                    }
                 }
             } else {
                 connectionShape = nbCon.shape;
@@ -207,48 +256,6 @@ GNEConnection::checkDrawMoveContour() const {
 }
 
 
-GNEMoveOperation*
-GNEConnection::getMoveOperation() {
-    // edit depending if shape is being edited
-    if (isShapeEdited()) {
-        // get connection
-        const auto& connection = getNBEdgeConnection();
-        // calculate move shape operation
-        return calculateMoveShapeOperation(this, connection.customShape.size() > 0 ? connection.customShape : myConnectionGeometry.getShape(), false);
-    } else {
-        return nullptr;
-    }
-}
-
-
-void
-GNEConnection::removeGeometryPoint(const Position clickedPosition, GNEUndoList* undoList) {
-    // edit depending if shape is being edited
-    if (isShapeEdited()) {
-        // get connection
-        const auto& connection = getNBEdgeConnection();
-        // get original shape
-        PositionVector shape = connection.customShape.size() > 0 ? connection.customShape : connection.shape;
-        // check shape size
-        if (shape.size() > 2) {
-            // obtain index
-            int index = shape.indexOfClosest(clickedPosition);
-            // get snap radius
-            const double snap_radius = myNet->getViewNet()->getVisualisationSettings().neteditSizeSettings.connectionGeometryPointRadius;
-            // check if we have to create a new index
-            if ((index != -1) && shape[index].distanceSquaredTo2D(clickedPosition) < (snap_radius * snap_radius)) {
-                // remove geometry point
-                shape.erase(shape.begin() + index);
-                // commit new shape
-                undoList->begin(this, "remove geometry point of " + getTagStr());
-                GNEChange_Attribute::changeAttribute(this, SUMO_ATTR_CUSTOMSHAPE, toString(shape), undoList);
-                undoList->end();
-            }
-        }
-    }
-}
-
-
 GNEEdge*
 GNEConnection::getEdgeFrom() const {
     return getParentEdges().front();
@@ -334,7 +341,7 @@ void
 GNEConnection::smootShape() {
     auto shape = getConnectionShape();
     shape = shape.bezier(5);
-    setAttribute(SUMO_ATTR_CUSTOMSHAPE, toString(shape), myNet->getViewNet()->getUndoList());
+    setAttribute(SUMO_ATTR_CUSTOMSHAPE, toString(shape), myNet->getUndoList());
 }
 
 
@@ -350,8 +357,8 @@ GNEConnection::getPopUpMenu(GUIMainWindow& app, GUISUMOAbstractView& parent) {
         // check if we're in supermode network
         if (myNet->getViewNet()->getEditModes().isCurrentSupermodeNetwork()) {
             // create menu commands
-            FXMenuCommand* mcCustomShape = GUIDesigns::buildFXMenuCommand(ret, "Set custom connection shape", nullptr, &parent, MID_GNE_CONNECTION_EDIT_SHAPE);
-            GUIDesigns::buildFXMenuCommand(ret, "Smooth connection shape", nullptr, &parent, MID_GNE_CONNECTION_SMOOTH_SHAPE);
+            FXMenuCommand* mcCustomShape = GUIDesigns::buildFXMenuCommand(ret, TL("Set custom connection shape"), nullptr, &parent, MID_GNE_CONNECTION_EDIT_SHAPE);
+            GUIDesigns::buildFXMenuCommand(ret, TL("Smooth connection shape"), nullptr, &parent, MID_GNE_CONNECTION_SMOOTH_SHAPE);
             // check if menu commands has to be disabled
             NetworkEditMode editMode = myNet->getViewNet()->getEditModes().networkEditMode;
             // check if we're in the correct edit mode
@@ -421,7 +428,7 @@ GNEConnection::drawGL(const GUIVisualizationSettings& s) const {
 
 void
 GNEConnection::deleteGLObject() {
-    myNet->deleteNetworkElement(this, myNet->getViewNet()->getUndoList());
+    myNet->deleteNetworkElement(this, myNet->getUndoList());
 }
 
 
@@ -457,7 +464,7 @@ GNEConnection::getAttribute(SumoXMLAttr key) const {
             return getParentLanes().back()->getID();
         case GNE_ATTR_SELECTED:
         case GNE_ATTR_FRONTELEMENT:
-            return getCommonAttribute(nullptr, key);
+            return getCommonAttribute(key);
         case GNE_ATTR_PARENT:
             return getParentEdges().front()->getToJunction()->getID();
         default:
@@ -526,8 +533,20 @@ GNEConnection::getAttribute(SumoXMLAttr key) const {
         case SUMO_ATTR_CUSTOMSHAPE:
             return toString(nbCon.customShape);
         default:
-            return getCommonAttribute(&nbCon, key);
+            return getCommonAttribute(key);
     }
+}
+
+
+double
+GNEConnection::getAttributeDouble(SumoXMLAttr key) const {
+    return getCommonAttributeDouble(key);
+}
+
+
+Position
+GNEConnection::getAttributePosition(SumoXMLAttr key) const {
+    return getCommonAttributePosition(key);
 }
 
 
@@ -538,7 +557,7 @@ GNEConnection::getAttributePositionVector(SumoXMLAttr key) const {
         case SUMO_ATTR_CUSTOMSHAPE:
             return getNBEdgeConnection().customShape;
         default:
-            throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+            return getCommonAttributePositionVector(key);
     }
 }
 
@@ -711,6 +730,10 @@ GNEConnection::drawConnection(const GUIVisualizationSettings& s, const GUIVisual
     RGBColor connectionColor = getConnectionColor(s);
     // Push layer matrix
     GLHelper::pushMatrix();
+    // move top if is selected
+    if (mySelected) {
+        glTranslated(0, 0, 0.2);
+    }
     // translate to front
     if (myNet->getViewNet()->getEditNetworkElementShapes().getEditedNetworkElement() == this) {
         drawInLayer(GLO_CONNECTION, 200);
@@ -760,9 +783,9 @@ GNEConnection::drawConnectionArrows(const GUIVisualizationSettings& s, const GUI
         GLHelper::setColor(color.changedBrightness(51));
         // draw triangles
         for (int i = 1; i < (int)superposedGeometry.getShape().size(); i++) {
-            const auto posA = superposedGeometry.getShape()[i - 1];
-            const auto posB = superposedGeometry.getShape()[i];
-            GLHelper::drawTriangleAtEnd(posA, posB, (double) 1, (double) .2);
+            const auto& posA = superposedGeometry.getShape()[i - 1];
+            const auto& posB = superposedGeometry.getShape()[i];
+            GLHelper::drawTriangleAtEnd(posA, posB, (double) .2, (double) .1);
         }
         // Pop matrix
         GLHelper::popMatrix();
@@ -865,7 +888,7 @@ GNEConnection::isValid(SumoXMLAttr key, const std::string& value) {
         case SUMO_ATTR_DIR:
             return false;
         default:
-            return isCommonValid(key, value);
+            return isCommonAttributeValid(key, value);
     }
 }
 
@@ -911,12 +934,6 @@ GNEConnection::isAttributeComputed(SumoXMLAttr key) const {
     }
 }
 
-
-const Parameterised::Map&
-GNEConnection::getACParametersMap() const {
-    return getNBEdgeConnection().getParametersMap();
-}
-
 // ===========================================================================
 // private
 // ===========================================================================
@@ -924,7 +941,7 @@ GNEConnection::getACParametersMap() const {
 void
 GNEConnection::setAttribute(SumoXMLAttr key, const std::string& value) {
     if (!existNBEdgeConnection()) {
-        WRITE_WARNINGF("Cannot restore attribute '%=%' for computed connection from lane '%'", toString(key), value, getParentLanes().front()->getID());
+        WRITE_WARNINGF(TL("Cannot restore attribute '%=%' for computed connection from lane '%'"), toString(key), value, getParentLanes().front()->getID());
         return;
     }
     NBEdge::Connection& nbCon = getNBEdgeConnection();
@@ -985,7 +1002,7 @@ GNEConnection::setAttribute(SumoXMLAttr key, const std::string& value) {
             nbCon.edgeType = value;
             break;
         default:
-            setCommonAttribute(&nbCon, key, value);
+            setCommonAttribute(key, value);
             break;
     }
     // Update Geometry after setting a new attribute (but avoided for certain attributes)
@@ -995,26 +1012,6 @@ GNEConnection::setAttribute(SumoXMLAttr key, const std::string& value) {
     }
     // invalidate demand path calculator
     myNet->getDemandPathManager()->getPathCalculator()->invalidatePathCalculator();
-}
-
-
-void
-GNEConnection::setMoveShape(const GNEMoveResult& moveResult) {
-    // set custom shape
-    getNBEdgeConnection().customShape = moveResult.shapeToUpdate;
-    // mark junction as deprecated
-    myShapeDeprecated = true;
-    // update geometry
-    updateGeometry();
-}
-
-
-void
-GNEConnection::commitMoveShape(const GNEMoveResult& moveResult, GNEUndoList* undoList) {
-    // commit new shape
-    undoList->begin(this, "moving " + toString(SUMO_ATTR_CUSTOMSHAPE) + " of " + getTagStr());
-    GNEChange_Attribute::changeAttribute(this, SUMO_ATTR_CUSTOMSHAPE, toString(moveResult.shapeToUpdate), undoList);
-    undoList->end();
 }
 
 /****************************************************************************/

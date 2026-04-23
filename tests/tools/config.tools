@@ -15,6 +15,8 @@ copy_test_path:in_out.add.xml
 copy_test_path:three_split.net.xml
 copy_test_path:input_net.net.xml
 copy_test_path:input_net.net.xml.gz
+copy_test_path:input_net2.net.xml
+copy_test_path:input_net2.net.xml.gz
 copy_test_path:input_edges.edg.xml
 copy_test_path:input_nodes.nod.xml
 copy_test_path:input_plain.tll.xml
@@ -26,6 +28,7 @@ copy_test_path:input_routes.rou.xml.gz
 copy_test_path:input_routes2.rou.xml
 copy_test_path:input_flows.flows.xml
 copy_test_path:input_turns.xml
+copy_test_path:input_tazrel.xml
 copy_test_path:input_detectors.det.xml
 copy_test_path:input_stops.xml
 copy_test_path:input_stopinfos.xml
@@ -61,6 +64,7 @@ copy_test_path:connections.con.xml
 copy_test_path:selection.txt
 copy_test_path:input_selection.txt
 copy_test_path:source.net.xml
+copy_test_path:source.net.xml.gz
 copy_test_path:source.nod.xml
 copy_test_path:source.edg.xml
 copy_test_path:source.con.xml
@@ -68,6 +72,7 @@ copy_test_path:source.tll.xml
 copy_test_path:source.xml
 copy_test_path:source.xml.gz
 copy_test_path:dest.net.xml
+copy_test_path:dest.net.xml.gz
 copy_test_path:dest.nod.xml
 copy_test_path:dest.edg.xml
 copy_test_path:dest.con.xml
@@ -264,6 +269,7 @@ output:optional arguments:{REPLACE options:}
 output:succeeded after .*{REPLACE succeeded after TIME}
 output:usage: {LINES 1000}
 output:^load.*dll...
+output:\\{REPLACE /}
 dualog:uration:.*ms
 dualog:uration:.*s
 dualog:Real time factor
@@ -309,7 +315,6 @@ errors:dateutil/tz/tz.py:.*: DeprecationWarning: datetime.datetime.utcfromtimest
 errors:matplotlib/projections/__init__.py:.*: UserWarning: Unable to import Axes3D.{LINES 2}
 errors:site-packages/ortools.*DeprecationWarning:
 errors:remaining_args \.\.\.
-errors:FutureWarning:{LINES 2}
 errors:\^\^\^
 errors:something strange happend{REPLACE something strange happened}
 errors:LinAlgWarning: Ill-conditioned matrix
@@ -403,6 +408,7 @@ dualog:0.0101
 xmlstats:0.0101
 aggregatebattery:0.0101
 additional:0.0001
+tripinfos:0.0101
 
 [unordered_text]
 errors:ERROR:SCHEMA

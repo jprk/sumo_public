@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -35,6 +35,7 @@
 #include <microsim/MSVehicleControl.h>
 #include <microsim/devices/MSDevice.h>
 #include <utils/common/FileHelpers.h>
+#include <utils/common/MsgHandler.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/common/RandHelper.h>
 #include "MEVehicle.h"
@@ -56,7 +57,7 @@
 // ===========================================================================
 // static member definition
 // ===========================================================================
-MSEdge MESegment::myDummyParent("MESegmentDummyParent", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", -1, 0);
+MSEdge MESegment::myDummyParent("MESegmentDummyParent", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", "", -1, 0);
 MESegment MESegment::myVaporizationTarget("vaporizationTarget");
 const double MESegment::DO_NOT_PATCH_JAM_THRESHOLD(std::numeric_limits<double>::max());
 const std::string MESegment::OVERRIDE_TLS_PENALTIES("meso.tls.control");
@@ -370,7 +371,7 @@ MESegment::initialise(MEVehicle* veh, SUMOTime time) {
         // we can check only after insertion because insertion may change the route via devices
         std::string msg;
         if (MSGlobals::gCheckRoutes && !veh->hasValidRoute(msg)) {
-            throw ProcessError("Vehicle '" + veh->getID() + "' has no valid route. " + msg);
+            throw ProcessError(TLF("Vehicle '%' has no valid route. %", veh->getID(), msg));
         }
         return true;
     }
@@ -423,7 +424,7 @@ MEVehicle*
 MESegment::removeCar(MEVehicle* v, SUMOTime leaveTime, const MSMoveReminder::Notification reason) {
     Queue& q = myQueues[v->getQueIndex()];
     // One could be tempted to do  v->setSegment(next); here but position on lane will be invalid if next == 0
-    v->updateDetectors(leaveTime, true, reason);
+    v->updateDetectors(leaveTime, v->getEventTime(), true, reason);
     myNumVehicles--;
     myEdge.lock();
     MEVehicle* nextLeader = q.remove(v);
@@ -626,7 +627,7 @@ MESegment::receive(MEVehicle* veh, const int qIdx, SUMOTime time, const bool isD
         veh->setEventTime(time + TIME2STEPS(myLength / speed)); // for correct arrival speed
         addReminders(veh);
         veh->activateReminders(MSMoveReminder::NOTIFICATION_JUNCTION);
-        veh->updateDetectors(time, true,
+        veh->updateDetectors(time, veh->getEventTime(), true,
                              veh->getEdge()->isVaporizing() ? MSMoveReminder::NOTIFICATION_VAPORIZED_VAPORIZER : MSMoveReminder::NOTIFICATION_ARRIVED);
         MSNet::getInstance()->getVehicleControl().scheduleVehicleRemoval(veh);
         return;
@@ -716,7 +717,10 @@ MESegment::vaporizeAnyCar(SUMOTime currentTime, const MSDetectorFileOutput* filt
 void
 MESegment::setSpeedForQueue(double newSpeed, SUMOTime currentTime, SUMOTime blockTime, const std::vector<MEVehicle*>& vehs) {
     MEVehicle* v = vehs.back();
-    v->updateDetectors(currentTime, false);
+    SUMOTime oldEarliestExitTime = currentTime;
+    const SUMOTime oldExit = MAX2(oldEarliestExitTime, v->getEventTime());
+    v->updateDetectors(currentTime, oldExit, false);
+    oldEarliestExitTime = oldExit + tauWithVehLength(myTau_ff, v->getVehicleType().getLengthWithGap(), v->getVehicleType().getCarFollowModel().getHeadwayTime());
     SUMOTime newEvent = MAX2(newArrival(v, newSpeed, currentTime), blockTime);
     if (v->getEventTime() != newEvent) {
         MSGlobals::gMesoNet->removeLeaderCar(v);
@@ -724,9 +728,11 @@ MESegment::setSpeedForQueue(double newSpeed, SUMOTime currentTime, SUMOTime bloc
         MSGlobals::gMesoNet->addLeaderCar(v, getLink(v));
     }
     for (std::vector<MEVehicle*>::const_reverse_iterator i = vehs.rbegin() + 1; i != vehs.rend(); ++i) {
-        (*i)->updateDetectors(currentTime, false);
-        newEvent = MAX2(newArrival(*i, newSpeed, currentTime), newEvent + myTau_ff);
-        //newEvent = MAX2(newArrival(*i, newSpeed, currentTime), newEvent + myTau_ff + (SUMOTime)((*(i - 1))->getVehicleType().getLength() / myTau_length));
+        const SUMOTime oldExitTime = MAX2(oldEarliestExitTime, (*i)->getEventTime());
+        (*i)->updateDetectors(currentTime, oldExitTime, false);
+        const SUMOTime minTau = tauWithVehLength(myTau_ff, (*i)->getVehicleType().getLengthWithGap(), (*i)->getVehicleType().getCarFollowModel().getHeadwayTime());
+        oldEarliestExitTime = oldExitTime + minTau;
+        newEvent = MAX2(newArrival(*i, newSpeed, currentTime), newEvent + minTau);
         (*i)->setEventTime(newEvent);
     }
 }
@@ -734,7 +740,7 @@ MESegment::setSpeedForQueue(double newSpeed, SUMOTime currentTime, SUMOTime bloc
 
 SUMOTime
 MESegment::newArrival(const MEVehicle* const v, double newSpeed, SUMOTime currentTime) {
-    // since speed is only an upper bound pos may be to optimistic
+    // since speed is only an upper bound, pos may be too optimistic
     const double pos = MIN2(myLength, STEPS2TIME(currentTime - v->getLastEntryTime()) * v->getSpeed());
     // traveltime may not be 0
     double tt = (myLength - pos) / MAX2(newSpeed, MESO_MIN_SPEED);

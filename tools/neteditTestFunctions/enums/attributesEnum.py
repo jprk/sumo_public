@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -34,18 +34,19 @@ class attrs:
             saveNetworkAs = 9
             savePlainXML = 10
             saveJoinedJunctions = 11
-            reloadConfig = 12
             reloadNetwork = 13
 
             class neteditConfig:
                 menu = 14
                 save = 1
-                saveAs = 2
+                saveAs = 1
+                reload = 3
 
             class sumoConfig:
                 menu = 15
                 save = 1
                 saveAs = 2
+                reload = 2
 
             class trafficLights:
                 menu = 16
@@ -210,9 +211,9 @@ class attrs:
             containerFlow = 29
 
         class route:
-            create = 15
-            abort = 16
-            removeLastInsertedEdge = 17
+            create = 22
+            abort = 23
+            removeLastInsertedEdge = 24
 
     # --------------------------------
     # NETWORK
@@ -359,6 +360,11 @@ class attrs:
             frontButton = 23
             helpDialog = 24
             reset = 25
+
+        class edgeType:
+            select = 7
+            createNew = 5
+            createExistent = 7
 
         class template:
             create = 32
@@ -669,18 +675,19 @@ class attrs:
             name = 7
             colorButton = 8
             color = 9
-            lines = 10
-            personCapacity = 11
-            parkingLength = 12
-            parameters = 14
-            parametersButton = 15
-            size = 17
-            forceSize = 18
-            reference = 19
-            additionalFileButton = 21
-            additionalFile = 22
-            helpDialog = 23
-            reset = 24
+            angle = 10
+            lines = 11
+            personCapacity = 12
+            parkingLength = 13
+            parameters = 15
+            parametersButton = 16
+            size = 18
+            forceSize = 19
+            reference = 20
+            additionalFileButton = 22
+            additionalFile = 23
+            helpDialog = 24
+            reset = 25
 
         class inspect:
             id = 2
@@ -692,38 +699,40 @@ class attrs:
             name = 8
             colorButton = 9
             color = 10
-            lines = 11
-            personCapacity = 12
-            parkingLength = 13
-            parameters = 15
-            parametersButton = 16
-            frontButton = 18
-            size = 19
-            forceSize = 20
-            reference = 21
-            additionalFileButton = 23
-            additionalFile = 24
-            helpDialog = 25
-            reset = 26
+            angle = 11
+            lines = 12
+            personCapacity = 13
+            parkingLength = 14
+            parameters = 16
+            parametersButton = 17
+            frontButton = 19
+            size = 20
+            forceSize = 21
+            reference = 22
+            additionalFileButton = 24
+            additionalFile = 25
+            helpDialog = 26
+            reset = 27
 
         class inspectSelection:
             friendlyPos = 2
             name = 3
             colorButton = 4
             color = 5
-            lines = 6
-            personCapacity = 7
-            parkingLength = 8
-            parameters = 10
-            parametersButton = 11
-            frontButton = 13
-            size = 14
-            forceSize = 15
-            reference = 16
-            additionalFileButton = 18
-            additionalFile = 19
-            helpDialog = 20
-            reset = 21
+            angle = 6
+            lines = 7
+            personCapacity = 8
+            parkingLength = 9
+            parameters = 11
+            parametersButton = 12
+            frontButton = 14
+            size = 15
+            forceSize = 16
+            reference = 17
+            additionalFileButton = 19
+            additionalFile = 20
+            helpDialog = 21
+            reset = 22
 
     # trainStop
 
@@ -734,18 +743,19 @@ class attrs:
             name = 7
             colorButton = 8
             color = 9
-            lines = 10
-            personCapacity = 11
-            parkingLength = 12
-            parameters = 14
-            parametersButton = 15
-            size = 17
-            forceSize = 18
-            reference = 19
-            additionalFileButton = 21
-            additionalFile = 22
-            helpDialog = 23
-            reset = 24
+            angle = 10
+            lines = 11
+            personCapacity = 12
+            parkingLength = 13
+            parameters = 15
+            parametersButton = 16
+            size = 18
+            forceSize = 19
+            reference = 20
+            additionalFileButton = 22
+            additionalFile = 23
+            helpDialog = 24
+            reset = 25
 
         class inspect:
             id = 2
@@ -757,38 +767,40 @@ class attrs:
             name = 8
             colorButton = 9
             color = 10
-            lines = 11
-            personCapacity = 12
-            parkingLength = 13
-            parameters = 15
-            parametersButton = 16
-            frontButton = 18
-            size = 19
-            forceSize = 20
-            reference = 21
-            additionalFileButton = 23
-            additionalFile = 24
-            helpDialog = 25
-            reset = 26
+            angle = 11
+            lines = 12
+            personCapacity = 13
+            parkingLength = 14
+            parameters = 16
+            parametersButton = 17
+            frontButton = 19
+            size = 20
+            forceSize = 21
+            reference = 22
+            additionalFileButton = 24
+            additionalFile = 25
+            helpDialog = 26
+            reset = 27
 
         class inspectSelection:
             friendlyPos = 2
             name = 3
             colorButton = 4
             color = 5
-            lines = 6
-            personCapacity = 7
-            parkingLength = 8
-            parameters = 10
-            parametersButton = 11
-            frontButton = 13
-            size = 14
-            forceSize = 15
-            reference = 16
-            additionalFileButton = 18
-            additionalFile = 19
-            helpDialog = 20
-            reset = 21
+            angle = 6
+            lines = 7
+            personCapacity = 8
+            parkingLength = 9
+            parameters = 11
+            parametersButton = 12
+            frontButton = 14
+            size = 15
+            forceSize = 16
+            reference = 17
+            additionalFileButton = 19
+            additionalFile = 20
+            helpDialog = 21
+            reset = 22
 
     # containerStop
 
@@ -799,18 +811,19 @@ class attrs:
             name = 7
             colorButton = 8
             color = 9
-            lines = 10
-            containerCapacity = 11
-            parkingLength = 12
-            parameters = 14
-            parametersButton = 15
-            size = 17
-            forceSize = 18
-            reference = 19
-            additionalFileButton = 21
-            additionalFile = 22
-            helpDialog = 23
-            reset = 24
+            angle = 10
+            lines = 11
+            containerCapacity = 12
+            parkingLength = 13
+            parameters = 15
+            parametersButton = 16
+            size = 18
+            forceSize = 19
+            reference = 20
+            additionalFileButton = 22
+            additionalFile = 23
+            helpDialog = 24
+            reset = 25
 
         class inspect:
             id = 2
@@ -822,38 +835,40 @@ class attrs:
             name = 8
             colorButton = 9
             color = 10
-            lines = 11
-            containerCapacity = 12
-            parkingLength = 13
-            parameters = 15
-            parametersButton = 16
-            frontButton = 18
-            size = 19
-            forceSize = 20
-            reference = 21
-            additionalFileButton = 23
-            additionalFile = 24
-            helpDialog = 25
-            reset = 26
+            angle = 11
+            lines = 12
+            containerCapacity = 13
+            parkingLength = 14
+            parameters = 16
+            parametersButton = 17
+            frontButton = 19
+            size = 20
+            forceSize = 21
+            reference = 22
+            additionalFileButton = 24
+            additionalFile = 25
+            helpDialog = 26
+            reset = 27
 
         class inspectSelection:
             friendlyPos = 2
             name = 3
             colorButton = 4
             color = 5
-            lines = 6
-            containerCapacity = 7
-            parkingLength = 8
-            parameters = 10
-            parametersButton = 11
-            frontButton = 13
-            size = 14
-            forceSize = 15
-            reference = 16
-            additionalFileButton = 18
-            additionalFile = 19
-            helpDialog = 20
-            reset = 21
+            angle = 6
+            lines = 7
+            containerCapacity = 8
+            parkingLength = 9
+            parameters = 11
+            parametersButton = 12
+            frontButton = 14
+            size = 15
+            forceSize = 16
+            reference = 17
+            additionalFileButton = 19
+            additionalFile = 20
+            helpDialog = 21
+            reset = 22
 
     # until here
 
@@ -864,22 +879,24 @@ class attrs:
             id = 5
             friendlyPos = 6
             name = 7
-            power = 8
-            efficiency = 9
-            chargeInTransit = 10
-            chargeDelay = 11
-            chargeType = 12
-            waitingTime = 14
-            parkingArea = 15
-            parameters = 17
-            parametersButton = 18
-            size = 20
-            forceSize = 21
-            reference = 22
-            additionalFileButton = 24
-            additionalFile = 25
-            helpDialog = 26
-            reset = 27
+            angle = 8
+            power = 9
+            totalPower = 10
+            efficiency = 11
+            chargeInTransit = 12
+            chargeDelay = 13
+            chargeType = 14
+            waitingTime = 16
+            parkingArea = 17
+            parameters = 18
+            parametersButton = 20
+            size = 22
+            forceSize = 23
+            reference = 24
+            additionalFileButton = 26
+            additionalFile = 27
+            helpDialog = 28
+            reset = 29
 
         class inspect:
             id = 2
@@ -889,42 +906,46 @@ class attrs:
             endPos = 6
             friendlyPos = 7
             name = 8
-            power = 9
-            efficiency = 10
-            chargeInTransit = 11
-            chargeDelay = 12
-            chargeType = 13
-            waitingTime = 15
-            parkingArea = 16
-            parameters = 18
-            parametersButton = 19
-            frontButton = 21
-            forceSize = 22
-            reference = 23
-            additionalFileButton = 25
-            additionalFile = 26
-            helpDialog = 27
-            reset = 28
+            angle = 9
+            power = 10
+            totalPower = 11
+            efficiency = 12
+            chargeInTransit = 13
+            chargeDelay = 14
+            chargeType = 15
+            waitingTime = 17
+            parkingArea = 18
+            parameters = 20
+            parametersButton = 21
+            frontButton = 23
+            forceSize = 24
+            reference = 25
+            additionalFileButton = 27
+            additionalFile = 28
+            helpDialog = 29
+            reset = 30
 
         class inspectSelection:
             friendlyPos = 2
             name = 3
-            power = 4
-            efficiency = 5
-            chargeInTrainsit = 6
-            chargeDelay = 7
-            chargeType = 8
-            waitingTime = 9
-            parkingArea = 10
-            parameters = 12
-            parametersButton = 13
-            frontButton = 15
-            forceSize = 16
-            reference = 17
-            additionalFileButton = 19
-            additionalFile = 20
-            helpDialog = 21
-            reset = 22
+            angle = 4
+            power = 5
+            totalPower = 6
+            efficiency = 7
+            chargeInTrainsit = 8
+            chargeDelay = 9
+            chargeType = 10
+            waitingTime = 11
+            parkingArea = 12
+            parameters = 14
+            parametersButton = 15
+            frontButton = 17
+            forceSize = 18
+            reference = 19
+            additionalFileButton = 21
+            additionalFile = 22
+            helpDialog = 23
+            reset = 24
 
     # access
 
@@ -969,13 +990,13 @@ class attrs:
             id = 5
             friendlyPos = 6
             name = 7
-            departPos = 8
-            acceptedBadges = 9
-            roadSideCapacity = 10
-            onRoad = 11
-            width = 12
-            length = 13
-            angle = 14
+            angle = 8
+            departPos = 9
+            acceptedBadges = 10
+            roadSideCapacity = 11
+            onRoad = 12
+            width = 13
+            length = 14
             lefthand = 15
             parameters = 17
             parametersButton = 18
@@ -995,17 +1016,17 @@ class attrs:
             endPos = 6
             friendlyPos = 7
             name = 8
-            departPos = 9
-            acceptedBadges = 10
-            roadSideCapacity = 11
-            onRoad = 12
-            width = 13
-            length = 14
-            angle = 15
+            angle = 9
+            departPos = 10
+            acceptedBadges = 11
+            roadSideCapacity = 12
+            onRoad = 13
+            width = 14
+            length = 15
             lefthand = 16
             parameters = 18
             parametersButton = 19
-            frontButton = 21
+            frontButton = 20
             size = 22
             forceSize = 23
             reference = 24
@@ -1017,13 +1038,13 @@ class attrs:
         class inspectSelection:
             friendlyPos = 2
             name = 3
-            departPos = 4
-            acceptedBadges = 5
-            roadSideCapacity = 6
-            onRoad = 7
-            width = 8
-            length = 9
-            angle = 10
+            angle = 4
+            departPos = 5
+            acceptedBadges = 6
+            roadSideCapacity = 7
+            onRoad = 8
+            width = 9
+            length = 10
             lefthand = 11
             parameters = 13
             parametersButton = 14
@@ -1340,17 +1361,17 @@ class attrs:
             vTypes = 6
             nextEdges = 7
             detectPersons = 8
-            openEntry = 10
-            timeThreshold = 11
-            speedThreshold = 12
-            expectArrival = 13
-            parameters = 15
-            parametersButton = 16
-            frontButton = 18
-            additionalFileButton = 19
-            additionalFile = 20
-            helpDialog = 21
-            reset = 22
+            openEntry = 9
+            timeThreshold = 10
+            speedThreshold = 11
+            expectArrival = 12
+            parameters = 14
+            parametersButton = 15
+            frontButton = 17
+            additionalFileButton = 18
+            additionalFile = 19
+            helpDialog = 20
+            reset = 21
 
     # entryExit
 
@@ -1668,16 +1689,16 @@ class attrs:
             type = 8
             imgFileButton = 9
             imgFile = 10
-            angle = 12
-            geo = 14
-            parameters = 16
-            parametersButton = 17
-            frontButton = 19
-            closeShape = 20
-            additionalFileButton = 21
-            additionalFile = 22
-            helpDialog = 23
-            reset = 24
+            angle = 11
+            geo = 13
+            parameters = 15
+            parametersButton = 16
+            frontButton = 18
+            closeShape = 19
+            additionalFileButton = 20
+            additionalFile = 21
+            helpDialog = 22
+            reset = 23
 
     # POI
 
@@ -2139,12 +2160,13 @@ class attrs:
             color = 9
             repeat = 10
             cycletime = 11
-            parameters = 13
-            parametersButton = 14
-            routeFileButton = 16
-            routeFile = 17
-            helpDialog = 18
-            reset = 19
+            probability = 12
+            parameters = 14
+            parametersButton = 15
+            routeFileButton = 17
+            routeFile = 18
+            helpDialog = 19
+            reset = 20
 
         class inspect:
             id = 2
@@ -2153,24 +2175,26 @@ class attrs:
             color = 5
             repeat = 6
             cycletime = 7
-            parameters = 9
-            parametersButton = 10
-            routeFileButton = 12
-            routeFile = 13
-            helpDialog = 14
-            reset = 15
+            probability = 8
+            parameters = 10
+            parametersButton = 11
+            routeFileButton = 13
+            routeFile = 14
+            helpDialog = 15
+            reset = 16
 
         class inspectSelection:
             colorButton = 2
             color = 3
             repeat = 4
             cycletime = 5
-            parameters = 7
-            parametersButton = 8
-            routeFileButton = 10
-            routeFile = 11
-            helpDialog = 12
-            reset = 13
+            cycletime = 6
+            parameters = 8
+            parametersButton = 9
+            routeFileButton = 11
+            routeFile = 13
+            helpDialog = 14
+            reset = 15
 
     # trip (from-to edges)
 
@@ -4860,26 +4884,27 @@ class attrs:
             id = 12
             fileButton = 13
             file = 14
-            period = 15
-            begin = 16
-            end = 17
-            excludeEmpty = 18
-            withInternal = 20
-            maxTravelTime = 21
-            minSamples = 22
-            speedThreshold = 23
-            vTypes = 24
-            trackVehicles = 25
-            detectPersons = 26
-            writeAttributes = 28
-            edges = 29
-            edgesFileButton = 30
-            edgesFile = 31
-            aggregate = 32
-            additionalFileButton = 34
-            additionalFile = 35
-            helpDialog = 36
-            reset = 37
+            type = 15
+            period = 17
+            begin = 18
+            end = 19
+            excludeEmpty = 20
+            withInternal = 22
+            maxTravelTime = 23
+            minSamples = 24
+            speedThreshold = 25
+            vTypes = 26
+            trackVehicles = 27
+            detectPersons = 28
+            writeAttributes = 30
+            edges = 31
+            edgesFileButton = 32
+            edgesFile = 33
+            aggregate = 34
+            additionalFileButton = 36
+            additionalFile = 37
+            helpDialog = 38
+            reset = 39
 
     # lane mean data
 
@@ -4889,26 +4914,27 @@ class attrs:
             id = 12
             fileButton = 13
             file = 14
-            period = 15
-            begin = 16
-            end = 17
-            excludeEmpty = 18
-            withInternal = 20
-            maxTravelTime = 21
-            minSamples = 22
-            speedThreshold = 23
-            vTypes = 24
-            trackVehicles = 25
-            detectPersons = 26
-            writeAttributes = 28
-            edges = 29
-            edgesFileButton = 30
-            edgesFile = 31
-            aggregate = 32
-            additionalFileButton = 34
-            additionalFile = 35
-            helpDialog = 36
-            reset = 37
+            type = 15
+            period = 17
+            begin = 18
+            end = 19
+            excludeEmpty = 20
+            withInternal = 22
+            maxTravelTime = 23
+            minSamples = 24
+            speedThreshold = 25
+            vTypes = 26
+            trackVehicles = 27
+            detectPersons = 28
+            writeAttributes = 30
+            edges = 31
+            edgesFileButton = 32
+            edgesFile = 33
+            aggregate = 34
+            additionalFileButton = 36
+            additionalFile = 37
+            helpDialog = 38
+            reset = 39
 
     # --------------------------------
     # Dialogs

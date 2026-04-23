@@ -28,29 +28,37 @@ jobs:
 
     steps:
     - name: Cloning jupedsim
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: PedestrianDynamics/jupedsim
         ref: ${{ matrix.jps_version }}
         path: jupedsim
+        submodules: recursive
 
     - name: Configuring Python
       # to avoid issues similar to https://github.com/saghul/pycares/issues/234
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
     - name: Cloning SUMO
       # this does not a full clone to speed up the build, version number will be incorrect
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: sumo
 
     - name: Cloning SUMO Libraries
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: DLR-TS/SUMOLibraries
         path: SUMOLibraries
+
+    - name: Setup fail-fast PowerShell
+      run: |
+        if (-not (Test-Path $PROFILE.CurrentUserAllHosts)) {
+          New-Item -ItemType File -Path $PROFILE.CurrentUserAllHosts -Force | Out-Null
+        }
+        Add-Content -Path $PROFILE.CurrentUserAllHosts -Value '$ErrorActionPreference = "Stop"'
 
     - name: ccache
       # do a clean build once a day
@@ -67,7 +75,7 @@ jobs:
         cmake --install jupedsim-build-${{ matrix.build_config }} --config ${{ matrix.build_config }}
 
     - name: Uploading artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: jupedsim-${{ matrix.jps_version }}-${{ matrix.build_config }}
         path: jupedsim-install-${{ matrix.build_config }}
@@ -78,8 +86,8 @@ jobs:
         cmake --build sumo/build-${{ matrix.build_config }} -j4 --config ${{ matrix.build_config }} --target sumo
 
     - name: Running sumo.extra tests
-      # Tests in Debug hit a timeout
-      if: matrix.build_config == 'Release'
+      # Tests in Debug hit a timeout and master does not have the C-API anymore
+      if: matrix.build_config == 'Release' && matrix.jps_version != 'master'
       run: |
         python -m pip install texttest
         $env:TEXTTEST_CI_APPS = "-a sumo.extra.${{ matrix.jps_version }}"
@@ -91,7 +99,7 @@ jobs:
 
     - name: Uploading test results
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: texttesttmp-${{ matrix.jps_version }}-${{ matrix.build_config }}
         path: D:/texttest/tt.zip

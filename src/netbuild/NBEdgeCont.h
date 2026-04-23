@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -304,6 +304,8 @@ public:
         }
         return &split->second;
     }
+
+    NBEdge* getSplitBase(const std::string& edgeID) const;
 
     /** @brief Returns the number of edge splits
      * @return How often an edge was split
@@ -616,6 +618,9 @@ public:
     int removeEdgesBySpeed(NBDistrictCont& dc);
     int removeEdgesByPermissions(NBDistrictCont& dc);
     int removeLanesByWidth(NBDistrictCont& dc, const double minWidth);
+
+    /// @brief return number of edges split
+    int attachRemoved(NBNodeCont& nc, NBDistrictCont& dc, const double maxDist);
 
 private:
     /// @brief compute the form factor for a loop of edges

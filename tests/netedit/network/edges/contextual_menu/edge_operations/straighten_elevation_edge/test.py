@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -31,7 +31,7 @@ netedit.computeJunctions()
 # go to inspect mode
 netedit.changeMode("inspect")
 
-# straigthen edge
+# straighten edge
 netedit.contextualMenuOperation(referencePosition, netedit.positions.network.edge.leftBot,
                                 netedit.contextualMenu.edges.edgeOperations.straightenElevationEdge)
 
@@ -47,8 +47,8 @@ netedit.computeJunctions()
 # check redos
 netedit.redo(referencePosition, 1)
 
-# save Netedit config
-netedit.saveExistentShortcut("neteditConfig")
+# save netedit config
+netedit.saveExistentFile("neteditConfig")
 
 # quit netedit
 netedit.quit(neteditProcess)

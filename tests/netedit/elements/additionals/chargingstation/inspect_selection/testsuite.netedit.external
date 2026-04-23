@@ -1,13 +1,15 @@
-name
-
-friendlypos
-
-power
-
-efficiency
+chargedelay
 
 chargeintransit
 
-chargedelay
+efficiency
+
+friendlypos
+
+name
 
 parameters
+
+power
+
+totalpower

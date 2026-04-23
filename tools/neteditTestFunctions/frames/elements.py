@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -57,25 +57,6 @@ def changeElement(frame, element):
             typeKey('tab')
     elif (frame == "meanDataFrame"):
         for _ in range(attrs.frames.changeElement.meanData):
-            typeKey('tab')
-    # paste the new value
-    updateText(element)
-    # type enter to save change
-    typeKey('enter')
-
-
-def changeParentElement(frame, element):
-    """
-    @brief change parent element in the given frame (stop...)
-    """
-    # focus current frame
-    focusOnFrame()
-    # go to first editable element of frame
-    if (frame == "routeFrame"):
-        for _ in range(attrs.frames.changeParentElement.route):
-            typeKey('tab')
-    elif (frame == "stopFrame"):
-        for _ in range(attrs.frames.changeParentElement.stop):
             typeKey('tab')
     # paste the new value
     updateText(element)

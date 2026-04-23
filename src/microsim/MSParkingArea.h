@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2015-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2015-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -165,7 +165,7 @@ public:
     void refuse(std::string badge);
 
     /// @brief Return the parking accepts the vehicle (due to its given badges)
-    bool accepts(MSBaseVehicle* veh) const;
+    bool accepts(SUMOVehicle* veh) const;
 
     /** @brief Called if a vehicle enters this stop
      *
@@ -173,10 +173,11 @@ public:
      *
      * Recomputes the free space using "computeLastFreePos" then.
      *
-     * @param[in] what The vehicle that enters the parking area
+     * @param[in] veh The vehicle that enters the parking area
+     * @param[in] parking whether this is offroad parking
      * @see computeLastFreePos
      */
-    void enter(SUMOVehicle* veh);
+    void enter(SUMOVehicle* veh, const bool parking);
 
     /** @brief Called if a vehicle leaves this stop
      *

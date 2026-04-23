@@ -31,7 +31,7 @@ software (Veins, VSimRTI, flow etc.) at this stage.
   - run [tools/build_config/checkStyle.py](../Developer/CodeStyle.md) and commit
     changed files
   - check the calendar to update copyright statements
-  - check whether the TraCI version needs to be incremented
+  - check whether the [TraCI version needs to be incremented](../TraCI/Control-related_commands.md#response_0x00_version)
     and rebuild TraCI constants in python
     (tools/traci/rebuildConstants.py)
   - check whether the network version needs to be incremented and
@@ -88,7 +88,7 @@ All scenarios should be fixed by now.
   - in CMakeLists.txt
   - [in mkdocs.yml]({{Source}}docs/web/mkdocs.yml) in the **extra:** section at the end
     to update the [download links](../Downloads.md)
-  - [in sumo.metainfo.xml]({{Source}}build_config/package/sumo.metainfo.xml)
+  - [in org.eclipse.sumo.metainfo.xml]({{Source}}build_config/package/org.eclipse.sumo.metainfo.xml)
     for correct flatpak info
   - in [CITATION.cff]({{Source}}CITATION.cff)
   - in the [ChangeLog](../ChangeLog.md)
@@ -133,10 +133,9 @@ If everything is fine:
 - update the eclipse.dev/sumo website
   - modify the version number (Version) and the DOI number (DOI) [in config.yaml](https://github.com/eclipse-sumo/sumo.website/blob/source/config/_default/config.yaml) in the **Default Parameters** section
 - make new sourceforge-release
-  - create a shell `ssh -t <user>,sumo@shell.sf.net create` and log off immediately
-  - copy the files `scp -O -r /s/Releases/{{Version}} <user>,sumo@shell.sf.net:`
-  - login again, delete the wheels and move the files into the right directory `mv {{Version}} /home/frs/project/sumo/sumo/"version {{Version}}"`
-  - change default download attributes by logging in on the web browser at https://sourceforge.net/projects/sumo/files/sumo/version%20{{Version}}/ and clicking on the circled "i" after each file
+  - Login on the web browser, create a new folder and upload the files at https://sourceforge.net/projects/sumo/files/sumo/version%20{{Version}}/
+    - you might need to do this in several rounds because of the size
+  - change default download attributes by clicking on the circled "i" after each file
     - the default for Windows is sumo-win64extra-{{Version}}.msi, for macOS sumo-{{Version}}.pkg and for all the others sumo-src-{{Version}}.tar.gz
 - finish the Zenodo version draft, by uploading the `sumo-src-{{Version}}.tar.gz`, adding the release info (can also be done later) and publishing it
 - Create a new Eclipse release at https://projects.eclipse.org/projects/automotive.sumo (after login there should be a "Create Release" button)
@@ -151,8 +150,10 @@ If everything is fine:
   - this assumes you have the devscripts package as well as all sumo dependencies installed
   - unzip the special source release `tar xzf sumo_{{Version}}.orig.tar.gz`
   - run `cd sumo-{{Version}} && tools/build_config/ubuntu_release.sh` and enter the release comment
+  - upload using `dput -f ppa:sumo/stable ../sumo_{{Version}}*_source.changes`
 - start a pull request against [winget](https://github.com/microsoft/winget-pkgs/tree/master/manifests/e/EclipseFoundation/SUMO)
 - upload the wheels to PyPI using `twine upload /s/daily/wheels/*{{Version}}*.whl`
+  - you might need to do this with an up to date twine in a virtual environment, see https://github.com/pypi/warehouse/issues/15611
 - scenarios (optional)
   - add files to [the scenario folder](https://sourceforge.net/projects/sumo/files/traffic_data/scenarios/)
   - updated README.txt

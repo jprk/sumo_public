@@ -17,15 +17,15 @@ on:
 
 jobs:
   build:
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     strategy:
       # Allow all other matrix-jobs to continue running, even if one of the jobs fails
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
         build_type: [full, minimal]
         compiler: [gcc, clang]
-        jps_version: ['v1.3.0']
+        jps_version: ['v1.3.1']
         # include:
         #   - build_type: full
         #     jps_version: master
@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: Cloning SUMO
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: sumo
         fetch-depth: 0
@@ -55,16 +55,9 @@ jobs:
         sudo apt update
         sudo apt install -y -V libarrow-dev libparquet-dev
 
-    - name: Validate CITATION.cff
-      if: matrix.build_type == 'full' && github.event_name == 'schedule' && matrix.compiler == 'gcc'
-      uses: dieghernan/cff-validator@v4
-      with:
-        install-r: true
-        citation-path: sumo/CITATION.cff
-
     - name: Cloning jupedsim
       if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: PedestrianDynamics/jupedsim
         ref: ${{ matrix.jps_version }}
@@ -75,7 +68,7 @@ jobs:
       if: github.event_name != 'schedule'
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ${{ matrix.build_type }}-${{ matrix.compiler }}
+        key: ${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.compiler }}
 
     - name: Building libjupedsim
       if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
@@ -99,13 +92,13 @@ jobs:
         make traas
 
     - name: Setting up SonarQube
-      if: matrix.build_type == 'full' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.compiler == 'gcc'
-      uses: warchant/setup-sonar-scanner@v8
+      if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'full' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.compiler == 'gcc'
+      uses: warchant/setup-sonar-scanner@v9
       # with:
         # version: 6.0.0.4432
 
     - name: Building SUMO with SonarQube wrapper
-      if: matrix.build_type == 'full' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.compiler == 'gcc'
+      if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'full' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.compiler == 'gcc'
       run: |
         cd sumo/cmake-build
         curl -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
@@ -142,10 +135,11 @@ jobs:
       if: matrix.build_type == 'full'
       run: |
         source testenv/bin/activate
-        sumo/tests/runTests.sh -b ci -v ci
+        if [[ "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then TEXTTEST_FILTER="-finverse $PWD/sumo/tests/filter_files/linux_arm_failures.txt"; fi
+        sumo/tests/runTests.sh -b ci -v ci $TEXTTEST_FILTER
 
     - name: Extra tests
-      if: matrix.build_type == 'full' && matrix.compiler == 'gcc'
+      if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'full' && matrix.compiler == 'gcc'
       run: |
         source testenv/bin/activate
         sumo/tests/runTests.sh -b ci -a sumo.meso.ci,sumo.extra.ci
@@ -157,14 +151,14 @@ jobs:
 
     - name: Uploading test results
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
-        name: texttesttmp-${{ matrix.compiler }}-${{ matrix.build_type }}
+        name: texttesttmp-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}
         path: texttesttmp.zip
         if-no-files-found: warn
 
     - name: Uploading artifacts (SUMO binaries)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
-        name: linux-${{ matrix.compiler }}-${{ matrix.build_type }}-binaries
+        name: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-binaries
         path: sumo/bin

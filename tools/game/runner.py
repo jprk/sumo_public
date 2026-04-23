@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2010-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -41,7 +41,10 @@ from xml.dom import pulldom
 from collections import defaultdict
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-SUMO_HOME = os.environ.get('SUMO_HOME', os.path.join(_THIS_DIR, '..', '..'))
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    SUMO_HOME = os.environ.get('SUMO_HOME', os.path.join(_THIS_DIR, '..'))
+else:
+    SUMO_HOME = os.environ.get('SUMO_HOME', os.path.join(_THIS_DIR, '..', '..'))
 sys.path.append(os.path.join(SUMO_HOME, 'tools'))
 import sumolib  # noqa
 from sumolib.translation import addLanguageOption, setLanguage, TL  # noqa
@@ -57,9 +60,6 @@ _DEBUG = "debug" in sys.argv
 _SCORES = 30
 BASE = os.path.dirname(sys.argv[0])
 _LANGUAGE_CAPTIONS = {}
-if not os.path.exists(sumolib.translation.LOCALEDIR) and os.path.exists(os.path.join(_THIS_DIR, 'locale')):
-    # monkey patch locale dir for the SUMO game
-    sumolib.translation.LOCALEDIR = os.path.join(_THIS_DIR, 'locale')
 
 
 def updateLocalMessages():
@@ -122,7 +122,7 @@ if _UPLOAD:
         _UPLOAD = False
 
 
-def computeScoreFromWaitingTime(gamename, maxScore=10000):
+def computeScoreFromWaitingTime(gamename, maxScore=10000, scale=100):
     totalArrived = 0
     totalWaitingTime = 0
     for s in sumolib.xml.parse(os.path.join(BASE, "output", gamename + ".stats.xml"),
@@ -133,11 +133,11 @@ def computeScoreFromWaitingTime(gamename, maxScore=10000):
         else:
             totalWaitingTime = float(s.waitingTime) * float(s.count)
             totalArrived = float(s.count)
-    score = maxScore - totalWaitingTime
+    score = maxScore - totalWaitingTime * scale / 100
     return score, totalArrived, True
 
 
-def computeScoreFromTimeLoss(gamename, maxScore=10000):
+def computeScoreFromTimeLoss(gamename, maxScore=10000, scale=100):
     totalArrived = 0
     timeLoss = None
     departDelay = None
@@ -176,8 +176,8 @@ def computeScoreFromTimeLoss(gamename, maxScore=10000):
             print("timeLoss=%s departDelay=%s departDelayWaiting=%s inserted=%s running=%s waiting=%s" % (
                 timeLoss, departDelay, departDelayWaiting, inserted, running, waiting))
 
-        score = maxScore - int(100 * ((timeLoss + departDelay) * inserted +
-                                      departDelayWaiting * waiting) / (inserted + waiting))
+        score = maxScore - int(scale * ((timeLoss + departDelay) * inserted +
+                                        departDelayWaiting * waiting) / (inserted + waiting))
         return score, totalArrived, True
 
 
@@ -236,7 +236,7 @@ def computeScoreRail(gamename):
 
 
 def computeScoreSquare(gamename):
-    maxScore = 1000.0
+    maxScore = 10000.0
     expectedVehCount = 142
     timeLoss = 0
     tripCount = 0
@@ -252,7 +252,7 @@ def computeScoreSquare(gamename):
     else:
         # early-abort score is close to 0, do-nothing timeLoss is ~8000
         earlyEndPenalty = (expectedVehCount - tripCount) * (maxScore / expectedVehCount)
-        score = int(1000 - earlyEndPenalty - timeLoss / 10.0)
+        score = int(maxScore - earlyEndPenalty - timeLoss)
         if _DEBUG:
             print("tripCount=%s arrived=%s timeLoss=%s avtTimeLoss=%s earlyEndPenalty=%s" % (
                 tripCount, arrived, timeLoss, timeLoss / tripCount, earlyEndPenalty))
@@ -261,8 +261,8 @@ def computeScoreSquare(gamename):
 
 _SCORING_FUNCTION = defaultdict(lambda: computeScoreFromWaitingTime)
 _SCORING_FUNCTION.update({
-    'A10KW': lambda name: computeScoreFromTimeLoss(name, 20000),
-    'corridor': lambda name: computeScoreFromWaitingTime(name, 30000),
+    'A10KW': lambda name: computeScoreFromTimeLoss(name, 15000, 60),
+    'corridor': lambda name: computeScoreFromWaitingTime(name, 10000, 20),
     'highway': lambda name: computeScoreFromTimeLoss(name, 13000),
     'DRT': computeScoreDRT,
     'DRT2': computeScoreDRT,

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2010-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2010-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -172,6 +172,11 @@ public:
      * changes (during routing)
      */
     bool ignoreTransientPermissions() const;
+
+    /// @brief whether instant stopping is permitted
+    virtual bool instantStopping() const {
+        return false;
+    }
 
     /** @brief Returns the maximum speed (the minimum of desired and technical maximum speed)
      * @return The vehicle's maximum speed
@@ -436,6 +441,9 @@ public:
     /// @brief return index of edge within route
     int getRoutePosition() const;
 
+    /// @brief return the number of edges remaining in the route (include the current)
+    int getNumRemainingEdges() const;
+
     int getArrivalIndex() const {
         return myParameter->arrivalEdge;
     }
@@ -503,6 +511,9 @@ public:
     /// @brief removes a person or container
     void removeTransportable(MSTransportable* t);
 
+    /// @brief removes a person or containers mass
+    void removeTransportableMass(MSTransportable* t);
+
     /// @brief retrieve riding persons
     const std::vector<MSTransportable*>& getPersons() const;
 
@@ -521,6 +532,8 @@ public:
      * @return Whether the vehicle's current route is valid
      */
     bool hasValidRoute(std::string& msg, ConstMSRoutePtr route = 0) const;
+
+    bool hasValidRoute(std::string& msg, MSRouteIterator start, MSRouteIterator last, bool checkJumps) const;
 
     /// @brief checks wether the vehicle can depart on the first edge
     virtual bool hasValidRouteStart(std::string& msg);
@@ -820,6 +833,11 @@ public:
         return myNumericalID;
     }
 
+    /// @brief return vehicle-specific random number
+    long long int getRandomSeed() const {
+        return myRandomSeed;
+    }
+
     const MSDevice_Transportable* getPersonDevice() const {
         return myPersonDevice;
     }
@@ -829,12 +847,7 @@ public:
     }
 
     /// @brief retrieve parameters for the energy consumption model
-    inline EnergyParams* getEmissionParameters() const {
-        if (myEnergyParams == nullptr) {
-            myEnergyParams = new EnergyParams(getVehicleType().getEmissionParameters());
-        }
-        return myEnergyParams;
-    }
+    EnergyParams* getEmissionParameters() const;
 
     /// @name Emission retrieval
     //@{
@@ -1037,24 +1050,29 @@ public:
     }
     //@}
 
-protected:
-    /// @brief reset rail signal approach information
-    virtual void resetApproachOnReroute() {};
-
     struct StopEdgeInfo {
 
-        StopEdgeInfo(const MSEdge* _edge, double _priority, SUMOTime _arrival, double _pos):
+        StopEdgeInfo(const MSEdge* _edge, double _priority, SUMOTime _arrival, double _pos, bool _isSink = false):
             edge(_edge), pos(_pos),
-            priority(_priority), arrival(_arrival) {};
+            priority(_priority),
+            arrival(_arrival),
+            isSink(_isSink) {}
+
         const MSEdge* edge;
         double pos;
         double priority;
         SUMOTime arrival;
+        bool isSink;
+        const SUMOVehicleParameter::Stop* stopPar = nullptr;
         /// @brief values set during routing and used during optimization
         int routeIndex = -1;
         bool skipped = false;
         bool backtracked = false;
         SUMOTime delay = 0;
+        /// @brief optional info about stopping place
+        std::pair<std::string, SumoXMLTag> nameTag;
+        /// @brief set when replacing stop with an alternative
+        const MSEdge* origEdge = nullptr;
 
         bool operator==(const StopEdgeInfo& o) const {
             return edge == o.edge;
@@ -1064,6 +1082,10 @@ protected:
         }
     };
 
+protected:
+    /// @brief reset rail signal approach information
+    virtual void resetApproachOnReroute() {};
+
     /** @brief Returns the list of still pending stop edges
      * also returns the first and last stop position
      */
@@ -1071,14 +1093,8 @@ protected:
 
     static double addStopPriority(double p1, double p2);
 
-
-    ConstMSEdgeVector optimizeSkipped(SUMOTime t, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
-            const MSEdge* source, double sourcePos, std::vector<StopEdgeInfo>& stops, ConstMSEdgeVector edges, SUMOTime maxDelay) const;
-
-    ConstMSEdgeVector routeAlongStops(SUMOTime t, SUMOAbstractRouter<MSEdge, SUMOVehicle>& router,
-        std::vector<StopEdgeInfo>& stops, ConstMSEdgeVector edges,
-        int originStop, SUMOTime maxDelay, double& skippedPrio2) const;
-
+    /// @brief replace stop with a same-name alternative that is on the route and return success
+    bool replaceWithAlternative(std::list<MSStop>::iterator iter, const MSRouteIterator searchStart, const MSRouteIterator end);
 
 protected:
     /// @brief This vehicle's parameter.
@@ -1177,6 +1193,8 @@ protected:
 
 private:
     const NumericalID myNumericalID;
+
+    const long long int myRandomSeed;
 
     /* @brief The vehicle's knowledge about edge efforts/travel times; @see MSEdgeWeightsStorage
      * @note member is initialized on first access */

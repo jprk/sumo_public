@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2012-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2012-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -19,11 +19,62 @@
 /****************************************************************************/
 #include <config.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+/* Disable warning about changed memory layout due to virtual base class */
+#pragma warning(disable: 4435)
+#endif
 #include <arrow/io/api.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include <utils/common/MsgHandler.h>
 #include <utils/common/ToString.h>
 #include "ParquetFormatter.h"
+
+
+// ===========================================================================
+// helper class definitions
+// ===========================================================================
+class ArrowOStreamWrapper : public arrow::io::OutputStream {
+public:
+    ArrowOStreamWrapper(std::ostream& out)
+        : myOStream(out), myAmOpen(true) {}
+
+    arrow::Status Close() override {
+        myAmOpen = false;
+        return arrow::Status::OK();
+    }
+
+    arrow::Status Flush() override {
+        myOStream.flush();
+        return arrow::Status::OK();
+    }
+
+    arrow::Result<int64_t> Tell() const override {
+        return myOStream.tellp();
+    }
+
+    bool closed() const override {
+        return !myAmOpen;
+    }
+
+    arrow::Status Write(const void* data, int64_t nbytes) override {
+        if (!myAmOpen) {
+            return arrow::Status::IOError("Write on closed stream");
+        }
+        myOStream.write(reinterpret_cast<const char*>(data), nbytes);
+        if (!myOStream) {
+            return arrow::Status::IOError("Failed to write to ostream");
+        }
+        return arrow::Status::OK();
+    }
+
+private:
+    std::ostream& myOStream;
+    bool myAmOpen;
+};
 
 
 // ===========================================================================
@@ -54,7 +105,7 @@ ParquetFormatter::ParquetFormatter(const std::string& columnNames, const std::st
 
 void
 ParquetFormatter::openTag(std::ostream& /* into */, const std::string& xmlElement) {
-    myXMLStack.push_back(myValues.size());
+    myXMLStack.push_back((int)myValues.size());
     if (!myWroteHeader) {
         myCurrentTag = xmlElement;
     }
@@ -66,7 +117,7 @@ ParquetFormatter::openTag(std::ostream& /* into */, const std::string& xmlElemen
 
 void
 ParquetFormatter::openTag(std::ostream& /* into */, const SumoXMLTag& xmlElement) {
-    myXMLStack.push_back(myValues.size());
+    myXMLStack.push_back((int)myValues.size());
     if (!myWroteHeader) {
         myCurrentTag = toString(xmlElement);
     }
@@ -97,6 +148,7 @@ ParquetFormatter::closeTag(std::ostream& into, const std::string& /* comment */)
                 if (myExpectedAttrs.test(i) && !mySeenAttrs.test(i)) {
                     WRITE_ERRORF("Incomplete attribute set, '%' is missing. This file format does not support Parquet output yet.",
                                  toString((SumoXMLAttr)i));
+                    myValues.push_back(nullptr);
                 }
             }
         }

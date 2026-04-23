@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -770,6 +770,8 @@ public:
         return *myEdge;
     }
 
+    const MSJunction* getFromJunction() const;
+    const MSJunction* getToJunction() const;
 
     /** @brief Returns the lane's follower if it is an internal lane, the edge of the lane otherwise
      * @return This lane's follower
@@ -879,6 +881,9 @@ public:
 
     /** Returns whether the lane pertains to a crossing edge*/
     bool isCrossing() const;
+
+    /** Returns whether the lane pertains to a crossing edge*/
+    bool isPriorityCrossing() const;
 
     /** Returns whether the lane pertains to a walkingarea*/
     bool isWalkingArea() const;

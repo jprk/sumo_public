@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2013-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -192,9 +192,11 @@ MSDevice_FCD::initOnce() {
     emissions.set(SUMO_ATTR_CO2);
     emissions.set(SUMO_ATTR_CO);
     emissions.set(SUMO_ATTR_HC);
+    emissions.set(SUMO_ATTR_NOX);
     emissions.set(SUMO_ATTR_PMX);
     emissions.set(SUMO_ATTR_FUEL);
     emissions.set(SUMO_ATTR_ELECTRICITY);
+    emissions.set(SUMO_ATTR_NOISE);
     SumoXMLAttrMask misc;
     misc.set(SUMO_ATTR_SIGNALS);
     misc.set(SUMO_ATTR_ACCELERATION);

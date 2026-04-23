@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -69,7 +69,7 @@ NWFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
     oc.addDescription("prefix", "Output", TL("Defines a prefix for edge and junction IDs"));
 
     oc.doRegister("prefix.junction", new Option_String(""));
-    oc.addDescription("prefix.junction", "Output", TL("Defines a prefix for unction IDs"));
+    oc.addDescription("prefix.junction", "Output", TL("Defines a prefix for junction IDs"));
 
     oc.doRegister("prefix.edge", new Option_String(""));
     oc.addDescription("prefix.edge", "Output", TL("Defines a prefix for edge IDs"));
@@ -104,6 +104,9 @@ NWFrame::fillOptions(OptionsCont& oc, bool forNetgen) {
 
     oc.doRegister("output.original-names", new Option_Bool(false));
     oc.addDescription("output.original-names", "Output", TL("Writes original names, if given, as parameter"));
+
+    oc.doRegister("output.removed-nodes", new Option_Bool(false));
+    oc.addDescription("output.removed-nodes", "Output", TL("Writes IDs of nodes remove with --geometry.remove into edge param"));
 
     oc.doRegister("street-sign-output", new Option_FileName());
     oc.addDescription("street-sign-output", "Output", TL("Writes street signs as POIs to FILE"));
@@ -170,9 +173,6 @@ NWFrame::checkOptions(OptionsCont& oc) {
     }
     if (oc.isSet("opendrive-output") && !oc.getBool("rectangular-lane-cut")) {
         WRITE_WARNING(TL("OpenDRIVE cannot represent oblique lane cuts and should use option 'rectangular-lane-cut'."));
-    }
-    if (oc.isSet("dlr-navteq-output") && oc.isDefault("numerical-ids")) {
-        oc.setDefault("numerical-ids", "true");
     }
     if (oc.isSet("dlr-navteq-output") && oc.isDefault("osm.all-attributes")) {
         oc.setDefault("osm.all-attributes", "true");

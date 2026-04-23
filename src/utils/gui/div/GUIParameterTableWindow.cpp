@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -76,7 +76,7 @@ GUIParameterTableWindow::GUIParameterTableWindow(GUIMainWindow& app, GUIGlObject
     myTable = new FXTable(this, this, MID_TABLE, TABLE_COL_SIZABLE | TABLE_ROW_SIZABLE | LAYOUT_FILL_X | LAYOUT_FILL_Y);
     myTable->setTableSize(1, 3);
     myTable->setVisibleColumns(3);
-    myTable->setBackColor(FXRGB(255, 255, 255));
+    myTable->setBackColor(GUIDesignBackgroundColorWhite);
     myTable->setColumnText(0, TL("Name"));
     myTable->setColumnText(1, TL("Value"));
     myTable->setColumnText(2, TL("Dynamic"));

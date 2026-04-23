@@ -1,5 +1,5 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2013-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2013-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -21,13 +21,32 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import gc
+import sys
+
 import matplotlib
-from ..options import ArgumentParser
 from pylab import arange, close, cm, figure, legend, log, plt, savefig, show, title
 from pylab import xlabel, xlim, xticks, ylabel, ylim, yticks
 from matplotlib.ticker import FuncFormatter as ff
 from matplotlib.collections import LineCollection
+
+from ..options import ArgumentParser
 mpl_version = tuple(map(int, matplotlib.__version__.split(".")[:3]))
+
+if sys.version_info[:2] >= (3, 14):
+    # workaround for https://github.com/matplotlib/matplotlib/issues/29157
+    if mpl_version < (3, 10, 5):
+        import copy  # noqa
+
+        def _safe_path_deepcopy(self, memo):
+            # create new instance and deepcopy only attributes (avoid deepcopy(super()))
+            cls = self.__class__
+            new = cls.__new__(cls)
+            memo[id(self)] = new
+            for k, v in self.__dict__.items():
+                new.__dict__[k] = copy.deepcopy(v, memo)
+            return new
+
+        matplotlib.path.Path.__deepcopy__ = _safe_path_deepcopy
 
 # http://datadebrief.blogspot.de/2010/10/plotting-sunrise-sunset-times-in-python.html
 

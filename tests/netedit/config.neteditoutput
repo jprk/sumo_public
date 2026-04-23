@@ -1,28 +1,120 @@
 # Import common configuration
 import_config_file:../config_all
 
-binary:$SUMO_BINARY
+interpreter:python
+binary:testoutput.py
 
-copy_test_path:net.netedit
-copy_test_path:netas.netedit
+# runner
+copy_test_path:testoutput.py
 
-copy_test_path:additionals.netedit
-copy_test_path:additionalsas.netedit
+# CONFIGS
+copy_test_path:netedit_A.netedit
+copy_test_path:netedit_B.netedit
 
-copy_test_path:meandatas.netedit
-copy_test_path:meandatasas.netedit
+copy_test_path:sumo_A.netedit
+copy_test_path:sumo_B.netedit
+copy_test_path:sumo.netedit
 
-copy_test_path:routes.netedit
-copy_test_path:routesas.netedit
+copy_test_path:netconvert_A.netedit
+copy_test_path:netconvert_B.netedit
 
-copy_test_path:datas.netedit
-copy_test_path:datasas.netedit
+# NETWORKS
+copy_test_path:input_net_A_net_xml.netedit
+copy_test_path:input_net_A_xml_gz.netedit
+copy_test_path:input_net_A_xml.netedit
+copy_test_path:input_net_A_txt.netedit
 
-copy_test_path:sumo.sumocfg
-copy_test_path:sumoas.sumocfg
+copy_test_path:input_net_B_net_xml.netedit
+copy_test_path:input_net_B_xml_gz.netedit
+copy_test_path:input_net_B_xml.netedit
+copy_test_path:input_net_B_txt.netedit
 
-copy_test_path:shapes.netedit
-copy_test_path_merge:myOwnFilenameRerouter.txt
+# NETCONVERT FILES
+copy_test_path:input_netconvert_A_con_xml.netedit
+copy_test_path:input_netconvert_A_edg_xml.netedit
+copy_test_path:input_netconvert_A_nod_xml.netedit
+copy_test_path:input_netconvert_A_tll_xml.netedit
+
+copy_test_path:input_netconvert_B_con_xml.netedit
+copy_test_path:input_netconvert_B_edg_xml.netedit
+copy_test_path:input_netconvert_B_nod_xml.netedit
+copy_test_path:input_netconvert_B_tll_xml.netedit
+
+# ADDITIONALS
+copy_test_path:netedit_A_add_xml.netedit
+copy_test_path:netedit_B_add_xml.netedit
+
+copy_test_path:sumo_A_add_xml.netedit
+copy_test_path:sumo_B_add_xml.netedit
+
+copy_test_path:input_additionals_A_add_xml.netedit
+copy_test_path:input_additionals_A_add_xml_gz.netedit
+copy_test_path:input_additionals_A_xml.netedit
+copy_test_path:input_additionals_A_xml_gz.netedit
+copy_test_path:input_additionals_A_txt.netedit
+
+copy_test_path:input_additionals_B_add_xml.netedit
+copy_test_path:input_additionals_B_add_xml_gz.netedit
+copy_test_path:input_additionals_B_xml.netedit
+copy_test_path:input_additionals_B_xml_gz.netedit
+copy_test_path:input_additionals_B_txt.netedit
+
+# ROUTES
+copy_test_path:netedit_A_rou_xml.netedit
+copy_test_path:netedit_B_rou_xml.netedit
+
+copy_test_path:sumo_A_rou_xml.netedit
+copy_test_path:sumo_B_rou_xml.netedit
+
+copy_test_path:input_routes_A_rou_xml.netedit
+copy_test_path:input_routes_A_rou_xml_gz.netedit
+copy_test_path:input_routes_A_xml.netedit
+copy_test_path:input_routes_A_xml_gz.netedit
+copy_test_path:input_routes_A_txt.netedit
+
+copy_test_path:input_routes_B_rou_xml.netedit
+copy_test_path:input_routes_B_rou_xml_gz.netedit
+copy_test_path:input_routes_B_xml.netedit
+copy_test_path:input_routes_B_xml_gz.netedit
+copy_test_path:input_routes_B_txt.netedit
+
+# DATAS
+copy_test_path:netedit_A_dat_xml.netedit
+copy_test_path:netedit_B_dat_xml.netedit
+
+copy_test_path:sumo_A_dat_xml.netedit
+copy_test_path:sumo_B_dat_xml.netedit
+
+copy_test_path:input_datas_A_dat_xml.netedit
+copy_test_path:input_datas_A_dat_xml_gz.netedit
+copy_test_path:input_datas_A_xml.netedit
+copy_test_path:input_datas_A_xml_gz.netedit
+copy_test_path:input_datas_A_txt.netedit
+
+copy_test_path:input_datas_B_dat_xml.netedit
+copy_test_path:input_datas_B_dat_xml_gz.netedit
+copy_test_path:input_datas_B_xml.netedit
+copy_test_path:input_datas_B_xml_gz.netedit
+copy_test_path:input_datas_B_txt.netedit
+
+# MEANDATAS
+copy_test_path:netedit_A_dat_add_xml.netedit
+copy_test_path:netedit_B_dat_add_xml.netedit
+
+copy_test_path:sumo_A_dat_add_xml.netedit
+copy_test_path:sumo_B_dat_add_xml.netedit
+
+copy_test_path:input_meandatas_A_add_xml.netedit
+copy_test_path:input_meandatas_A_add_xml_gz.netedit
+copy_test_path:input_meandatas_A_xml.netedit
+copy_test_path:input_meandatas_A_xml_gz.netedit
+copy_test_path:input_meandatas_A_txt.netedit
+
+copy_test_path:input_meandatas_B_add_xml.netedit
+copy_test_path:input_meandatas_B_add_xml_gz.netedit
+copy_test_path:input_meandatas_B_xml.netedit
+copy_test_path:input_meandatas_B_xml_gz.netedit
+copy_test_path:input_meandatas_B_txt.netedit
 
 [collate_file]
 detector:detector.xml
@@ -150,11 +242,20 @@ errors:\*\*\* \d+ leaks found
 errors:delete: freed
 errors:warning: debug_new used with placement new
 errors:Warning: State was written with sumo version
+errors:Warning: Teleporting
+errors:Warning: Vehicle
+errors:Warning: Choosing
 errors:Cannot find local schema '[^']*'{REPLACE Cannot find local schema}
 errors:Could not find connection between
 errors:primary document entity.*{REPLACE primary document entity <path_to_file>}
 errors:(Datei oder Verzeichnis nicht gefunden){REPLACE (No such file or directory)}
 errors:aborted waiting{LINES 1}
+errors:not be able to arrive
+errors:Collision of person
+errors:is jammed on edge
+log:not be able to arrive
+log:Collision of person
+log:is jammed on edge
 log:(Datei oder Verzeichnis nicht gefunden){REPLACE (No such file or directory)}
 cfg:<movereminder{LINES 2}
 cfg:movereminder

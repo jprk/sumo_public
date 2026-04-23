@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -1478,6 +1478,24 @@ PositionVector::isNAN() const {
     }
     // all ok, then return false
     return false;
+}
+
+void
+PositionVector::ensureMinLength(int precision) {
+    const double limit = 2 * pow(10, -precision);
+    if (length2D() < limit) {
+        extrapolate2D(limit);
+    }
+}
+
+void
+PositionVector::round(int precision, bool avoidDegeneration) {
+    if (avoidDegeneration && size() > 1) {
+        ensureMinLength(precision);
+    }
+    for (int i = 0; i < (int)size(); i++) {
+        (*this)[i].round(precision);
+    }
 }
 
 

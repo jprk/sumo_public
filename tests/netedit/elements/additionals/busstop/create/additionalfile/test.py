@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -35,13 +35,13 @@ netedit.changeElement("additionalFrame", "busStop")
 netedit.leftClick(referencePosition, netedit.positions.elements.edgeCenter1)
 
 # set invalid person number
-netedit.changeAdditionalFileDialog(netedit.attrs.busStop.create.additionalFileButton)
+netedit.modifyFileDialog("additional", netedit.attrs.busStop.create.additionalFileButton)
 
 # try to create busStop
 netedit.leftClick(referencePosition, netedit.positions.elements.edgeCenter0)
 
 # set invalid person number
-netedit.changeAdditionalFile(netedit.attrs.busStop.create.additionalFile)
+netedit.modifyFile("additional", netedit.attrs.busStop.create.additionalFile)
 
 # create busStop in mode "Reference Left"
 netedit.leftClick(referencePosition, netedit.positions.elements.edge2)
@@ -50,7 +50,7 @@ netedit.leftClick(referencePosition, netedit.positions.elements.edge2)
 netedit.checkUndoRedo(referencePosition)
 
 # save netedit config
-netedit.saveExistentShortcut("neteditConfig")
+netedit.saveExistentFile("neteditConfig")
 
 # quit netedit
 netedit.quit(neteditProcess)

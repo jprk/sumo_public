@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -129,6 +129,8 @@ public:
 
     /// @brief retrieve properties of a blocked vehicle that wants to chane to the lane with the given index
     std::pair<double, SUMOTime> getLastBlocked(int index) const;
+
+    void postloadInitLC();
 
 protected:
     /// Initialize the changer before looping over all vehicles.
@@ -332,6 +334,10 @@ protected:
 
     /// @brief whether this edge allows changing to the opposite direction edge
     const bool myChangeToOpposite;
+
+    /* @brief whether neigboring lanes target the same outgoing edge but have different foe links and
+     * therefore require an extra MSLink::opened check before changing */
+    bool checkOpened;
 
 private:
     /// Default constructor.

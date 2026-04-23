@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -203,14 +203,14 @@ class contextualMenu:
                 subMenuAPosition = 6
                 subMenuBPosition = 0
 
-            # reset lenght
-            class resetLenght:
+            # reset length
+            class resetLength:
                 mainMenuPosition = 13
                 subMenuAPosition = 7
                 subMenuBPosition = 0
 
-            # straighteen
-            class straigthenEdge:
+            # straighten
+            class straightenEdge:
                 mainMenuPosition = 13
                 subMenuAPosition = 7
                 subMenuBPosition = 0
@@ -221,7 +221,7 @@ class contextualMenu:
                 subMenuAPosition = 8
                 subMenuBPosition = 0
 
-            # straighteen elevation
+            # straighten elevation
             class straightenElevationEdge:
                 mainMenuPosition = 13
                 subMenuAPosition = 10

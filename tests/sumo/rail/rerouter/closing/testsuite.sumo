@@ -1,6 +1,9 @@
 # see #16431
 reroute_after_signal
 
+# see #16958
+reroute_after_signal2
+
 # see #16421
 detour_default
 
@@ -8,6 +11,23 @@ detour_default
 # 
 # see #16421
 detour_skip
+
+# skip stops with priority if the detour is too high
+# (threshold is high enough to accept detour)
+# see #16421
+detour_accept
+
+# replace stops with priority if the detour is too high
+# (replacement must have the same name)
+# 
+# see #16421
+detour_replace
+
+# replace stops by an alternative with the same name.
+# reroute to the alternative stop
+# 
+# see #16421
+detour_replace2
 
 # do not skip on initial routing (only when triggered by rerouter)
 # 
@@ -26,6 +46,9 @@ blockedStopEdge_skip
 # see #16421
 dest_unreachable_skip
 
+# only stop is unreachable
+dest_unreachable_skip2
+
 # see #16421
 # destination is not a stop edge
 dest_unreachable2
@@ -35,5 +58,7 @@ short_closing_wait
 
 # see #16852
 detour_ignoreBrakeGap
-
 backtrack
+
+# see #16964
+short_rerouter_edge

@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -98,8 +98,8 @@ public:
      * @param[in] streetName The street name for that edge
      */
     MSEdge(const std::string& id, int numericalID, const SumoXMLEdgeFunc function,
-           const std::string& streetName, const std::string& edgeType, int priority,
-           double distance);
+           const std::string& streetName, const std::string& edgeType,
+           const std::string& routingType, int priority, double distance);
 
 
     /// @brief Destructor.
@@ -239,6 +239,7 @@ public:
      * @return The lanes that may be used by the given vclass
      */
     const std::vector<MSLane*>* allowedLanes(SUMOVehicleClass vclass = SVC_IGNORING) const;
+    const std::vector<MSLane*>* allowedLanes(SUMOVehicleClass vclass, bool ignoreTransientPermissions) const;
 
     inline bool isConnectedTo(const MSEdge& destination, SUMOVehicleClass vclass, bool ignoreTransientPermissions = false) const {
         const std::vector<MSLane*>* const lanes = allowedLanes(destination, vclass, ignoreTransientPermissions);
@@ -319,6 +320,14 @@ public:
     const std::string& getEdgeType() const {
         return myEdgeType;
     }
+
+    /** @brief Returns the type of the edge
+     */
+    const std::string& getRoutingType() const {
+        return myRoutingType.empty() ? myEdgeType : myRoutingType;
+    }
+
+    double getPreference(const SUMOVTypeParameter& pars) const;
 
     // @brief try to infer edge type for internal edges
     void inferEdgeType();
@@ -584,7 +593,7 @@ public:
     /* @brief get the rightmost lane that allows the given vClass or nullptr
      * @param[in] defaultFirst Whether the first lane should be returned if all lanes are forbidden
      */
-    MSLane* getFirstAllowed(SUMOVehicleClass vClass, bool defaultFirst = false) const;
+    MSLane* getFirstAllowed(SUMOVehicleClass vClass, bool defaultFirst = false, int routingMode = 0) const;
 
     /// @brief consider given departLane parameter (only for validating speeds)
     MSLane* getDepartLaneMeso(SUMOVehicle& veh) const;
@@ -797,6 +806,8 @@ public:
     /// @brief update meso segment parameters
     void updateMesoType();
 
+    void postLoadInitLaneChanger();
+
     static DepartLaneDefinition& getDefaultDepartLaneDefinition() {
         return myDefaultDepartLaneDefinition;
     }
@@ -970,7 +981,7 @@ protected:
     /// @brief The original intersection of lane permissions for this edge (before temporary modifications)
     SVCPermissions myOriginalMinimumPermissions = SVCAll;
     /// @brief The original union of lane permissions for this edge (before temporary modifications)
-    SVCPermissions myOriginalCombinedPermissions;
+    SVCPermissions myOriginalCombinedPermissions = SVCAll;
 
     /// @brief whether transient permission changes were applied to this edge or a predecessor
     bool myHaveTransientPermissions;
@@ -984,6 +995,9 @@ protected:
 
     /// @brief the type of the edge (optionally used during network creation)
     std::string myEdgeType;
+
+    /// @brief the routing type of the edge (used to look up vType and vClass specific routing preferences)
+    std::string myRoutingType;
 
     /// @brief the priority of the edge (used during network creation)
     const int myPriority;

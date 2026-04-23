@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -421,7 +421,7 @@ MSMeanData::MSMeanData(const std::string& id,
                        const std::string& vTypes,
                        const std::string& writeAttributes,
                        const std::vector<MSEdge*>& edges,
-                       bool aggregate) :
+                       AggregateType aggregate) :
     MSDetectorFileOutput(id, vTypes, "", detectPersons),
     myMinSamples(minSamples),
     myMaxTravelTime(maxTravelTime),
@@ -432,7 +432,7 @@ MSMeanData::MSMeanData(const std::string& id,
     myInitTime(SUMOTime_MAX),
     myEdges(edges),
     myPrintDefaults(printDefaults),
-    myDumpInternal(withInternal),
+    myDumpInternal(withInternal && MSGlobals::gUsingInternalLanes),
     myTrackVehicles(trackVehicles),
     myWrittenAttributes(OutputDevice::parseWrittenAttributes(StringTokenizer(writeAttributes).getVector(), "meandata '" + id + "'")),
     myAggregate(aggregate)
@@ -505,6 +505,13 @@ MSMeanData::init() {
             }
         }
     }
+    if (myAggregate == AggregateType::TAZ) {
+        for (const MSEdge* e : MSEdge::getAllEdges()) {
+            if (e->isTazConnector()) {
+                myTAZ.push_back(e);
+            }
+        }
+    }
 }
 
 
@@ -574,10 +581,18 @@ MSMeanData::writeAggregated(OutputDevice& dev, SUMOTime startTime, SUMOTime stop
         }
     }
     if (MSGlobals::gUseMesoSim) {
-        for (MSEdge* edge : myEdges) {
+        for (int i = 0; i < (int)myEdges.size(); i++) {
+            MSEdge* edge = myEdges[i];
+            std::vector<MeanDataValues*>& edgeValues = myMeasures[i];
             MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
             while (s != nullptr) {
-                s->prepareDetectorForWriting(*sumData);
+                for (MeanDataValues* meanData : edgeValues) {
+                    s->prepareDetectorForWriting(*meanData);
+                    meanData->addTo(*sumData);
+                    if (!MSNet::getInstance()->skipFinalReset()) {
+                        meanData->reset();
+                    }
+                }
                 s = s->getNextSegment();
             }
         }
@@ -589,6 +604,69 @@ MSMeanData::writeAggregated(OutputDevice& dev, SUMOTime startTime, SUMOTime stop
                        myPrintDefaults ? totalTT : -1.);
     }
     delete sumData;
+}
+
+
+void
+MSMeanData::writeAggregatedTAZ(OutputDevice& dev, SUMOTime startTime, SUMOTime stopTime) {
+    if (myTrackVehicles) {
+        throw ProcessError(TL("aggregated meanData output not yet implemented for trackVehicles"));
+    }
+
+    for (const MSEdge* taz : myTAZ) {
+        double edgeLengthSum = 0;
+        int laneNumber = 0;
+        double speedSum = 0;
+        double totalTT = 0;
+        std::set<const MSEdge*> connected;
+        for (const MSEdge* edge : taz->getSuccessors()) {
+            connected.insert(edge);
+        }
+        for (const MSEdge* edge : taz->getPredecessors()) {
+            connected.insert(edge);
+        }
+        for (const MSEdge* edge : connected) {
+            edgeLengthSum += edge->getLength();
+            laneNumber += edge->getNumDrivingLanes();
+            speedSum += edge->getSpeedLimit();
+            totalTT += edge->getLength() / edge->getSpeedLimit();
+        }
+        MeanDataValues* sumData = createValues(nullptr, edgeLengthSum, false);
+        for (int i = 0; i < (int)myEdges.size(); i++) {
+            MSEdge* edge = myEdges[i];
+            if (connected.count(edge) != 0) {
+                std::vector<MeanDataValues*>& edgeValues = myMeasures[i];
+                if (MSGlobals::gUseMesoSim) {
+                    MESegment* s = MSGlobals::gMesoNet->getSegmentForEdge(*edge);
+                    while (s != nullptr) {
+                        for (MeanDataValues* meanData : edgeValues) {
+                            s->prepareDetectorForWriting(*meanData);
+                            meanData->addTo(*sumData);
+                        }
+                        s = s->getNextSegment();
+                    }
+                } else {
+                    for (MeanDataValues* meanData : edgeValues) {
+                        meanData->addTo(*sumData);
+                    }
+                }
+            }
+        }
+        if (writePrefix(dev, *sumData, SUMO_TAG_EDGE, taz->getID())) {
+            dev.writeAttr(SUMO_ATTR_NUMEDGES, connected.size());
+            sumData->write(dev, myWrittenAttributes, stopTime - startTime, laneNumber, speedSum / (double)connected.size(),
+                           myPrintDefaults ? totalTT : -1.);
+        }
+        delete sumData;
+    }
+
+    if (!MSNet::getInstance()->skipFinalReset()) {
+        for (const std::vector<MeanDataValues*>& edgeValues : myMeasures) {
+            for (MeanDataValues* meanData : edgeValues) {
+                meanData->reset();
+            }
+        }
+    }
 }
 
 
@@ -729,8 +807,10 @@ MSMeanData::writeXMLOutput(OutputDevice& dev,
             myPendingIntervals.pop_front();
         }
         openInterval(dev, startTime, stopTime);
-        if (myAggregate) {
+        if (myAggregate == AggregateType::YES) {
             writeAggregated(dev, startTime, stopTime);
+        } else if (myAggregate == AggregateType::TAZ) {
+            writeAggregatedTAZ(dev, startTime, stopTime);
         } else {
             MSEdgeVector::const_iterator edge = myEdges.begin();
             for (const std::vector<MeanDataValues*>& measures : myMeasures) {

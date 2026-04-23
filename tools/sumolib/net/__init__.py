@@ -1,5 +1,5 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2008-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -284,11 +284,11 @@ class Net:
         if type is not None and node._type is None:
             node._type = type
 
-    def addEdge(self, id, fromID, toID, prio, function, name, edgeType=''):
+    def addEdge(self, id, fromID, toID, prio, function, name, edgeType='', routingType=''):
         if id not in self._id2edge:
             fromN = self.addNode(fromID)
             toN = self.addNode(toID)
-            e = edge.Edge(id, fromN, toN, prio, function, name, edgeType)
+            e = edge.Edge(id, fromN, toN, prio, function, name, edgeType, routingType)
             self._edges.append(e)
             self._id2edge[id] = e
             if function:
@@ -440,12 +440,12 @@ class Net:
     def forbids(self, possProhibitor, possProhibited):
         return possProhibitor.getFrom().getToNode().forbids(possProhibitor, possProhibited)
 
-    def getDownstreamEdges(self, edge, distance, stopOnTLS, stopOnTurnaround):
+    def getUpstreamEdges(self, edge, distance, stopOnTLS, stopOnTurnaround):
         """return a list of lists of the form
            [[firstEdge, pos, [edge_0, edge_1, ..., edge_k], aborted], ...]
            where
-             firstEdge: is the downstream edge furthest away from the intersection,
-             [edge_0, ..., edge_k]: is the list of edges from the intersection downstream to firstEdge
+             firstEdge: is the upstream edge furthest away from the intersection,
+             [edge_0, ..., edge_k]: is the list of edges from the intersection upstream to firstEdge
              pos: is the position on firstEdge with distance to the end of the input edge
              aborted: a flag indicating whether the downstream
                  search stopped at a TLS or a node without incoming edges before reaching the distance threshold
@@ -709,7 +709,7 @@ class Net:
         return self.getOptimalPath(fromEdge, toEdge, True, maxCost, vClass, reversalPenalty,
                                    includeFromToCost, withInternal, ignoreDirection, fromPos, toPos)
 
-    def getReachable(self, source, vclass=None, useIncoming=False):
+    def getReachable(self, source, vclass=None, useIncoming=False, cache=None):
         if vclass is not None and not source.allows(vclass):
             raise RuntimeError("'{}' does not allow {}".format(source.getID(), vclass))
         fringe = [source]
@@ -730,9 +730,14 @@ class Net:
                         for reachable in [conn.getTo(), conn.getFrom()]:
                             if reachable not in found:
                                 # print("added %s via %s" % (reachable, conn))
-                                found.add(reachable)
-                                new_fringe.append(reachable)
+                                if cache and reachable in cache:
+                                    found.update(cache[reachable])
+                                else:
+                                    found.add(reachable)
+                                    new_fringe.append(reachable)
             fringe = new_fringe
+        if cache is not None:
+            cache[source] = tuple(found)
         return found
 
 
@@ -793,7 +798,8 @@ class NetReader(handler.ContentHandler):
                     self._crossingID2edgeIDs[edgeID] = attrs.get('crossingEdges').split(' ')
 
                 self._currentEdge = self._net.addEdge(edgeID, fromNodeID, toNodeID, prio, function,
-                                                      attrs.get('name', ''), attrs.get('type', ''))
+                                                      attrs.get('name', ''), attrs.get('type', ''),
+                                                      attrs.get('routingType', ''))
 
                 self._currentEdge.setRawShape(convertShape(attrs.get('shape', '')))
 

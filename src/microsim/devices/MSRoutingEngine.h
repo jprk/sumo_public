@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2007-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2007-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -65,7 +65,7 @@ class SUMOSAXAttributes;
  */
 class MSRoutingEngine {
 public:
-    typedef std::map<const MSEdge*, double> Prohibitions;
+    typedef SUMOAbstractRouter<MSEdge, SUMOVehicle>::Prohibitions Prohibitions;
 
     /// @brief intialize period edge weight update
     static void initWeightUpdate();
@@ -146,9 +146,6 @@ public:
     /// @brief record actual travel time for an edge
     static void addEdgeTravelTime(const MSEdge& edge, const SUMOTime travelTime);
 
-    /// @brief initialize RNG for the gui thread
-    static void initGUIThreadRNG();
-
     /** @brief Saves the state (i.e. recorded speeds)
      *
      * @param[in] out The OutputDevice to write the information into
@@ -190,18 +187,6 @@ private:
         RoutingTask& operator=(const RoutingTask&) = delete;
     };
 
-    /**
-     * @class InitTask
-     * @brief setup RNGs for each thread (with proper locking so we don't need
-     * locking later */
-    class InitTask : public MFXWorkerThread::Task {
-    public:
-        InitTask() {}
-        void run(MFXWorkerThread* context);
-    private:
-        /// @brief Invalidated assignment operator.
-        RoutingTask& operator=(const RoutingTask&) = delete;
-    };
 #endif
 
     /// @name Network state adaptation
@@ -270,9 +255,6 @@ private:
     /// @brief The router to use
     static MSRouterProvider* myRouterProvider;
 
-    static std::map<std::thread::id, SumoRNG*> myThreadRNGs;
-    static bool myHaveRoutingThreads;
-
     /// @brief The container of pre-calculated routes
     static std::map<std::pair<const MSEdge*, const MSEdge*>, ConstMSRoutePtr> myCachedRoutes;
 
@@ -283,6 +265,9 @@ private:
     static double myMinEdgePriority;
     /// @brief the difference between maximum and minimum priority for all edges
     static double myEdgePriorityRange;
+
+    /// @brief whether randomness varies over time
+    static bool myDynamicRandomness;
 
 #ifdef HAVE_FOX
     /// @brief Mutex for accessing the route cache

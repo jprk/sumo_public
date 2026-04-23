@@ -1,5 +1,5 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2012-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2012-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -78,7 +78,6 @@ class ConfigurationReader(handler.ContentHandler):
                 self._group.add_argument("--" + name, help=help, default=default, type=oType)
             else:
                 self._group.add_argument("--" + name, help=help, action=action, default=default)
-
 
     def endElement(self, name):
         if self._group != self._opts and name == self._group.title:

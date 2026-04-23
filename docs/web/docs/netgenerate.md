@@ -99,7 +99,9 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | Option | Description |
 |--------|-------------|
 | **--write-license** {{DT_BOOL}} | Include license info into every output file; *default:* **false** |
+| **--write-metadata** {{DT_BOOL}} | Write parsable metadata (configuration etc.) instead of comments; *default:* **false** |
 | **--output-prefix** {{DT_STR}} | Prefix which is applied to all output files. The special string 'TIME' is replaced by the current time. |
+| **--output-suffix** {{DT_STR}} | Suffix which is applied to all output files. The special string 'TIME' is replaced by the current time. |
 | **--precision** {{DT_INT}} | Defines the number of digits after the comma for floating point output; *default:* **2** |
 | **--precision.geo** {{DT_INT}} | Defines the number of digits after the comma for lon,lat output; *default:* **6** |
 | **--output.compression** {{DT_STR}} | Defines the standard compression algorithm (currently only for parquet output) |
@@ -113,7 +115,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--plain-output.lanes** {{DT_BOOL}} | Write all lanes and their attributes even when they are not customized; *default:* **false** |
 | **--junctions.join-output** {{DT_FILE}} | Writes information about joined junctions to FILE (can be loaded as additional node-file to reproduce joins |
 | **--prefix** {{DT_STR}} | Defines a prefix for edge and junction IDs |
-| **--prefix.junction** {{DT_STR}} | Defines a prefix for unction IDs |
+| **--prefix.junction** {{DT_STR}} | Defines a prefix for junction IDs |
 | **--prefix.edge** {{DT_STR}} | Defines a prefix for edge IDs |
 | **--amitran-output** {{DT_FILE}} | The generated net will be written to FILE using Amitran format |
 | **--matsim-output** {{DT_FILE}} | The generated net will be written to FILE using MATSim format |
@@ -123,6 +125,7 @@ Files](Basics/Using_the_Command_Line_Applications.md#configuration_files).
 | **--dlr-navteq.precision** {{DT_INT}} | The network coordinates are written with the specified level of output precision; *default:* **2** |
 | **--output.street-names** {{DT_BOOL}} | Street names will be included in the output (if available); *default:* **false** |
 | **--output.original-names** {{DT_BOOL}} | Writes original names, if given, as parameter; *default:* **false** |
+| **--output.removed-nodes** {{DT_BOOL}} | Writes IDs of nodes remove with --geometry.remove into edge param; *default:* **false** |
 | **--street-sign-output** {{DT_FILE}} | Writes street signs as POIs to FILE |
 | **--opendrive-output.straight-threshold** {{DT_FLOAT}} | Builds parameterized curves whenever the angular change between straight segments exceeds FLOAT degrees; *default:* **1e-08** |
 
@@ -285,7 +288,7 @@ See the [docs](Networks/PlainXML.md) for more info on [junction types](Networks/
 | **--junctions.join** {{DT_BOOL}} | Joins junctions that are close to each other (recommended for OSM import); *default:* **false** |
 | **--junctions.join-dist** {{DT_FLOAT}} | Determines the maximal distance for joining junctions (defaults to 10); *default:* **10** |
 | **--junctions.join.parallel-threshold** {{DT_FLOAT}} | The angular threshold in degress for rejection of parallel edges when joining junctions; *default:* **30** |
-| **--junctions.join-same** {{DT_BOOL}} | Joins junctions that have the same coordinates even if not connected; *default:* **false** |
+| **--junctions.join-same** {{DT_FLOAT}} | Joins junctions that have similar coordinates even if not connected; *default:* **-1** |
 | **--max-join-ids** {{DT_INT}} | Abbreviate junction or TLS id if it joins more than INT junctions; *default:* **4** |
 | **--junctions.corner-detail** {{DT_INT}} | Generate INT intermediate points to smooth out intersection corners; *default:* **5** |
 | **--junctions.internal-link-detail** {{DT_INT}} | Generate INT intermediate points to smooth out lanes within the intersection; *default:* **5** |
@@ -364,3 +367,11 @@ Options](Basics/Using_the_Command_Line_Applications.md#random_number_options).
 |--------|-------------|
 | **--random** {{DT_BOOL}} | Initialises the random number generator with the current system time; *default:* **false** |
 | **--seed** {{DT_INT}} | Initialises the random number generator with the given value; *default:* **23423** |
+
+# Perturbance Distributions
+
+Options **--perturb-x**, **--perturb-y** and **--perturb-z** accept any of the following values:
+
+- `norm(m,s)`: normal distribution with mean *m* and deviation *s*
+- `normc(m,s,a,b)`: truncated normal distribution with mean *m*, deviation *s* lower boundary *a* and upper boundary *b*
+- `s`: normal distribution with mean *0* and deviation *s*

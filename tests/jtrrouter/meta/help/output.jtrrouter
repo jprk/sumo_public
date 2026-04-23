@@ -1,5 +1,5 @@
-Eclipse SUMO jtrrouter Version v1_23_1+0813-5f3c910f36e
- Copyright (C) 2001-2025 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO jtrrouter v1_25_0+0045-28a3daf62ee
+ Copyright (C) 2001-2026 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Router for the microscopic, multi-modal traffic simulation SUMO based on
  junction turning ratios.
 
@@ -44,7 +44,12 @@ Output Options:
                                        their id
   --write-license                     Include license info into every output
                                        file
+  --write-metadata                    Write parsable metadata (configuration
+                                       etc.) instead of comments
   --output-prefix STR                 Prefix which is applied to all output
+                                       files. The special string 'TIME' is
+                                       replaced by the current time.
+  --output-suffix STR                 Suffix which is applied to all output
                                        files. The special string 'TIME' is
                                        replaced by the current time.
   --precision INT                     Defines the number of digits after the
@@ -108,6 +113,10 @@ Processing Options:
   --weights.turnaround-penalty FLOAT  Apply the given time penalty when
                                        computing routing costs for turnaround
                                        internal lanes
+  --weights.reversal-penalty FLOAT    Apply the given time penalty when
+                                       computing routing costs for train
+                                       reversal. Negative values disable
+                                       reversal
   --max-edges-factor FLOAT            Routes are cut off when the route edges
                                        to net edges ratio is larger than FLOAT
   -T, --turn-defaults STR[]           Use STR[] as default turn definition

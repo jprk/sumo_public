@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -261,6 +261,30 @@ NLHandler::myStartElement(int element,
                 }
                 break;
             }
+            case SUMO_TAG_PREFERENCE: {
+                bool ok = true;
+                const std::string routingType = attrs.get<std::string>(SUMO_ATTR_ROUTINGTYPE, nullptr, ok);
+                const double prio = attrs.get<double>(SUMO_ATTR_PRIORITY, routingType.c_str(), ok);
+                if (prio <= 0) {
+                    throw InvalidArgument("In preference for routingType '" + routingType + "', priority must be positve");
+                }
+                if (attrs.hasAttribute(SUMO_ATTR_VCLASSES)) {
+                    StringTokenizer st(attrs.get<std::string>(SUMO_ATTR_VCLASSES, routingType.c_str(), ok));
+                    for (std::string className : st.getVector()) {
+                        myNet.addPreference(routingType, getVehicleClassID(className), prio);
+                    }
+                } else if (!attrs.hasAttribute(SUMO_ATTR_VTYPES)) {
+                    // general preferenze applying to all types and vClasses
+                    myNet.addPreference(routingType, "", prio);
+                }
+                if (attrs.hasAttribute(SUMO_ATTR_VTYPES)) {
+                    StringTokenizer st(attrs.get<std::string>(SUMO_ATTR_VTYPES, routingType.c_str(), ok));
+                    for (std::string typeName : st.getVector()) {
+                        myNet.addPreference(routingType, typeName, prio);
+                    }
+                }
+                break;
+            }
             case SUMO_TAG_MESO: {
                 addMesoEdgeType(attrs);
                 break;
@@ -461,6 +485,7 @@ NLHandler::beginEdgeParsing(const SUMOSAXAttributes& attrs) {
     const std::string streetName = attrs.getOpt<std::string>(SUMO_ATTR_NAME, id.c_str(), ok, "");
     // get the edge type
     const std::string edgeType = attrs.getOpt<std::string>(SUMO_ATTR_TYPE, id.c_str(), ok, "");
+    const std::string routingType = attrs.getOpt<std::string>(SUMO_ATTR_ROUTINGTYPE, id.c_str(), ok, "");
     // get the edge priority (only for visualization)
     const int priority = attrs.getOpt<int>(SUMO_ATTR_PRIORITY, id.c_str(), ok, -1); // default taken from netbuild/NBFrame option 'default.priority'
     // get the bidi-edge
@@ -474,7 +499,7 @@ NLHandler::beginEdgeParsing(const SUMOSAXAttributes& attrs) {
     }
     //
     try {
-        myEdgeControlBuilder.beginEdgeParsing(id, func, streetName, edgeType, priority, bidi, distance);
+        myEdgeControlBuilder.beginEdgeParsing(id, func, streetName, edgeType, routingType, priority, bidi, distance);
     } catch (InvalidArgument& e) {
         WRITE_ERROR(e.what());
         myCurrentIsBroken = true;
@@ -949,16 +974,7 @@ NLHandler::addE1Detector(const SUMOSAXAttributes& attrs) {
     const std::string lane = attrs.get<std::string>(SUMO_ATTR_LANE, id.c_str(), ok);
     const std::string file = attrs.get<std::string>(SUMO_ATTR_FILE, id.c_str(), ok);
     const std::string detectPersonsString = attrs.getOpt<std::string>(SUMO_ATTR_DETECT_PERSONS, id.c_str(), ok, "");
-    int detectPersons = 0;
-    for (std::string mode : StringTokenizer(detectPersonsString).getVector()) {
-        if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
-            detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
-        } else {
-            WRITE_ERRORF(TL("Invalid person mode '%' in E1 detector definition '%'"), mode, id);
-            myCurrentIsBroken = true;
-            return;
-        }
-    }
+    const int detectPersons = parseDetectPersons(detectPersonsString, id, ok);
     if (!ok) {
         myCurrentIsBroken = true;
         return;
@@ -995,12 +1011,14 @@ NLHandler::addInstantE1Detector(const SUMOSAXAttributes& attrs) {
     const std::string name = attrs.getOpt<std::string>(SUMO_ATTR_NAME, id.c_str(), ok, "");
     const std::string vTypes = attrs.getOpt<std::string>(SUMO_ATTR_VTYPES, id.c_str(), ok, "");
     const std::string nextEdges = attrs.getOpt<std::string>(SUMO_ATTR_NEXT_EDGES, id.c_str(), ok, "");
+    const std::string detectPersonsString = attrs.getOpt<std::string>(SUMO_ATTR_DETECT_PERSONS, id.c_str(), ok, "");
+    const int detectPersons = parseDetectPersons(detectPersonsString, id, ok);
     if (!ok) {
         myCurrentIsBroken = true;
         return;
     }
     try {
-        Parameterised* det = myDetectorBuilder.buildInstantInductLoop(id, lane, position, FileHelpers::checkForRelativity(file, getFileName()), friendlyPos, name, vTypes, nextEdges);
+        Parameterised* det = myDetectorBuilder.buildInstantInductLoop(id, lane, position, FileHelpers::checkForRelativity(file, getFileName()), friendlyPos, name, vTypes, nextEdges, detectPersons);
         myLastParameterised.push_back(det);
     } catch (InvalidArgument& e) {
         WRITE_ERROR(e.what());
@@ -1084,16 +1102,7 @@ NLHandler::addE2Detector(const SUMOSAXAttributes& attrs) {
     double endPosition = attrs.getOpt<double>(SUMO_ATTR_ENDPOS, id.c_str(), ok, std::numeric_limits<double>::max());
     const std::string lanes = attrs.getOpt<std::string>(SUMO_ATTR_LANES, id.c_str(), ok, ""); // lanes has priority to lane
     const std::string detectPersonsString = attrs.getOpt<std::string>(SUMO_ATTR_DETECT_PERSONS, id.c_str(), ok, "");
-    int detectPersons = 0;
-    for (std::string mode : StringTokenizer(detectPersonsString).getVector()) {
-        if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
-            detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
-        } else {
-            WRITE_ERRORF(TL("Invalid person mode '%' in E2 detector definition '%'"), mode, id);
-            myCurrentIsBroken = true;
-            return;
-        }
-    }
+    const int detectPersons = parseDetectPersons(detectPersonsString, id, ok);
     if (!ok) {
         myCurrentIsBroken = true;
         return;
@@ -1270,16 +1279,7 @@ NLHandler::beginE3Detector(const SUMOSAXAttributes& attrs) {
     const bool openEntry = attrs.getOpt<bool>(SUMO_ATTR_OPEN_ENTRY, id.c_str(), ok, false);
     const bool expectArrival = attrs.getOpt<bool>(SUMO_ATTR_EXPECT_ARRIVAL, id.c_str(), ok, false);
     const std::string detectPersonsString = attrs.getOpt<std::string>(SUMO_ATTR_DETECT_PERSONS, id.c_str(), ok, "");
-    int detectPersons = 0;
-    for (std::string mode : StringTokenizer(detectPersonsString).getVector()) {
-        if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
-            detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
-        } else {
-            WRITE_ERRORF(TL("Invalid person mode '%' in E3 detector definition '%'"), mode, id);
-            myCurrentIsBroken = true;
-            return;
-        }
-    }
+    const int detectPersons = parseDetectPersons(detectPersonsString, id, ok);
     if (!ok) {
         myCurrentIsBroken = true;
         return;
@@ -1345,7 +1345,13 @@ NLHandler::addEdgeLaneMeanData(const SUMOSAXAttributes& attrs, int objecttype) {
     const SUMOTime end = attrs.getOptSUMOTimeReporting(SUMO_ATTR_END, id.c_str(), ok, string2time(OptionsCont::getOptions().getString("end")));
     std::vector<std::string> edgeIDs = attrs.getOpt<std::vector<std::string> >(SUMO_ATTR_EDGES, id.c_str(), ok);
     const std::string edgesFile = attrs.getOpt<std::string>(SUMO_ATTR_EDGESFILE, id.c_str(), ok, "");
-    const bool aggregate = attrs.getOpt<bool>(SUMO_ATTR_AGGREGATE, id.c_str(), ok, false);
+    const std::string aggregateStr = attrs.getOpt<std::string>(SUMO_ATTR_AGGREGATE, id.c_str(), ok, "false");
+    AggregateType aggregate = AggregateType::NO;
+    if (aggregateStr == "taz") {
+        aggregate = AggregateType::TAZ;
+    } else if (StringUtils::toBool(aggregateStr)) {
+        aggregate = AggregateType::YES;
+    }
     if (!ok) {
         return;
     }
@@ -1479,7 +1485,7 @@ NLHandler::addConnection(const SUMOSAXAttributes& attrs) {
                 return;
             }
             length = via->getLength();
-        } else if (toLane->getEdge().isCrossing()) {
+        } else if (toLane->isCrossing()) {
             length = toLane->getLength();
         } else {
             length = fromLane->getShape()[-1].distanceTo(toLane->getShape()[0]);
@@ -1608,7 +1614,7 @@ NLHandler::addDistrict(const SUMOSAXAttributes& attrs) {
 
         MSEdge* sink = MSEdge::dictionary(sinkID);
         if (sink == nullptr) {
-            sink = myEdgeControlBuilder.buildEdge(sinkID, SumoXMLEdgeFunc::CONNECTOR, "", "", -1, 0);
+            sink = myEdgeControlBuilder.buildEdge(sinkID, SumoXMLEdgeFunc::CONNECTOR, "", "", "", -1, 0);
             MSEdge::dictionary(sinkID, sink);
             sink->initialize(new std::vector<MSLane*>());
         } else {
@@ -1623,7 +1629,7 @@ NLHandler::addDistrict(const SUMOSAXAttributes& attrs) {
         }
         MSEdge* source = MSEdge::dictionary(sourceID);
         if (source == nullptr) {
-            source = myEdgeControlBuilder.buildEdge(sourceID, SumoXMLEdgeFunc::CONNECTOR, "", "", -1, 0);
+            source = myEdgeControlBuilder.buildEdge(sourceID, SumoXMLEdgeFunc::CONNECTOR, "", "", "", -1, 0);
             MSEdge::dictionary(sourceID, source);
             source->initialize(new std::vector<MSLane*>());
         } else {
@@ -1850,6 +1856,22 @@ NLHandler::addPredecessorConstraint(int element, const SUMOSAXAttributes& attrs,
         }
     }
     return result;
+}
+
+
+int
+NLHandler::parseDetectPersons(const std::string& detectPersonsString, const std::string& id, bool& ok) {
+    int detectPersons = 0;
+    for (std::string mode : StringTokenizer(detectPersonsString).getVector()) {
+        if (SUMOXMLDefinitions::PersonModeValues.hasString(mode)) {
+            detectPersons |= (int)SUMOXMLDefinitions::PersonModeValues.get(mode);
+        } else {
+            WRITE_ERRORF(TL("Invalid person mode '%' in E1 detector definition '%'"), mode, id);
+            ok = false;
+            return 0;
+        }
+    }
+    return detectPersons;
 }
 
 

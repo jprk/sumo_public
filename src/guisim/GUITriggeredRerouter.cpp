@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2001-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2001-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -239,7 +239,7 @@ GUITriggeredRerouter::GUITriggeredRerouter(const std::string& id, const MSEdgeVe
         myEdgeVisualizations.push_back(new GUITriggeredRerouterEdge(dynamic_cast<GUIEdge*>(*it), this, REROUTER_TRIGGER_EDGE, -1, pos, radius));
         rtree.addAdditionalGLObject(myEdgeVisualizations.back());
         myBoundary.add(myEdgeVisualizations.back()->getCenteringBoundary());
-        if (pos != Position::INVALID) {
+        if (pos != Position::INVALID && radius != std::numeric_limits<double>::max()) {
             break;
         }
     }
@@ -395,9 +395,8 @@ GUITriggeredRerouter::GUITriggeredRerouterEdge::GUITriggeredRerouterEdge(GUIEdge
     myEdge(edge),
     myEdgeType(edgeType),
     myDistIndex(distIndex) {
-    UNUSED_PARAMETER(radius);  // it would be nice to have this in the visualization too
     const std::vector<MSLane*>& lanes = edge->getLanes();
-    if (pos == Position::INVALID) {
+    if (pos == Position::INVALID || radius == std::numeric_limits<double>::max()) {
         for (const MSLane* lane : lanes) {
             if ((lane->getPermissions() & ~SVC_PEDESTRIAN) == 0) {
                 continue;
@@ -484,7 +483,7 @@ GUITriggeredRerouter::GUITriggeredRerouterEdge::drawGL(const GUIVisualizationSet
                             }
                         }
                         glTranslated(0, 0, getType());
-                        //glScaled(exaggeration, exaggeration, 1);
+                        glScaled(exaggeration, exaggeration, 1);
                         glColor3d(0.7, 0, 0);
                         GLHelper::drawFilledCircle((double) 1.3, noPoints);
                         glTranslated(0, 0, .1);
@@ -577,6 +576,9 @@ GUITriggeredRerouter::GUITriggeredRerouterEdge::drawGL(const GUIVisualizationSet
             }
         }
         GLHelper::popName();
+    }
+    if (myEdgeType == REROUTER_TRIGGER_EDGE && s.addName.show(myParent)) {
+        GLHelper::drawTextSettings(s.addName, myParent->getMicrosimID(), myFGPositions.back(), s.scale, s.angle);
     }
 }
 

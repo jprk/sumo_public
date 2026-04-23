@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2002-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -89,8 +89,7 @@ MSLaneChanger::ChangeElem::ChangeElem(MSLane* _lane) :
     aheadNext(_lane->getWidth(), nullptr, 0.),
     zipperDist(0),
     lastBlockedBackPos(-1),
-    lastBlockedWaitingTime(-1)
-{
+    lastBlockedWaitingTime(-1) {
     if (lane->isInternal()) {
         for (auto ili : lane->getIncomingLanes()) {
             if (ili.viaLink->getState() == LINKSTATE_ZIPPER) {
@@ -154,6 +153,36 @@ MSLaneChanger::MSLaneChanger(const std::vector<MSLane*>* lanes, bool allowChangi
 
 
 MSLaneChanger::~MSLaneChanger() {
+}
+
+
+void
+MSLaneChanger::postloadInitLC() {
+    checkOpened = false;
+    for (auto ce : myChanger) {
+        const MSLane* lane = ce.lane;
+        for (const MSLink* link : lane->getLinkCont()) {
+            if (link->getTLLogic() != nullptr || link->havePriority()) {
+                continue;
+            }
+            for (auto ce2 : myChanger) {
+                const MSLane* lane2 = ce2.lane;
+                if (lane == lane2) {
+                    continue;
+                }
+                for (const MSLink* link2 : lane2->getLinkCont()) {
+                    if (&link->getLane()->getEdge() == &link2->getLane()->getEdge()
+                            && link->getLane() != link2->getLane()
+                            && (lane->getPermissions() & lane2->getPermissions() & link->getLane()->getPermissions() & link2->getLane()->getPermissions()
+                                & link->getViaLaneOrLane()->getPermissions() & link2->getViaLaneOrLane()->getPermissions() & ~(SVC_PEDESTRIAN | SVC_BICYCLE)) != 0
+                            && link->getFoeLinks() != link2->getFoeLinks()) {
+                        checkOpened = true;
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 
 
@@ -1084,6 +1113,27 @@ MSLaneChanger::checkChange(
             }
         }
     }
+
+    if (checkOpened && (state & LCA_BLOCKED) == 0 && (state & LCA_WANTS_LANECHANGE) != 0
+            && vehicle->getLane()->isNormal()
+            && vehicle->getBestLanesContinuation().size() > 1) {
+        const MSLink* link = vehicle->getLane()->getLinkTo(vehicle->getBestLanesContinuation()[1]);
+        if (link != nullptr && link->isEntryLink()) {
+            const MSLink* link2 = link->getParallelLink(laneOffset);
+            if (link2 != nullptr) {
+                auto api = link->getApproachingPtr(vehicle);
+                if (api != nullptr) {
+                    if (!link2->opened(api->arrivalTime, api->arrivalSpeed, api->leaveSpeed, vehicle->getLength(),
+                                       vehicle->getImpatience(), vehicle->getCarFollowModel().getMaxDecel(), vehicle->getWaitingTime(), vehicle->getLateralPositionOnLane(),
+                                       nullptr, false, vehicle, api->dist)) {
+                        //std::cout << SIMTIME << " unsafeLC " << vehicle->getID() << "\n";
+                        state |= LCA_BLOCKED;
+                    }
+                }
+            }
+        }
+    }
+
     const int oldstate = state;
     // let TraCI influence the wish to change lanes and the security to take
     state = vehicle->influenceChangeDecision(state);
@@ -1765,7 +1815,7 @@ MSLaneChanger::avoidDeadlock(MSVehicle* vehicle,
             }
 #endif
             if (leader.second + leaderBGap + leader.first->getLength() > distToStop) {
-                const double blockerLength = currentDist - stopPos;
+                const double blockerLength = currentDist - stopPos + vehicle->getVehicleType().getMinGap();
                 const bool reserved = vehicle->getLaneChangeModel().saveBlockerLength(blockerLength, -1);
 #ifdef DEBUG_CHANGE_OPPOSITE_DEADLOCK
                 if (DEBUG_COND) {
@@ -1883,7 +1933,7 @@ MSLaneChanger::resolveDeadlock(MSVehicle* vehicle,
             const std::vector<MSVehicle::LaneQ>& preb = vehicle->getBestLanes();
             const double currentDist = preb[vehicle->getLane()->getIndex()].length;
             // mirror code in patchSpeed
-            const double blockerLength = currentDist - vehicle->getPositionOnLane() - 1 - vehicle->getVehicleType().getMinGap() - NUMERICAL_EPS;
+            const double blockerLength = currentDist - vehicle->getPositionOnLane() - POSITION_EPS - NUMERICAL_EPS;
             const bool reserved = vehicle->getLaneChangeModel().saveBlockerLength(blockerLength, -1);
 #ifdef DEBUG_CHANGE_OPPOSITE_DEADLOCK
             if (DEBUG_COND) {
@@ -2578,8 +2628,8 @@ std::pair<double, SUMOTime>
 MSLaneChanger::getLastBlocked(int index) const {
     assert(index >= 0 && index < (int)myChanger.size());
     return std::make_pair(
-            myChanger[index].lastBlockedBackPos,
-            myChanger[index].lastBlockedWaitingTime);
+               myChanger[index].lastBlockedBackPos,
+               myChanger[index].lastBlockedWaitingTime);
 }
 
 /****************************************************************************/

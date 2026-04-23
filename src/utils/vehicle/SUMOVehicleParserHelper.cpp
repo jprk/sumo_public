@@ -1,6 +1,6 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-// Copyright (C) 2008-2025 German Aerospace Center (DLR) and others.
+// Copyright (C) 2008-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License 2.0 which is available at
 // https://www.eclipse.org/legal/epl-2.0/
@@ -277,7 +277,7 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
         // parse number
         if (hasNumber) {
             bool ok = true;
-            flowParameter->repetitionNumber = attrs.get<int>(SUMO_ATTR_NUMBER, id.c_str(), ok);
+            flowParameter->repetitionNumber = attrs.get<long long int>(SUMO_ATTR_NUMBER, id.c_str(), ok);
             if (!ok) {
                 return handleVehicleError(hardFail, flowParameter);
             } else {
@@ -303,21 +303,21 @@ SUMOVehicleParserHelper::parseFlowAttributes(SumoXMLTag tag, const SUMOSAXAttrib
         } else {
             // interpret repetitionNumber
             if (flowParameter->repetitionProbability > 0) {
-                flowParameter->repetitionNumber = std::numeric_limits<int>::max();
+                flowParameter->repetitionNumber = std::numeric_limits<long long int>::max();
             } else {
                 if (flowParameter->repetitionOffset <= 0) {
                     if (poissonFlow) {
                         // number is random but flow has a fixed end time
-                        flowParameter->repetitionNumber = std::numeric_limits<int>::max();
+                        flowParameter->repetitionNumber = std::numeric_limits<long long int>::max();
                     } else {
                         return handleVehicleError(hardFail, flowParameter, "Invalid repetition rate in the definition of " + toString(tag) + " '" + id + "'.");
                     }
                 } else {
                     if (flowParameter->repetitionEnd == SUMOTime_MAX) {
-                        flowParameter->repetitionNumber = std::numeric_limits<int>::max();
+                        flowParameter->repetitionNumber = std::numeric_limits<long long int>::max();
                     } else {
                         const SUMOTime repLength = flowParameter->repetitionEnd - flowParameter->depart;
-                        flowParameter->repetitionNumber = (int)ceil((double)repLength / (double)flowParameter->repetitionOffset);
+                        flowParameter->repetitionNumber = (long long int)ceil((double)repLength / (double)flowParameter->repetitionOffset);
                     }
                 }
             }

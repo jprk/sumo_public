@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -18,7 +18,7 @@
 # imports
 import time
 from ..constants import DELAY_QUESTION
-from ..files.save import saveExistentShortcut
+from ..files.save import saveExistentFile
 from ..input.keyboard import typeKey, typeTwoKeys
 
 
@@ -27,7 +27,7 @@ def fixRoute(solution):
     @brief fix route
     """
     # save config
-    saveExistentShortcut("neteditConfig")
+    saveExistentFile("neteditConfig")
     # select bullet depending of solution
     if (solution == "selectRouteInvalids"):
         for _ in range(2):
@@ -64,7 +64,7 @@ def fixDemandElements(solution):
     @brief fix stoppingPlaces
     """
     # save config
-    saveExistentShortcut("neteditConfig")
+    saveExistentFile("neteditConfig")
     # select bullet depending of solution
     if (solution == "saveInvalids"):
         for _ in range(3):
@@ -102,7 +102,7 @@ def fixStoppingPlace(solution):
     @brief fix stoppingPlaces
     """
     # save config
-    saveExistentShortcut("neteditConfig")
+    saveExistentFile("neteditConfig")
     # wait some second to question dialog
     time.sleep(DELAY_QUESTION)
     # select bullet depending of solution
@@ -142,7 +142,7 @@ def fixCrossings(solution):
     @brief fix stoppingPlaces
     """
     # save config
-    saveExistentShortcut("neteditConfig")
+    saveExistentFile("neteditConfig")
     # wait some second to question dialog
     time.sleep(DELAY_QUESTION)
     # select bullet depending of solution

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
-# Copyright (C) 2009-2025 German Aerospace Center (DLR) and others.
+# Copyright (C) 2009-2026 German Aerospace Center (DLR) and others.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License 2.0 which is available at
 # https://www.eclipse.org/legal/epl-2.0/
@@ -40,23 +40,23 @@ netedit.changeMode("inspect")
 # inspect first parkingArea
 netedit.leftClick(referencePosition, netedit.positions.elements.additionals.parkingArea)
 
-# Change parameter Lenght with a non valid value (dummy)
-netedit.modifyAttributeOverlapped(netedit.attrs.parkingArea.inspect.length, "dummyLenght")
+# Change parameter Length with a non valid value (dummy)
+netedit.modifyAttributeOverlapped(netedit.attrs.parkingArea.inspect.length, "dummyLength")
 
-# Change parameter Lenght with a non valid value (negative)
+# Change parameter Length with a non valid value (negative)
 netedit.modifyAttributeOverlapped(netedit.attrs.parkingArea.inspect.length, "-6")
 
-# Change parameter Lenght with a non valid value (0)
+# Change parameter Length with a non valid value (0)
 netedit.modifyAttributeOverlapped(netedit.attrs.parkingArea.inspect.length, "0")
 
-# Change parameter Lenght with a valid value
+# Change parameter Length with a valid value
 netedit.modifyAttributeOverlapped(netedit.attrs.parkingArea.inspect.length, "3.4")
 
 # Check undos and redos
 netedit.checkUndoRedo(referencePosition)
 
 # save netedit config
-netedit.saveExistentShortcut("neteditConfig")
+netedit.saveExistentFile("neteditConfig")
 
 # quit netedit
 netedit.quit(neteditProcess)

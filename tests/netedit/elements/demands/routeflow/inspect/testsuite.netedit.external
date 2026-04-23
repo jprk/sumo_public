@@ -1,55 +1,53 @@
-id
-
-route
-
-type
-
-typebutton
-
-color
-
-departedge
-
 arrivaledge
-
-departlane
-
-departpos
-
-departspeed
 
 arrivallane
 
 arrivalpos
 
-arrivalspeed
-
-line
-
-personnumber
-
-containernumber
-
-departposlat
-
 arrivalposlat
 
-insertionchecks
+arrivalspeed
 
 begin
 
-endnumber
+color
+
+containernumber
+
+departedge
+
+departlane
+
+departpos
+
+departposlat
+
+departspeed
 
 end
 
+endnumber
+
+id
+
+insertionchecks
+
+line
+
 number
 
-vehsperhour
+parameters
 
 period
+
+personnumber
 
 poisson
 
 probability
 
-parameters
+route
+
+type
+
+vehsperhour
