@@ -175,7 +175,9 @@ __pycache__
 *.aps
 .gdb_history
 .env
-#
+# Local patters for RICE
 *.bak
 .idea/
 setPATH64.bat
+debug/
+
