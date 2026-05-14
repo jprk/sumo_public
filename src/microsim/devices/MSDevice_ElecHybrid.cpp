@@ -330,10 +330,26 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
 
                 while (resistance < vehPosMappedOnSegment * myActOverheadWireSegment->getResistancePerLength()) {
                     node_pos = element_pos->getPosNode();
-                    element_pos = node_pos->getElements()->at(2);
+                    // Find the next tail resistor robustly: the resistor on node_pos that is not element_pos.
+                    // Do not rely on the fixed position elements[2]: when vehicles are added in reverse
+                    // order (a back vehicle first, a front vehicle next), the leading and tail resistors
+                    // can swap places in the elements vector of the back vehicle's pos_veh_node.
+                    Element* next_elem = nullptr;
+                    for (Element* const el : *node_pos->getElements()) {
+                        if (el != element_pos && el->getType() == Element::ElementType::RESISTOR_traction_wire) {
+                            next_elem = el;
+                            break;
+                        }
+                    }
+                    if (next_elem == nullptr) {
+                        WRITE_WARNINGF(TL("No further tail resistor found at node '%' while inserting elecHybrid '%' into the circuit."),
+                                       node_pos->getName(), veh.getID());
+                        break;
+                    }
+                    element_pos = next_elem;
                     resistance += element_pos->getResistance();
                     if (strncmp(element_pos->getName().c_str(), "pos_tail_", 9) != 0) {
-                        WRITE_WARNING("splitting element is not 'pos_tail_XXX'")
+                        WRITE_WARNING("splitting element is not 'pos_tail_XXX'");
                     }
                 }
 
@@ -379,8 +395,8 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
 
                 // double powerDemand = computePowerDemand(myConsum, myActualBatteryCapacity, double speed, double voltage, bool hasTrolley, bool hasBattery);
                 auto powerDemands = myPowerManagement->computePowerDemand(myConsum, myActualBatteryCapacity, veh.getSpeed(), voltage, true, true);
-                double powerDemandFromOvereadWire = powerDemands.first;
-                veh_elem->setPowerWanted(powerDemandFromOvereadWire);
+                double powerDemandFromOverheadWire = powerDemands.first;
+                veh_elem->setPowerWanted(powerDemandFromOverheadWire);
 
 
                 // Initial value of the electric current flowing into the vehicle that will be used by the solver
@@ -422,12 +438,12 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
             // (c) >0 if the substation can provide energy to the circuit.
             if (voltage > 0.0) {
                 auto powerDemands = myPowerManagement->computePowerDemand(myConsum, myActualBatteryCapacity, veh.getSpeed(), voltage, true, true);
-                double powerDemandFromOvereadWire = powerDemands.first;
-                veh_elem->setPowerWanted(powerDemandFromOvereadWire);
+                double powerDemandFromOverheadWire = powerDemands.first;
+                // veh_elem->setPowerWanted(powerDemandFromOverheadWire);
 
                 // Set the actual current and voltage of the global circuit
                 // RICE_TODO: Process the traction station current limiting here as well.
-                myCircuitCurrent = powerDemandFromOvereadWire / voltage;
+                myCircuitCurrent = powerDemandFromOverheadWire / voltage;
                 myCircuitVoltage = voltage;
 
                 /*
@@ -435,7 +451,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                          hasOvrHdWire = true
                          charging = true
                 */
-                myPowerManagement->distributePower(powerDemandFromOvereadWire, true, true, this);
+                myPowerManagement->distributePower(powerDemandFromOverheadWire, true, true, this);
             } else {
                 /*
                     Overhead wire without a connected substation and without the solver
@@ -1013,7 +1029,7 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
                 powerDemandBattery = voltage * (current - eco_minCurrentForPeakShaving);
                 powerDemandOvrHdWire -= powerDemandBattery;
             }
-            // RICE_TODO Rekuperace do baterky má taky nìjaké limity (150kW na mìnièi) 
+            // RICE_TODO Rekuperace do baterky mï¿½ taky nï¿½jakï¿½ limity (150kW na mï¿½niï¿½i) 
             // MJ dodelan limit 150 kW, chybi limit 250 A
             if (powerDemandOvrHdWire < 0.0 && soc < myMaximumBatteryCapacity) {
                 // regenerating energy into the battery
