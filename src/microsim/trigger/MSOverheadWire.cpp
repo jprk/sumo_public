@@ -391,9 +391,12 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
         // If the overhead wire segment is over the outgoing (not internal) lane
         if (ovrhdSegmentID != "" && !(*it)->isInternal()) {
             ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(ovrhdSegmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-            // If the outgoing overhead wire segment belongs to the same substation as newOverheadWireSegment
-            // RICE_TODO: define what happens if the traction stations are different (overhead wire should continue over inner segments but it is unclear to which traction substation or even circuit it should be connected)
-            if (ovrhdSegment->getTractionSubstation() == newOverheadWireSegment->getTractionSubstation()) {
+            // Proceed if the outgoing overhead wire segment has a defined traction substation. When it matches
+            // newOverheadWireSegment->getTractionSubstation() the inner segments fully bridge both circuits as before;
+            // when the substations differ, the inner segments are attached to newOverheadWireSegment's circuit and
+            // terminate at a dangling node on the outgoing side (electrical continuity stays within this substation).
+            if (ovrhdSegment->getTractionSubstation() != nullptr &&
+                newOverheadWireSegment->getTractionSubstation() != nullptr) {
                 connection = lane.getInternalFollowingLane(*it);
                 if (connection != nullptr) {
                     //is connection a forbidden lane?
@@ -437,9 +440,12 @@ MSTractionSubstation::addOverheadWireSegmentToCircuit(MSOverheadWire* newOverhea
         // If the overhead wire segment is over the incoming (not internal) lane
         if (ovrhdSegmentID != "" && !(*it)->isInternal()) {
             ovrhdSegment = dynamic_cast<MSOverheadWire*>(MSNet::getInstance()->getStoppingPlace(ovrhdSegmentID, SUMO_TAG_OVERHEAD_WIRE_SEGMENT));
-            // If the incoming overhead wire segment belongs to the same substation as newOverheadWireSegment
-            // RICE_TODO: define what happens if the traction stations are different (overhead wire should continue over inner segments but it is unclear to which traction substation or even circuit it should be connected)
-            if (ovrhdSegment->getTractionSubstation() == newOverheadWireSegment->getTractionSubstation()) {
+            // Proceed if the incoming overhead wire segment has a defined traction substation. When it matches
+            // newOverheadWireSegment->getTractionSubstation() the inner segments fully bridge both circuits as before;
+            // when the substations differ, the inner segments are attached to ovrhdSegment's circuit and terminate at a
+            // dangling node on the newOverheadWireSegment side (electrical continuity stays within ovrhdSegment's substation).
+            if (ovrhdSegment->getTractionSubstation() != nullptr &&
+                newOverheadWireSegment->getTractionSubstation() != nullptr) {
                 connection = (*it)->getInternalFollowingLane(&lane);
                 if (connection != nullptr) {
                     //is connection a forbidden lane?
@@ -534,15 +540,19 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
         if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
             // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
+            // At a substation boundary outgoingSegment lives in a different circuit; terminate the chain at a dangling node here.
+            Node* outgoingEndNode = (incomingSegment->getTractionSubstation() == outgoingSegment->getTractionSubstation())
+                                    ? outgoingSegment->getCircuitStartNodePos()
+                                    : incomingSegment->getCircuit()->addNode("dangling_pos_ovrhd_inner_" + connection->getID());
             Element* elem = incomingSegment->getCircuit()->addElement(
                 "pos_ovrhd_inner_" + connection->getID(),
                 connection->getLength() * incomingSegment->getResistancePerLength(),
                 incomingSegment->getCircuitEndNodePos(),
-                outgoingSegment->getCircuitStartNodePos(),
+                outgoingEndNode,
                 Element::ElementType::RESISTOR_traction_wire);
             innerSegment->setCircuitElementPos(elem);
             innerSegment->setCircuitStartNodePos(incomingSegment->getCircuitEndNodePos());
-            innerSegment->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
+            innerSegment->setCircuitEndNodePos(outgoingEndNode);
 #else
             UNUSED_PARAMETER(outgoingSegment);
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
@@ -560,6 +570,10 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
         if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
             // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
+            // At a substation boundary outgoingSegment lives in a different circuit; terminate the chain at a dangling node here.
+            Node* outgoingEndNode = (incomingSegment->getTractionSubstation() == outgoingSegment->getTractionSubstation())
+                                    ? outgoingSegment->getCircuitStartNodePos()
+                                    : incomingSegment->getCircuit()->addNode("dangling_pos_ovrhd_inner_" + connection->getID());
             Node* betweenFrontNode_pos = incomingSegment->getCircuit()->addNode("betweenFrontNode_pos_" + connection->getID());
             Element* elem = incomingSegment->getCircuit()->addElement(
                 "pos_ovrhd_inner_" + frontConnection->getID(),
@@ -571,7 +585,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
                 "pos_ovrhd_inner_" + connection->getID(),
                 connection->getLength() * incomingSegment->getResistancePerLength(),
                 betweenFrontNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
+                outgoingEndNode,
                 Element::ElementType::RESISTOR_traction_wire);
 
             innerSegment->setCircuitElementPos(elem);
@@ -580,7 +594,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
 
             innerSegment2->setCircuitElementPos(elem2);
             innerSegment2->setCircuitStartNodePos(betweenFrontNode_pos);
-            innerSegment2->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
+            innerSegment2->setCircuitEndNodePos(outgoingEndNode);
 #else
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
@@ -597,6 +611,10 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
         if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
             // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
+            // At a substation boundary outgoingSegment lives in a different circuit; terminate the chain at a dangling node here.
+            Node* outgoingEndNode = (incomingSegment->getTractionSubstation() == outgoingSegment->getTractionSubstation())
+                                    ? outgoingSegment->getCircuitStartNodePos()
+                                    : incomingSegment->getCircuit()->addNode("dangling_pos_ovrhd_inner_" + connection->getID());
             Node* betweenBehindNode_pos = incomingSegment->getCircuit()->addNode("betweenBehindNode_pos_" + connection->getID());
             Element* elem = incomingSegment->getCircuit()->addElement(
                 "pos_ovrhd_inner_" + connection->getID(),
@@ -608,7 +626,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
                 "pos_ovrhd_inner_" + behindConnection->getID(),
                 (behindConnection->getLength()) * incomingSegment->getResistancePerLength(),
                 betweenBehindNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
+                outgoingEndNode,
                 Element::ElementType::RESISTOR_traction_wire);
 
             innerSegment->setCircuitElementPos(elem);
@@ -617,7 +635,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
 
             innerSegment2->setCircuitElementPos(elem2);
             innerSegment2->setCircuitStartNodePos(betweenBehindNode_pos);
-            innerSegment2->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
+            innerSegment2->setCircuitEndNodePos(outgoingEndNode);
 #else
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support (Eigen) not compiled in."));
 #endif
@@ -637,6 +655,10 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
         if (MSGlobals::gOverheadWireSolver) {
 #ifdef HAVE_EIGEN
             // RICE_TODO: As we are adding to the circuit of the `incomingSegment`, we will use the resistance per unit length of this segment
+            // At a substation boundary outgoingSegment lives in a different circuit; terminate the chain at a dangling node here.
+            Node* outgoingEndNode = (incomingSegment->getTractionSubstation() == outgoingSegment->getTractionSubstation())
+                                    ? outgoingSegment->getCircuitStartNodePos()
+                                    : incomingSegment->getCircuit()->addNode("dangling_pos_ovrhd_inner_" + connection->getID());
             Node* betweenFrontNode_pos = incomingSegment->getCircuit()->addNode("betweenFrontNode_pos_" + connection->getID());
             Node* betweenBehindNode_pos = incomingSegment->getCircuit()->addNode("betweenBehindNode_pos_" + connection->getID());
             Element* elem = incomingSegment->getCircuit()->addElement(
@@ -655,7 +677,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
                 "pos_ovrhd_inner_" + behindConnection->getID(),
                 (behindConnection->getLength()) * incomingSegment->getResistancePerLength(),
                 betweenBehindNode_pos,
-                outgoingSegment->getCircuitStartNodePos(),
+                outgoingEndNode,
                 Element::ElementType::RESISTOR_traction_wire);
 
             innerSegment->setCircuitElementPos(elem);
@@ -668,7 +690,7 @@ MSTractionSubstation::addOverheadWireInnerSegmentToCircuit(MSOverheadWire* incom
 
             innerSegment3->setCircuitElementPos(elem3);
             innerSegment3->setCircuitStartNodePos(betweenBehindNode_pos);
-            innerSegment3->setCircuitEndNodePos(outgoingSegment->getCircuitStartNodePos());
+            innerSegment3->setCircuitEndNodePos(outgoingEndNode);
 #else
             WRITE_WARNING(TL("Overhead circuit solver requested, but solver support not compiled in."));
 #endif

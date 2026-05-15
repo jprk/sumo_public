@@ -418,6 +418,8 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
                          charging = false
                 */
                 myPowerManagement->distributePower(0.0, true, false, this);
+                myCircuitCurrent = 0;
+                myCircuitVoltage = 0;
             }
 #else
             WRITE_ERROR(TL("Overhead wire solver is on, but the Eigen library has not been compiled in!"))
