@@ -975,8 +975,10 @@ MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
         maxLineCurrent_driving(400.0), // 400 A
         maxLineCurrent_stopped(80.0), // 80 A
         recupBatteryPLimit(150000.0), // 150 KW
+        maxBatteryChargingPower_driving(55000.0), // 55 kW
         maxBatteryChargingPower_stopped(45000.0), // 45 kW
         eco_mode(false),
+        eco_maxBatteryChargingPower_driving(25000.0), // 25 kW
         eco_maxBatteryChargingPower_stopped(25000.0), // 25 kW
         eco_socLimitCharging(0.9),
         eco_socThresholdForPeakShaving(0.4), // 40 %
@@ -994,7 +996,9 @@ MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
     maxLineCurrent_driving = v.getFloatParam("device.elecHybrid.powerManagement.maxLineCurrent_driving", false, maxLineCurrent_driving);
     maxLineCurrent_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxLineCurrent_stopped", false, maxLineCurrent_stopped);
     recupBatteryPLimit = v.getFloatParam("device.elecHybrid.powerManagement.recupBatteryPLimit", false, recupBatteryPLimit);
+    maxBatteryChargingPower_driving = v.getFloatParam("device.elecHybrid.powerManagement.maxBatteryChargingPower_driving", false, maxBatteryChargingPower_driving);
     maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxBatteryChargingPower_stopped", false, maxBatteryChargingPower_stopped);
+    eco_maxBatteryChargingPower_driving = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_driving", false, eco_maxBatteryChargingPower_driving);
     eco_maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_stopped", false, eco_maxBatteryChargingPower_stopped);
     eco_socLimitCharging = v.getFloatParam("device.elecHybrid.powerManagement.eco_socLimitCharging", false, eco_maxBatteryChargingPower_stopped);
     eco_socThresholdForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socThresholdForPeakShaving", false, eco_socThresholdForPeakShaving);
@@ -1031,28 +1035,24 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
                 powerDemandBattery = voltage * (current - eco_minCurrentForPeakShaving);
                 powerDemandOvrHdWire -= powerDemandBattery;
             }
-            // RICE_TODO Rekuperace do baterky m� taky n�jak� limity (150kW na m�ni�i) 
-            // MJ dodelan limit 150 kW, chybi limit 250 A
+            // charging limits by battery capacity
             if (powerDemandOvrHdWire < 0.0 && soc < myMaximumBatteryCapacity) {
                 // regenerating energy into the battery
                 powerDemandBattery = powerDemandOvrHdWire;
-                // the amount of regenerating energy is limited by recupBatteryPLimit
+                // the amount of regenerating energy is limited by recupBatteryPLimit, e.g., charging limits by battery charger
                 if (powerDemandBattery < -recupBatteryPLimit) {
                     powerDemandBattery = -recupBatteryPLimit;
                 }
                 // energy which is not possible to regenerate into battery due to recupBatteryPLimit is still regenerating into the overhead wire
                 powerDemandOvrHdWire -= powerDemandBattery;
             }
-            // RICE_TODO:  -powerDemandBattery < maxBatteryChargingPower_stopped should be something like maxBatteryChargingPower_driving
-            // and, moreover, maybe it is only additional charged to recuperation - still a charging constant + regenretrating
-            // 
             //% dobijeni z troleje NeEko
-            if (soc < myMaximumBatteryCapacity && -powerDemandBattery < maxBatteryChargingPower_stopped && !eco_mode) {
+            if (soc < myMaximumBatteryCapacity && -powerDemandBattery < maxBatteryChargingPower_driving && !eco_mode) {
                 // charging battery from overhead wire
                 current = powerDemandOvrHdWire / voltage;
                 powerCharging = -(current - maxLineCurrent_driving) * voltage * ((current - maxLineCurrent_driving) < 0.0);
-                if (powerCharging > maxBatteryChargingPower_stopped) {
-                    powerCharging = maxBatteryChargingPower_stopped;
+                if (powerCharging > maxBatteryChargingPower_driving) {
+                    powerCharging = maxBatteryChargingPower_driving;
                 }
                 powerDemandBattery -= powerCharging;
                 if (powerDemandBattery < -recupBatteryPLimit) {
@@ -1062,12 +1062,12 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
                 powerDemandOvrHdWire = powerDemandOvrHdWire + powerCharging;
             }
             //% dobijeni z troleje Eko
-            if (soc < eco_socLimitCharging*myMaximumBatteryCapacity && -powerDemandBattery < eco_maxBatteryChargingPower_stopped && eco_mode) {
+            if (soc < eco_socLimitCharging*myMaximumBatteryCapacity && -powerDemandBattery < eco_maxBatteryChargingPower_driving && eco_mode) {
                 // charging battery from overhead wire
                 current = powerDemandOvrHdWire / voltage;
                 powerCharging = -(current - eco_minCurrentForPeakShaving) * voltage * ((current - eco_minCurrentForPeakShaving) < 0.0);
-                if (powerCharging > eco_maxBatteryChargingPower_stopped) {
-                    powerCharging = eco_maxBatteryChargingPower_stopped;
+                if (powerCharging > eco_maxBatteryChargingPower_driving) {
+                    powerCharging = eco_maxBatteryChargingPower_driving;
                 }
                 powerDemandBattery -= powerCharging;
                 if (powerDemandBattery < -recupBatteryPLimit) {

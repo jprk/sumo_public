@@ -333,8 +333,10 @@ private:
     /// @brief Maximum current that can be drawn from the overhead line when stopped
     double maxLineCurrent_stopped; // 80 A
     double recupBatteryPLimit; // 150 KW
+    double maxBatteryChargingPower_driving; // 55 kW
     double maxBatteryChargingPower_stopped; // 45 kW
     bool   eco_mode;
+    double eco_maxBatteryChargingPower_driving; // 25 kW
     double eco_maxBatteryChargingPower_stopped; // 25 kW
     double eco_socLimitCharging; // 0.9
     double eco_socThresholdForPeakShaving; // 40 %
