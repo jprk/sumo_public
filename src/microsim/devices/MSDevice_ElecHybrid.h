@@ -181,6 +181,11 @@ public:
 
     void setVoltageOfOverheadWire(double voltage);
 
+    /// @brief Return the last simulation step when notifyMove refreshed the device state.
+    SUMOTime getLastNotifyMoveStep() const {
+        return myLastNotifyMoveStep;
+    }
+
     /// @brief Get consum
     double getConsum() const;
 
@@ -285,6 +290,9 @@ protected:
     MSOverheadWire* myPreviousOverheadWireSegment;
 
     double myDistance;
+
+    /// @brief Last simulation step when notifyMove updated the electrical state.
+    SUMOTime myLastNotifyMoveStep;
 
     //circuit element of elecHybrid device
     //  ----|veh_pos_tail_elem|---------|pos_veh_node|--------

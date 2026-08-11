@@ -106,6 +106,9 @@ MSElecHybridExport::writeAggregated(OutputDevice& of, SUMOTime timestep, int pre
 			// Do not write any warnings in this case as this is expected for some vehicles
             continue;
 		}
+        if (elecHybridToExport->getLastNotifyMoveStep() != timestep) {
+            continue;
+        }
 
 		// The vehicle has an ElecHybrid device and a non-zero maximum battery capacity, so we proceed with the export
 		// If the timestep tag is not opened yet, open it
@@ -157,6 +160,9 @@ MSElecHybridExport::write(OutputDevice& of, const SUMOVehicle* veh, SUMOTime tim
 		}
         return;
 	}
+    if (elecHybridToExport->getLastNotifyMoveStep() != timestep) {
+        return;
+    }
     
     // Open the <timestep> tag with the time attribute and set the desired precision
     of.openTag(SUMO_TAG_TIMESTEP).writeAttr(SUMO_ATTR_TIME, time2string(timestep));

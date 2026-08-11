@@ -144,6 +144,7 @@ MSDevice_ElecHybrid::MSDevice_ElecHybrid(SUMOVehicle& holder, const std::string&
     myPowerManagement(nullptr),
     myActOverheadWireSegment(nullptr),         // Initially the vehicle isn't under any overhead wire segment
     myPreviousOverheadWireSegment(nullptr),    // Initially the vehicle wasn't under any overhead wire segment
+    myLastNotifyMoveStep(-1),
     veh_elem(nullptr),
     veh_pos_tail_elem(nullptr),
     pos_veh_node(nullptr) {
@@ -179,6 +180,7 @@ MSDevice_ElecHybrid::notifyMove(SUMOTrafficObject& tObject, double /* oldPos */,
         return false;
     }
     SUMOVehicle& veh = static_cast<SUMOVehicle&>(tObject);
+    myLastNotifyMoveStep = MSNet::getInstance()->getCurrentTimeStep();
     // Do not compute the current consumption here anymore:
     // myConsum is (non-systematically, we agree) set in MSVehicle so that the vehicle `vNext` value can
     // be influenced by the maximum traction power of the vehicle (i.e. installing a 80 kWh powertrain will
