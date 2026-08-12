@@ -1,4 +1,4 @@
-/****************************************************************************/
+﻿/****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
@@ -349,6 +349,7 @@ private:
     double eco_socLimitCharging; // 0.9
     double eco_socThresholdForPeakShaving; // 40 %
     double eco_socHysteresisForPeakShaving; // 50 %
+    mutable bool eco_peakShavingEnabled;
     double eco_minCurrentForPeakShaving; // 250 A
     double SUMO_ATTR_INPUTCHOKEEFFICIENCY;
     double SUMO_ATTR_CHARGINEFFICIENCY;

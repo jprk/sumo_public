@@ -1,4 +1,4 @@
-/****************************************************************************/
+﻿/****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.dev/sumo
 // Copyright (C) 2002-2026 German Aerospace Center (DLR) and others.
 // This program and the accompanying materials are made available under the
@@ -985,6 +985,7 @@ MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
         eco_socLimitCharging(0.9),
         eco_socThresholdForPeakShaving(0.4), // 40 %
         eco_socHysteresisForPeakShaving(0.5), // 50 %
+        eco_peakShavingEnabled(true),
         eco_minCurrentForPeakShaving(250), // 250 A
 
         SUMO_ATTR_INPUTCHOKEEFFICIENCY(1.0),
@@ -1002,7 +1003,7 @@ MSPowerManagement::MSPowerManagement(SUMOVehicle& v)
     maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.maxBatteryChargingPower_stopped", false, maxBatteryChargingPower_stopped);
     eco_maxBatteryChargingPower_driving = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_driving", false, eco_maxBatteryChargingPower_driving);
     eco_maxBatteryChargingPower_stopped = v.getFloatParam("device.elecHybrid.powerManagement.eco_maxBatteryChargingPower_stopped", false, eco_maxBatteryChargingPower_stopped);
-    eco_socLimitCharging = v.getFloatParam("device.elecHybrid.powerManagement.eco_socLimitCharging", false, eco_maxBatteryChargingPower_stopped);
+    eco_socLimitCharging = v.getFloatParam("device.elecHybrid.powerManagement.eco_socLimitCharging", false, eco_socLimitCharging);
     eco_socThresholdForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socThresholdForPeakShaving", false, eco_socThresholdForPeakShaving);
     eco_socHysteresisForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_socHysteresisForPeakShaving", false, eco_socHysteresisForPeakShaving);
     eco_minCurrentForPeakShaving = v.getFloatParam("device.elecHybrid.powerManagement.eco_minCurrentForPeakShaving", false, eco_minCurrentForPeakShaving);
@@ -1033,7 +1034,14 @@ std::pair<double, double> MSPowerManagement::computePowerDemand(double consum, d
             // driving
             // doplnovani DC z baterky v ekomodu pokud It > EcoItMax
             current = powerDemandOvrHdWire / voltage;
-            if (current > eco_minCurrentForPeakShaving && eco_mode) { // && EcoDcEnabled
+            if (eco_mode) {
+                if (soc <= eco_socThresholdForPeakShaving * myMaximumBatteryCapacity) {
+                    eco_peakShavingEnabled = false;
+                } else if (soc >= eco_socHysteresisForPeakShaving * myMaximumBatteryCapacity) {
+                    eco_peakShavingEnabled = true;
+                }
+            }
+            if (current > eco_minCurrentForPeakShaving && eco_mode && eco_peakShavingEnabled) { // && EcoDcEnabled
                 powerDemandBattery = voltage * (current - eco_minCurrentForPeakShaving);
                 powerDemandOvrHdWire -= powerDemandBattery;
             }
@@ -1163,3 +1171,4 @@ void MSPowerManagement::distributePower(double powerFromOverheadWire, bool hasOv
 }
 
 /****************************************************************************/
+
